@@ -6,11 +6,13 @@
     "cookie-parser": "~1.4.4",
     "debug": "~2.6.9",
     "express": "^4.21.2",
+    "jsonwebtoken": "^9.0.2",
     "morgan": "~1.9.1"
   },
   "devDependencies": {
     "@types/cookie-parser": "^1.4.8",
     "@types/express": "^5.0.1",
+    "@types/jsonwebtoken": "^9.0.9",
     "@types/morgan": "^1.9.9",
     "@types/node": "^22.13.11",
     "ts-node-dev": "^2.0.0",
