@@ -6,4 +6,6 @@ export default interface Course {
     day: string;
     session: string;
     fromTo: string;
+    credits: number;
+    location: string;
 }

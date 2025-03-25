@@ -1,5 +1,5 @@
 // src/business/courseManager.ts
-import { Course } from "../models/academic_related/course";
+import Course from "../models/academic_related/course";
 import * as courseService from "../services/courseService";
 
 export const validateAndAddCourse = async (course: Course): Promise<Course> => {
