@@ -6,7 +6,6 @@ import CssBaseline from '@mui/joy/CssBaseline';
 import Box from '@mui/joy/Box';
 import Button from '@mui/joy/Button';
 import Checkbox from '@mui/joy/Checkbox';
-import Divider from '@mui/joy/Divider';
 import FormControl from '@mui/joy/FormControl';
 import FormLabel from '@mui/joy/FormLabel';
 import IconButton from '@mui/joy/IconButton';
@@ -59,7 +58,7 @@ export default function LoginForm({ onLogin }: LoginFormProps) {
 
         // Validate that email exists and is a string
         if (!email || typeof email !== 'string') {
-            alert('Please enter a valid email');
+            alert('Email không hợp lệ');
             return;
         }
 
@@ -89,6 +88,7 @@ export default function LoginForm({ onLogin }: LoginFormProps) {
         }
     };
 
+
     return (
         <CssVarsProvider theme={customTheme} disableTransitionOnChange>
             <CssBaseline />
@@ -102,40 +102,57 @@ export default function LoginForm({ onLogin }: LoginFormProps) {
             />
             <Box
                 sx={{
-                    width: { xs: '100%', md: '50vw' },
-                    transition: 'width var(--Transition-duration)',
-                    transitionDelay: 'calc(var(--Transition-duration) + 0.1s)',
                     position: 'relative',
                     zIndex: 1,
                     display: 'flex',
-                    justifyContent: 'flex-end',
-                    backdropFilter: 'blur(12px)',
-                    backgroundColor: 'rgba(255 255 255 / 0.2)'
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    minHeight: '100vh',
+                    overflow: 'hidden',
+                    '&::before': {
+                        content: '""',
+                        position: 'absolute',
+                        top: 0,
+                        right: 0,
+                        bottom: 0,
+                        left: 0,
+                        backgroundImage: 'url(https://scontent.fsgn16-1.fna.fbcdn.net/v/t39.30808-6/456257255_122144899760266532_4108067441536433176_n.png?_nc_cat=102&ccb=1-7&_nc_sid=cc71e4&_nc_eui2=AeERGNyEpQ2zDGtm75jMJP2iCIlu1oPb264IiW7Wg9vbrqEfsGRPxjIl6ORWN66BtcnSowhKkRK5jui32BOULOsL&_nc_ohc=zPH3vTaMdfQQ7kNvgGOHoLp&_nc_oc=AdnJU3ZBa0lLHc2ULLTtlsnd5Ue277mCpQIhy8hLz0c24EVPfvJyT76-8HWAz5HOGCiUktut_D9a7jJbR-MIxocu&_nc_zt=23&_nc_ht=scontent.fsgn16-1.fna&_nc_gid=B5eO8nkzFPVg9grxrTo5kw&oh=00_AYGVNyfbKVaPhGIISu4QfquyqtIRr8RJNtK7iLIKqTCOgQ&oe=67E88F52)',
+                        backgroundSize: 'cover',
+                        backgroundPosition: 'right center',
+                        filter: 'blur(10px)',
+                        zIndex: -1,
+                    },
                 }}
             >
                 <Box
                     sx={{
-                        display: 'flex',
-                        flexDirection: 'column',
-                        minHeight: '100dvh',
-                        width: '100%',
-                        px: 2
+                        position: 'relative',
+                        zIndex: 2,
+                        width: { xs: '90%', md: '50%' },
+                        maxWidth: '600px',
+                        backgroundColor: 'rgba(255, 255, 255, 0.68)',
+                        backdropFilter: 'blur(12px)',
+                        borderRadius: '20px',
+                        boxShadow: '0 4px 40px rgba(0, 0, 0, 0.35)',
+                        padding: 4,
                     }}
                 >
                     <Box
                         component="header"
                         sx={{ py: 3, display: 'flex', justifyContent: 'space-between' }}
                     >
-                        <Box sx={{ gap: 2, display: 'flex', alignItems: 'center' }}>
-                            <IconButton variant="soft" color="primary" size="sm">
+                        <Box sx={{ gap: 2, display: 'flex', alignItems: 'center', ml: 4 }}>
+                            <IconButton variant="soft" color="primary" size="sm" sx={{ backgroundColor: 'transparent' }}>
                                 <img
-                                    src="https://www.uit.edu.vn/sites/vi/files/images/Logos/Logo_UIT_Web_Transparent.png"
+                                    src="https://upload.wikimedia.org/wikipedia/commons/0/00/Logo_UIT_updated.svg"
                                     alt="University Logo"
-                                    style={{ width: 50, height: 50, backgroundColor: 'transparent' }}
+                                    style={{ width: 70, height: 70}}
                                 />
                             </IconButton>
-                            <Typography level="title-lg">
-                                VNU-HCM UNIVERSITY OF INFORMATION TECHNOLOGY
+                            <Typography level="title-lg" sx={{ fontWeight: 'bold', fontSize: '30px' }}>  
+                                <span style={{ color: '#4299e1' }}>UIT</span> 
+                                <span style={{ color: '#b2f5ea' }}> - </span> 
+                                <span style={{ color: '#38b2ac' }}>ĐĂNG KÍ HỌC PHẦN</span>
                             </Typography>
                         </Box>
                     </Box>
@@ -148,7 +165,7 @@ export default function LoginForm({ onLogin }: LoginFormProps) {
                             display: 'flex',
                             flexDirection: 'column',
                             gap: 2,
-                            width: 400,
+                            width: 430,
                             maxWidth: '100%',
                             mx: 'auto',
                             borderRadius: 'sm',
@@ -159,28 +176,31 @@ export default function LoginForm({ onLogin }: LoginFormProps) {
                             },
                             [`& .MuiFormLabel-asterisk`]: {
                                 visibility: 'hidden'
-                            }
+                            },
+                            '& *': {
+                            fontSize: '18px' 
+        }
                         }}
                     >
-                        <Stack sx={{ gap: 4, mb: 2 }}>
-                            <Stack sx={{ gap: 1 }}>
-                                <Typography component="h1" level="h3">
-                                    Sign in
-                                </Typography>
+                        <Stack sx={{ gap: 2, mb: 0 }}>
+                            <Stack sx={{ gap: 10 }}>
+                                <Typography component="h1" level="h3" sx={{ fontSize: '49px', fontWeight: 'bold', textAlign: 'center' }}>
+                                    Đăng nhập
+                                </Typography> 
                             </Stack>
                         </Stack>
-                        <Divider />
-                        <Stack sx={{ gap: 4, mt: 2 }}>
+                        <Stack sx={{ gap: 1, mt: 2 }}>
                             <form onSubmit={handleFormSubmit}>
-                                <FormControl required>
-                                    <FormLabel>Email</FormLabel>
-                                    <Input type="email" name="email" />
+                                <FormControl required  sx={{ mb: 1.5 }}>
+                                <FormLabel sx={{ fontSize: '20px', color: '#606060' }}>Email</FormLabel>
+                                    <Input type="email" name="email" sx={{ height: '45px', borderRadius: '10px', boxShadow: 'none'}} />
                                 </FormControl>
-                                <FormControl required>
-                                    <FormLabel>Password</FormLabel>
+                                <FormControl required  sx={{ mb: 1.5 }}>
+                                    <FormLabel sx={{ fontSize: '20px', color: '#606060' }}>Mật khẩu</FormLabel>
                                     <Input
                                         name="password"
                                         type={showPassword ? 'text' : 'password'}
+                                        sx={{ height: '45px', borderRadius: '10px', boxShadow: 'none' }}
                                         endDecorator={
                                             <IconButton
                                                 variant="plain"
@@ -192,17 +212,18 @@ export default function LoginForm({ onLogin }: LoginFormProps) {
                                         }
                                     />
                                 </FormControl>
-                                <FormControl required>
-                                    <FormLabel>Role</FormLabel>
+                                <FormControl required sx={{ mb: 4 }}>
+                                    <FormLabel sx={{ fontSize: '20px', color: '#606060' }}>Vai trò</FormLabel>
                                     <Select
                                         name="role"
+                                        sx={{ height: '45px', borderRadius: '10px', boxShadow: 'none' }}
                                         value={selectedRole}
                                         onChange={handleRoleChange}
                                     >
-                                        <Option value="student">Student</Option>
-                                        <Option value="academic">Academic</Option>
+                                        <Option value="student">Sinh viên</Option>
+                                        <Option value="academic">Giảng viên</Option>
+                                        <Option value="financial">Phòng tài chính</Option>
                                         <Option value="admin">Admin</Option>
-                                        <Option value="financial">Financial</Option>
                                     </Select>
                                 </FormControl>
                                 <Box
@@ -212,13 +233,23 @@ export default function LoginForm({ onLogin }: LoginFormProps) {
                                         alignItems: 'center'
                                     }}
                                 >
-                                    <Checkbox size="sm" label="Remember me" name="persistent" />
-                                    <Link level="title-sm" href="#replace-with-a-link">
-                                        Forgot your password?
+                                    <Checkbox
+                                        size="sm"
+                                        label="Lưu thông tin đăng nhập"
+                                    name="persistent"
+                                    sx={{
+                                        '& .MuiTypography-root': {
+                                        fontSize: '15px' 
+                                            },
+                                            color: '#606060' 
+                                        }}
+                                    />
+                                    <Link level="title-sm" href="#replace-with-a-link" sx={{ fontSize: '15px' }}>
+                                        Quên mật khẩu
                                     </Link>
                                 </Box>
-                                <Button type="submit" fullWidth>
-                                    Sign in
+                                <Button type="submit" fullWidth sx={{borderRadius: '10px', backgroundColor: '#2f6bff', color: 'white'}}>
+                                    Đăng nhập
                                 </Button>
                             </form>
                         </Stack>
@@ -230,24 +261,6 @@ export default function LoginForm({ onLogin }: LoginFormProps) {
                     </Box>
                 </Box>
             </Box>
-            <Box
-                sx={{
-                    height: '100%',
-                    position: 'fixed',
-                    right: 0,
-                    top: 0,
-                    bottom: 0,
-                    left: { xs: 0, md: '50vw' },
-                    transition: 'background-image var(--Transition-duration), left var(--Transition-duration) !important',
-                    transitionDelay: 'calc(var(--Transition-duration) + 0.1s)',
-                    backgroundColor: 'background.level1',
-                    backgroundSize: 'cover',
-                    backgroundPosition: 'center',
-                    backgroundRepeat: 'no-repeat',
-                    backgroundImage:
-                        'url(https://media.giphy.com/media/Wl072QmzoQpWanW8Rw/giphy.gif?cid=790b7611evyupapsu53sdz4pmoggr1bz39fi0xtql1vk9z42&ep=v1_gifs_search&rid=giphy.gif&ct=g)'
-                }}
-            />
         </CssVarsProvider>
     );
 }

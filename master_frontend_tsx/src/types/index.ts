@@ -11,6 +11,7 @@ export interface User extends UserData {
 }
 
 export interface Subject {
+    id: string;
     name: string;
     lecturer: string;
     day: string;

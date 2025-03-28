@@ -5,7 +5,7 @@ import styled from "styled-components";
 const StyledMainBg = styled.main`
     flex: 1;
     min-height: 100vh;
-    background: #F5F6FA;
+    background:rgb(220, 239, 250);
     padding: 20px;
     position: relative;
     overflow: auto;
