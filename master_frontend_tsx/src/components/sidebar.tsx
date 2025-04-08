@@ -7,10 +7,10 @@ const StyledSideBar = styled.aside`
     height: 100%;
     min-height: 600px;   
     max-height: calc(100vh - 32px); 
-    background: #ffffff; 
+    background: #edf5fb; 
     border-radius: 16px; 
     backdrop-filter: blur(8px);
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2); 
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0); 
     padding: 20px;
     margin: 16px; 
 `;
@@ -36,7 +36,7 @@ export const SideBar = ({ children }: SideBarProps) => {
                 alignItems: 'center',
                 minHeight: '100vh',
                 overflow: 'hidden',
-                backgroundColor: 'rgb(220, 239, 250)',
+                backgroundColor: '#edf5fb',
             }}
         >
             <StyledSideBar>

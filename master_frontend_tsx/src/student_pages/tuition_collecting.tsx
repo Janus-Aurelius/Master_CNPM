@@ -31,7 +31,7 @@ interface TuitionRecord {
     semester: string;
     year: string;
     dueDate: string;
-    status: "paid" | "pending" | "unpaid";
+    status: "paid" | "pending" | "unpaid"| "default";
     subjects: EnrolledSubject[];
     totalAmount: number;
 }
@@ -67,7 +67,7 @@ const tuitionData: TuitionRecord[] = [
         semester: "Fall",
         year: "2022-2023",
         dueDate: "15/09/2022",
-        status: "paid",
+        status: "unpaid",
         subjects: enrolledSubjects.slice(1, 4),
         totalAmount: 1650000,
     },
@@ -76,11 +76,11 @@ const tuitionData: TuitionRecord[] = [
 const getStatusChipColor = (status: string): { bg: string; text: string } => {
     switch (status) {
         case "paid":
-            return { bg: "#e8f5e9", text: "#2e7d32" };
+            return { bg: "#d9fade", text: "#22b361" };
         case "pending":
             return { bg: "#fff8e1", text: "#f57c00" };
         case "unpaid":
-            return { bg: "#ffebee", text: "#c62828" };
+            return { bg: "#ffebee", text: "#eb2323" };
         default:
             return { bg: "#e0e0e0", text: "#616161" };
     }
@@ -114,8 +114,8 @@ const TuitionCollecting = ({ onLogout }: StudentPageProps) => {
                         fontSize: "18px",
                         fontFamily: '"Varela Round", sans-serif',
                         fontWeight: 450,
-                        backgroundColor: "rgb(255, 255, 255)",
-                        boxShadow: "0 4px 10px rgba(0, 0, 0, 0.2)",
+                        backgroundColor: "rgb(250, 250, 250)",
+                        boxShadow: "0 2px 5px rgba(0, 0, 0, 0.1)",
                         color: "rgb(39, 89, 217)",
                         transition: "all 0.25s ease",
                         display: "flex",
@@ -158,43 +158,42 @@ const TuitionCollecting = ({ onLogout }: StudentPageProps) => {
                                         borderLeft: "5px solid",
                                         borderColor: getStatusChipColor(tuition.status).text,
                                         cursor: "pointer",
+                                        boxShadow: `0 2px 5px ${getStatusChipColor(tuition.status).text}50`,
+                                        borderRadius: '8px',
+                                        backgroundColor: "#f7fcfe",
                                         transition: "all 0.2s",
                                         "&:hover": {
                                             bgcolor: "rgba(0, 0, 0, 0.04)",
+                                            boxShadow: `0 6px 15px ${getStatusChipColor(tuition.status).text}50`,
                                         },
                                     }}
                                     onClick={() => handleExpand(tuition.id)}
                                 >
                                     <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                                        <Typography variant="h6">
-                                            Học phí {tuition.semester} {tuition.year}
-                                        </Typography>
-                                        <Chip
-                                            label={
-                                                tuition.status === "paid"
-                                                    ? "Đã nộp"
-                                                    : tuition.status === "pending"
-                                                    ? "Đang xử lý"
-                                                    : "Chưa nộp"
-                                            }
-                                            sx={{
-                                                bgcolor: getStatusChipColor(tuition.status).bg,
-                                                color: getStatusChipColor(tuition.status).text,
-                                                fontWeight: "bold",
-                                                display: "flex",
-                                                height: "32px",
-                                                alignItems: "center",
-                                                justifyContent: "center", // Horizontally centers the text
-                                                padding: "0 8px",
-                                                "& .MuiChip-label": {
-                                                    display: "flex",
-                                                    alignItems: "center",
-                                                    lineHeight: 1,
-                                                    paddingTop: "1px", // Fine-tune vertical position
+                                        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                                            <Typography variant="h6">
+                                                Học phí {tuition.semester} {tuition.year}
+                                            </Typography>
+                                            <Chip
+                                                label={
+                                                    tuition.status === "paid"
+                                                        ? "Đã nộp"
+                                                        : tuition.status === "pending"
+                                                        ? "Đang xử lý"
+                                                        : "Chưa nộp"
                                                 }
-                                            }}
-                                        />
-                                        {expandedId === tuition.id ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                                                sx={{
+                                                    bgcolor: getStatusChipColor(tuition.status).bg,
+                                                    color: getStatusChipColor(tuition.status).text,
+                                                    fontWeight: "bold",
+                                                    display: "flex",
+                                                    height: "32px",
+                                                }}
+                                            />
+                                        </Box>
+                                        <Box>
+                                            {expandedId === tuition.id ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                                        </Box>
                                     </Box>
                                 </Paper>
 

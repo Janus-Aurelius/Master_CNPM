@@ -116,7 +116,7 @@ export default function LoginForm({ onLogin }: LoginFormProps) {
                         right: 0,
                         bottom: 0,
                         left: 0,
-                        backgroundImage: 'url(https://scontent.fsgn16-1.fna.fbcdn.net/v/t39.30808-6/456257255_122144899760266532_4108067441536433176_n.png?_nc_cat=102&ccb=1-7&_nc_sid=cc71e4&_nc_eui2=AeERGNyEpQ2zDGtm75jMJP2iCIlu1oPb264IiW7Wg9vbrqEfsGRPxjIl6ORWN66BtcnSowhKkRK5jui32BOULOsL&_nc_ohc=zPH3vTaMdfQQ7kNvgGOHoLp&_nc_oc=AdnJU3ZBa0lLHc2ULLTtlsnd5Ue277mCpQIhy8hLz0c24EVPfvJyT76-8HWAz5HOGCiUktut_D9a7jJbR-MIxocu&_nc_zt=23&_nc_ht=scontent.fsgn16-1.fna&_nc_gid=B5eO8nkzFPVg9grxrTo5kw&oh=00_AYGVNyfbKVaPhGIISu4QfquyqtIRr8RJNtK7iLIKqTCOgQ&oe=67E88F52)',
+                        backgroundImage: 'url(https://i.postimg.cc/dtssdkvr/f.png)',
                         backgroundSize: 'cover',
                         backgroundPosition: 'right center',
                         filter: 'blur(10px)',

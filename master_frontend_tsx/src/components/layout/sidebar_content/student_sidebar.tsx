@@ -25,39 +25,39 @@ interface StyledNavItemProps {
 
 const StyledNavItem = styled.div<StyledNavItemProps>`
     text-align: left;
-    border-radius: 10px;
-    padding: 15px 13px;
+    border-radius: 15px;
+    padding: 20px 13px;
     font-size: 18px;
     font-family: "Varela Round", sans-serif;
-    font-weight: 400;
+    font-weight: 600;
     font-style: normal;
     background-color: ${(props) => (props.isLogout ? 'transparent' : 'transparent')};
     color: ${(props) => 
         props.selected 
             ? '#2f6bff' 
             : props.isLogout 
-                ? '#96afc4' 
-                : '#96afc4'};
+                ? '#879db0' 
+                : '#879db0'};
     transition: all 0.25s ease; 
     display: flex;
     align-items: center;
     position: relative;
     overflow: hidden;
-    width: 220px;
-    margin-left: -20px;
+    width: 270px;
+    margin-left: -40px;
     ${(props) => props.selected && `
         color:rgb(39, 89, 217);
-        background-color: rgb(222, 229, 254);
+        background-color: rgb(209, 220, 255);
         font-weight: 600;
     `}
     svg {
         font-size: 30px;;
         color: ${(props) => 
             props.selected 
-                ? '#2f6bff' 
+                ? '#879db0' 
                 : props.isLogout 
-                    ? '#96afc4' 
-                    : '#96afc4'} !important;
+                    ? '#879db0' 
+                    : '#879db0'} !important;
     }
     &:hover {
         ${(props) => props.isLogout 
@@ -69,7 +69,7 @@ const StyledNavItem = styled.div<StyledNavItemProps>`
                 }
             `
             : `
-                background-color: rgb(103, 146, 255);
+                background-color: rgb(48, 105, 250);
                 color: white;
                 svg {
                     color: white !important;
@@ -157,7 +157,7 @@ export const StudentSidebarContent = ({ onLogout }: StudentSidebarContentProps) 
                     <span style={{ color: '#38b2ac' }}>ĐKHP</span>
                 </Typography>
                 <Divider sx={{ my: 2 }} />
-                <Stack spacing={1} sx={{ flex: 1 }}>
+                <Stack spacing={1.5} sx={{ flex: 1 }}>
                 <NavItem to="/student" sx={{ color: '#0173d3' }} selected={selectedPath === "/student"} icon={<HomeOutlined />}>
                     Trang chủ
                 </NavItem>

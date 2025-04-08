@@ -51,20 +51,20 @@ export function TimetableGrid() {
                     '--Table-cellHeight': '50px',
                     '& thead th': {
                         textAlign: 'center',
-                        backgroundColor: 'rgba(255, 255, 255, 0.8)',
+                        backgroundColor: '#f3f3f3',
                         backdropFilter: 'blur(10px)',
                         padding: '10px 6px',
                         fontWeight: 'bold',
                         fontSize: '16px',
                         color: '#2f4f4f',
-                        borderBottom: '2px solid #d1d9e6',
+                        borderRight: '1px solid #cccccc',
                     },
                     '& tbody td': {
                         textAlign: 'center',
                         padding: '10px',
                         fontSize: '14px',
                         color: '#4a4a4a',
-                        borderBottom: '1px solid #e0e6ed',
+
                         backgroundColor: '#f5f7fa',
                     },
                     '& tr > *:first-child': {
@@ -91,7 +91,7 @@ export function TimetableGrid() {
                                         fontFamily: "Varela Round, sans-serif",
                                         fontWeight: 600,
                                         fontSize: '18px',
-                                        color: '#5B2E01',
+                                        color: '#4a4a4a',
                                     }}
                                 >
                                     {day}

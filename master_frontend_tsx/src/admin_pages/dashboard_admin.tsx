@@ -102,7 +102,15 @@ export default function DashboardAdmin({ onLogout }: AdminPageProps) {
             {/* Summary Cards */}
             <Grid container spacing={3} sx={{ mb: 4 }}>
                 <Grid item xs={12} sm={6} md={3}>
-                    <Card sx={{ bgcolor: 'primary.light', color: 'primary.contrastText' }}>
+                    <Card sx={{ bgcolor: 'primary.light',
+                             color: 'primary.contrastText',
+                             borderRadius: '16px',
+                             boxShadow: '0 2px 5px rgba(0, 0, 0, 0.1)', 
+                             transition: 'all 0.25s ease',
+                             display: 'flex',
+                             flexDirection: 'column',
+                             flexGrow: 1,
+                            }}>
                         <CardContent sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                             <Box>
                                 <Typography variant="h6" component="div">
@@ -117,7 +125,15 @@ export default function DashboardAdmin({ onLogout }: AdminPageProps) {
                     </Card>
                 </Grid>
                 <Grid item xs={12} sm={6} md={3}>
-                    <Card sx={{ bgcolor: 'warning.light', color: 'warning.contrastText' }}>
+                    <Card sx={{ bgcolor: 'warning.light', 
+                                color: 'warning.contrastText',
+                                borderRadius: '16px',
+                                boxShadow: '0 2px 5px rgba(0, 0, 0, 0.1)', 
+                                transition: 'all 0.25s ease',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                flexGrow: 1,
+                                }}>
                         <CardContent sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                             <Box>
                                 <Typography variant="h6" component="div">
@@ -132,7 +148,15 @@ export default function DashboardAdmin({ onLogout }: AdminPageProps) {
                     </Card>
                 </Grid>
                 <Grid item xs={12} sm={6} md={3}>
-                    <Card sx={{ bgcolor: 'success.light', color: 'success.contrastText' }}>
+                    <Card sx={{ bgcolor: 'success.light', 
+                                color: 'success.contrastText',
+                                borderRadius: '16px',
+                                boxShadow: '0 2px 5px rgba(0, 0, 0, 0.1)', 
+                                transition: 'all 0.25s ease',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                flexGrow: 1,
+                                }}>
                         <CardContent sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                             <Box>
                                 <Typography variant="h6" component="div">
@@ -147,7 +171,15 @@ export default function DashboardAdmin({ onLogout }: AdminPageProps) {
                     </Card>
                 </Grid>
                 <Grid item xs={12} sm={6} md={3}>
-                    <Card sx={{ bgcolor: 'error.light', color: 'error.contrastText' }}>
+                    <Card sx={{ bgcolor: 'error.light', 
+                                color: 'error.contrastText',
+                                borderRadius: '16px',
+                                boxShadow: '0 2px 5px rgba(0, 0, 0, 0.1)', 
+                                transition: 'all 0.25s ease',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                flexGrow: 1,
+                                }}>
                         <CardContent sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                             <Box>
                                 <Typography variant="h6" component="div">
@@ -167,7 +199,17 @@ export default function DashboardAdmin({ onLogout }: AdminPageProps) {
             <Grid container spacing={3}>
                 {/* Audit Logs */}
                 <Grid item xs={12} md={8}>
-                    <Paper sx={{ p: 2 }}>
+                    <Paper sx={{ 
+                            borderRadius: '16px',
+                            padding: '20px',
+                            backgroundColor: 'rgb(250, 250, 250)',
+                            boxShadow: '0 2px 5px rgba(0, 0, 0, 0.1)', 
+                            transition: 'all 0.25s ease',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            flexGrow: 1,
+                            p: 2
+                         }}>
                         <Typography variant="h6" sx={{ mb: 2 }}>
                             Nhật ký hoạt động
                         </Typography>
@@ -211,7 +253,19 @@ export default function DashboardAdmin({ onLogout }: AdminPageProps) {
 
                 {/* Recent Activity */}
                 <Grid item xs={12} md={4}>
-                    <Paper sx={{ p: 2, height: '100%' }}>
+                    <Paper sx={{ 
+                            p: 2,
+                            height: '100%',
+                            borderRadius: '16px',
+                            padding: '20px',
+                            backgroundColor: 'rgb(250, 250, 250)',
+                            boxShadow: '0 2px 5px rgba(0, 0, 0, 0.1)', 
+                            transition: 'all 0.25s ease',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            flexGrow: 1,
+                            p: 2
+                        }}>
                         <Typography variant="h6" sx={{ mb: 2 }}>
                             Hoạt động gần đây
                         </Typography>

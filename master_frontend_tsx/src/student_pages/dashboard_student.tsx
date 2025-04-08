@@ -13,9 +13,9 @@ const StyledScheduleContainer = styled.div`
     font-size: 18px;
     font-family: Roboto, serif;
     font-weight: 450;
-    background-color: rgb(255, 255, 255);
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2); 
-    color: rgb(39, 89, 217);
+    background-color: rgb(250, 250, 250);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); 
+    color: hsl(223, 70.10%, 50.20%);
     transition: all 0.25s ease;
     display: flex;
     flex-direction: column;
@@ -33,7 +33,7 @@ const LandingPageForm = ({ user, onLogout }: StudentPageProps) => {
             <Box sx={{ padding: "24px", marginLeft: "-40px" }}>
                 <Box sx={{
         fontWeight: "bold",
-        color: "#0078D4",
+        color: "#536493",
         textShadow: "1px 1px 2px rgba(0, 0, 0, 0.2)", 
     }}>
                     <Typography

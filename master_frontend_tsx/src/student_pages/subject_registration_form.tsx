@@ -60,8 +60,8 @@ export const SubjectRegistrationForm = ({ onLogout }: SubjectRegistrationFormPro
                         fontSize: '18px',
                         fontFamily: '"Varela Round", sans-serif',
                         fontWeight: 450,
-                        backgroundColor: 'rgb(255, 255, 255)',
-                        boxShadow: '0 4px 10px rgba(0, 0, 0, 0.2)',
+                        backgroundColor: 'rgb(250, 250, 250)',
+                        boxShadow: '0 2px 5px rgba(0, 0, 0, 0.1)', 
                         color: 'rgb(39, 89, 217)',
                         transition: 'all 0.25s ease',
                         display: 'flex',
@@ -98,17 +98,17 @@ export const SubjectRegistrationForm = ({ onLogout }: SubjectRegistrationFormPro
                         <CustomSearchBox
                             onSearch={handleSearch}
                             placeholder="Tìm kiếm mã môn học..."
-                            />
-                            </Box>
-        
-<SubjectsList
-    subjects={sampleSubjects}
-    onEnroll={handleEnroll}
-/>
-                        </Paper>
-                    </Box>
-            
-                    <Snackbar
+            />
+        </Box>
+
+        <SubjectsList
+            subjects={sampleSubjects}
+            onEnroll={handleEnroll}
+        />
+    </Paper>
+</Box>
+
+<Snackbar
                         open={open}
                         autoHideDuration={3000}
                         onClose={handleClose}
@@ -203,11 +203,11 @@ const SubjectsList = ({ subjects, onEnroll }: { subjects: Subject[]; onEnroll: (
             <Table>
                 <TableHead>
                     <TableRow>
-                        <TableCell sx={{ fontWeight: 'bold', color: '#4880FF', fontSize: '20px', fontFamily: '"Varela Round", sans-serif', textAlign: 'center', borderRight: '0.5px solid rgb(237, 237, 237)', backgroundColor: '#f0f7f7' }}>Mã lớp</TableCell>
-                        <TableCell sx={{ fontWeight: 'bold', color: '#4880FF', fontSize: '20px', fontFamily: '"Varela Round", sans-serif', textAlign: 'center', borderRight: '0.5px solid rgb(237, 237, 237)', backgroundColor: '#f0f7f7' }}>Môn học</TableCell>
-                        <TableCell sx={{ fontWeight: 'bold', color: '#4880FF', fontSize: '20px', fontFamily: '"Varela Round", sans-serif', textAlign: 'center', borderRight: '0.5px solid rgb(237, 237, 237)', backgroundColor: '#f0f7f7' }}>Giảng viên</TableCell>
-                        <TableCell sx={{ fontWeight: 'bold', color: '#4880FF', fontSize: '20px', fontFamily: '"Varela Round", sans-serif', textAlign: 'center', borderRight: '0.5px solid rgb(237, 237, 237)', backgroundColor: '#f0f7f7' }}>Thời gian</TableCell>
-                        <TableCell sx={{ fontWeight: 'bold', color: '#4880FF', fontSize: '20px' , textAlign: 'center', fontFamily: '"Varela Round", sans-serif', borderRight: '0.5px solid rgb(237, 237, 237)', backgroundColor: '#f0f7f7' }}>Hành động</TableCell>
+                        <TableCell sx={{ fontWeight: 'bold', color: '#FFF1DB', fontSize: '20px', fontFamily: '"Varela Round", sans-serif', textAlign: 'center', borderRight: '0.5px solid rgb(237, 237, 237)', backgroundColor: '#536493' }}>Mã lớp</TableCell>
+                        <TableCell sx={{ fontWeight: 'bold', color: '#FFF1DB', fontSize: '20px', fontFamily: '"Varela Round", sans-serif', textAlign: 'center', borderRight: '0.5px solid rgb(237, 237, 237)', backgroundColor: '#536493' }}>Môn học</TableCell>
+                        <TableCell sx={{ fontWeight: 'bold', color: '#FFF1DB', fontSize: '20px', fontFamily: '"Varela Round", sans-serif', textAlign: 'center', borderRight: '0.5px solid rgb(237, 237, 237)', backgroundColor: '#536493' }}>Giảng viên</TableCell>
+                        <TableCell sx={{ fontWeight: 'bold', color: '#FFF1DB', fontSize: '20px', fontFamily: '"Varela Round", sans-serif', textAlign: 'center', borderRight: '0.5px solid rgb(237, 237, 237)', backgroundColor: '#536493' }}>Thời gian</TableCell>
+                        <TableCell sx={{ fontWeight: 'bold', color: '#FFF1DB', fontSize: '20px' , textAlign: 'center', fontFamily: '"Varela Round", sans-serif', borderRight: '0.5px solid rgb(237, 237, 237)', backgroundColor: '#536493' }}>Hành động</TableCell>
                     </TableRow>
                 </TableHead>
                 <TableBody>
@@ -233,7 +233,7 @@ const SubjectsList = ({ subjects, onEnroll }: { subjects: Subject[]; onEnroll: (
                                     sx={{
                                         textTransform: 'none',
                                         borderRadius: '8px',
-                                        backgroundColor: '#4880FF',
+                                        backgroundColor: '#3869d9',
                                         '&:hover': {
                                             backgroundColor: 'rgb(103, 146, 255)',
                                         },
