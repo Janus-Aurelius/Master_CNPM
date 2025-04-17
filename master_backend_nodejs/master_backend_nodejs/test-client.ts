@@ -80,3 +80,110 @@ async function testAllRoles() {
 
 // Run the tests
 testAllRoles();
+
+const BASE_URL = 'http://localhost:3000/api/admin';
+
+// Test tạo user mới
+async function testCreateUser() {
+    try {
+        const response = await axios.post(`${BASE_URL}/users`, {
+            name: "Test User",
+            email: "test@example.com",
+            password: "test123",
+            role: "student",
+            phoneNumber: "0123456789",
+            address: "Test Address"
+        });
+        console.log('Create User Response:', response.data);
+        return response.data.data.id;
+    } catch (error) {
+        if (error instanceof AxiosError) {
+            console.error('Create User Error:', error.response?.data || error.message);
+        } else {
+            console.error('Create User Error:', error);
+        }
+    }
+}
+
+// Test lấy danh sách users
+async function testGetAllUsers() {
+    try {
+        const response = await axios.get(`${BASE_URL}/users`);
+        console.log('Get All Users Response:', response.data);
+    } catch (error) {
+        if (error instanceof AxiosError) {
+            console.error('Get All Users Error:', error.response?.data || error.message);
+        } else {
+            console.error('Get All Users Error:', error);
+        }
+    }
+}
+
+// Test lấy user theo ID
+async function testGetUserById(id: number) {
+    try {
+        const response = await axios.get(`${BASE_URL}/users/${id}`);
+        console.log('Get User By ID Response:', response.data);
+    } catch (error) {
+        if (error instanceof AxiosError) {
+            console.error('Get User By ID Error:', error.response?.data || error.message);
+        } else {
+            console.error('Get User By ID Error:', error);
+        }
+    }
+}
+
+// Test cập nhật user
+async function testUpdateUser(id: number) {
+    try {
+        const response = await axios.put(`${BASE_URL}/users/${id}`, {
+            name: "Updated Test User",
+            email: "updated@example.com",
+            phoneNumber: "0987654321"
+        });
+        console.log('Update User Response:', response.data);
+    } catch (error) {
+        if (error instanceof AxiosError) {
+            console.error('Update User Error:', error.response?.data || error.message);
+        } else {
+            console.error('Update User Error:', error);
+        }
+    }
+}
+
+// Test xóa user
+async function testDeleteUser(id: number) {
+    try {
+        const response = await axios.delete(`${BASE_URL}/users/${id}`);
+        console.log('Delete User Response:', response.data);
+    } catch (error) {
+        if (error instanceof AxiosError) {
+            console.error('Delete User Error:', error.response?.data || error.message);
+        } else {
+            console.error('Delete User Error:', error);
+        }
+    }
+}
+
+// Chạy các test
+async function runTests() {
+    console.log('=== Starting Admin User Management Tests ===');
+    
+    // Test tạo user và lấy ID
+    const userId = await testCreateUser();
+    if (!userId) {
+        console.log('Failed to create user, stopping tests');
+        return;
+    }
+
+    // Test các chức năng khác
+    await testGetAllUsers();
+    await testGetUserById(userId);
+    await testUpdateUser(userId);
+    await testDeleteUser(userId);
+
+    console.log('=== Tests Completed ===');
+}
+
+// Chạy tests
+runTests().catch(console.error);
