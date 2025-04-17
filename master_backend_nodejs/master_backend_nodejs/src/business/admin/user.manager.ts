@@ -1,6 +1,6 @@
 // src/business/admin/AdminBusiness.ts
-import { User } from '../models/user';
-import { UserService } from '../services/userService';
+import { User } from '../../models/user';
+import { UserService } from '../../services/admin/user.service';
 
 export class AdminBusiness {
     private userService: UserService;
