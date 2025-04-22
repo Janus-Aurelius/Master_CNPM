@@ -4,66 +4,77 @@ import Typography from "@mui/material/Typography";
 import Box from "@mui/material/Box";
 import { TimetableGrid } from "../components/layout/datagrid/TimetableGrid";
 import { StudentPageProps } from "../types";
-import styled from "styled-components";
+import { styled } from "@mui/material/styles";
+import Chip from "@mui/material/Chip";
+import PersonOutlineIcon from '@mui/icons-material/PersonOutline';
+import Avatar from '@mui/material/Avatar';
 
-const StyledScheduleContainer = styled.div`
-    text-align: left;
-    border-radius: 16px;
-    padding: 20px;
-    font-size: 18px;
-    font-family: Roboto, serif;
-    font-weight: 450;
-    background-color: rgb(250, 250, 250);
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); 
-    color: hsl(223, 70.10%, 50.20%);
-    transition: all 0.25s ease;
-    display: flex;
-    flex-direction: column;
-    position: relative;
-    overflow: hidden;
-    margin-top: 16px;
-    flex-grow: 1; 
-    min-height: 400px; 
-    max-height: calc(100vh - 150px); // Đảm bảo không vượt quá chiều cao viewport
-`;
+// Styled component for the user info container with modern styling
+const UserInfoContainer = styled(Box)(({ theme }) => ({
+    position: 'fixed',
+    top: '16px',
+    right: '16px',
+    display: 'flex',
+    alignItems: 'center',
+    borderRadius: '28px',
+    zIndex: 1100,
+    padding: '8px 16px 8px 8px',
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    backdropFilter: 'blur(8px)',
+    boxShadow: '0 2px 5px rgba(0, 0, 0, 0.1)', 
+    marginRight: '16px',
+    border: '1px solid rgba(233, 236, 239, 0.8)',
+    transition: 'all 0.2s ease',
+    '&:hover': {
+        boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08)',
+        backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    },
+}));
 
 const LandingPageForm = ({ user, onLogout }: StudentPageProps) => {
+    const userInitial = user?.name ? user.name.charAt(0).toUpperCase() : 'S';
+    
     return (
         <ThemeLayout role="student" onLogout={onLogout}>
-            <Box sx={{ padding: "24px", marginLeft: "-40px" }}>
-                <Box sx={{
-        fontWeight: "bold",
-        color: "#536493",
-        textShadow: "1px 1px 2px rgba(0, 0, 0, 0.2)", 
-    }}>
-                    <Typography
-                        variant="h4"
-                        component="h1"
-                        sx={{ fontWeight: "bold", color: " ", marginLeft: "10px", marginTop: "-15px"  }}
-                    >
-                        Xin chào, {user?.name || "Student"}!
-                    </Typography>
-                </Box>
-
-                <StyledScheduleContainer>
-                    <Typography
-                        variant="h6"
-                        component="h2"
-                        sx={{
-                            fontWeight: "bold",
-                            fontFamily: "Montserrat, sans-serif",
-                            fontStyle: "normal",
-                            color: "rgba(33, 33, 33, 0.8)",
-                            marginBottom: 0,
-                            marginTop: '-15px',
-                            textAlign: "center",
-                            fontSize: "30px",
+            <UserInfoContainer>
+                <Avatar 
+                    sx={{ 
+                        width: 38, 
+                        height: 38, 
+                        bgcolor: 'primary.main',
+                        color: 'white',
+                        fontSize: '1rem',
+                        fontWeight: 'bold',
+                        marginRight: 1.5
+                    }}
+                >
+                    {userInitial}
+                </Avatar>
+                <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                    <Typography 
+                        variant="subtitle1" 
+                        sx={{ 
+                            fontWeight: 600, 
+                            fontSize: '0.95rem',
+                            lineHeight: 1.2
                         }}
                     >
-                        Thời khóa biểu
+                        {user?.name || "Student"}
                     </Typography>
-                    <TimetableGrid />
-                </StyledScheduleContainer>
+                    <Typography 
+                        variant="caption" 
+                        sx={{ 
+                            color: 'text.secondary',
+                            fontSize: '0.75rem'
+                        }}
+                    >
+                        Sinh viên
+                    </Typography>
+                </Box>
+            </UserInfoContainer>
+            
+            <Box sx={{ padding: "0px", position: "relative" }}>
+                <TimetableGrid />
             </Box>
         </ThemeLayout>
     );

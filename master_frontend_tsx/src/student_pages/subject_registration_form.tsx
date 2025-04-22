@@ -31,7 +31,7 @@ interface SubjectRegistrationFormProps {
 
 export const SubjectRegistrationForm = ({ onLogout }: SubjectRegistrationFormProps) => {
     const [open, setOpen] = useState(false);
-
+    const [filteredSubjects, setFilteredSubjects] = useState(sampleSubjects); 
     const handleClose = (_: React.SyntheticEvent | Event, reason?: string) => {
         if (reason === 'clickaway') {
             return;
@@ -45,7 +45,10 @@ export const SubjectRegistrationForm = ({ onLogout }: SubjectRegistrationFormPro
     };
 
     const handleSearch = (searchText: string) => {
-        console.log('Searching for:', searchText);
+        const filtered = sampleSubjects.filter(subject =>
+            subject.id.toLowerCase().includes(searchText.toLowerCase()) // Filter by subject code
+        );
+        setFilteredSubjects(filtered);
     };
 
     return (
@@ -74,7 +77,7 @@ export const SubjectRegistrationForm = ({ onLogout }: SubjectRegistrationFormPro
                         maxHeight: 'calc(100vh - 150px)',
                         paddingLeft: '16px', 
                         paddingRight: '16px', 
-                        marginLeft: '-17px',
+                        marginLeft: '0px',
                         marginRight: '10px',
                     }}
                 >
@@ -102,7 +105,7 @@ export const SubjectRegistrationForm = ({ onLogout }: SubjectRegistrationFormPro
         </Box>
 
         <SubjectsList
-            subjects={sampleSubjects}
+            subjects={filteredSubjects}
             onEnroll={handleEnroll}
         />
     </Paper>
@@ -200,14 +203,14 @@ const CustomSearchBox = ({ onSearch, placeholder = "Search..." }: SearchBoxProps
 const SubjectsList = ({ subjects, onEnroll }: { subjects: Subject[]; onEnroll: (subject: Subject) => void }) => {
     return (
         <TableContainer component={Paper} sx={{ mt: 2, borderRadius: '12px', boxShadow: '0 4px 10px rgba(0, 0, 0, 0.1)' }}>
-            <Table>
+            <Table size="medium">
                 <TableHead>
                     <TableRow>
-                        <TableCell sx={{ fontWeight: 'bold', color: '#FFF1DB', fontSize: '20px', fontFamily: '"Varela Round", sans-serif', textAlign: 'center', borderRight: '0.5px solid rgb(237, 237, 237)', backgroundColor: '#536493' }}>Mã lớp</TableCell>
-                        <TableCell sx={{ fontWeight: 'bold', color: '#FFF1DB', fontSize: '20px', fontFamily: '"Varela Round", sans-serif', textAlign: 'center', borderRight: '0.5px solid rgb(237, 237, 237)', backgroundColor: '#536493' }}>Môn học</TableCell>
-                        <TableCell sx={{ fontWeight: 'bold', color: '#FFF1DB', fontSize: '20px', fontFamily: '"Varela Round", sans-serif', textAlign: 'center', borderRight: '0.5px solid rgb(237, 237, 237)', backgroundColor: '#536493' }}>Giảng viên</TableCell>
-                        <TableCell sx={{ fontWeight: 'bold', color: '#FFF1DB', fontSize: '20px', fontFamily: '"Varela Round", sans-serif', textAlign: 'center', borderRight: '0.5px solid rgb(237, 237, 237)', backgroundColor: '#536493' }}>Thời gian</TableCell>
-                        <TableCell sx={{ fontWeight: 'bold', color: '#FFF1DB', fontSize: '20px' , textAlign: 'center', fontFamily: '"Varela Round", sans-serif', borderRight: '0.5px solid rgb(237, 237, 237)', backgroundColor: '#536493' }}>Hành động</TableCell>
+                        <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '20px', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6' }}>Mã lớp</TableCell>
+                        <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '20px', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6' }}>Môn học</TableCell>
+                        <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '20px', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6' }}>Giảng viên</TableCell>
+                        <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '20px', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6' }}>Thời gian</TableCell>
+                        <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '20px', textAlign: 'left', fontFamily: '"Varela Round", sans-serif', backgroundColor: '#6ebab6' }}>Hành động</TableCell>
                     </TableRow>
                 </TableHead>
                 <TableBody>
@@ -220,11 +223,11 @@ const SubjectsList = ({ subjects, onEnroll }: { subjects: Subject[]; onEnroll: (
                                 },
                             }}
                         >
-                            <TableCell sx={{ fontSize: '16px', fontFamily: '"Varela Round", sans-serif', borderRight: '0.5px solid rgb(237, 237, 237)' }}>{subject.id}</TableCell>
-                            <TableCell sx={{ fontSize: '16px', fontFamily: '"Varela Round", sans-serif',  borderRight: '0.5px solid rgb(237, 237, 237)' }}>{subject.name}</TableCell>
-                            <TableCell sx={{ fontSize: '16px', fontFamily: '"Varela Round", sans-serif',  borderRight: '0.5px solid rgb(237, 237, 237)' }}>{subject.lecturer}</TableCell>
-                            <TableCell sx={{ fontSize: '16px', fontFamily: '"Varela Round", sans-serif',  borderRight: '0.5px solid rgb(237, 237, 237)' }}>{`${subject.day}, ${subject.fromTo}`}</TableCell>
-                            <TableCell sx={{ textAlign: 'center', fontFamily: '"Varela Round", sans-serif', borderRight: '0.5px solid rgb(237, 237, 237)' }}>
+                            <TableCell sx={{ fontSize: '16px', fontFamily: '"Varela Round", sans-serif' }}>{subject.id}</TableCell>
+                            <TableCell sx={{ fontSize: '16px', fontFamily: '"Varela Round", sans-serif' }}>{subject.name}</TableCell>
+                            <TableCell sx={{ fontSize: '16px', fontFamily: '"Varela Round", sans-serif' }}>{subject.lecturer}</TableCell>
+                            <TableCell sx={{ fontSize: '16px', fontFamily: '"Varela Round", sans-serif' }}>{`${subject.day}, ${subject.fromTo}`}</TableCell>
+                            <TableCell sx={{ textAlign: 'left', fontFamily: '"Varela Round", sans-serif' }}>
                                 <Button
                                     variant="contained"
                                     color="primary"
@@ -235,7 +238,7 @@ const SubjectsList = ({ subjects, onEnroll }: { subjects: Subject[]; onEnroll: (
                                         borderRadius: '8px',
                                         backgroundColor: '#3869d9',
                                         '&:hover': {
-                                            backgroundColor: 'rgb(103, 146, 255)',
+                                            backgroundColor: 'hsl(223, 100.00%, 70.20%)',
                                         },
                                     }}
                                 >

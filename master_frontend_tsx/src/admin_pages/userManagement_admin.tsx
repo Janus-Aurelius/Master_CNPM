@@ -134,6 +134,8 @@ export default function UserManagement({onLogout}: UserManagementProps) {
     const [currentUser, setCurrentUser] = useState<any>(null);
     const [snackbarOpen, setSnackbarOpen] = useState(false);
     const [snackbarMessage, setSnackbarMessage] = useState("");
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+    const [userToDelete, setUserToDelete] = useState<any>(null);
 
     // Filter users based on search and role filter
     const filteredUsers = users.filter(user => {
@@ -175,9 +177,20 @@ export default function UserManagement({onLogout}: UserManagementProps) {
     };
 
     const handleOpenDeleteDialog = (user: any) => {
-        setDialogType("delete");
-        setCurrentUser(user);
-        setOpenDialog(true);
+        setUserToDelete(user);
+        setDeleteDialogOpen(true);
+    };
+
+    const handleCloseDeleteDialog = () => {
+        setDeleteDialogOpen(false);
+        setUserToDelete(null);
+    };
+
+    const handleConfirmDelete = () => {
+        if (userToDelete) {
+            handleDeleteUser(userToDelete.id);
+        }
+        handleCloseDeleteDialog();
     };
 
     const handleCloseDialog = () => {
@@ -198,12 +211,13 @@ export default function UserManagement({onLogout}: UserManagementProps) {
             // Update existing user
             setUsers(users.map(u => u.id === currentUser.id ? currentUser : u));
             showSnackbar("Thông tin người dùng đã được cập nhật");
-        } else if (dialogType === "delete") {
-            // Soft delete (set status to inactive)
-            setUsers(users.map(u => u.id === currentUser.id ? {...u, status: "inactive"} : u));
-            showSnackbar("Người dùng đã bị vô hiệu hóa");
         }
         handleCloseDialog();
+    };
+
+    const handleDeleteUser = (userId: number) => {
+        setUsers(users.filter(user => user.id !== userId));
+        showSnackbar("Người dùng đã bị xóa thành công");
     };
 
     const handleUpdatePermission = (roleId: number, permissionId: number, granted: boolean) => {
@@ -334,13 +348,13 @@ export default function UserManagement({onLogout}: UserManagementProps) {
                                                         <EditIcon />
                                                     </IconButton>
                                                 </Tooltip>
-                                                <Tooltip title={user.status === 'active' ? 'Vô hiệu hóa' : 'Kích hoạt'}>
+                                                <Tooltip title="Xóa">
                                                     <IconButton
                                                         size="small"
-                                                        color={user.status === 'active' ? 'error' : 'success'}
+                                                        color="error"
                                                         onClick={() => handleOpenDeleteDialog(user)}
                                                     >
-                                                        {user.status === 'active' ? <DeleteIcon /> : <CheckCircleIcon />}
+                                                        <DeleteIcon />
                                                     </IconButton>
                                                 </Tooltip>
                                             </TableCell>
@@ -485,27 +499,17 @@ export default function UserManagement({onLogout}: UserManagementProps) {
             </Dialog>
 
             {/* Delete Confirmation Dialog */}
-            <Dialog open={openDialog && dialogType === "delete"} onClose={handleCloseDialog}>
-                <DialogTitle>
-                    {currentUser?.status === 'active'
-                        ? "Vô hiệu hóa tài khoản này?"
-                        : "Kích hoạt lại tài khoản này?"}
-                </DialogTitle>
+            <Dialog open={deleteDialogOpen} onClose={handleCloseDeleteDialog}>
+                <DialogTitle>Xóa tài khoản này?</DialogTitle>
                 <DialogContent>
                     <Typography>
-                        {currentUser?.status === 'active'
-                            ? `Bạn có chắc chắn muốn vô hiệu hóa tài khoản ${currentUser?.name}?`
-                            : `Bạn có chắc chắn muốn kích hoạt lại tài khoản ${currentUser?.name}?`}
+                        Bạn có chắc chắn muốn xóa tài khoản {userToDelete?.name}?
                     </Typography>
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={handleCloseDialog}>Hủy</Button>
-                    <Button
-                        variant="contained"
-                        color={currentUser?.status === 'active' ? "error" : "success"}
-                        onClick={handleSaveUser}
-                    >
-                        {currentUser?.status === 'active' ? "Vô hiệu hóa" : "Kích hoạt lại"}
+                    <Button onClick={handleCloseDeleteDialog}>Hủy</Button>
+                    <Button variant="contained" color="error" onClick={handleConfirmDelete}>
+                        Xóa
                     </Button>
                 </DialogActions>
             </Dialog>

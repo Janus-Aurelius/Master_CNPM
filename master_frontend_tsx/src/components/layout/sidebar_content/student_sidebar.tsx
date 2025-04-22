@@ -137,7 +137,8 @@ export const StudentSidebarContent = ({ onLogout }: StudentSidebarContentProps) 
                 height: '100%',
                 display: 'flex',
                 flexDirection: 'column',
-                justifyContent: 'space-between', 
+                justifyContent: 'space-between',
+                flexGrow: 1, // Ensure the stack grows properly
             }}
         >
             {/* Top section with menu items */}
@@ -177,15 +178,15 @@ export const StudentSidebarContent = ({ onLogout }: StudentSidebarContentProps) 
             </div>
             
             {/* Bottom section with logout button */}
-            <div style={{ marginTop: "310px" }}>
+            <div style={{ position: 'absolute', bottom: '20px', left: '45px' }}> {/* Move logout button to bottom-left corner */}
                 <NavItem 
                     sx={{ color: 'darkgrey', padding: '0px 0px' }}
-                to="/login"
-                onClick={handleLogoutClick}
-                isLogout
-                icon={<ExitToAppOutlined />}
-            >
-                Đăng xuất
+                    to="/login"
+                    onClick={handleLogoutClick}
+                    isLogout
+                    icon={<ExitToAppOutlined />}
+                >
+                    Đăng xuất
                 </NavItem>
             </div>
 

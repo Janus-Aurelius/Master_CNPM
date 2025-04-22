@@ -7,8 +7,6 @@ import EditIcon from '@mui/icons-material/Edit';
 import AddIcon from '@mui/icons-material/Add';
 import Stack from "@mui/joy/Stack";
 
-
-
 interface AcademicPageProps {
     user: User | null;
     onLogout: () => void;
@@ -84,14 +82,12 @@ export default function ProgramMgmAcademic({ onLogout }: AcademicPageProps) {
         });
     };
 
-
-
     return (
         <ThemeLayout role="academic" onLogout={onLogout}>
             <Stack spacing={2} sx={{ p: 3 }}>
                 {/* Header section - separated from content */}
                 <div className="flex justify-between items-center p-2">
-                    <Typography variant="h4" className="font-semibold">
+                    <Typography variant="h4" className="font-semibold" sx={{ fontFamily: '"Varela Round", sans-serif' }}>
                         Danh sách các chương trình đào tạo
                     </Typography>
                     <Button
@@ -99,7 +95,7 @@ export default function ProgramMgmAcademic({ onLogout }: AcademicPageProps) {
                         color="primary"
                         startIcon={<AddIcon />}
                         onClick={() => handleOpenDialog(false)}
-                        className="bg-blue-500"
+                        sx={{ fontFamily: '"Varela Round", sans-serif' }}
                     >
                         Thêm chương trình
                     </Button>
@@ -110,16 +106,17 @@ export default function ProgramMgmAcademic({ onLogout }: AcademicPageProps) {
                     <Grid container spacing={2} alignItems="stretch">
                         {programs.map((program) => (
                             <Grid item xs={12} md={6} lg={4} key={program.id} style={{ display: 'flex' }}>
-                                <Card className="h-full w-full hover:shadow-lg transition-shadow">
+                                <Card className="h-full w-full hover:shadow-lg transition-shadow" sx={{ fontFamily: '"Varela Round", sans-serif' }}>
                                     <CardContent>
                                         {/* Card content remains the same */}
                                         <div className="flex justify-between">
-                                            <Typography variant="h6" className="font-bold text-blue-700">{program.name}</Typography>
+                                            <Typography variant="h6" className="font-bold text-blue-700" sx={{ fontFamily: '"Varela Round", sans-serif' }}>{program.name}</Typography>
                                             <div>
                                                 <IconButton
                                                     size="small"
                                                     onClick={() => handleOpenDialog(true, program)}
                                                     className="text-blue-500"
+                                                    sx={{ fontFamily: '"Varela Round", sans-serif' }}
                                                 >
                                                     <EditIcon fontSize="small" />
                                                 </IconButton>
@@ -127,21 +124,22 @@ export default function ProgramMgmAcademic({ onLogout }: AcademicPageProps) {
                                                     size="small"
                                                     onClick={() => handleDeleteProgram(program.id)}
                                                     className="text-red-500"
+                                                    sx={{ fontFamily: '"Varela Round", sans-serif' }}
                                                 >
                                                     <DeleteIcon fontSize="small" />
                                                 </IconButton>
                                             </div>
                                         </div>
-                                        <Typography variant="body2" className="mt-1">
+                                        <Typography variant="body2" className="mt-1" sx={{ fontFamily: '"Varela Round", sans-serif' }}>
                                             <strong>Khoa:</strong> {program.department}
                                         </Typography>
-                                        <Typography variant="body2" className="mt-1">
+                                        <Typography variant="body2" className="mt-1" sx={{ fontFamily: '"Varela Round", sans-serif' }}>
                                             <strong>Loại:</strong> {program.type}
                                         </Typography>
-                                        <Typography variant="body2" className="text-gray-600 mt-1">
+                                        <Typography variant="body2" className="text-gray-600 mt-1" sx={{ fontFamily: '"Varela Round", sans-serif' }}>
                                             <strong>Thời gian:</strong> {program.startDate} đến {program.endDate}
                                         </Typography>
-                                        <Typography variant="body2" className="text-gray-600 mt-1">
+                                        <Typography variant="body2" className="text-gray-600 mt-1" sx={{ fontFamily: '"Varela Round", sans-serif' }}>
                                             <strong>Tổng tín chỉ:</strong> {program.totalCredits}
                                         </Typography>
                                     </CardContent>
@@ -154,7 +152,7 @@ export default function ProgramMgmAcademic({ onLogout }: AcademicPageProps) {
 
             {/* Dialog for adding/editing programs */}
             <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
-                <DialogTitle>{isEditing ? "Chỉnh sửa chương trình" : "Thêm chương trình mới"}</DialogTitle>
+                <DialogTitle sx={{ fontFamily: '"Varela Round", sans-serif' }}>{isEditing ? "Chỉnh sửa chương trình" : "Thêm chương trình mới"}</DialogTitle>
                 <DialogContent>
                     <TextField
                         autoFocus
@@ -166,6 +164,7 @@ export default function ProgramMgmAcademic({ onLogout }: AcademicPageProps) {
                         value={currentProgram.name}
                         onChange={handleInputChange}
                         className="mb-3"
+                        sx={{ fontFamily: '"Varela Round", sans-serif' }}
                     />
                     <TextField
                         margin="dense"
@@ -176,6 +175,7 @@ export default function ProgramMgmAcademic({ onLogout }: AcademicPageProps) {
                         value={currentProgram.department}
                         onChange={handleInputChange}
                         className="mb-3"
+                        sx={{ fontFamily: '"Varela Round", sans-serif' }}
                     />
                     <TextField
                         margin="dense"
@@ -188,6 +188,7 @@ export default function ProgramMgmAcademic({ onLogout }: AcademicPageProps) {
                         value={currentProgram.startDate}
                         onChange={handleInputChange}
                         className="mb-3"
+                        sx={{ fontFamily: '"Varela Round", sans-serif' }}
                     />
                     <TextField
                         margin="dense"
@@ -200,6 +201,7 @@ export default function ProgramMgmAcademic({ onLogout }: AcademicPageProps) {
                         value={currentProgram.endDate}
                         onChange={handleInputChange}
                         className="mb-3"
+                        sx={{ fontFamily: '"Varela Round", sans-serif' }}
                     />
                     <TextField
                         margin="dense"
@@ -210,13 +212,14 @@ export default function ProgramMgmAcademic({ onLogout }: AcademicPageProps) {
                         variant="outlined"
                         value={currentProgram.totalCredits}
                         onChange={handleInputChange}
+                        sx={{ fontFamily: '"Varela Round", sans-serif' }}
                     />
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={handleCloseDialog} color="error">
+                    <Button onClick={handleCloseDialog} color="error" sx={{ fontFamily: '"Varela Round", sans-serif' }}>
                         Hủy
                     </Button>
-                    <Button onClick={handleSaveProgram} color="primary" variant="contained" className="bg-blue-500">
+                    <Button onClick={handleSaveProgram} color="primary" variant="contained" className="bg-blue-500" sx={{ fontFamily: '"Varela Round", sans-serif' }}>
                         {isEditing ? "Cập nhật" : "Thêm mới"}
                     </Button>
                 </DialogActions>

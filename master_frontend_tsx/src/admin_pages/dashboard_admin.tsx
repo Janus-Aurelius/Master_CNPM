@@ -61,7 +61,7 @@ const mockRecentActivities = [
     { id: 4, message: 'Database backup failed', time: '1 hour ago', severity: 'error' },
 ];
 
-export default function DashboardAdmin({ onLogout }: AdminPageProps) {
+export default function DashboardAdmin({ user, onLogout }: AdminPageProps) {
     const [page, setPage] = useState(0);
     const [rowsPerPage, setRowsPerPage] = useState(5);
 
@@ -95,12 +95,10 @@ export default function DashboardAdmin({ onLogout }: AdminPageProps) {
 
     return (
         <ThemeLayout role="admin" onLogout={onLogout}>
-            <Typography variant="h4" className="font-semibold" sx={{ mb: 3 }}>
-                Trang chủ
-            </Typography>
+                  
 
             {/* Summary Cards */}
-            <Grid container spacing={3} sx={{ mb: 4 }}>
+            <Grid container spacing={3} sx={{ mb: 4 , marginTop: '16px'}}>
                 <Grid item xs={12} sm={6} md={3}>
                     <Card sx={{ bgcolor: 'primary.light',
                              color: 'primary.contrastText',
@@ -264,7 +262,6 @@ export default function DashboardAdmin({ onLogout }: AdminPageProps) {
                             display: 'flex',
                             flexDirection: 'column',
                             flexGrow: 1,
-                            p: 2
                         }}>
                         <Typography variant="h6" sx={{ mb: 2 }}>
                             Hoạt động gần đây

@@ -1,151 +1,115 @@
 // File: src/student_pages/academic_affair_dept_reg_mgm.tsx
-import { useState } from 'react';
 import { ThemeLayout } from '../styles/theme_layout';
-import { Box, Button, Typography, TextField } from '@mui/material';
-import SearchBox from "../components/searchbox";
+import { Box, Button, Typography, Paper, TextField } from '@mui/material';
+import { useState } from 'react';
 
-interface Subject {
-    name: string;
-    lecturer: string;
-    day: string;
-    session: string;
-    fromTo: string;
-}
-
-interface AcademicAffairRequestGridProps {
-    subjects?: Subject[];
-    onEnroll: (subject: Subject, reason: string) => void;
-    onDelete: (subject: Subject, reason: string) => void;
-    sx?: Record<string, unknown>;
-    [key: string]: unknown;
-}
 interface AcademicAffairDeptReqMgmProps {
     onLogout: () => void;
 }
 
-const AcademicAffairRequestGrid = ({
-                                       subjects = [],
-                                       onEnroll,
-                                       onDelete,
-                                       sx,
-                                       ...otherProps
-                                   }: AcademicAffairRequestGridProps) => {
-    const [reasons, setReasons] = useState<Record<number, string>>({});
+export const AcademicAffairDeptReqMgm = ({ onLogout }: AcademicAffairDeptReqMgmProps) => {
+    const [content, setContent] = useState('');
 
-    const handleInputChange = (index: number, value: string) => {
-        setReasons((prev) => ({ ...prev, [index]: value }));
-    };
-
-    const handleAction = (action: 'enroll' | 'delete', subject: Subject, index: number) => {
-        const reason = reasons[index] || '';
-        if (action === 'enroll') {
-            onEnroll(subject, reason);
-        } else if (action === 'delete') {
-            onDelete(subject, reason);
-        }
-    };
-
-    return (
-        <Box
-            sx={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 2,
-                ...sx,
-            }}
-            {...otherProps}
-        >
-            {subjects && subjects.length > 0 ? (
-                subjects.map((subject, index) => (
-                    <Box
-                        key={index}
-                        sx={{
-                            backgroundColor: 'white',
-                            borderRadius: 1,
-                            boxShadow: 1,
-                            p: 2,
-                            display: 'flex',
-                            flexDirection: 'column',
-                            gap: 1,
-                        }}
-                    >
-                        <Box
-                            sx={{
-                                display: 'grid',
-                                gridTemplateColumns: 'repeat(5, 1fr)',
-                                alignItems: 'center',
-                            }}
-                        >
-                            <Typography variant="body1">{subject.name}</Typography>
-                            <Typography variant="body1">{subject.lecturer}</Typography>
-                            <Typography variant="body1">{subject.day}</Typography>
-                            <Typography variant="body1">{subject.session}</Typography>
-                            <Typography variant="body1">{subject.fromTo}</Typography>
-                        </Box>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <TextField
-                                fullWidth
-                                variant="outlined"
-                                placeholder="Enter reason"
-                                value={reasons[index] || ''}
-                                onChange={(e) => handleInputChange(index, e.target.value)}
-                            />
-                            <Button variant="contained" onClick={() => handleAction('enroll', subject, index)}>
-                                Enroll
-                            </Button>
-                            <Button variant="outlined" onClick={() => handleAction('delete', subject, index)}>
-                                Delete
-                            </Button>
-                        </Box>
-                    </Box>
-                ))
-            ) : (
-                <Typography sx={{ p: 2, textAlign: 'center', color: 'darkgray' }}>
-                    No subjects available
-                </Typography>
-            )}
-        </Box>
-    );
-};
-
-export const AcademicAffairDeptReqMgm = ({onLogout}: AcademicAffairDeptReqMgmProps) => {
-    const sampleSubjects: Subject[] = [
-        { name: 'Mathematics', lecturer: 'Dr. Smith', day: 'Monday', session: '1', fromTo: '08:00-10:00' },
-        { name: 'Physics', lecturer: 'Prof. Johnson', day: 'Tuesday', session: '2', fromTo: '10:00-12:00' },
-        { name: 'Chemistry', lecturer: 'Dr. Williams', day: 'Wednesday', session: '3', fromTo: '12:00-14:00' },
-        { name: 'Biology', lecturer: 'Dr. Jones', day: 'Thursday', session: '4', fromTo: '14:00-16:00' },
-    ];
-
-    const handleEnrollRequest = (subject: Subject, reason: string) => {
-        console.log('Enroll request for', subject, 'with reason:', reason);
-    };
-
-    const handleDeleteRequest = (subject: Subject, reason: string) => {
-        console.log('Delete request for', subject, 'with reason:', reason);
+    const handleSubmit = () => {
+        console.log('Submitted content:', content);
+        setContent('');
     };
 
     return (
         <ThemeLayout role="student" onLogout={onLogout}>
-            <Typography
-                variant="h3"
-                component="h1"
-                sx={{
-                    fontWeight: 'bold',
-                    textAlign: 'center',
-                    fontSize: '25px',
-                    mb: 4,
-                    color: '#4880FF',
-                }}
-            >
-                Quản lý cứu xét
-            </Typography>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                <SearchBox />
-                <AcademicAffairRequestGrid
-                    subjects={sampleSubjects}
-                    onEnroll={handleEnrollRequest}
-                    onDelete={handleDeleteRequest}
-                />
+            <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+                <Paper
+                    elevation={3}
+                    sx={{
+                        textAlign: 'left',
+                        borderRadius: '16px',
+                        padding: '20px',
+                        fontSize: '18px',
+                        fontFamily: '"Varela Round", sans-serif',
+                        fontWeight: 450,
+                        backgroundColor: 'rgb(250, 250, 250)',
+                        boxShadow: '0 2px 5px rgba(0, 0, 0, 0.1)',
+                        color: 'rgb(39, 89, 217)',
+                        transition: 'all 0.25s ease',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        position: 'relative',
+                        overflow: 'hidden',
+                        marginTop: '16px',
+                        flexGrow: 1,
+                        minHeight: '300px',
+                        maxHeight: 'calc(100vh - 150px)',
+                        paddingLeft: '16px',
+                        paddingRight: '16px',
+                        marginLeft: '0px',
+                        marginRight: '10px',
+                    }}
+                >
+                    <Typography
+                        component="h1"
+                        sx={{
+                            fontWeight: 'bold',
+                            fontFamily: 'Montserrat, sans-serif',
+                            fontStyle: 'normal',
+                            color: 'rgba(33, 33, 33, 0.8)',
+                            marginBottom: '14px',
+                            marginTop: '0px',
+                            textAlign: 'center',
+                            fontSize: '30px',
+                        }}
+                    >
+                        Quản lý cứu xét
+                    </Typography>
+
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, alignItems: 'center', mt: 2 }}>
+                        <Box
+                            sx={{
+                                display: 'flex',
+                                alignItems: 'flex-start',
+                                width: '100%',
+                                backgroundColor: '#f5f5f5',
+                                borderRadius: '12px',
+                                boxShadow: '0 4px 10px rgba(0, 0, 0, 0.1)',
+                                padding: '16px',
+                                transition: 'all 0.3s ease',
+                                minHeight: '500px',
+                                maxWidth: '800px',
+                            }}
+                        >
+                            <TextField
+                                variant="standard"
+                                fullWidth
+                                multiline
+                                placeholder="Nhập nội dung..."
+                                value={content}
+                                onChange={(e) => setContent(e.target.value)}
+                                InputProps={{
+                                    disableUnderline: true,
+                                    sx: {
+                                        fontSize: '18px',
+                                        padding: '0',
+                                        textAlign: 'left',
+                                        wordWrap: 'break-word',
+                                    },
+                                }}
+                            />
+                        </Box>
+                        <Button
+                            variant="contained"
+                            onClick={handleSubmit}
+                            sx={{
+                                textTransform: 'none',
+                                borderRadius: '8px',
+                                backgroundColor: '#3869d9',
+                                '&:hover': {
+                                    backgroundColor: 'hsl(223, 100.00%, 70.20%)',
+                                },
+                            }}
+                        >
+                            Gửi
+                        </Button>
+                    </Box>
+                </Paper>
             </Box>
         </ThemeLayout>
     );

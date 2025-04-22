@@ -76,11 +76,11 @@ const tuitionData: TuitionRecord[] = [
 const getStatusChipColor = (status: string): { bg: string; text: string } => {
     switch (status) {
         case "paid":
-            return { bg: "#d9fade", text: "#22b361" };
+            return { bg: "#d9fade", text: "#4caf50" };
         case "pending":
             return { bg: "#fff8e1", text: "#f57c00" };
         case "unpaid":
-            return { bg: "#ffebee", text: "#eb2323" };
+            return { bg: "#ffebee", text: "#ef5350" };
         default:
             return { bg: "#e0e0e0", text: "#616161" };
     }
@@ -124,11 +124,10 @@ const TuitionCollecting = ({ onLogout }: StudentPageProps) => {
                         overflow: "hidden",
                         marginTop: "16px",
                         flexGrow: 1,
-                        minHeight: "400px",
                         maxHeight: "calc(100vh - 150px)",
                         paddingLeft: "16px",
                         paddingRight: "16px",
-                        marginLeft: "-17px",
+                        marginLeft: "0px",
                         marginRight: "10px",
                     }}
                 >
@@ -158,12 +157,12 @@ const TuitionCollecting = ({ onLogout }: StudentPageProps) => {
                                         borderLeft: "5px solid",
                                         borderColor: getStatusChipColor(tuition.status).text,
                                         cursor: "pointer",
-                                        boxShadow: `0 2px 5px ${getStatusChipColor(tuition.status).text}50`,
+                                        boxShadow: '0 2px 5px rgba(0, 0, 0, 0.1)', 
                                         borderRadius: '8px',
                                         backgroundColor: "#f7fcfe",
                                         transition: "all 0.2s",
                                         "&:hover": {
-                                            bgcolor: "rgba(0, 0, 0, 0.04)",
+                                            bgcolor: "rgba(0, 0, 0, 0.02)",
                                             boxShadow: `0 6px 15px ${getStatusChipColor(tuition.status).text}50`,
                                         },
                                     }}
@@ -198,7 +197,7 @@ const TuitionCollecting = ({ onLogout }: StudentPageProps) => {
                                 </Paper>
 
                                 <Collapse in={expandedId === tuition.id} timeout="auto" unmountOnExit>
-                                    <Paper sx={{ p: 2, mt: 1, borderTop: "1px solid #e0e0e0" }}>
+                                    <Paper sx={{ p: 2, mt: 1, borderTop: "1px solid #e0e0e0", borderRadius: "16px", boxShadow: "0 2px 5px rgba(0, 0, 0, 0.1)" }}>
                                         <Typography variant="h6" mb={2}>
                                             Chi tiết học phí
                                         </Typography>

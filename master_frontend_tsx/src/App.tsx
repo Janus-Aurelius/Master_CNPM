@@ -124,7 +124,6 @@ export default function App() {
                             <Route path="userManagement" element={<UserManagement user={user} onLogout={handleLogout} />} />
                             <Route path="config" element={<SystemConfigAndMaintenance user={user} onLogout={handleLogout} />} />
                         </Routes>
-                        <div>Admin Dashboard (Coming Soon)</div>
                     </ProtectedRoute>
                 } />
 

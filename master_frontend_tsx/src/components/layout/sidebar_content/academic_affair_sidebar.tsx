@@ -183,7 +183,7 @@ export const AcademicSidebarContent = ({ onLogout }: AcademicSidebarContentProps
             </div>
             
             {/* Bottom section with logout button */}
-            <div style={{ marginTop: "310px" }}>
+            <div style={{ position: 'absolute', bottom: '20px', left: '45px' }}> {/* Move logout button to bottom-left corner */}
                 <NavItem 
                     sx={{ color: 'darkgrey', padding: '0px 0px' }}
                     to="/login"

@@ -58,7 +58,7 @@ export const EnrolledSubject = ({ handleUnenroll, onLogout, ...otherProps }: Enr
                         maxHeight: 'calc(100vh - 150px)',
                         paddingLeft: '16px',
                         paddingRight: '16px',
-                        marginLeft: '-17px',
+                        marginLeft: '0px',
                         marginRight: '10px',
                     }}
                 >
@@ -82,11 +82,11 @@ export const EnrolledSubject = ({ handleUnenroll, onLogout, ...otherProps }: Enr
                         <Table>
                         <TableHead>
                             <TableRow>
-                                <TableCell sx={{ fontWeight: 'bold', color: '#FFF1DB', fontSize: '20px', fontFamily: '"Varela Round", sans-serif', textAlign: 'center', backgroundColor: '#536493', boxShadow: '0 0px 0px rgba(0, 0, 0, 0.1)'}}></TableCell>
-                                <TableCell sx={{ fontWeight: 'bold', color: '#FFF1DB', fontSize: '20px', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', borderRight: '0.5px solid rgb(237, 237, 237)', backgroundColor: '#536493' }}>Mã lớp</TableCell>
-                                <TableCell sx={{ fontWeight: 'bold', color: '#FFF1DB', fontSize: '20px', fontFamily: '"Varela Round", sans-serif', textAlign: 'center', borderRight: '0.5px solid rgb(237, 237, 237)', backgroundColor: '#536493' }}>Môn học</TableCell>
-                                <TableCell sx={{ fontWeight: 'bold', color: '#FFF1DB', fontSize: '20px', fontFamily: '"Varela Round", sans-serif', textAlign: 'center', borderRight: '0.5px solid rgb(237, 237, 237)', backgroundColor: '#536493' }}>Giảng viên</TableCell>
-                                <TableCell sx={{ fontWeight: 'bold', color: '#FFF1DB', fontSize: '20px', fontFamily: '"Varela Round", sans-serif', textAlign: 'center', borderRight: '0.5px solid rgb(237, 237, 237)', backgroundColor: '#536493' }}>Thời gian</TableCell>
+                                <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '20px', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6', boxShadow: '0 0px 0px rgba(0, 0, 0, 0.1)'}}></TableCell>
+                                <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '20px', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6' }}>Mã lớp</TableCell>
+                                <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '20px', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6' }}>Môn học</TableCell>
+                                <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '20px', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6' }}>Giảng viên</TableCell>
+                                <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '20px', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6' }}>Thời gian</TableCell>
                             </TableRow>
                         </TableHead>
                         <TableBody>
@@ -108,26 +108,26 @@ export const EnrolledSubject = ({ handleUnenroll, onLogout, ...otherProps }: Enr
                                             sx={{
                                                 textTransform: 'none',
                                                 borderRadius: '9px', 
-                                                backgroundColor: '#e43d3d',
+                                                backgroundColor: '#ef5350',
                                                 boxShadow: 'none',
                                                 width: '35px',
                                                 height: '35px',
                                                 minWidth: '35px', 
                                                 padding: '0',
-                                                transition: 'box-shadow 0.3s ease',
+                                                transition: 'box-shadow 0.2s ease',
                                                 '&:hover': {
                                                     backgroundColor: '#f73e3e',
-                                                    boxShadow: '0 0 12px 4px rgba(228, 61, 61, 0.8)',
+                                                    boxShadow: '0 0 8px 2px rgba(228, 61, 61, 0.8)',
                                                 },
                                             }}
                                         >
                                             —
                                         </Button>
                                     </TableCell>
-                                    <TableCell sx={{ fontSize: '16px', fontFamily: '"Varela Round", sans-serif', borderRight: '0.5px solid rgb(237, 237, 237)' }}>{subject.id}</TableCell>
-                                    <TableCell sx={{ fontSize: '16px', fontFamily: '"Varela Round", sans-serif', borderRight: '0.5px solid rgb(237, 237, 237)' }}>{subject.name}</TableCell>
-                                    <TableCell sx={{ fontSize: '16px', fontFamily: '"Varela Round", sans-serif', borderRight: '0.5px solid rgb(237, 237, 237)' }}>{subject.lecturer}</TableCell>
-                                    <TableCell sx={{ fontSize: '16px', fontFamily: '"Varela Round", sans-serif', borderRight: '0.5px solid rgb(237, 237, 237)' }}>{`${subject.day}, ${subject.fromTo}`}</TableCell>
+                                    <TableCell sx={{ fontSize: '16px', fontFamily: '"Varela Round", sans-serif'}}>{subject.id}</TableCell>
+                                    <TableCell sx={{ fontSize: '16px', fontFamily: '"Varela Round", sans-serif'}}>{subject.name}</TableCell>
+                                    <TableCell sx={{ fontSize: '16px', fontFamily: '"Varela Round", sans-serif'}}>{subject.lecturer}</TableCell>
+                                    <TableCell sx={{ fontSize: '16px', fontFamily: '"Varela Round", sans-serif'}}>{`${subject.day}, ${subject.fromTo}`}</TableCell>
                                 </TableRow>
                             ))}
                         </TableBody>
