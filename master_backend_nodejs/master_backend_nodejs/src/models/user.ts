@@ -6,4 +6,6 @@ export interface User
     email: string;
     password: string;
     role: "student" | "admin" | "financial" | "academic";
+    createdAt: Date;
+    updatedAt: Date;
 }

@@ -1,90 +1,41 @@
-import { User } from '../../models/user';
-import UserService from '../../services/UserService';
+import UserService from '../../services/admin/UserService';
+import { User } from '../../models/user.interface';
 
-export class UserManager {
+class UserManager {
     async getAllUsers(): Promise<User[]> {
-        try {
-            return await UserService.getAllUsers();
-        } catch (error) {
-            throw new Error('Failed to fetch users');
-        }
+        return UserService.getAllUsers();
     }
 
     async getUserById(id: number): Promise<User | null> {
-        try {
-            return await UserService.getUserById(id);
-        } catch (error) {
-            throw new Error('Failed to fetch user');
-        }
+        return UserService.getUserById(id);
     }
 
-    async createUser(userData: Omit<User, 'id'>): Promise<User> {
-        try {
-            // Validate user data
-            if (!userData.name || !userData.email || !userData.password || !userData.role) {
-                throw new Error('Missing required fields');
-            }
-
-            // Check if email already exists
-            const existingUsers = await UserService.getAllUsers();
-            if (existingUsers.some(user => user.email === userData.email)) {
-                throw new Error('Email already exists');
-            }
-
-            return await UserService.createUser(userData);
-        } catch (error) {
-            throw new Error('Failed to create user');
+    async createUser(userData: Omit<User, 'id' | 'createdAt' | 'updatedAt'>): Promise<User> {
+        const existingUsers = await UserService.getAllUsers();
+        if (existingUsers.some((user: User) => user.email === userData.email)) {
+            throw new Error('Email already exists');
         }
+        return UserService.createUser({
+            ...userData,
+            createdAt: new Date(),
+            updatedAt: new Date()
+        });
     }
 
     async updateUser(id: number, userData: Partial<User>): Promise<User | null> {
-        try {
-            // Check if user exists
-            const existingUser = await UserService.getUserById(id);
-            if (!existingUser) {
-                throw new Error('User not found');
-            }
-
-            // If email is being updated, check if it's already taken
-            if (userData.email && userData.email !== existingUser.email) {
-                const existingUsers = await UserService.getAllUsers();
-                if (existingUsers.some(user => user.email === userData.email)) {
-                    throw new Error('Email already exists');
-                }
-            }
-
-            return await UserService.updateUser(id, userData);
-        } catch (error) {
-            throw new Error('Failed to update user');
+        const existingUsers = await UserService.getAllUsers();
+        if (userData.email && existingUsers.some((user: User) => user.email === userData.email && user.id !== id)) {
+            throw new Error('Email already exists');
         }
+        return UserService.updateUser(id, userData);
     }
 
     async deleteUser(id: number): Promise<boolean> {
-        try {
-            // Check if user exists
-            const existingUser = await UserService.getUserById(id);
-            if (!existingUser) {
-                throw new Error('User not found');
-            }
-
-            return await UserService.deleteUser(id);
-        } catch (error) {
-            throw new Error('Failed to delete user');
-        }
+        return UserService.deleteUser(id);
     }
 
     async changeUserStatus(id: number, status: boolean): Promise<User | null> {
-        try {
-            // Check if user exists
-            const existingUser = await UserService.getUserById(id);
-            if (!existingUser) {
-                throw new Error('User not found');
-            }
-
-            return await UserService.changeUserStatus(id, status);
-        } catch (error) {
-            throw new Error('Failed to change user status');
-        }
+        return UserService.updateUser(id, { status });
     }
 }
 

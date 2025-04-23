@@ -1,7 +1,7 @@
 // src/routes/student.routes.ts
 import express from 'express';
-import userController from '../controllers/userController';
-import maintenanceController from '../controllers/maintenanceController';
+import userController from '../controllers/AdminController/userController';
+import maintenanceController from '../controllers/AdminController/maintenanceController';
 import { authenticateToken, authorizeRoles } from '../middleware/auth';
 import { checkMaintenance } from '../middleware/maintenance';
 

@@ -1,12 +1,11 @@
 // Global setup for Jest tests
-import { jest } from '@jest/globals';
+import '@jest/globals';
 
-// Mock console methods
-global.console = {
-    ...console,
-    log: jest.fn(),
-    error: jest.fn(),
-    warn: jest.fn(),
-    info: jest.fn(),
-    debug: jest.fn()
-}; 
+// Add any global test setup here
+beforeAll(() => {
+    // Setup code that runs before all tests
+});
+
+afterAll(() => {
+    // Cleanup code that runs after all tests
+}); 
