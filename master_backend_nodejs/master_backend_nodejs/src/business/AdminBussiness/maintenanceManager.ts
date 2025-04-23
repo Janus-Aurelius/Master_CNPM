@@ -1,7 +1,77 @@
+import { AppError } from '../../middleware/errorHandler';
+
 class MaintenanceManager {
     private isMaintenanceMode: boolean = false;
-    private maintenanceMessage: string = 'System is under maintenance';
-    private allowedIPs: string[] = ['127.0.0.1']; // IPs được phép truy cập trong chế độ bảo trì
+    private maintenanceMessage: string = '';
+    private allowedIPs: string[] = [];
+
+    async getStatus() {
+        try {
+            return {
+                isMaintenanceMode: this.isMaintenanceMode,
+                message: this.maintenanceMessage,
+                allowedIPs: this.allowedIPs
+            };
+        } catch (error) {
+            throw new AppError(500, 'Error getting maintenance status');
+        }
+    }
+
+    async enable(message: string) {
+        try {
+            this.isMaintenanceMode = true;
+            this.maintenanceMessage = message || 'System is under maintenance';
+        } catch (error) {
+            throw new AppError(500, 'Error enabling maintenance mode');
+        }
+    }
+
+    async disable() {
+        try {
+            this.isMaintenanceMode = false;
+            this.maintenanceMessage = '';
+        } catch (error) {
+            throw new AppError(500, 'Error disabling maintenance mode');
+        }
+    }
+
+    async updateMessage(message: string) {
+        try {
+            if (!message) {
+                throw new AppError(400, 'Message is required');
+            }
+            this.maintenanceMessage = message;
+        } catch (error) {
+            if (error instanceof AppError) throw error;
+            throw new AppError(500, 'Error updating maintenance message');
+        }
+    }
+
+    async addAllowedIP(ip: string) {
+        try {
+            if (!ip) {
+                throw new AppError(400, 'IP address is required');
+            }
+            if (!this.allowedIPs.includes(ip)) {
+                this.allowedIPs.push(ip);
+            }
+        } catch (error) {
+            if (error instanceof AppError) throw error;
+            throw new AppError(500, 'Error adding IP to allowed list');
+        }
+    }
+
+    async removeAllowedIP(ip: string) {
+        try {
+            if (!ip) {
+                throw new AppError(400, 'IP address is required');
+            }
+            this.allowedIPs = this.allowedIPs.filter(allowedIP => allowedIP !== ip);
+        } catch (error) {
+            if (error instanceof AppError) throw error;
+            throw new AppError(500, 'Error removing IP from allowed list');
+        }
+    }
 
     isInMaintenanceMode(): boolean {
         return this.isMaintenanceMode;
@@ -11,37 +81,12 @@ class MaintenanceManager {
         return this.maintenanceMessage;
     }
 
-    async enableMaintenanceMode(message?: string): Promise<void> {
-        this.isMaintenanceMode = true;
-        if (message) {
-            this.maintenanceMessage = message;
-        }
-    }
-
-    async disableMaintenanceMode(): Promise<void> {
-        this.isMaintenanceMode = false;
-    }
-
-    async setMaintenanceMessage(message: string): Promise<void> {
-        this.maintenanceMessage = message;
-    }
-
-    async addAllowedIP(ip: string): Promise<void> {
-        if (!this.allowedIPs.includes(ip)) {
-            this.allowedIPs.push(ip);
-        }
-    }
-
-    async removeAllowedIP(ip: string): Promise<void> {
-        this.allowedIPs = this.allowedIPs.filter(allowedIP => allowedIP !== ip);
+    getAllowedIPs(): string[] {
+        return [...this.allowedIPs];
     }
 
     isIPAllowed(ip: string): boolean {
         return this.allowedIPs.includes(ip);
-    }
-
-    getAllowedIPs(): string[] {
-        return [...this.allowedIPs];
     }
 }
 

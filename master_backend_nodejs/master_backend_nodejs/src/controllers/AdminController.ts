@@ -1,8 +1,8 @@
 import { Request, Response } from 'express';
-import { UserManager } from '../business/admin/user.manager';
+import { userManager } from '../business/AdminBussiness/userManager';
 
 export class AdminController {
-  private userManager = new UserManager();
+  private userManager = userManager;
 
   async createUser(req: Request, res: Response) {
     try {

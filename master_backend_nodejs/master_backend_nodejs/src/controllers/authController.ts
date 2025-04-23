@@ -8,10 +8,10 @@ const TOKEN_EXPIRY = '24h';
 
 // Static user store for demonstration
 const users: User[] = [
-    { id: 1, email: 'student@example.com', name: 'Student User', role: 'student', password: 'password', status: true },
-    { id: 2, email: 'financial@example.com', name: 'Financial Dept', role: 'financial', password: 'password', status: true },
-    { id: 3, email: 'academic@example.com', name: 'Academic Dept', role: 'academic', password: 'password', status: true },
-    { id: 4, email: 'admin@example.com', name: 'Administrator', role: 'admin', password: 'password', status: true },
+    { id: 1, email: 'student@example.com', name: 'Student User', role: 'student', password: 'password', status: true, createdAt: new Date(), updatedAt: new Date() },
+    { id: 2, email: 'financial@example.com', name: 'Financial Dept', role: 'financial', password: 'password', status: true, createdAt: new Date(), updatedAt: new Date() },
+    { id: 3, email: 'academic@example.com', name: 'Academic Dept', role: 'academic', password: 'password', status: true, createdAt: new Date(), updatedAt: new Date() },
+    { id: 4, email: 'admin@example.com', name: 'Administrator', role: 'admin', password: 'password', status: true, createdAt: new Date(), updatedAt: new Date() },
 ];
 
 // Role to dashboard URL mapping

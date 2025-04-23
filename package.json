@@ -6,6 +6,7 @@
   },
   "devDependencies": {
     "@types/axios": "^0.9.36",
+    "@types/helmet": "^0.0.48",
     "@types/supertest": "^6.0.3",
     "supertest": "^7.1.0"
   }

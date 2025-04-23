@@ -3,7 +3,7 @@ import express from 'express';
 import path from 'path';
 import cookieParser from 'cookie-parser';
 import logger from 'morgan';
-import { getCoursesHandler, addCourseHandler } from './src/controllers/courseController';
+import { getCoursesHandler, createCourseHandler } from './src/controllers/courseController';
 import authRoutes from "./src/routes/auth.routes";
 import protectedRoutes from "./src/routes/protected.routes";
 import {authenticateToken, authorizeRoles} from "./src/middleware/auth";
@@ -38,7 +38,7 @@ app.get("/", (req, res) => {
     res.send("API is running. Try /courses to access courses.");
 });
 app.get("/courses", getCoursesHandler);
-app.post("/courses", addCourseHandler);
+app.post("/courses", createCourseHandler);
 
 // Start server
 app.listen(PORT, () => {
