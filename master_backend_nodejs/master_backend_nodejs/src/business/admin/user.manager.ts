@@ -2,7 +2,7 @@
 import { User } from '../../models/user';
 import { UserService } from '../../services/admin/user.service';
 
-export class AdminBusiness {
+export class UserManager {
     private userService: UserService;
 
     constructor() {

@@ -1,15 +1,9 @@
-// src/routes/student.routes.ts
-import {Request, Response, Router} from 'express';
-import { authenticateToken, authorizeRoles } from '../middleware/auth';
+import express from 'express';
+import { AdminController } from '../controllers/AdminController';
 
-const router = Router();
+const router = express.Router();
+const adminController = new AdminController();
 
-// Protect all student routes
-router.use(authenticateToken, authorizeRoles(['admin']));
-
-// Student tabs
-router.get('/dashboard', (req: Request, res: Response) => {res.json({data:'Admin dashboard'});});
-router.get('/userManagement', (req: Request, res: Response) => {res.json({ data: 'Admin user management' });});
-router.get('/config', (req: Request, res: Response) => {res.json({ data: 'Admin server configuration' });});
+router.post('/create', adminController.createUser);
 
 export default router;

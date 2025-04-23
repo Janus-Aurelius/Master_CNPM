@@ -1,13 +1,13 @@
 // src/controllers/admin.controller.ts
 import { Request, Response } from 'express';
-import { AdminBusiness } from '../../business/admin/user.manager';
-import { CreateUserDTO, UserResponse } from '../../models/user';
+import { UserManager } from '../../business/admin/user.manager';
+// import { CreateUserDTO, UserResponse } from '../../models/user';
 
 export class AdminController {
-    private adminBusiness: AdminBusiness;
+    private adminBusiness: UserManager;
 
     constructor() {
-        this.adminBusiness = new AdminBusiness();
+        this.adminBusiness = new UserManager();
     }
 
     async getAllUsers(req: Request, res: Response) {
@@ -49,9 +49,14 @@ export class AdminController {
             };
             const newUser = await this.adminBusiness.createUser(userData);
             
-            // Chuyển đổi sang UserResponse trước khi trả về
-            const userResponse: UserResponse = {
-                ...newUser
+            const userResponse = {
+                id: newUser.id,
+                name: newUser.name,
+                email: newUser.email,
+                role: newUser.role,
+                status: newUser.status,
+                createdAt: newUser.createdAt,
+                updatedAt: newUser.updatedAt
             };
             
             res.status(201).json({
