@@ -1,4 +1,4 @@
-import { User } from '../../models/user.interface';
+import { User } from '../../models/user';
 
 class UserService {
     private users: User[] = []; // In-memory storage, replace with database in production

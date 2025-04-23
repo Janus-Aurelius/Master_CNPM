@@ -1,5 +1,5 @@
 import UserService from '../../services/admin/UserService';
-import { User } from '../../models/user.interface';
+import { User } from '../../models/user';
 
 class UserManager {
     async getAllUsers(): Promise<User[]> {
