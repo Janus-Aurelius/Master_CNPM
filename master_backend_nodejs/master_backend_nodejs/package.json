@@ -3,12 +3,14 @@
   "version": "0.0.0",
   "private": true,
   "dependencies": {
+    "@types/sequelize": "^4.28.20",
     "axios": "^1.8.4",
     "cookie-parser": "~1.4.4",
     "debug": "~2.6.9",
     "express": "^4.21.2",
     "jsonwebtoken": "^9.0.2",
-    "morgan": "~1.9.1"
+    "morgan": "~1.9.1",
+    "sequelize": "^6.37.7"
   },
   "devDependencies": {
     "@jest/globals": "^29.7.0",
