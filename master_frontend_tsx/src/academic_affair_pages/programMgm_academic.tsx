@@ -1,11 +1,37 @@
 import {ThemeLayout} from "../styles/theme_layout.tsx";
 import {User} from "../types";
 import { useState } from "react";
-import { Button, Card, CardContent,Dialog,DialogActions,DialogTitle,IconButton,Grid,TextField,Typography,DialogContent} from "@mui/material";
+import { 
+    Button, 
+    Card, 
+    CardContent,
+    Dialog,
+    DialogActions,
+    DialogTitle,
+    IconButton,
+    Grid,
+    TextField,
+    Typography,
+    DialogContent,
+    Box,
+    Paper,
+    TableContainer,
+    Table,
+    TableHead,
+    TableRow,
+    TableCell,
+    TableBody,
+    TablePagination,
+    Avatar,
+    Chip,
+    Divider
+} from "@mui/material";
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import AddIcon from '@mui/icons-material/Add';
-import Stack from "@mui/joy/Stack";
+import SchoolIcon from '@mui/icons-material/School';
+import MenuBookIcon from '@mui/icons-material/MenuBook';
+import AccessTimeIcon from '@mui/icons-material/AccessTime';
 
 interface AcademicPageProps {
     user: User | null;
@@ -21,6 +47,14 @@ interface ProgramSchedule{
     totalCredits: number;
     type: string;
 }
+
+// Summary statistics
+const programStats = {
+    totalPrograms: 3,
+    specializationPrograms: 2,
+    foundationPrograms: 1,
+    averageCredits: 145
+};
 
 export default function ProgramMgmAcademic({ onLogout }: AcademicPageProps) {
     const [programs, setPrograms] = useState<ProgramSchedule[]>([
@@ -39,6 +73,18 @@ export default function ProgramMgmAcademic({ onLogout }: AcademicPageProps) {
         type:""
     });
     const [isEditing, setIsEditing] = useState(false);
+    const [page, setPage] = useState(0);
+    const [rowsPerPage, setRowsPerPage] = useState(5);
+
+    const handleChangePage = (_event: unknown, newPage: number) => {
+        setPage(newPage);
+    };
+
+    const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
+        setRowsPerPage(parseInt(event.target.value, 10));
+        setPage(0);
+    };
+
     const handleOpenDialog = (edit: boolean = false, program?: ProgramSchedule) => {
         setIsEditing(edit);
         if (edit && program) {
@@ -82,144 +128,238 @@ export default function ProgramMgmAcademic({ onLogout }: AcademicPageProps) {
         });
     };
 
+    // Helper function for program type chips
+    const renderProgramTypeChip = (type: string) => {
+        const color = type === 'Chuyên ngành' ? 'primary' : 'success';
+        return <Chip size="small" label={type} color={color} sx={{ fontWeight: 500 }} />;
+    };
+
+    // Format date to display in dd/mm/yyyy format
+    const formatDate = (dateString: string) => {
+        if (!dateString) return "";
+        const date = new Date(dateString);
+        return `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getFullYear()}`;
+    };
+
     return (
         <ThemeLayout role="academic" onLogout={onLogout}>
-            <Stack spacing={2} sx={{ p: 3 }}>
-                {/* Header section - separated from content */}
-                <div className="flex justify-between items-center p-2">
-                    <Typography variant="h4" className="font-semibold" sx={{ fontFamily: '"Varela Round", sans-serif' }}>
-                        Danh sách các chương trình đào tạo
-                    </Typography>
-                    <Button
-                        variant="contained"
-                        color="primary"
-                        startIcon={<AddIcon />}
-                        onClick={() => handleOpenDialog(false)}
-                        sx={{ fontFamily: '"Varela Round", sans-serif' }}
+            <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+                <Paper
+                    elevation={3}
+                    sx={{
+                        textAlign: 'left',
+                        borderRadius: '16px',
+                        padding: '20px',
+                        fontSize: '18px',
+                        fontFamily: '"Varela Round", sans-serif',
+                        fontWeight: 450,
+                        backgroundColor: 'rgb(250, 250, 250)',
+                        boxShadow: '0 2px 5px rgba(0, 0, 0, 0.1)', 
+                        color: 'rgb(39, 89, 217)',
+                        transition: 'all 0.25s ease',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        position: 'relative',
+                        overflow: 'hidden',
+                        marginTop: '16px',
+                        flexGrow: 1,
+                        minHeight: '400px',
+                        maxHeight: 'calc(100vh - 150px)',
+                        paddingLeft: '16px', 
+                        paddingRight: '16px', 
+                        marginLeft: '0px',
+                        marginRight: '10px',
+                    }}
+                >
+                    <Typography
+                        component="h1"
+                        sx={{
+                            fontWeight: "bold",
+                            fontFamily: "Montserrat, sans-serif",
+                            fontStyle: "normal",
+                            color: "rgba(33, 33, 33, 0.8)",
+                            marginBottom: '14px',
+                            marginTop: '0px',
+                            textAlign: "center",
+                            fontSize: "30px",
+                        }}
                     >
-                        Thêm chương trình
-                    </Button>
-                </div>
+                        Danh sách chương trình đào tạo
+                    </Typography>
+                    
+                    <Box sx={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '16px' }}>
+                        <Button
+                            variant="contained"
+                            color="primary"
+                            startIcon={<AddIcon />}
+                            onClick={() => handleOpenDialog(false)}
+                            sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '8px' }}
+                        >
+                            Thêm chương trình
+                        </Button>
+                    </Box>
 
-                {/* Content grid - in its own container */}
-                <div className="bg-transparent rounded-lg p-4">
-                    <Grid container spacing={2} alignItems="stretch">
-                        {programs.map((program) => (
-                            <Grid item xs={12} md={6} lg={4} key={program.id} style={{ display: 'flex' }}>
-                                <Card className="h-full w-full hover:shadow-lg transition-shadow" sx={{ fontFamily: '"Varela Round", sans-serif' }}>
-                                    <CardContent>
-                                        {/* Card content remains the same */}
-                                        <div className="flex justify-between">
-                                            <Typography variant="h6" className="font-bold text-blue-700" sx={{ fontFamily: '"Varela Round", sans-serif' }}>{program.name}</Typography>
-                                            <div>
-                                                <IconButton
-                                                    size="small"
-                                                    onClick={() => handleOpenDialog(true, program)}
-                                                    className="text-blue-500"
-                                                    sx={{ fontFamily: '"Varela Round", sans-serif' }}
-                                                >
-                                                    <EditIcon fontSize="small" />
-                                                </IconButton>
-                                                <IconButton
-                                                    size="small"
-                                                    onClick={() => handleDeleteProgram(program.id)}
-                                                    className="text-red-500"
-                                                    sx={{ fontFamily: '"Varela Round", sans-serif' }}
-                                                >
-                                                    <DeleteIcon fontSize="small" />
-                                                </IconButton>
-                                            </div>
-                                        </div>
-                                        <Typography variant="body2" className="mt-1" sx={{ fontFamily: '"Varela Round", sans-serif' }}>
-                                            <strong>Khoa:</strong> {program.department}
-                                        </Typography>
-                                        <Typography variant="body2" className="mt-1" sx={{ fontFamily: '"Varela Round", sans-serif' }}>
-                                            <strong>Loại:</strong> {program.type}
-                                        </Typography>
-                                        <Typography variant="body2" className="text-gray-600 mt-1" sx={{ fontFamily: '"Varela Round", sans-serif' }}>
-                                            <strong>Thời gian:</strong> {program.startDate} đến {program.endDate}
-                                        </Typography>
-                                        <Typography variant="body2" className="text-gray-600 mt-1" sx={{ fontFamily: '"Varela Round", sans-serif' }}>
-                                            <strong>Tổng tín chỉ:</strong> {program.totalCredits}
-                                        </Typography>
-                                    </CardContent>
-                                </Card>
-                            </Grid>
-                        ))}
-                    </Grid>
-                </div>
-            </Stack>
+                    <TableContainer component={Paper} sx={{ mt: 2, borderRadius: '12px', boxShadow: '0 4px 10px rgba(0, 0, 0, 0.1)' }}>
+                        <Table size="medium">
+                            <TableHead>
+                                <TableRow>
+                                    <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '20px', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6' }}>Tên chương trình</TableCell>
+                                    <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '20px', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6' }}>Khoa</TableCell>
+                                    <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '20px', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6' }}>Loại</TableCell>
+                                    <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '20px', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6' }}>Bắt đầu</TableCell>
+                                    <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '20px', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6' }}>Kết thúc</TableCell>
+                                    <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '20px', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6' }}>Tín chỉ</TableCell>
+                                    <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '20px', fontFamily: '"Varela Round", sans-serif', textAlign: 'center', backgroundColor: '#6ebab6' }}>Thao tác</TableCell>
+                                </TableRow>
+                            </TableHead>
+                            <TableBody>
+                                {programs
+                                    .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                                    .map((program) => (
+                                    <TableRow 
+                                        key={program.id} 
+                                        sx={{
+                                            '&:hover': {
+                                                backgroundColor: '#f5f5f5',
+                                            },
+                                        }}
+                                    >
+                                        <TableCell sx={{ fontSize: '16px', fontFamily: '"Varela Round", sans-serif', fontWeight: 500, color: 'primary.main' }}>{program.name}</TableCell>
+                                        <TableCell sx={{ fontSize: '16px', fontFamily: '"Varela Round", sans-serif' }}>{program.department}</TableCell>
+                                        <TableCell sx={{ fontSize: '16px', fontFamily: '"Varela Round", sans-serif' }}>{renderProgramTypeChip(program.type)}</TableCell>
+                                        <TableCell sx={{ fontSize: '16px', fontFamily: '"Varela Round", sans-serif' }}>{formatDate(program.startDate)}</TableCell>
+                                        <TableCell sx={{ fontSize: '16px', fontFamily: '"Varela Round", sans-serif' }}>{formatDate(program.endDate)}</TableCell>
+                                        <TableCell sx={{ fontSize: '16px', fontFamily: '"Varela Round", sans-serif' }}>{program.totalCredits}</TableCell>
+                                        <TableCell sx={{ textAlign: 'center' }}>
+                                            <IconButton 
+                                                size="small" 
+                                                color="primary"
+                                                onClick={() => handleOpenDialog(true, program)}
+                                            >
+                                                <EditIcon fontSize="small" />
+                                            </IconButton>
+                                            <IconButton 
+                                                size="small" 
+                                                color="error"
+                                                onClick={() => handleDeleteProgram(program.id)}
+                                            >
+                                                <DeleteIcon fontSize="small" />
+                                            </IconButton>
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </TableContainer>
+                    <TablePagination
+                        rowsPerPageOptions={[5, 10, 25]}
+                        component="div"
+                        count={programs.length}
+                        rowsPerPage={rowsPerPage}
+                        page={page}
+                        onPageChange={handleChangePage}
+                        onRowsPerPageChange={handleChangeRowsPerPage}
+                    />
+                </Paper>
+            </Box>
 
             {/* Dialog for adding/editing programs */}
             <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
-                <DialogTitle sx={{ fontFamily: '"Varela Round", sans-serif' }}>{isEditing ? "Chỉnh sửa chương trình" : "Thêm chương trình mới"}</DialogTitle>
+                <DialogTitle sx={{ fontFamily: '"Varela Round", sans-serif', fontWeight: 600 }}>
+                    {isEditing ? "Chỉnh sửa chương trình" : "Thêm chương trình mới"}
+                </DialogTitle>
+                <Divider />
                 <DialogContent>
-                    <TextField
-                        autoFocus
-                        margin="dense"
-                        name="name"
-                        label="Tên chương trình"
-                        fullWidth
-                        variant="outlined"
-                        value={currentProgram.name}
-                        onChange={handleInputChange}
-                        className="mb-3"
-                        sx={{ fontFamily: '"Varela Round", sans-serif' }}
-                    />
-                    <TextField
-                        margin="dense"
-                        name="department"
-                        label="Khoa"
-                        fullWidth
-                        variant="outlined"
-                        value={currentProgram.department}
-                        onChange={handleInputChange}
-                        className="mb-3"
-                        sx={{ fontFamily: '"Varela Round", sans-serif' }}
-                    />
-                    <TextField
-                        margin="dense"
-                        name="startDate"
-                        label="Ngày bắt đầu"
-                        type="date"
-                        fullWidth
-                        variant="outlined"
-                        InputLabelProps={{ shrink: true }}
-                        value={currentProgram.startDate}
-                        onChange={handleInputChange}
-                        className="mb-3"
-                        sx={{ fontFamily: '"Varela Round", sans-serif' }}
-                    />
-                    <TextField
-                        margin="dense"
-                        name="endDate"
-                        label="Ngày kết thúc"
-                        type="date"
-                        fullWidth
-                        variant="outlined"
-                        InputLabelProps={{ shrink: true }}
-                        value={currentProgram.endDate}
-                        onChange={handleInputChange}
-                        className="mb-3"
-                        sx={{ fontFamily: '"Varela Round", sans-serif' }}
-                    />
-                    <TextField
-                        margin="dense"
-                        name="totalCredits"
-                        label="Tổng tín chỉ"
-                        type="number"
-                        fullWidth
-                        variant="outlined"
-                        value={currentProgram.totalCredits}
-                        onChange={handleInputChange}
-                        sx={{ fontFamily: '"Varela Round", sans-serif' }}
-                    />
+                    <Grid container spacing={2} sx={{ mt: 0.5 }}>
+                        <Grid item xs={12}>
+                            <TextField
+                                autoFocus
+                                name="name"
+                                label="Tên chương trình"
+                                fullWidth
+                                variant="outlined"
+                                value={currentProgram.name}
+                                onChange={handleInputChange}
+                                sx={{ fontFamily: '"Varela Round", sans-serif' }}
+                            />
+                        </Grid>
+                        <Grid item xs={12} md={6}>
+                            <TextField
+                                name="department"
+                                label="Khoa"
+                                fullWidth
+                                variant="outlined"
+                                value={currentProgram.department}
+                                onChange={handleInputChange}
+                                sx={{ fontFamily: '"Varela Round", sans-serif' }}
+                            />
+                        </Grid>
+                        <Grid item xs={12} md={6}>
+                            <TextField
+                                name="type"
+                                label="Loại chương trình"
+                                fullWidth
+                                variant="outlined"
+                                value={currentProgram.type}
+                                onChange={handleInputChange}
+                                sx={{ fontFamily: '"Varela Round", sans-serif' }}
+                            />
+                        </Grid>
+                        <Grid item xs={12} md={6}>
+                            <TextField
+                                name="startDate"
+                                label="Ngày bắt đầu"
+                                type="date"
+                                fullWidth
+                                variant="outlined"
+                                InputLabelProps={{ shrink: true }}
+                                value={currentProgram.startDate}
+                                onChange={handleInputChange}
+                                sx={{ fontFamily: '"Varela Round", sans-serif' }}
+                            />
+                        </Grid>
+                        <Grid item xs={12} md={6}>
+                            <TextField
+                                name="endDate"
+                                label="Ngày kết thúc"
+                                type="date"
+                                fullWidth
+                                variant="outlined"
+                                InputLabelProps={{ shrink: true }}
+                                value={currentProgram.endDate}
+                                onChange={handleInputChange}
+                                sx={{ fontFamily: '"Varela Round", sans-serif' }}
+                            />
+                        </Grid>
+                        <Grid item xs={12}>
+                            <TextField
+                                name="totalCredits"
+                                label="Tổng tín chỉ"
+                                type="number"
+                                fullWidth
+                                variant="outlined"
+                                value={currentProgram.totalCredits}
+                                onChange={handleInputChange}
+                                sx={{ fontFamily: '"Varela Round", sans-serif' }}
+                            />
+                        </Grid>
+                    </Grid>
                 </DialogContent>
-                <DialogActions>
-                    <Button onClick={handleCloseDialog} color="error" sx={{ fontFamily: '"Varela Round", sans-serif' }}>
+                <DialogActions sx={{ px: 3, pb: 2 }}>
+                    <Button 
+                        onClick={handleCloseDialog} 
+                        variant="outlined" 
+                        color="error" 
+                        sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '8px' }}
+                    >
                         Hủy
                     </Button>
-                    <Button onClick={handleSaveProgram} color="primary" variant="contained" className="bg-blue-500" sx={{ fontFamily: '"Varela Round", sans-serif' }}>
+                    <Button 
+                        onClick={handleSaveProgram} 
+                        color="primary" 
+                        variant="contained" 
+                        sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '8px' }}
+                    >
                         {isEditing ? "Cập nhật" : "Thêm mới"}
                     </Button>
                 </DialogActions>

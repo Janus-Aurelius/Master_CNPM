@@ -9,7 +9,7 @@ import Chip from "@mui/material/Chip";
 import PersonOutlineIcon from '@mui/icons-material/PersonOutline';
 import Avatar from '@mui/material/Avatar';
 
-// Styled component for the user info container with modern styling
+
 const UserInfoContainer = styled(Box)(({ theme }) => ({
     position: 'fixed',
     top: '16px',
@@ -21,7 +21,7 @@ const UserInfoContainer = styled(Box)(({ theme }) => ({
     padding: '8px 16px 8px 8px',
     backgroundColor: 'rgba(255, 255, 255, 0.8)',
     backdropFilter: 'blur(8px)',
-    boxShadow: '0 2px 5px rgba(0, 0, 0, 0.1)', 
+    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)', 
     marginRight: '16px',
     border: '1px solid rgba(233, 236, 239, 0.8)',
     transition: 'all 0.2s ease',
