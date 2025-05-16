@@ -155,11 +155,15 @@ export default function CourseMgmAcademic({ user, onLogout }: AcademicPageProps)
                         color: 'rgb(39, 89, 217)',
                         transition: 'all 0.25s ease',
                         display: 'flex',
-                        flexDirection: 'column',
-                        position: 'relative',
-                        overflow: 'hidden',
-                        overflowY: 'auto',
-                        overflowX: 'hidden',
+                        flexDirection: 'column',                        position: 'relative',
+                        overflow: 'auto',
+                        '&::-webkit-scrollbar': {
+                            width: '6px'
+                        },
+                        '&::-webkit-scrollbar-thumb': {
+                            backgroundColor: 'rgba(0,0,0,0.2)',
+                            borderRadius: '6px'
+                        },
                         borderTopRightRadius: '16px',
                         borderBottomRightRadius: '16px',
                         marginTop: '3.5rem',
@@ -207,7 +211,7 @@ export default function CourseMgmAcademic({ user, onLogout }: AcademicPageProps)
                         </Button>
                     </Box>
                     <TableContainer component={Paper} sx={{ mt: 2, borderRadius: '12px', boxShadow: '0 4px 10px rgba(0, 0, 0, 0.1)' }}>
-                        <Table size="medium">
+                        <Table size="medium" stickyHeader>
                             <TableHead>
                                 <TableRow>
                                     <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '18px', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6' }}>Mã môn học</TableCell>
@@ -259,145 +263,248 @@ export default function CourseMgmAcademic({ user, onLogout }: AcademicPageProps)
                 </Paper>
             </Box>
             {/* Dialog for adding/editing subjects */}
-            <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
-                <DialogTitle sx={{ fontFamily: '"Varela Round", sans-serif', fontWeight: 600 }}>
+            <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="md" fullWidth
+                sx={{
+                    '& .MuiPaper-root': {
+                        borderRadius: '20px',
+                        background: 'rgba(255,255,255,0.98)',
+                        boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.15)',
+                        padding: 0,
+                    },
+                }}
+            >
+                <DialogTitle sx={{
+                    fontFamily: '"Monserrat", sans-serif',
+                    fontWeight: 700,
+                    fontSize: '2rem',
+                    color: '#4c4c4c',
+                    textAlign: 'center',
+                    pb: 0,
+                    pt: 3
+                }}>
                     {isEditing ? "Chỉnh sửa môn học" : "Thêm môn học mới"}
                 </DialogTitle>
-                <Divider />
-                <DialogContent>
+                <DialogContent dividers sx={{
+                    border: 'none',
+                    px: 4,
+                    pt: 2,
+                    pb: 0,
+                    background: 'transparent',
+                }}>
                     <Grid container spacing={2} sx={{ mt: 0.5 }}>
-                        <Grid item xs={12}>
+                        <Grid item xs={12} md={6}>
                             <TextField
                                 autoFocus
-                                margin="dense"
                                 name="code"
                                 label="Mã môn học"
                                 fullWidth
+                                margin="normal"
+                                required
                                 variant="outlined"
                                 value={currentSubject.code}
                                 onChange={handleInputChange}
-                                sx={{ fontFamily: '"Varela Round", sans-serif' }}
-                            />
-                        </Grid>
-                        <Grid item xs={12}>
-                            <TextField
-                                margin="dense"
-                                name="name"
-                                label="Tên học phần"
-                                fullWidth
-                                variant="outlined"
-                                value={currentSubject.name}
-                                onChange={handleInputChange}
-                                sx={{ fontFamily: '"Varela Round", sans-serif' }}
-                            />
-                        </Grid>
-                        <Grid item xs={12}>
-                            <TextField
-                                margin="dense"
-                                name="lecturer"
-                                label="Giảng viên"
-                                fullWidth
-                                variant="outlined"
-                                value={currentSubject.lecturer}
-                                onChange={handleInputChange}
-                                sx={{ fontFamily: '"Varela Round", sans-serif' }}
+                                sx={{
+                                    borderRadius: '12px',
+                                    background: '#f7faff',
+                                    '& .MuiOutlinedInput-root': { borderRadius: '12px' },
+                                    '& .MuiInputLabel-root': { fontWeight: 500 },
+                                    '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d8d8d8' },
+                                }}
                             />
                         </Grid>
                         <Grid item xs={12} md={6}>
-                            <FormControl fullWidth margin="dense">
-                                <InputLabel id="day-select-label">Ngày</InputLabel>
+                            <TextField
+                                name="name"
+                                label="Tên học phần"
+                                fullWidth
+                                margin="normal"
+                                required
+                                variant="outlined"
+                                value={currentSubject.name}
+                                onChange={handleInputChange}
+                                sx={{
+                                    borderRadius: '12px',
+                                    background: '#f7faff',
+                                    '& .MuiOutlinedInput-root': { borderRadius: '12px' },
+                                    '& .MuiInputLabel-root': { fontWeight: 500 },
+                                    '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d8d8d8' },
+                                }}
+                            />
+                        </Grid>
+                        <Grid item xs={12} md={6}>
+                            <TextField
+                                name="lecturer"
+                                label="Giảng viên"
+                                fullWidth
+                                margin="normal"
+                                required
+                                variant="outlined"
+                                value={currentSubject.lecturer}
+                                onChange={handleInputChange}
+                                sx={{
+                                    borderRadius: '12px',
+                                    background: '#f7faff',
+                                    '& .MuiOutlinedInput-root': { borderRadius: '12px' },
+                                    '& .MuiInputLabel-root': { fontWeight: 500 },
+                                    '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d8d8d8' },
+                                }}
+                            />
+                        </Grid>
+                        <Grid item xs={12} md={6}>
+                            <FormControl fullWidth margin="normal" sx={{ background: '#f7faff', borderRadius: '12px' }}>
+                                <InputLabel id="day-select-label" sx={{ fontWeight: 500 }}>Ngày</InputLabel>
                                 <Select
                                     labelId="day-select-label"
                                     name="day"
                                     value={currentSubject.day}
                                     label="Ngày"
                                     onChange={handleSelectChange}
-                                    sx={{ fontFamily: '"Varela Round", sans-serif' }}
+                                    sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '12px', '& .MuiOutlinedInput-notchedOutline': { borderRadius: '12px', borderColor: '#d8d8d8' } }}
+                                    MenuProps={{
+                                        PaperProps: {
+                                            elevation: 4,
+                                            sx: {
+                                                borderRadius: 3,
+                                                minWidth: 200,
+                                                boxShadow: '0 4px 24px 0 rgba(0,0,0,0.10)',
+                                                p: 1,
+                                            },
+                                        },
+                                        MenuListProps: {
+                                            sx: {
+                                                display: 'flex',
+                                                flexDirection: 'column',
+                                                gap: 0.5,
+                                                fontFamily: '"Varela Round", sans-serif',
+                                                borderRadius: 3,
+                                                p: 0,
+                                            },
+                                        },
+                                    }}
                                 >
-                                    <MenuItem value="Thứ Hai">Thứ Hai</MenuItem>
-                                    <MenuItem value="Thứ Ba">Thứ Ba</MenuItem>
-                                    <MenuItem value="Thứ Tư">Thứ Tư</MenuItem>
-                                    <MenuItem value="Thứ Năm">Thứ Năm</MenuItem>
-                                    <MenuItem value="Thứ Sáu">Thứ Sáu</MenuItem>
-                                    <MenuItem value="Thứ Bảy">Thứ Bảy</MenuItem>
-                                    <MenuItem value="Chủ Nhật">Chủ Nhật</MenuItem>
+                                    <MenuItem value="Thứ Hai" sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>Thứ Hai</MenuItem>
+                                    <MenuItem value="Thứ Ba" sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>Thứ Ba</MenuItem>
+                                    <MenuItem value="Thứ Tư" sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>Thứ Tư</MenuItem>
+                                    <MenuItem value="Thứ Năm" sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>Thứ Năm</MenuItem>
+                                    <MenuItem value="Thứ Sáu" sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>Thứ Sáu</MenuItem>
+                                    <MenuItem value="Thứ Bảy" sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>Thứ Bảy</MenuItem>
+                                    <MenuItem value="Chủ Nhật" sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>Chủ Nhật</MenuItem>
                                 </Select>
                             </FormControl>
                         </Grid>
                         <Grid item xs={12} md={6}>
-                            <FormControl fullWidth margin="dense">
-                                <InputLabel id="session-select-label">Ca học</InputLabel>
+                            <FormControl fullWidth margin="normal" sx={{ background: '#f7faff', borderRadius: '12px' }}>
+                                <InputLabel id="session-select-label" sx={{ fontWeight: 500 }}>Ca học</InputLabel>
                                 <Select
                                     labelId="session-select-label"
                                     name="session"
                                     value={currentSubject.session}
                                     label="Ca học"
                                     onChange={handleSelectChange}
-                                    sx={{ fontFamily: '"Varela Round", sans-serif' }}
+                                    sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '12px', '& .MuiOutlinedInput-notchedOutline': { borderRadius: '12px', borderColor: '#d8d8d8' } }}
+                                    MenuProps={{
+                                        PaperProps: {
+                                            elevation: 4,
+                                            sx: {
+                                                borderRadius: 3,
+                                                minWidth: 200,
+                                                boxShadow: '0 4px 24px 0 rgba(0,0,0,0.10)',
+                                                p: 1,
+                                            },
+                                        },
+                                        MenuListProps: {
+                                            sx: {
+                                                display: 'flex',
+                                                flexDirection: 'column',
+                                                gap: 0.5,
+                                                fontFamily: '"Varela Round", sans-serif',
+                                                borderRadius: 3,
+                                                p: 0,
+                                            },
+                                        },
+                                    }}
                                 >
-                                    <MenuItem value="1">Ca 1</MenuItem>
-                                    <MenuItem value="2">Ca 2</MenuItem>
-                                    <MenuItem value="3">Ca 3</MenuItem>
-                                    <MenuItem value="4">Ca 4</MenuItem>
-                                    <MenuItem value="5">Ca 5</MenuItem>
+                                    <MenuItem value="1" sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>Ca 1</MenuItem>
+                                    <MenuItem value="2" sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>Ca 2</MenuItem>
+                                    <MenuItem value="3" sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>Ca 3</MenuItem>
+                                    <MenuItem value="4" sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>Ca 4</MenuItem>
+                                    <MenuItem value="5" sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>Ca 5</MenuItem>
                                 </Select>
                             </FormControl>
                         </Grid>
                         <Grid item xs={12} md={6}>
                             <TextField
-                                margin="dense"
                                 name="fromTo"
                                 label="Thời gian"
                                 fullWidth
+                                margin="normal"
+                                required
                                 variant="outlined"
                                 value={currentSubject.fromTo}
                                 onChange={handleInputChange}
                                 placeholder="Ví dụ: 08:00-10:00"
-                                sx={{ fontFamily: '"Varela Round", sans-serif' }}
+                                sx={{
+                                    borderRadius: '12px',
+                                    background: '#f7faff',
+                                    '& .MuiOutlinedInput-root': { borderRadius: '12px' },
+                                    '& .MuiInputLabel-root': { fontWeight: 500 },
+                                    '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d8d8d8' },
+                                }}
                             />
                         </Grid>
                         <Grid item xs={12} md={6}>
                             <TextField
-                                margin="dense"
                                 name="room"
                                 label="Phòng"
                                 fullWidth
+                                margin="normal"
                                 variant="outlined"
                                 value={currentSubject.room}
                                 onChange={handleInputChange}
-                                sx={{ fontFamily: '"Varela Round", sans-serif' }}
+                                sx={{
+                                    borderRadius: '12px',
+                                    background: '#f7faff',
+                                    '& .MuiOutlinedInput-root': { borderRadius: '12px' },
+                                    '& .MuiInputLabel-root': { fontWeight: 500 },
+                                    '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d8d8d8' },
+                                }}
                             />
                         </Grid>
                         <Grid item xs={12} md={6}>
                             <TextField
-                                margin="dense"
                                 name="credits"
                                 label="Số tín chỉ"
                                 type="number"
                                 fullWidth
+                                margin="normal"
+                                required
                                 variant="outlined"
                                 value={currentSubject.credits}
                                 onChange={handleInputChange}
-                                sx={{ fontFamily: '"Varela Round", sans-serif' }}
+                                sx={{
+                                    borderRadius: '12px',
+                                    background: '#f7faff',
+                                    '& .MuiOutlinedInput-root': { borderRadius: '12px' },
+                                    '& .MuiInputLabel-root': { fontWeight: 500 },
+                                    '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d8d8d8' },
+                                }}
                             />
                         </Grid>
                     </Grid>
                 </DialogContent>
-                <DialogActions sx={{ px: 3, pb: 2 }}>
-                    <Button
-                        onClick={handleCloseDialog}
-                        variant="outlined"
-                        color="error"
-                        sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '8px' }}
-                    >
+                <DialogActions sx={{
+                    px: 4,
+                    pb: 3,
+                    pt: 2,
+                    display: 'flex',
+                    justifyContent: 'flex-end',
+                    gap: 2,
+                    background: 'transparent',
+                }}>
+                    <Button onClick={handleCloseDialog} color="primary">
                         Hủy
                     </Button>
-                    <Button
-                        onClick={handleSaveSubject}
-                        color="primary"
-                        variant="contained"
-                        sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '8px' }}
-                    >
+                    <Button variant="contained" color="primary" onClick={handleSaveSubject}>
                         {isEditing ? "Cập nhật" : "Thêm mới"}
                     </Button>
                 </DialogActions>

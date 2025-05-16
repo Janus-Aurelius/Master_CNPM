@@ -68,13 +68,19 @@ export function TimetableGrid() {
                     }}
                 >
                     Thời khóa biểu
-                </Typography>
-                <Box
+                </Typography>                <Box
                     sx={{
-                        overflow: 'auto', 
+                        overflow: 'auto',
                         flexGrow: 1,
                         width: '100%',
- 
+                        '&::-webkit-scrollbar': {
+                            width: '6px',
+                            height: '6px'
+                        },
+                        '&::-webkit-scrollbar-thumb': {
+                            backgroundColor: 'rgba(0,0,0,0.2)',
+                            borderRadius: '6px'
+                        }
                     }}
                 >
                     <Table

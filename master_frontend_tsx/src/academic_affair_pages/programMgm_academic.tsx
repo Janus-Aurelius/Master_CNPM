@@ -158,11 +158,15 @@ export default function ProgramMgmAcademic({ user, onLogout }: AcademicPageProps
                         color: 'rgb(39, 89, 217)',
                         transition: 'all 0.25s ease',
                         display: 'flex',
-                        flexDirection: 'column',
-                        position: 'relative',
-                        overflow: 'hidden',
-                        overflowY: 'auto',
-                        overflowX: 'hidden',
+                        flexDirection: 'column',                        position: 'relative',
+                        overflow: 'auto',
+                        '&::-webkit-scrollbar': {
+                            width: '6px'
+                        },
+                        '&::-webkit-scrollbar-thumb': {
+                            backgroundColor: 'rgba(0,0,0,0.2)',
+                            borderRadius: '6px'
+                        },
                         borderTopRightRadius: '16px',
                         borderBottomRightRadius: '16px',
                         marginTop: '3.5rem',
@@ -266,12 +270,34 @@ export default function ProgramMgmAcademic({ user, onLogout }: AcademicPageProps
                 </Paper>
             </Box>
             {/* Dialog for adding/editing programs */}
-            <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
-                <DialogTitle sx={{ fontFamily: '"Varela Round", sans-serif', fontWeight: 600 }}>
+            <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="md" fullWidth
+                sx={{
+                    '& .MuiPaper-root': {
+                        borderRadius: '20px',
+                        background: 'rgba(255,255,255,0.98)',
+                        boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.15)',
+                        padding: 0,
+                    },
+                }}
+            >
+                <DialogTitle sx={{
+                    fontFamily: '"Monserrat", sans-serif',
+                    fontWeight: 700,
+                    fontSize: '2rem',
+                    color: '#4c4c4c',
+                    textAlign: 'center',
+                    pb: 0,
+                    pt: 3
+                }}>
                     {isEditing ? "Chỉnh sửa chương trình" : "Thêm chương trình mới"}
                 </DialogTitle>
-                <Divider />
-                <DialogContent>
+                <DialogContent dividers sx={{
+                    border: 'none',
+                    px: 4,
+                    pt: 2,
+                    pb: 0,
+                    background: 'transparent',
+                }}>
                     <Grid container spacing={2} sx={{ mt: 0.5 }}>
                         <Grid item xs={12}>
                             <TextField
@@ -282,7 +308,13 @@ export default function ProgramMgmAcademic({ user, onLogout }: AcademicPageProps
                                 variant="outlined"
                                 value={currentProgram.name}
                                 onChange={handleInputChange}
-                                sx={{ fontFamily: '"Varela Round", sans-serif' }}
+                                sx={{
+                                    borderRadius: '12px',
+                                    background: '#f7faff',
+                                    '& .MuiOutlinedInput-root': { borderRadius: '12px' },
+                                    '& .MuiInputLabel-root': { fontWeight: 500 },
+                                    '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d8d8d8' },
+                                }}
                             />
                         </Grid>
                         <Grid item xs={12} md={6}>
@@ -293,7 +325,13 @@ export default function ProgramMgmAcademic({ user, onLogout }: AcademicPageProps
                                 variant="outlined"
                                 value={currentProgram.department}
                                 onChange={handleInputChange}
-                                sx={{ fontFamily: '"Varela Round", sans-serif' }}
+                                sx={{
+                                    borderRadius: '12px',
+                                    background: '#f7faff',
+                                    '& .MuiOutlinedInput-root': { borderRadius: '12px' },
+                                    '& .MuiInputLabel-root': { fontWeight: 500 },
+                                    '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d8d8d8' },
+                                }}
                             />
                         </Grid>
                         <Grid item xs={12} md={6}>
@@ -304,7 +342,13 @@ export default function ProgramMgmAcademic({ user, onLogout }: AcademicPageProps
                                 variant="outlined"
                                 value={currentProgram.type}
                                 onChange={handleInputChange}
-                                sx={{ fontFamily: '"Varela Round", sans-serif' }}
+                                sx={{
+                                    borderRadius: '12px',
+                                    background: '#f7faff',
+                                    '& .MuiOutlinedInput-root': { borderRadius: '12px' },
+                                    '& .MuiInputLabel-root': { fontWeight: 500 },
+                                    '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d8d8d8' },
+                                }}
                             />
                         </Grid>
                         <Grid item xs={12} md={6}>
@@ -317,7 +361,13 @@ export default function ProgramMgmAcademic({ user, onLogout }: AcademicPageProps
                                 InputLabelProps={{ shrink: true }}
                                 value={currentProgram.startDate}
                                 onChange={handleInputChange}
-                                sx={{ fontFamily: '"Varela Round", sans-serif' }}
+                                sx={{
+                                    borderRadius: '12px',
+                                    background: '#f7faff',
+                                    '& .MuiOutlinedInput-root': { borderRadius: '12px' },
+                                    '& .MuiInputLabel-root': { fontWeight: 500 },
+                                    '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d8d8d8' },
+                                }}
                             />
                         </Grid>
                         <Grid item xs={12} md={6}>
@@ -330,7 +380,13 @@ export default function ProgramMgmAcademic({ user, onLogout }: AcademicPageProps
                                 InputLabelProps={{ shrink: true }}
                                 value={currentProgram.endDate}
                                 onChange={handleInputChange}
-                                sx={{ fontFamily: '"Varela Round", sans-serif' }}
+                                sx={{
+                                    borderRadius: '12px',
+                                    background: '#f7faff',
+                                    '& .MuiOutlinedInput-root': { borderRadius: '12px' },
+                                    '& .MuiInputLabel-root': { fontWeight: 500 },
+                                    '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d8d8d8' },
+                                }}
                             />
                         </Grid>
                         <Grid item xs={12}>
@@ -342,26 +398,30 @@ export default function ProgramMgmAcademic({ user, onLogout }: AcademicPageProps
                                 variant="outlined"
                                 value={currentProgram.totalCredits}
                                 onChange={handleInputChange}
-                                sx={{ fontFamily: '"Varela Round", sans-serif' }}
+                                sx={{
+                                    borderRadius: '12px',
+                                    background: '#f7faff',
+                                    '& .MuiOutlinedInput-root': { borderRadius: '12px' },
+                                    '& .MuiInputLabel-root': { fontWeight: 500 },
+                                    '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d8d8d8' },
+                                }}
                             />
                         </Grid>
                     </Grid>
                 </DialogContent>
-                <DialogActions sx={{ px: 3, pb: 2 }}>
-                    <Button 
-                        onClick={handleCloseDialog} 
-                        variant="outlined" 
-                        color="error" 
-                        sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '8px' }}
-                    >
+                <DialogActions sx={{
+                    px: 4,
+                    pb: 3,
+                    pt: 2,
+                    display: 'flex',
+                    justifyContent: 'flex-end',
+                    gap: 2,
+                    background: 'transparent',
+                }}>
+                    <Button onClick={handleCloseDialog} color="primary">
                         Hủy
                     </Button>
-                    <Button 
-                        onClick={handleSaveProgram} 
-                        color="primary" 
-                        variant="contained" 
-                        sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '8px' }}
-                    >
+                    <Button variant="contained" color="primary" onClick={handleSaveProgram}>
                         {isEditing ? "Cập nhật" : "Thêm mới"}
                     </Button>
                 </DialogActions>

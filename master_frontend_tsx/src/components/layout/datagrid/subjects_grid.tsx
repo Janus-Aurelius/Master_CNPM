@@ -29,14 +29,20 @@ const SubjectsGrid = ({
                           sx,
                           ...otherProps
                       }: SubjectsGridProps) => {
-    return (
-        <Box
+    return (        <Box
             sx={{
                 maxHeight: "400px",
                 overflowY: "auto",
                 display: "grid",
                 gridTemplateColumns: "1fr",
                 rowGap: "8px",
+                '&::-webkit-scrollbar': {
+                    width: '6px'
+                },
+                '&::-webkit-scrollbar-thumb': {
+                    backgroundColor: 'rgba(0,0,0,0.2)',
+                    borderRadius: '6px'
+                },
                 ...sx,
             }}
             {...otherProps}

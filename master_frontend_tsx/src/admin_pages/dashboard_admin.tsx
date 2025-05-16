@@ -32,6 +32,7 @@ import {
     ErrorOutlined
 } from "@mui/icons-material";
 import { useState } from "react";
+import UserInfo from "../components/UserInfo";
 
 interface AdminPageProps {
     user: User | null;
@@ -95,14 +96,18 @@ export default function DashboardAdmin({ user, onLogout }: AdminPageProps) {
 
     return (
         <ThemeLayout role="admin" onLogout={onLogout}>
+            {/* User Info */}
+            <Box sx={{ mb: 3 }}>
+                <UserInfo user={user} />
+            </Box>
             {/* Summary Cards */}
-            <Grid container spacing={3} sx={{ mb: 4 , marginTop: '16px'}}>
+            <Grid container spacing={3} sx={{ mb: 4, mt: '2.25rem' }}>
                 <Grid item xs={12} sm={6} md={3}>
-                    <Card sx={{ 
-                        bgcolor: '#bbdefb',
-                        color: '#1565c0', // lighter but still bold blue
+                    <Card sx={{
+                        bgcolor: '#e1f5fe',
+                        color: '#1976d2',
                         borderRadius: '16px',
-                        boxShadow: '0 2px 5px rgba(0, 0, 0, 0.1)', 
+                        boxShadow: '0 2px 5px rgba(0, 0, 0, 0.1)',
                         transition: 'all 0.25s ease',
                         display: 'flex',
                         flexDirection: 'column',
@@ -114,23 +119,23 @@ export default function DashboardAdmin({ user, onLogout }: AdminPageProps) {
                     }}>
                         <CardContent sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', p: 2 }}>
                             <Box>
-                                <Typography variant="h6" component="div" fontWeight="bold" sx={{ color: '#1565c0' }}>
+                                <Typography variant="h6" component="div" fontWeight="bold" sx={{ color: '#0d47a1' }}>
                                     {mockSummaryData.totalStudents}
                                 </Typography>
-                                <Typography variant="body2" sx={{ color: '#1565c0', fontWeight: 500 }}>Tổng số sinh viên</Typography>
+                                <Typography variant="body2" sx={{ color: '#0d47a1', fontWeight: 500 }}>Tổng số sinh viên</Typography>
                             </Box>
-                            <Avatar sx={{ bgcolor: '#2196f3' }}>
+                            <Avatar sx={{ bgcolor: '#1976d2' }}>
                                 <PeopleOutline />
                             </Avatar>
                         </CardContent>
                     </Card>
                 </Grid>
                 <Grid item xs={12} sm={6} md={3}>
-                    <Card sx={{ 
-                        bgcolor: '#ffe082',
-                        color: '#ff9800', // vibrant, bold but fresh amber
+                    <Card sx={{
+                        bgcolor: '#fff8e1',
+                        color: '#ffb300',
                         borderRadius: '16px',
-                        boxShadow: '0 2px 5px rgba(0, 0, 0, 0.1)', 
+                        boxShadow: '0 2px 5px rgba(0, 0, 0, 0.1)',
                         transition: 'all 0.25s ease',
                         display: 'flex',
                         flexDirection: 'column',
@@ -142,23 +147,23 @@ export default function DashboardAdmin({ user, onLogout }: AdminPageProps) {
                     }}>
                         <CardContent sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', p: 2 }}>
                             <Box>
-                                <Typography variant="h6" component="div" fontWeight="bold" sx={{ color: '#ff9800' }}>
+                                <Typography variant="h6" component="div" fontWeight="bold" sx={{ color: '#ff8f00' }}>
                                     {mockSummaryData.pendingPayments}
                                 </Typography>
-                                <Typography variant="body2" sx={{ color: '#ff9800', fontWeight: 600 }}>Thanh toán đang chờ xử lý</Typography>
+                                <Typography variant="body2" sx={{ color: '#ff8f00', fontWeight: 600 }}>Thanh toán đang chờ xử lý</Typography>
                             </Box>
-                            <Avatar sx={{ bgcolor: '#ff9800' }}>
+                            <Avatar sx={{ bgcolor: '#ffb300' }}>
                                 <AttachMoney />
                             </Avatar>
                         </CardContent>
                     </Card>
                 </Grid>
                 <Grid item xs={12} sm={6} md={3}>
-                    <Card sx={{ 
-                        bgcolor: '#c8e6c9',
-                        color: '#388e3c', // lighter green
+                    <Card sx={{
+                        bgcolor: '#e8f5e9',
+                        color: '#388e3c',
                         borderRadius: '16px',
-                        boxShadow: '0 2px 5px rgba(0, 0, 0, 0.1)', 
+                        boxShadow: '0 2px 5px rgba(0, 0, 0, 0.1)',
                         transition: 'all 0.25s ease',
                         display: 'flex',
                         flexDirection: 'column',
@@ -170,23 +175,23 @@ export default function DashboardAdmin({ user, onLogout }: AdminPageProps) {
                     }}>
                         <CardContent sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', p: 2 }}>
                             <Box>
-                                <Typography variant="h6" component="div" fontWeight="bold" sx={{ color: '#388e3c' }}>
+                                <Typography variant="h6" component="div" fontWeight="bold" sx={{ color: '#1b5e20' }}>
                                     {mockSummaryData.newRegistrations}
                                 </Typography>
-                                <Typography variant="body2" sx={{ color: '#388e3c', fontWeight: 500 }}>Đăng ký mới</Typography>
+                                <Typography variant="body2" sx={{ color: '#1b5e20', fontWeight: 500 }}>Đăng ký mới</Typography>
                             </Box>
-                            <Avatar sx={{ bgcolor: '#4caf50' }}>
+                            <Avatar sx={{ bgcolor: '#388e3c' }}>
                                 <AppRegistration />
                             </Avatar>
                         </CardContent>
                     </Card>
                 </Grid>
                 <Grid item xs={12} sm={6} md={3}>
-                    <Card sx={{ 
-                        bgcolor: '#ffcdd2',
-                        color: '#d32f2f', // lighter red
+                    <Card sx={{
+                        bgcolor: '#ffebee',
+                        color: '#d32f2f',
                         borderRadius: '16px',
-                        boxShadow: '0 2px 5px rgba(0, 0, 0, 0.1)', 
+                        boxShadow: '0 2px 5px rgba(0, 0, 0, 0.1)',
                         transition: 'all 0.25s ease',
                         display: 'flex',
                         flexDirection: 'column',
@@ -198,12 +203,12 @@ export default function DashboardAdmin({ user, onLogout }: AdminPageProps) {
                     }}>
                         <CardContent sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', p: 2 }}>
                             <Box>
-                                <Typography variant="h6" component="div" fontWeight="bold" sx={{ color: '#d32f2f' }}>
+                                <Typography variant="h6" component="div" fontWeight="bold" sx={{ color: '#b71c1c' }}>
                                     {mockSummaryData.systemAlerts}
                                 </Typography>
-                                <Typography variant="body2" sx={{ color: '#d32f2f', fontWeight: 500 }}>Cảnh báo hệ thống</Typography>
+                                <Typography variant="body2" sx={{ color: '#b71c1c', fontWeight: 500 }}>Cảnh báo hệ thống</Typography>
                             </Box>
-                            <Avatar sx={{ bgcolor: '#e53935' }}>
+                            <Avatar sx={{ bgcolor: '#d32f2f' }}>
                                 <Notifications />
                             </Avatar>
                         </CardContent>
@@ -215,17 +220,17 @@ export default function DashboardAdmin({ user, onLogout }: AdminPageProps) {
             <Grid container spacing={3}>
                 {/* Audit Logs */}
                 <Grid item xs={12} md={8}>
-                    <Paper sx={{ 
-                            borderRadius: '16px',
-                            padding: '20px',
-                            backgroundColor: 'rgb(250, 250, 250)',
-                            boxShadow: '0 2px 5px rgba(0, 0, 0, 0.1)', 
-                            transition: 'all 0.25s ease',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            flexGrow: 1,
-                            p: 2
-                         }}>
+                    <Paper sx={{
+                        borderRadius: '16px',
+                        padding: '20px',
+                        backgroundColor: 'rgb(250, 250, 250)',
+                        boxShadow: '0 2px 5px rgba(0, 0, 0, 0.1)',
+                        transition: 'all 0.25s ease',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        flexGrow: 1,
+                        p: 2
+                    }}>
                         <Typography variant="h6" sx={{ mb: 2 }}>
                             Nhật ký hoạt động
                         </Typography>
@@ -269,18 +274,18 @@ export default function DashboardAdmin({ user, onLogout }: AdminPageProps) {
 
                 {/* Recent Activity */}
                 <Grid item xs={12} md={4}>
-                    <Paper sx={{ 
-                            p: 2,
-                            height: '100%',
-                            borderRadius: '16px',
-                            padding: '20px',
-                            backgroundColor: 'rgb(250, 250, 250)',
-                            boxShadow: '0 2px 5px rgba(0, 0, 0, 0.1)', 
-                            transition: 'all 0.25s ease',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            flexGrow: 1,
-                        }}>
+                    <Paper sx={{
+                        p: 2,
+                        height: '100%',
+                        borderRadius: '16px',
+                        padding: '20px',
+                        backgroundColor: 'rgb(250, 250, 250)',
+                        boxShadow: '0 2px 5px rgba(0, 0, 0, 0.1)',
+                        transition: 'all 0.25s ease',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        flexGrow: 1,
+                    }}>
                         <Typography variant="h6" sx={{ mb: 2 }}>
                             Hoạt động gần đây
                         </Typography>

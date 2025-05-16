@@ -393,10 +393,15 @@ export default function OpenCourseMgmAcademic({user, onLogout }: OpenCourseMgmAc
                         color: 'rgb(39, 89, 217)',
                         transition: 'all 0.25s ease',
                         display: 'flex',
-                        flexDirection: 'column',
-                        position: 'relative',
-                        overflowY: 'auto',
-                        overflowX: 'hidden',
+                        flexDirection: 'column',                        position: 'relative',
+                        overflow: 'auto',
+                        '&::-webkit-scrollbar': {
+                            width: '6px'
+                        },
+                        '&::-webkit-scrollbar-thumb': {
+                            backgroundColor: 'rgba(0,0,0,0.2)',
+                            borderRadius: '6px'
+                        },
                         borderTopRightRadius: '16px',
                         borderBottomRightRadius: '16px',
                         marginTop: '3.5rem',

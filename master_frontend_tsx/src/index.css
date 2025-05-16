@@ -1,4 +1,28 @@
 @import "tailwindcss";
 @import "tailwindcss/preflight";
 
-@tailwind utilities;
+@import "tailwindcss/utilities";
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+#root {
+  height: 100%;
+  overflow: hidden;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+#root {
+  height: 100%;
+  overflow: hidden;
+}

@@ -12,7 +12,12 @@ const ThemeContainer = styled.div`
     display: flex;
     min-height: 100vh;
     width: 100%;
-    overflow-x: hidden;
+    overflow: auto;
+    
+    &::-webkit-scrollbar {
+        width: 0;  /* Hide horizontal scrollbar but allow scrolling */
+        height: 0;
+    }
 `;
 
 interface ThemeLayoutProps {
