@@ -201,10 +201,10 @@ export default function PaymentStatusMgm({ onLogout }: FinancialPageProps) {
                                                     </TableCell>
                                                 </TableRow>
                                                 <TableRow>
-                                                    <TableCell style={{paddingBottom: 0, paddingTop: 0}} colSpan={6}>
+                                                    <TableCell style={{paddingBottom: '0rem', paddingTop: '0rem'}} colSpan={6}>
                                                         <Collapse in={expandedRows[invoice.id]} timeout="auto"
                                                                   unmountOnExit>
-                                                            <div className="p-2">
+                                                            <div className="p-2" style={{padding: '0.125rem'}}>
                                                                 <Typography variant="subtitle1" gutterBottom>
                                                                     Lịch sử thanh toán
                                                                 </Typography>

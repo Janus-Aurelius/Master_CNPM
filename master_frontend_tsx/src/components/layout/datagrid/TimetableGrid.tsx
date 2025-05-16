@@ -25,20 +25,20 @@ export function TimetableGrid() {
             sx={{
                 display: 'flex',
                 justifyContent: 'center',
-                mt: 4,
+                mt: '0.25rem',
             }}
         >
             <Sheet
                 variant="plain"
                 sx={{
                     textAlign: 'left',
-                    borderRadius: '16px',
-                    padding: '20px',
-                    fontSize: '18px',
+                    borderRadius: '1rem',
+                    padding: '1.25rem',
+                    fontSize: '1.125rem',
                     fontFamily: '"Varela Round", sans-serif',
                     fontWeight: 450,
                     backgroundColor: 'rgb(250, 250, 250)',
-                    boxShadow: '0 2px 5px rgba(0, 0, 0, 0.1)',
+                    boxShadow: '0 0.125rem 0.3125rem rgba(0, 0, 0, 0.1)',
                     color: 'rgb(39, 89, 217)',
                     transition: 'all 0.25s ease',
                     display: 'flex',
@@ -46,11 +46,12 @@ export function TimetableGrid() {
                     position: 'relative',
                     overflow: 'hidden',
                     flexGrow: 1,
-                    minHeight: '500px',
-                    maxHeight: 'calc(100vh - 100px)',
-                    paddingLeft: '16px',
-                    paddingRight: '16px',
-                    marginTop: '30px',
+                    minHeight: '31.25rem',
+                    maxHeight: 'calc(100vh - 6.25rem)',
+                    paddingLeft: '1rem',
+                    paddingRight: '1rem',
+                    marginRight: '0.625rem',
+                    marginTop: '3.5rem',
                 }}
             >
                 <Typography
@@ -60,10 +61,10 @@ export function TimetableGrid() {
                         fontFamily: 'Montserrat, sans-serif',
                         fontStyle: 'normal',
                         color: 'rgba(33, 33, 33, 0.8)',
-                        marginBottom: '14px',
-                        marginTop: '0px',
+                        marginBottom: '0.875rem',
+                        marginTop: '0rem',
                         textAlign: 'center',
-                        fontSize: '30px',
+                        fontSize: '1.875rem',
                     }}
                 >
                     Thời khóa biểu
@@ -81,21 +82,21 @@ export function TimetableGrid() {
                     sx={{
                         width: '100%',
                         tableLayout: 'fixed',
-                        '--Table-headerHeight': '50px',
-                        '--Table-cellHeight': '50px',
+                        '--Table-headerHeight': '3.125rem',
+                        '--Table-cellHeight': '3.125rem',
                         '& thead th': {
                             textAlign: 'center',
                             backgroundColor: '#6ebab6',
-                            padding: '10px 6px',
+                            padding: '0.625rem 0.375rem',
                             fontWeight: 'bold',
-                            fontSize: '16px',
+                            fontSize: '1rem',
                             color: '#FFFFFF',
-                            borderRight: '1px solid #cccccc',
+                            borderRight: '0.0625rem solid #cccccc',
                         },
                         '& tbody td': {
                             textAlign: 'center',
-                            padding: '10px',
-                            fontSize: '14px',
+                            padding: '0.625rem',
+                            fontSize: '0.875rem',
                             color: '#4a4a4a',
                             backgroundColor: '#FFFFFF',
                         },
@@ -105,7 +106,7 @@ export function TimetableGrid() {
                             backgroundColor: '#f9fafc',
                             fontWeight: 'bold',
                             color: '#2f4f4f',
-                            width: '140px',
+                            width: '8.75rem',
                         },
                     }}
                 >
@@ -122,7 +123,7 @@ export function TimetableGrid() {
                                             height: '100%',
                                             fontFamily: '"Varela Round", sans-serif',
                                             fontWeight: 600,
-                                            fontSize: '18px',
+                                            fontSize: '1.125rem',
                                             color: '#FFFFFF',
                                         }}
                                     >
@@ -161,7 +162,7 @@ export function TimetableGrid() {
                                             sx={{
                                                 height: '100%',
                                                 width: '100%',
-                                                borderRadius: '8px',
+                                                borderRadius: '0.5rem',
                                                 transition: 'all 0.3s',
                                                 backgroundColor: '#FFFFFF',
                                                 fontFamily: '"Varela Round", sans-serif',

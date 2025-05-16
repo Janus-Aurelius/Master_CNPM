@@ -172,9 +172,6 @@ export const AcademicSidebarContent = ({ onLogout }: AcademicSidebarContentProps
                         <NavItem to="/academic/subjectMgm" sx={{ color: '#0173d3' }} selected={selectedPath === "/academic/subjectMgm"} icon={<LibraryBooksOutlined />}>
                             Quản lý môn học
                         </NavItem>
-                        <NavItem to="/academic/studentSubjectReq" sx={{ color: '#0173d3' }} selected={selectedPath === "/academic/studentSubjectReq"} icon={<HelpOutlineOutlined />}>
-                            Yêu cầu cứu xét
-                        </NavItem>
                         <NavItem to="/academic/openCourseMgm" sx={{ color: '#0173d3' }} selected={selectedPath === "/academic/openCourseMgm"} icon={<ClassOutlined />}>
                             Quản lý môn học mở
                         </NavItem>

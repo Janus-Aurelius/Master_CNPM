@@ -95,97 +95,115 @@ export default function DashboardAdmin({ user, onLogout }: AdminPageProps) {
 
     return (
         <ThemeLayout role="admin" onLogout={onLogout}>
-                  
-
             {/* Summary Cards */}
             <Grid container spacing={3} sx={{ mb: 4 , marginTop: '16px'}}>
                 <Grid item xs={12} sm={6} md={3}>
-                    <Card sx={{ bgcolor: 'primary.light',
-                             color: 'primary.contrastText',
-                             borderRadius: '16px',
-                             boxShadow: '0 2px 5px rgba(0, 0, 0, 0.1)', 
-                             transition: 'all 0.25s ease',
-                             display: 'flex',
-                             flexDirection: 'column',
-                             flexGrow: 1,
-                            }}>
-                        <CardContent sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <Card sx={{ 
+                        bgcolor: '#bbdefb',
+                        color: '#1565c0', // lighter but still bold blue
+                        borderRadius: '16px',
+                        boxShadow: '0 2px 5px rgba(0, 0, 0, 0.1)', 
+                        transition: 'all 0.25s ease',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        flexGrow: 1,
+                        '&:hover': {
+                            boxShadow: '0 5px 15px rgba(0, 0, 0, 0.1)',
+                            transform: 'translateY(-2px)'
+                        }
+                    }}>
+                        <CardContent sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', p: 2 }}>
                             <Box>
-                                <Typography variant="h6" component="div">
+                                <Typography variant="h6" component="div" fontWeight="bold" sx={{ color: '#1565c0' }}>
                                     {mockSummaryData.totalStudents}
                                 </Typography>
-                                <Typography variant="body2">Tổng số sinh viên</Typography>
+                                <Typography variant="body2" sx={{ color: '#1565c0', fontWeight: 500 }}>Tổng số sinh viên</Typography>
                             </Box>
-                            <Avatar sx={{ bgcolor: 'primary.main' }}>
+                            <Avatar sx={{ bgcolor: '#2196f3' }}>
                                 <PeopleOutline />
                             </Avatar>
                         </CardContent>
                     </Card>
                 </Grid>
                 <Grid item xs={12} sm={6} md={3}>
-                    <Card sx={{ bgcolor: 'warning.light', 
-                                color: 'warning.contrastText',
-                                borderRadius: '16px',
-                                boxShadow: '0 2px 5px rgba(0, 0, 0, 0.1)', 
-                                transition: 'all 0.25s ease',
-                                display: 'flex',
-                                flexDirection: 'column',
-                                flexGrow: 1,
-                                }}>
-                        <CardContent sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <Card sx={{ 
+                        bgcolor: '#ffe082',
+                        color: '#ff9800', // vibrant, bold but fresh amber
+                        borderRadius: '16px',
+                        boxShadow: '0 2px 5px rgba(0, 0, 0, 0.1)', 
+                        transition: 'all 0.25s ease',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        flexGrow: 1,
+                        '&:hover': {
+                            boxShadow: '0 5px 15px rgba(0, 0, 0, 0.1)',
+                            transform: 'translateY(-2px)'
+                        }
+                    }}>
+                        <CardContent sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', p: 2 }}>
                             <Box>
-                                <Typography variant="h6" component="div">
+                                <Typography variant="h6" component="div" fontWeight="bold" sx={{ color: '#ff9800' }}>
                                     {mockSummaryData.pendingPayments}
                                 </Typography>
-                                <Typography variant="body2">Thanh toán đang chờ xử lý</Typography>
+                                <Typography variant="body2" sx={{ color: '#ff9800', fontWeight: 600 }}>Thanh toán đang chờ xử lý</Typography>
                             </Box>
-                            <Avatar sx={{ bgcolor: 'warning.main' }}>
+                            <Avatar sx={{ bgcolor: '#ff9800' }}>
                                 <AttachMoney />
                             </Avatar>
                         </CardContent>
                     </Card>
                 </Grid>
                 <Grid item xs={12} sm={6} md={3}>
-                    <Card sx={{ bgcolor: 'success.light', 
-                                color: 'success.contrastText',
-                                borderRadius: '16px',
-                                boxShadow: '0 2px 5px rgba(0, 0, 0, 0.1)', 
-                                transition: 'all 0.25s ease',
-                                display: 'flex',
-                                flexDirection: 'column',
-                                flexGrow: 1,
-                                }}>
-                        <CardContent sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <Card sx={{ 
+                        bgcolor: '#c8e6c9',
+                        color: '#388e3c', // lighter green
+                        borderRadius: '16px',
+                        boxShadow: '0 2px 5px rgba(0, 0, 0, 0.1)', 
+                        transition: 'all 0.25s ease',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        flexGrow: 1,
+                        '&:hover': {
+                            boxShadow: '0 5px 15px rgba(0, 0, 0, 0.1)',
+                            transform: 'translateY(-2px)'
+                        }
+                    }}>
+                        <CardContent sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', p: 2 }}>
                             <Box>
-                                <Typography variant="h6" component="div">
+                                <Typography variant="h6" component="div" fontWeight="bold" sx={{ color: '#388e3c' }}>
                                     {mockSummaryData.newRegistrations}
                                 </Typography>
-                                <Typography variant="body2">Đăng ký mới</Typography>
+                                <Typography variant="body2" sx={{ color: '#388e3c', fontWeight: 500 }}>Đăng ký mới</Typography>
                             </Box>
-                            <Avatar sx={{ bgcolor: 'success.main' }}>
+                            <Avatar sx={{ bgcolor: '#4caf50' }}>
                                 <AppRegistration />
                             </Avatar>
                         </CardContent>
                     </Card>
                 </Grid>
                 <Grid item xs={12} sm={6} md={3}>
-                    <Card sx={{ bgcolor: 'error.light', 
-                                color: 'error.contrastText',
-                                borderRadius: '16px',
-                                boxShadow: '0 2px 5px rgba(0, 0, 0, 0.1)', 
-                                transition: 'all 0.25s ease',
-                                display: 'flex',
-                                flexDirection: 'column',
-                                flexGrow: 1,
-                                }}>
-                        <CardContent sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <Card sx={{ 
+                        bgcolor: '#ffcdd2',
+                        color: '#d32f2f', // lighter red
+                        borderRadius: '16px',
+                        boxShadow: '0 2px 5px rgba(0, 0, 0, 0.1)', 
+                        transition: 'all 0.25s ease',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        flexGrow: 1,
+                        '&:hover': {
+                            boxShadow: '0 5px 15px rgba(0, 0, 0, 0.1)',
+                            transform: 'translateY(-2px)'
+                        }
+                    }}>
+                        <CardContent sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', p: 2 }}>
                             <Box>
-                                <Typography variant="h6" component="div">
+                                <Typography variant="h6" component="div" fontWeight="bold" sx={{ color: '#d32f2f' }}>
                                     {mockSummaryData.systemAlerts}
                                 </Typography>
-                                <Typography variant="body2">Cảnh báo hệ thống</Typography>
+                                <Typography variant="body2" sx={{ color: '#d32f2f', fontWeight: 500 }}>Cảnh báo hệ thống</Typography>
                             </Box>
-                            <Avatar sx={{ bgcolor: 'error.main' }}>
+                            <Avatar sx={{ bgcolor: '#e53935' }}>
                                 <Notifications />
                             </Avatar>
                         </CardContent>

@@ -12,7 +12,6 @@ import DialogTitle from "@mui/material/DialogTitle";
 import Button from "@mui/material/Button";
 import HomeOutlined from '@mui/icons-material/HomeOutlined';
 import BookOutlined from '@mui/icons-material/BookOutlined';
-import AssignmentOutlined from '@mui/icons-material/AssignmentOutlined';
 import ListAltOutlined from '@mui/icons-material/ListAltOutlined';
 import MonetizationOnOutlined from '@mui/icons-material/MonetizationOnOutlined';
 import ExitToAppOutlined from '@mui/icons-material/ExitToAppOutlined';
@@ -164,9 +163,6 @@ export const StudentSidebarContent = ({ onLogout }: StudentSidebarContentProps) 
                 </NavItem>
                 <NavItem to="/student/subjects" sx={{ color: '#0173d3' }} selected={selectedPath === "/student/subjects"} icon={<BookOutlined />}>
                     Đăng ký học phần
-                </NavItem>
-                <NavItem to="/student/academicReqMgm" sx={{ color: '#0173d3' }} selected={selectedPath === "/student/academicReqMgm"} icon={<AssignmentOutlined />}>
-                    Quản lý cứu xét
                 </NavItem>
                 <NavItem to="/student/enrolledSubjects" sx={{ color: '#0173d3' }} selected={selectedPath === "/student/enrolledSubjects"} icon={<ListAltOutlined />}>
                     Môn đã đăng ký

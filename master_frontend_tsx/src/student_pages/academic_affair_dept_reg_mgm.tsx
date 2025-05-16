@@ -22,27 +22,31 @@ export const AcademicAffairDeptReqMgm = ({ onLogout }: AcademicAffairDeptReqMgmP
                     elevation={3}
                     sx={{
                         textAlign: 'left',
-                        borderRadius: '16px',
-                        padding: '20px',
-                        fontSize: '18px',
+                        borderRadius: '1rem',
+                        padding: '1.25rem',
+                        fontSize: '1.125rem',
                         fontFamily: '"Varela Round", sans-serif',
                         fontWeight: 450,
                         backgroundColor: 'rgb(250, 250, 250)',
-                        boxShadow: '0 2px 5px rgba(0, 0, 0, 0.1)',
+                        boxShadow: '0 0.125rem 0.3125rem rgba(0, 0, 0, 0.1)',
                         color: 'rgb(39, 89, 217)',
                         transition: 'all 0.25s ease',
                         display: 'flex',
                         flexDirection: 'column',
                         position: 'relative',
                         overflow: 'hidden',
-                        marginTop: '16px',
+                        overflowY: 'auto',
+                        overflowX: 'hidden',
+                        borderTopRightRadius: '1rem',
+                        borderBottomRightRadius: '1rem',
+                        marginTop: '1rem',
                         flexGrow: 1,
-                        minHeight: '300px',
-                        maxHeight: 'calc(100vh - 150px)',
-                        paddingLeft: '16px',
-                        paddingRight: '16px',
-                        marginLeft: '0px',
-                        marginRight: '10px',
+                        minHeight: '18.75rem',
+                        maxHeight: 'calc(100vh - 9.375rem)',
+                        paddingLeft: '1rem',
+                        paddingRight: '1rem',
+                        marginLeft: '0',
+                        marginRight: '0.625rem',
                     }}
                 >
                     <Typography
@@ -52,10 +56,10 @@ export const AcademicAffairDeptReqMgm = ({ onLogout }: AcademicAffairDeptReqMgmP
                             fontFamily: 'Montserrat, sans-serif',
                             fontStyle: 'normal',
                             color: 'rgba(33, 33, 33, 0.8)',
-                            marginBottom: '14px',
-                            marginTop: '0px',
+                            marginBottom: '0.875rem',
+                            marginTop: '0',
                             textAlign: 'center',
-                            fontSize: '30px',
+                            fontSize: '1.875rem',
                         }}
                     >
                         Quản lý cứu xét
@@ -68,12 +72,12 @@ export const AcademicAffairDeptReqMgm = ({ onLogout }: AcademicAffairDeptReqMgmP
                                 alignItems: 'flex-start',
                                 width: '100%',
                                 backgroundColor: '#f5f5f5',
-                                borderRadius: '12px',
-                                boxShadow: '0 4px 10px rgba(0, 0, 0, 0.1)',
-                                padding: '16px',
+                                borderRadius: '0.75rem',
+                                boxShadow: '0 0.25rem 0.625rem rgba(0, 0, 0, 0.1)',
+                                padding: '1rem',
                                 transition: 'all 0.3s ease',
-                                minHeight: '500px',
-                                maxWidth: '800px',
+                                minHeight: '31.25rem',
+                                maxWidth: '50rem',
                             }}
                         >
                             <TextField
@@ -86,7 +90,7 @@ export const AcademicAffairDeptReqMgm = ({ onLogout }: AcademicAffairDeptReqMgmP
                                 InputProps={{
                                     disableUnderline: true,
                                     sx: {
-                                        fontSize: '18px',
+                                        fontSize: '1.125rem',
                                         padding: '0',
                                         textAlign: 'left',
                                         wordWrap: 'break-word',
@@ -99,7 +103,7 @@ export const AcademicAffairDeptReqMgm = ({ onLogout }: AcademicAffairDeptReqMgmP
                             onClick={handleSubmit}
                             sx={{
                                 textTransform: 'none',
-                                borderRadius: '8px',
+                                borderRadius: '0.5rem',
                                 backgroundColor: '#3869d9',
                                 '&:hover': {
                                     backgroundColor: 'hsl(223, 100.00%, 70.20%)',

@@ -95,7 +95,7 @@ export default function LoginForm({ onLogin }: LoginFormProps) {
             <GlobalStyles
                 styles={{
                     ':root': {
-                        '--Form-maxWidth': '800px',
+                        '--Form-maxWidth': '50rem',
                         '--Transition-duration': '0.4s'
                     }
                 }}
@@ -129,27 +129,27 @@ export default function LoginForm({ onLogin }: LoginFormProps) {
                         position: 'relative',
                         zIndex: 2,
                         width: { xs: '90%', md: '50%' },
-                        maxWidth: '600px',
+                        maxWidth: '37.5rem',
                         backgroundColor: 'rgba(255, 255, 255, 0.68)',
                         backdropFilter: 'blur(12px)',
-                        borderRadius: '20px',
-                        boxShadow: '0 4px 40px rgba(0, 0, 0, 0.35)',
-                        padding: 4,
+                        borderRadius: '1.25rem',
+                        boxShadow: '0 0.25rem 2.5rem rgba(0, 0, 0, 0.35)',
+                        padding: '1rem',
                     }}
                 >
                     <Box
                         component="header"
-                        sx={{ py: 3, display: 'flex', justifyContent: 'space-between' }}
+                        sx={{ py: '1.875rem', display: 'flex', justifyContent: 'space-between' }}
                     >
-                        <Box sx={{ gap: 2, display: 'flex', alignItems: 'center', ml: 4 }}>
+                        <Box sx={{ gap: '0.125rem', display: 'flex', alignItems: 'center', ml: '1rem' }}>
                             <IconButton variant="soft" color="primary" size="sm" sx={{ backgroundColor: 'transparent' }}>
                                 <img
                                     src="https://upload.wikimedia.org/wikipedia/commons/0/00/Logo_UIT_updated.svg"
                                     alt="University Logo"
-                                    style={{ width: 70, height: 70}}
+                                    style={{ width: '4.375rem', height: '4.375rem'}}
                                 />
                             </IconButton>
-                            <Typography level="title-lg" sx={{ fontWeight: 'bold', fontSize: '30px' }}>  
+                            <Typography level="title-lg" sx={{ fontWeight: 'bold', fontSize: '1.875rem' }}>  
                                 <span style={{ color: '#4299e1' }}>UIT</span> 
                                 <span style={{ color: '#b2f5ea' }}> - </span> 
                                 <span style={{ color: '#38b2ac' }}>ĐĂNG KÍ HỌC PHẦN</span>
@@ -160,63 +160,63 @@ export default function LoginForm({ onLogin }: LoginFormProps) {
                         component="main"
                         sx={{
                             my: 'auto',
-                            py: 2,
-                            pb: 5,
+                            py: '0.5rem',
+                            pb: '1.25rem',
                             display: 'flex',
                             flexDirection: 'column',
-                            gap: 2,
-                            width: 430,
+                            gap: '0.5rem',
+                            width: '26.875rem',
                             maxWidth: '100%',
                             mx: 'auto',
                             borderRadius: 'sm',
                             '& form': {
                                 display: 'flex',
                                 flexDirection: 'column',
-                                gap: 2
+                                gap: '0.5rem'
                             },
                             [`& .MuiFormLabel-asterisk`]: {
                                 visibility: 'hidden'
                             },
                             '& *': {
-                            fontSize: '18px' 
+                            fontSize: '1rem' 
         }
                         }}
                     >
-                        <Stack sx={{ gap: 2, mb: 0 }}>
-                            <Stack sx={{ gap: 10 }}>
-                                <Typography component="h1" level="h3" sx={{ fontSize: '49px', fontWeight: 'bold', textAlign: 'center' }}>
+                        <Stack sx={{ gap: '0.5rem', mb: 0 }}>
+                            <Stack sx={{ gap: '0.625rem' }}>
+                                <Typography component="h1" level="h3" sx={{ fontSize: '3.0625rem', fontWeight: 'bold', textAlign: 'center' }}>
                                     Đăng nhập
                                 </Typography> 
                             </Stack>
                         </Stack>
-                        <Stack sx={{ gap: 1, mt: 2 }}>
+                        <Stack sx={{ gap: '0.0625rem', mt: '0.125rem' }}>
                             <form onSubmit={handleFormSubmit}>
-                                <FormControl required  sx={{ mb: 1.5 }}>
-                                <FormLabel sx={{ fontSize: '20px', color: '#606060' }}>Email</FormLabel>
-                                    <Input type="email" name="email" sx={{ height: '45px', borderRadius: '10px', boxShadow: 'none'}} />
+                                <FormControl required  sx={{ mb: '0.09375rem' }}>
+                                <FormLabel sx={{ fontSize: '1.25rem', color: '#606060' }}>Email</FormLabel>
+                                    <Input type="email" name="email" sx={{ height: '2.8125rem', borderRadius: '0.625rem', boxShadow: 'none'}} />
                                 </FormControl>
-                                <FormControl required  sx={{ mb: 1.5 }}>
-                                    <FormLabel sx={{ fontSize: '20px', color: '#606060' }}>Mật khẩu</FormLabel>
+                                <FormControl required  sx={{ mb: '0.09375rem' }}>
+                                    <FormLabel sx={{ fontSize: '1.25rem', color: '#606060' }}>Mật khẩu</FormLabel>
                                     <Input
                                         name="password"
                                         type={showPassword ? 'text' : 'password'}
-                                        sx={{ height: '45px', borderRadius: '10px', boxShadow: 'none' }}
+                                        sx={{ height: '2.8125rem', borderRadius: '0.625rem', boxShadow: 'none' }}
                                         endDecorator={
                                             <IconButton
                                                 variant="plain"
                                                 onClick={handleClickShowPassword}
-                                                sx={{ ml: -1.5 }}
+                                                sx={{ ml: '-0.09375rem' }}
                                             >
                                                 {showPassword ? <VisibilityOff /> : <Visibility />}
                                             </IconButton>
                                         }
                                     />
                                 </FormControl>
-                                <FormControl required sx={{ mb: 4 }}>
-                                    <FormLabel sx={{ fontSize: '20px', color: '#606060' }}>Vai trò</FormLabel>
+                                <FormControl required sx={{ mb: '0.25rem' }}>
+                                    <FormLabel sx={{ fontSize: '1.25rem', color: '#606060' }}>Vai trò</FormLabel>
                                     <Select
                                         name="role"
-                                        sx={{ height: '45px', borderRadius: '10px', boxShadow: 'none' }}
+                                        sx={{ height: '2.8125rem', borderRadius: '0.625rem', boxShadow: 'none' }}
                                         value={selectedRole}
                                         onChange={handleRoleChange}
                                     >
@@ -239,22 +239,22 @@ export default function LoginForm({ onLogin }: LoginFormProps) {
                                     name="persistent"
                                     sx={{
                                         '& .MuiTypography-root': {
-                                        fontSize: '15px' 
+                                        fontSize: '0.9375rem' 
                                             },
                                             color: '#606060' 
                                         }}
                                     />
-                                    <Link level="title-sm" href="#replace-with-a-link" sx={{ fontSize: '15px' }}>
+                                    <Link level="title-sm" href="#replace-with-a-link" sx={{ fontSize: '0.9375rem' }}>
                                         Quên mật khẩu
                                     </Link>
                                 </Box>
-                                <Button type="submit" fullWidth sx={{borderRadius: '10px', backgroundColor: '#2f6bff', color: 'white'}}>
+                                <Button type="submit" fullWidth sx={{borderRadius: '0.625rem', backgroundColor: '#2f6bff', color: 'white'}}>
                                     Đăng nhập
                                 </Button>
                             </form>
                         </Stack>
                     </Box>
-                    <Box component="footer" sx={{ py: 3 }}>
+                    <Box component="footer" sx={{ py: '1.875rem' }}>
                         <Typography level="body-xs" sx={{ textAlign: 'center' }}>
                             © A Project of Group 4 - {new Date().getFullYear()}
                         </Typography>

@@ -166,7 +166,15 @@ export default function StudentSubjectReqMgmAcademic({ onLogout }: StudentSubjec
                 </div>
 
                 {/* Search and filter section */}
-                <Paper className="p-4 shadow-md">
+                <Paper
+                    className="p-4 shadow-md"
+                    sx={{
+                        overflowY: 'auto',
+                        overflowX: 'hidden',
+                        borderTopRightRadius: '16px',
+                        borderBottomRightRadius: '16px',
+                    }}
+                >
                     <div className="flex flex-wrap gap-4 items-center">
                         <TextField
                             placeholder="Tìm kiếm theo tên, mã SV, học phần..."
@@ -192,7 +200,23 @@ export default function StudentSubjectReqMgmAcademic({ onLogout }: StudentSubjec
                                     value={typeFilter}
                                     label="Loại yêu cầu"
                                     onChange={(e) => setTypeFilter(e.target.value)}
-                                    startAdornment={<FilterListIcon fontSize="small" sx={{ mr: 1 }} />}
+                                    sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '12px', '& .MuiOutlinedInput-notchedOutline': { borderRadius: '12px' } }}
+                                    MenuProps={{
+                                        PaperProps: {
+                                            elevation: 4,
+                                            sx: {
+                                                borderRadius: 3,
+                                                minWidth: 200,
+                                                boxShadow: '0 4px 24px 0 rgba(0,0,0,0.10)',
+                                                p: 1,
+                                            },
+                                        },
+                                        MenuListProps: {
+                                            sx: {
+                                                p: 0,
+                                            },
+                                        },
+                                    }}
                                 >
                                     <MenuItem value="all">Tất cả</MenuItem>
                                     <MenuItem value={RequestType.ADD}>{RequestType.ADD}</MenuItem>
@@ -207,7 +231,23 @@ export default function StudentSubjectReqMgmAcademic({ onLogout }: StudentSubjec
                                     value={statusFilter}
                                     label="Trạng thái"
                                     onChange={(e) => setStatusFilter(e.target.value)}
-                                    startAdornment={<FilterListIcon fontSize="small" sx={{ mr: 1 }} />}
+                                    sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '12px', '& .MuiOutlinedInput-notchedOutline': { borderRadius: '12px' } }}
+                                    MenuProps={{
+                                        PaperProps: {
+                                            elevation: 4,
+                                            sx: {
+                                                borderRadius: 3,
+                                                minWidth: 200,
+                                                boxShadow: '0 4px 24px 0 rgba(0,0,0,0.10)',
+                                                p: 1,
+                                            },
+                                        },
+                                        MenuListProps: {
+                                            sx: {
+                                                p: 0,
+                                            },
+                                        },
+                                    }}
                                 >
                                     <MenuItem value="all">Tất cả</MenuItem>
                                     <MenuItem value={RequestStatus.PENDING}>{RequestStatus.PENDING}</MenuItem>

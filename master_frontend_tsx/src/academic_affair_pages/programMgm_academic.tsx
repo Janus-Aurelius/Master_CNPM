@@ -1,10 +1,9 @@
 import {ThemeLayout} from "../styles/theme_layout.tsx";
 import {User} from "../types";
 import { useState } from "react";
+import UserInfo from "../components/UserInfo";
 import { 
     Button, 
-    Card, 
-    CardContent,
     Dialog,
     DialogActions,
     DialogTitle,
@@ -22,16 +21,12 @@ import {
     TableCell,
     TableBody,
     TablePagination,
-    Avatar,
     Chip,
     Divider
 } from "@mui/material";
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import AddIcon from '@mui/icons-material/Add';
-import SchoolIcon from '@mui/icons-material/School';
-import MenuBookIcon from '@mui/icons-material/MenuBook';
-import AccessTimeIcon from '@mui/icons-material/AccessTime';
 
 interface AcademicPageProps {
     user: User | null;
@@ -48,15 +43,7 @@ interface ProgramSchedule{
     type: string;
 }
 
-// Summary statistics
-const programStats = {
-    totalPrograms: 3,
-    specializationPrograms: 2,
-    foundationPrograms: 1,
-    averageCredits: 145
-};
-
-export default function ProgramMgmAcademic({ onLogout }: AcademicPageProps) {
+export default function ProgramMgmAcademic({ user, onLogout }: AcademicPageProps) {
     const [programs, setPrograms] = useState<ProgramSchedule[]>([
         { id:1, name: "Kỹ thuật phần mềm", startDate: "2023-09-01", endDate: "2027-06-30", department: "Công nghệ thông tin", totalCredits: 145, type:"Chuyên ngành" },
         { id: 2, name: "Khoa học máy tính", startDate: "2023-09-01", endDate: "2027-06-30", department: "Công nghệ thông tin", totalCredits: 150, type: "Chuyên ngành" },
@@ -75,6 +62,7 @@ export default function ProgramMgmAcademic({ onLogout }: AcademicPageProps) {
     const [isEditing, setIsEditing] = useState(false);
     const [page, setPage] = useState(0);
     const [rowsPerPage, setRowsPerPage] = useState(5);
+    const [confirmDelete, setConfirmDelete] = useState<{ open: boolean; id: number | null }>({ open: false, id: null });
 
     const handleChangePage = (_event: unknown, newPage: number) => {
         setPage(newPage);
@@ -117,7 +105,18 @@ export default function ProgramMgmAcademic({ onLogout }: AcademicPageProps) {
     };
 
     const handleDeleteProgram = (id: number) => {
-        setPrograms(programs.filter(p => p.id !== id));
+        setConfirmDelete({ open: true, id });
+    };
+
+    const handleConfirmDelete = () => {
+        if (confirmDelete.id !== null) {
+            setPrograms(programs.filter(p => p.id !== confirmDelete.id));
+        }
+        setConfirmDelete({ open: false, id: null });
+    };
+
+    const handleCancelDelete = () => {
+        setConfirmDelete({ open: false, id: null });
     };
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -143,7 +142,8 @@ export default function ProgramMgmAcademic({ onLogout }: AcademicPageProps) {
 
     return (
         <ThemeLayout role="academic" onLogout={onLogout}>
-            <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+            <UserInfo user={user} />
+            <Box sx={{ display: 'flex', justifyContent: 'center', mt: '0.25rem' }}>
                 <Paper
                     elevation={3}
                     sx={{
@@ -154,19 +154,23 @@ export default function ProgramMgmAcademic({ onLogout }: AcademicPageProps) {
                         fontFamily: '"Varela Round", sans-serif',
                         fontWeight: 450,
                         backgroundColor: 'rgb(250, 250, 250)',
-                        boxShadow: '0 2px 5px rgba(0, 0, 0, 0.1)', 
+                        boxShadow: '0 2px 5px rgba(0, 0, 0, 0.1)',
                         color: 'rgb(39, 89, 217)',
                         transition: 'all 0.25s ease',
                         display: 'flex',
                         flexDirection: 'column',
                         position: 'relative',
                         overflow: 'hidden',
-                        marginTop: '16px',
+                        overflowY: 'auto',
+                        overflowX: 'hidden',
+                        borderTopRightRadius: '16px',
+                        borderBottomRightRadius: '16px',
+                        marginTop: '3.5rem',
                         flexGrow: 1,
-                        minHeight: '400px',
-                        maxHeight: 'calc(100vh - 150px)',
-                        paddingLeft: '16px', 
-                        paddingRight: '16px', 
+                        minHeight: '25rem',
+                        maxHeight: 'calc(100vh - 9.375rem)',
+                        paddingLeft: '16px',
+                        paddingRight: '16px',
                         marginLeft: '0px',
                         marginRight: '10px',
                     }}
@@ -186,7 +190,6 @@ export default function ProgramMgmAcademic({ onLogout }: AcademicPageProps) {
                     >
                         Danh sách chương trình đào tạo
                     </Typography>
-                    
                     <Box sx={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '16px' }}>
                         <Button
                             variant="contained"
@@ -198,7 +201,6 @@ export default function ProgramMgmAcademic({ onLogout }: AcademicPageProps) {
                             Thêm chương trình
                         </Button>
                     </Box>
-
                     <TableContainer component={Paper} sx={{ mt: 2, borderRadius: '12px', boxShadow: '0 4px 10px rgba(0, 0, 0, 0.1)' }}>
                         <Table size="medium">
                             <TableHead>
@@ -222,9 +224,10 @@ export default function ProgramMgmAcademic({ onLogout }: AcademicPageProps) {
                                             '&:hover': {
                                                 backgroundColor: '#f5f5f5',
                                             },
+                                            '&:last-child td, &:last-child th': { borderBottom: 'none' }
                                         }}
                                     >
-                                        <TableCell sx={{ fontSize: '16px', fontFamily: '"Varela Round", sans-serif', fontWeight: 500, color: 'primary.main' }}>{program.name}</TableCell>
+                                        <TableCell sx={{ fontSize: '16px', fontFamily: '"Varela Round", sans-serif', fontWeight: 800}}>{program.name}</TableCell>
                                         <TableCell sx={{ fontSize: '16px', fontFamily: '"Varela Round", sans-serif' }}>{program.department}</TableCell>
                                         <TableCell sx={{ fontSize: '16px', fontFamily: '"Varela Round", sans-serif' }}>{renderProgramTypeChip(program.type)}</TableCell>
                                         <TableCell sx={{ fontSize: '16px', fontFamily: '"Varela Round", sans-serif' }}>{formatDate(program.startDate)}</TableCell>
@@ -262,7 +265,6 @@ export default function ProgramMgmAcademic({ onLogout }: AcademicPageProps) {
                     />
                 </Paper>
             </Box>
-
             {/* Dialog for adding/editing programs */}
             <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
                 <DialogTitle sx={{ fontFamily: '"Varela Round", sans-serif', fontWeight: 600 }}>
@@ -361,6 +363,44 @@ export default function ProgramMgmAcademic({ onLogout }: AcademicPageProps) {
                         sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '8px' }}
                     >
                         {isEditing ? "Cập nhật" : "Thêm mới"}
+                    </Button>
+                </DialogActions>
+            </Dialog>
+            {/* Confirm Delete Dialog */}
+            <Dialog
+                open={confirmDelete.open}
+                onClose={handleCancelDelete}
+                aria-labelledby="delete-dialog-title"
+                aria-describedby="delete-dialog-description"
+                sx={{
+                    '& .MuiPaper-root': {
+                        borderRadius: '16px',
+                    },
+                }}
+            >
+                <DialogTitle id="delete-dialog-title" sx={{ fontFamily: '"Roboto", sans-serif', fontWeight: 500 }}>
+                    Xác nhận xóa chương trình đào tạo
+                </DialogTitle>
+                <DialogContent>
+                    <Typography 
+                        id="delete-dialog-description" 
+                        component="div"
+                        sx={{
+                            fontSize: '17px',
+                            color: '#5c6c7c', 
+                            textAlign: 'center',
+                            fontWeight: 400
+                        }}
+                    >
+                        Bạn có chắc chắn muốn xóa chương trình này không?
+                    </Typography>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleCancelDelete} color="primary">
+                        Hủy
+                    </Button>
+                    <Button onClick={handleConfirmDelete} color="error" variant="contained">
+                        Xóa
                     </Button>
                 </DialogActions>
             </Dialog>

@@ -16,7 +16,7 @@ import TableCell from '@mui/material/TableCell';
 import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
-
+import UserInfo from "../components/UserInfo";
 
 const sampleSubjects: Subject[] = [
     { id: 'IT001', name: 'Nhập môn lập trình', lecturer: 'TS. Nguyễn Văn A', day: 'Thứ 2', session: '1', fromTo: 'Tiết 1-4' },
@@ -25,11 +25,7 @@ const sampleSubjects: Subject[] = [
     { id: 'SE001', name: 'Nhập môn công nghệ phần mềm', lecturer: 'TS. Phạm Thị D', day: 'Thứ 5', session: '4', fromTo: 'Tiết 7-10' },
 ];
 
-interface SubjectRegistrationFormProps {
-    onLogout: () => void;
-}
-
-export const SubjectRegistrationForm = ({ onLogout }: SubjectRegistrationFormProps) => {
+const SubjectRegistrationForm = ({ user, onLogout }: { user: { name?: string } | null; onLogout: () => void }) => {
     const [open, setOpen] = useState(false);
     const [filteredSubjects, setFilteredSubjects] = useState(sampleSubjects); 
     const handleClose = (_: React.SyntheticEvent | Event, reason?: string) => {
@@ -53,32 +49,37 @@ export const SubjectRegistrationForm = ({ onLogout }: SubjectRegistrationFormPro
 
     return (
         <ThemeLayout role="student" onLogout={onLogout}>
-            <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+            <UserInfo user={user} />
+            <Box sx={{ display: 'flex', justifyContent: 'center', mt: '0.25rem' }}>
                 <Paper
                     elevation={3}
                     sx={{
                         textAlign: 'left',
-                        borderRadius: '16px',
-                        padding: '20px',
-                        fontSize: '18px',
+                        borderRadius: '1rem',
+                        padding: '1.25rem',
+                        fontSize: '1.125rem',
                         fontFamily: '"Varela Round", sans-serif',
                         fontWeight: 450,
                         backgroundColor: 'rgb(250, 250, 250)',
-                        boxShadow: '0 2px 5px rgba(0, 0, 0, 0.1)', 
+                        boxShadow: "0 0.125rem 0.3125rem rgba(0, 0, 0, 0.1)",
                         color: 'rgb(39, 89, 217)',
                         transition: 'all 0.25s ease',
                         display: 'flex',
                         flexDirection: 'column',
                         position: 'relative',
                         overflow: 'hidden',
-                        marginTop: '16px',
+                        overflowY: 'auto',
+                        overflowX: 'hidden',
+                        borderTopRightRadius: '1rem',
+                        borderBottomRightRadius: '1rem',
                         flexGrow: 1,
-                        minHeight: '400px',
-                        maxHeight: 'calc(100vh - 150px)',
-                        paddingLeft: '16px', 
-                        paddingRight: '16px', 
-                        marginLeft: '0px',
-                        marginRight: '10px',
+                        minHeight: '25rem',
+                        maxHeight: 'calc(100vh - 9.375rem)',
+                        paddingLeft: '1rem', 
+                        paddingRight: '1rem',
+                        marginTop: '3.5rem', 
+                        marginLeft: '0',
+                        marginRight: '0.625rem',
                     }}
                 >
                     <Typography
@@ -88,52 +89,54 @@ export const SubjectRegistrationForm = ({ onLogout }: SubjectRegistrationFormPro
                             fontFamily: "Montserrat, sans-serif",
                             fontStyle: "normal",
                             color: "rgba(33, 33, 33, 0.8)",
-                            marginBottom: '14px',
-                            marginTop: '0px',
+                            marginBottom: '0.875rem',
+                            marginTop: '0',
                             textAlign: "center",
-                            fontSize: "30px",
+                            fontSize: "1.875rem",
                         }}
                     >
                         Danh sách môn học
                     </Typography>
                     
-                    <Box sx={{ marginBottom: '16px' }}>
+                    <Box sx={{ marginBottom: '1rem' }}>
                         <CustomSearchBox
                             onSearch={handleSearch}
                             placeholder="Tìm kiếm mã môn học..."
-            />
-        </Box>
+                        />
+                    </Box>
 
-        <SubjectsList
-            subjects={filteredSubjects}
-            onEnroll={handleEnroll}
-        />
-    </Paper>
-</Box>
+                    <SubjectsList
+                        subjects={filteredSubjects}
+                        onEnroll={handleEnroll}
+                    />
+                </Paper>
+            </Box>
 
-<Snackbar
-                        open={open}
-                        autoHideDuration={3000}
-                        onClose={handleClose}
-                        TransitionComponent={Slide}
-                        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-                    >   
-                        <MuiAlert
-                            onClose={handleClose}
-                            severity="success"
-                            sx={{
-                                width: '100%',
-                                borderRadius: 2,
-                                backgroundColor: '#e8f5e9',
-                                color: '#2e7d32',
-                            }}
-                        >
-                            Đăng ký thành công!
-                        </MuiAlert>
-                    </Snackbar>
-                </ThemeLayout>
-            );
-        };
+            <Snackbar
+                open={open}
+                autoHideDuration={3000}
+                onClose={handleClose}
+                TransitionComponent={Slide}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+            >   
+                <MuiAlert
+                    onClose={handleClose}
+                    severity="success"
+                    sx={{
+                        width: '100%',
+                        borderRadius: 2,
+                        backgroundColor: '#e8f5e9',
+                        color: '#2e7d32',
+                    }}
+                >
+                    Đăng ký thành công!
+                </MuiAlert>
+            </Snackbar>
+        </ThemeLayout>
+    );
+};
+
+export default SubjectRegistrationForm;
 
 interface SearchBoxProps {
     onSearch?: (searchText: string) => void;
@@ -164,12 +167,12 @@ const CustomSearchBox = ({ onSearch, placeholder = "Search..." }: SearchBoxProps
             sx={{
                 display: "flex",
                 alignItems: "center",
-                gap: "8px",
+                gap: "0.5rem",
                 width: "100%",
                 backgroundColor: "#f5f5f5",
-                borderRadius: "12px",
+                borderRadius: "0.75rem",
                 boxShadow: "0 4px 10px rgba(0, 0, 0, 0.1)",
-                padding: "4px 12px",
+                padding: "0.25rem 0.75rem",
                 transition: "all 0.3s ease",
                 "&:hover": {
                     boxShadow: "0 6px 15px rgba(0, 0, 0, 0.15)",
@@ -191,8 +194,8 @@ const CustomSearchBox = ({ onSearch, placeholder = "Search..." }: SearchBoxProps
                         </InputAdornment>
                     ),
                     sx: {
-                        fontSize: "16px",
-                        padding: "8px 0",
+                        fontSize: "1rem",
+                        padding: "0.5rem 0",
                     },
                 }}
             />
@@ -202,15 +205,15 @@ const CustomSearchBox = ({ onSearch, placeholder = "Search..." }: SearchBoxProps
 
 const SubjectsList = ({ subjects, onEnroll }: { subjects: Subject[]; onEnroll: (subject: Subject) => void }) => {
     return (
-        <TableContainer component={Paper} sx={{ mt: 2, borderRadius: '12px', boxShadow: '0 4px 10px rgba(0, 0, 0, 0.1)' }}>
+        <TableContainer component={Paper} sx={{ mt: 2, borderRadius: '0.75rem', boxShadow: '0 4px 10px rgba(0, 0, 0, 0.1)' }}>
             <Table size="medium">
                 <TableHead>
                     <TableRow>
-                        <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '20px', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6' }}>Mã lớp</TableCell>
-                        <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '20px', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6' }}>Môn học</TableCell>
-                        <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '20px', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6' }}>Giảng viên</TableCell>
-                        <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '20px', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6' }}>Thời gian</TableCell>
-                        <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '20px', textAlign: 'left', fontFamily: '"Varela Round", sans-serif', backgroundColor: '#6ebab6' }}>Hành động</TableCell>
+                        <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '1.25rem', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6' }}>Mã lớp</TableCell>
+                        <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '1.25rem', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6' }}>Môn học</TableCell>
+                        <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '1.25rem', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6' }}>Giảng viên</TableCell>
+                        <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '1.25rem', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6' }}>Thời gian</TableCell>
+                        <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '1.25rem', textAlign: 'left', fontFamily: '"Varela Round", sans-serif', backgroundColor: '#6ebab6' }}>Hành động</TableCell>
                     </TableRow>
                 </TableHead>
                 <TableBody>
@@ -221,12 +224,13 @@ const SubjectsList = ({ subjects, onEnroll }: { subjects: Subject[]; onEnroll: (
                                 '&:hover': {
                                     backgroundColor: '#f5f5f5',
                                 },
+                                '&:last-child td, &:last-child th': { borderBottom: 'none' }
                             }}
                         >
-                            <TableCell sx={{ fontSize: '16px', fontFamily: '"Varela Round", sans-serif' }}>{subject.id}</TableCell>
-                            <TableCell sx={{ fontSize: '16px', fontFamily: '"Varela Round", sans-serif' }}>{subject.name}</TableCell>
-                            <TableCell sx={{ fontSize: '16px', fontFamily: '"Varela Round", sans-serif' }}>{subject.lecturer}</TableCell>
-                            <TableCell sx={{ fontSize: '16px', fontFamily: '"Varela Round", sans-serif' }}>{`${subject.day}, ${subject.fromTo}`}</TableCell>
+                            <TableCell sx={{ fontSize: '1rem', fontFamily: '"Varela Round", sans-serif' }}>{subject.id}</TableCell>
+                            <TableCell sx={{ fontSize: '1rem', fontFamily: '"Varela Round", sans-serif' }}>{subject.name}</TableCell>
+                            <TableCell sx={{ fontSize: '1rem', fontFamily: '"Varela Round", sans-serif' }}>{subject.lecturer}</TableCell>
+                            <TableCell sx={{ fontSize: '1rem', fontFamily: '"Varela Round", sans-serif' }}>{`${subject.day}, ${subject.fromTo}`}</TableCell>
                             <TableCell sx={{ textAlign: 'left', fontFamily: '"Varela Round", sans-serif' }}>
                                 <Button
                                     variant="contained"
@@ -235,8 +239,9 @@ const SubjectsList = ({ subjects, onEnroll }: { subjects: Subject[]; onEnroll: (
                                     onClick={() => onEnroll(subject)}
                                     sx={{
                                         textTransform: 'none',
-                                        borderRadius: '8px',
-                                        backgroundColor: '#3869d9',
+                                        borderRadius: '0.5rem',
+                                        boxShadow: 'none',
+                                        backgroundColor: '#1976d2',
                                         '&:hover': {
                                             backgroundColor: 'hsl(223, 100.00%, 70.20%)',
                                         },

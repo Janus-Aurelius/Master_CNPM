@@ -26,5 +26,6 @@ export interface StudentPageProps {
 
 export interface EnrolledSubjectProps {
     handleUnenroll: (subject: Subject) => void;
+    user: User | null;
     onLogout: () => void;
 }

@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom';
 
 //Student
 import StudentPage from "./student_pages/dashboard_student";
-import { SubjectRegistrationForm } from "./student_pages/subject_registration_form";
+import SubjectRegistrationForm from "./student_pages/subject_registration_form";
 import { AcademicAffairDeptReqMgm } from "./student_pages/academic_affair_dept_reg_mgm";
 import { EnrolledSubject } from "./student_pages/enrolled_subject";
 import TuitionCollecting  from "./student_pages/tuition_collecting";
@@ -44,6 +44,13 @@ export default function App() {
 
     const handleLogin = (userData: UserData) => {
         const userWithIndex = userData as User;
+
+        // Ensure the name property is present
+        if (!userWithIndex.name) {
+            console.error("User data is missing the 'name' property.");
+            return;
+        }
+
         setUser(userWithIndex);
         localStorage.setItem('user', JSON.stringify(userData));
     };
@@ -76,10 +83,11 @@ export default function App() {
                     <ProtectedRoute allowedRoles={['student']}>
                         <Routes>
                             <Route index element={<StudentPage user={user} onLogout={handleLogout} />} />
-                            <Route path="subjects" element={<SubjectRegistrationForm onLogout={handleLogout} />} />
+                            <Route path="subjects" element={<SubjectRegistrationForm user={user} onLogout={handleLogout} />} />
                             <Route path="academicReqMgm" element={<AcademicAffairDeptReqMgm onLogout={handleLogout}/>} />
                             <Route path="enrolledSubjects" element={
                                 <EnrolledSubject
+                                    user={user} // Pass the user prop
                                     handleUnenroll={(subject) => {
                                         console.log("Unenrolling from", subject);
                                         // Add your unenroll logic here

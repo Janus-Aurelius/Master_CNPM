@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { ThemeLayout } from "../styles/theme_layout.tsx";
 import { StudentPageProps } from "../types";
+import UserInfo from "../components/UserInfo";
 import {
     Box,
     Typography,
@@ -86,7 +87,7 @@ const getStatusChipColor = (status: string): { bg: string; text: string } => {
     }
 };
 
-const TuitionCollecting = ({ onLogout }: StudentPageProps) => {
+const TuitionCollecting = ({ user, onLogout }: StudentPageProps) => {
     const [expandedId, setExpandedId] = useState<number | null>(null);
     const [paymentInProgress, setPaymentInProgress] = useState<number | null>(null);
 
@@ -104,31 +105,36 @@ const TuitionCollecting = ({ onLogout }: StudentPageProps) => {
 
     return (
         <ThemeLayout role="student" onLogout={onLogout}>
-            <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
+            <UserInfo user={user} />
+            <Box sx={{ display: "flex", justifyContent: "center", mt: 0.25 }}>
                 <Paper
                     elevation={3}
                     sx={{
                         textAlign: "left",
-                        borderRadius: "16px",
-                        padding: "20px",
-                        fontSize: "18px",
+                        borderRadius: "1rem",
+                        padding: "1.25rem",
+                        fontSize: "1.125rem",
                         fontFamily: '"Varela Round", sans-serif',
                         fontWeight: 450,
                         backgroundColor: "rgb(250, 250, 250)",
-                        boxShadow: "0 2px 5px rgba(0, 0, 0, 0.1)",
+                        boxShadow: "0 0.125rem 0.3125rem rgba(0, 0, 0, 0.1)",
                         color: "rgb(39, 89, 217)",
                         transition: "all 0.25s ease",
                         display: "flex",
                         flexDirection: "column",
                         position: "relative",
                         overflow: "hidden",
-                        marginTop: "16px",
+                        marginTop: '3.65rem',
                         flexGrow: 1,
                         maxHeight: "calc(100vh - 150px)",
-                        paddingLeft: "16px",
-                        paddingRight: "16px",
-                        marginLeft: "0px",
-                        marginRight: "10px",
+                        paddingLeft: "1rem",
+                        paddingRight: "1rem",
+                        marginLeft: "0",
+                        marginRight: "0.625rem",
+                        overflowY: 'auto',
+                        overflowX: 'hidden',
+                        borderTopRightRadius: '1rem',
+                        borderBottomRightRadius: '1rem',
                     }}
                 >
                     <Typography
@@ -138,10 +144,10 @@ const TuitionCollecting = ({ onLogout }: StudentPageProps) => {
                             fontFamily: "Montserrat, sans-serif",
                             fontStyle: "normal",
                             color: "rgba(33, 33, 33, 0.8)",
-                            marginBottom: "14px",
-                            marginTop: "0px",
+                            marginBottom: "0.875rem",
+                            marginTop: "0",
                             textAlign: "center",
-                            fontSize: "30px",
+                            fontSize: "1.875rem",
                         }}
                     >
                         Tình trạng học phí
@@ -153,17 +159,17 @@ const TuitionCollecting = ({ onLogout }: StudentPageProps) => {
                                 <Paper
                                     elevation={1}
                                     sx={{
-                                        p: 2,
-                                        borderLeft: "5px solid",
+                                        p: "1rem",
+                                        borderLeft: "0.3125rem solid",
                                         borderColor: getStatusChipColor(tuition.status).text,
                                         cursor: "pointer",
-                                        boxShadow: '0 2px 5px rgba(0, 0, 0, 0.1)', 
-                                        borderRadius: '8px',
+                                        boxShadow: '0 0.125rem 0.3125rem rgba(0, 0, 0, 0.1)', 
+                                        borderRadius: '0.5rem',
                                         backgroundColor: "#f7fcfe",
                                         transition: "all 0.2s",
                                         "&:hover": {
                                             bgcolor: "rgba(0, 0, 0, 0.02)",
-                                            boxShadow: `0 6px 15px ${getStatusChipColor(tuition.status).text}50`,
+                                            boxShadow: `0 0.375rem 0.9375rem ${getStatusChipColor(tuition.status).text}50`,
                                         },
                                     }}
                                     onClick={() => handleExpand(tuition.id)}
@@ -186,7 +192,7 @@ const TuitionCollecting = ({ onLogout }: StudentPageProps) => {
                                                     color: getStatusChipColor(tuition.status).text,
                                                     fontWeight: "bold",
                                                     display: "flex",
-                                                    height: "32px",
+                                                    height: "2rem",
                                                 }}
                                             />
                                         </Box>
@@ -197,7 +203,7 @@ const TuitionCollecting = ({ onLogout }: StudentPageProps) => {
                                 </Paper>
 
                                 <Collapse in={expandedId === tuition.id} timeout="auto" unmountOnExit>
-                                    <Paper sx={{ p: 2, mt: 1, borderTop: "1px solid #e0e0e0", borderRadius: "16px", boxShadow: "0 2px 5px rgba(0, 0, 0, 0.1)" }}>
+                                    <Paper sx={{ p: "1rem", mt: "0.0625rem", borderTop: "0.0625rem solid #e0e0e0", borderRadius: "1rem", boxShadow: "0 0.125rem 0.3125rem rgba(0, 0, 0, 0.1)" }}>
                                         <Typography variant="h6" mb={2}>
                                             Chi tiết học phí
                                         </Typography>
@@ -247,7 +253,7 @@ const TuitionCollecting = ({ onLogout }: StudentPageProps) => {
                                                     onClick={() => handleProceedToPayment(tuition.id)}
                                                     sx={{
                                                         textTransform: "none",
-                                                        borderRadius: "8px",
+                                                        borderRadius: "0.5rem",
                                                         backgroundColor: "#4880FF",
                                                         "&:hover": {
                                                             backgroundColor: "rgb(103, 146, 255)",
