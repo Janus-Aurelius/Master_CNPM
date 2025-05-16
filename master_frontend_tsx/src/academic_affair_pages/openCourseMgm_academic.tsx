@@ -616,7 +616,7 @@ export default function OpenCourseMgmAcademic({user, onLogout }: OpenCourseMgmAc
                 }}
             >
                 <DialogTitle id="delete-dialog-title" sx={{ fontFamily: '"Roboto", sans-serif', fontWeight: 500 }}>
-                    Xác nhận xóa môn học mở mở
+                    Xác nhận xóa môn học mở
                 </DialogTitle>
                 <DialogContent>
                     <Typography

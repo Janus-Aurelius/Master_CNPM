@@ -308,8 +308,11 @@ export default function UserManagement({user, onLogout}: UserManagementProps) {
                         <Tabs 
                             value={tabValue} 
                             onChange={handleChangeTab} 
-                            centered
                             sx={{
+                                justifyContent: 'flex-start',
+                                '& .MuiTabs-flexContainer': {
+                                    justifyContent: 'flex-start',
+                                },
                                 '& .MuiTabs-indicator': {
                                     backgroundColor: '#1976d2',
                                     height: '3px',

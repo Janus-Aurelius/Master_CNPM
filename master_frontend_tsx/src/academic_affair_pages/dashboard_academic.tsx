@@ -130,8 +130,8 @@ export default function DashboardAcademic({ user, onLogout }: AcademicPageProps)
             <Grid container spacing={3} sx={{ mb: 4, mt: '2.25rem' }}>
                 <Grid item xs={12} sm={6} md={3}>
                     <Paper sx={{ 
-                        bgcolor: '#f3e5f5', // tím nhạt
-                        color: '#6a1b9a',   // tím đậm
+                        bgcolor: '#fce4ec', // hồng nhạt
+                        color: '#ad1457',   // hồng đậm
                         borderRadius: '16px',
                         boxShadow: '0 2px 5px rgba(0, 0, 0, 0.1)', 
                         transition: 'all 0.25s ease',
@@ -150,7 +150,7 @@ export default function DashboardAcademic({ user, onLogout }: AcademicPageProps)
                                 </Typography>
                                 <Typography variant="body2">Tổng số sinh viên</Typography>
                             </Box>
-                            <Avatar sx={{ bgcolor: '#8e24aa' }}>
+                            <Avatar sx={{ bgcolor: '#d81b60' }}>
                                 <PeopleOutline />
                             </Avatar>
                         </Box>
