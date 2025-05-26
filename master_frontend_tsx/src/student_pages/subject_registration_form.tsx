@@ -23,6 +23,16 @@ const sampleSubjects: Subject[] = [
     { id: 'IT002', name: 'Lập trình hướng đối tượng', lecturer: 'PGS. TS. Trần Thị B', day: 'Thứ 3', session: '2', fromTo: 'Tiết 6-9' },
     { id: 'IT003', name: 'Cấu trúc dữ liệu và giải thuật', lecturer: 'TS. Lê Văn C', day: 'Thứ 4', session: '3', fromTo: 'Tiết 2-5' },
     { id: 'SE001', name: 'Nhập môn công nghệ phần mềm', lecturer: 'TS. Phạm Thị D', day: 'Thứ 5', session: '4', fromTo: 'Tiết 7-10' },
+    { id: 'IT004', name: 'Hệ điều hành', lecturer: 'TS. Nguyễn Văn E', day: 'Thứ 2', session: '2', fromTo: 'Tiết 5-8' },
+    { id: 'IT005', name: 'Mạng máy tính', lecturer: 'TS. Trần Văn F', day: 'Thứ 3', session: '3', fromTo: 'Tiết 9-12' },
+    { id: 'IT006', name: 'Cơ sở dữ liệu', lecturer: 'PGS. TS. Lê Thị G', day: 'Thứ 4', session: '1', fromTo: 'Tiết 1-4' },
+    { id: 'IT007', name: 'Phân tích thiết kế hệ thống', lecturer: 'TS. Đặng Văn H', day: 'Thứ 5', session: '2', fromTo: 'Tiết 5-8' },
+    { id: 'IT008', name: 'Công nghệ phần mềm', lecturer: 'TS. Nguyễn Thị I', day: 'Thứ 6', session: '3', fromTo: 'Tiết 9-12' },
+    { id: 'IT009', name: 'Trí tuệ nhân tạo', lecturer: 'TS. Phạm Văn K', day: 'Thứ 7', session: '1', fromTo: 'Tiết 1-4' },
+    { id: 'IT010', name: 'Kỹ thuật lập trình', lecturer: 'TS. Lê Văn L', day: 'Thứ 2', session: '4', fromTo: 'Tiết 13-16' },
+    { id: 'IT011', name: 'Lập trình web', lecturer: 'TS. Nguyễn Thị M', day: 'Thứ 3', session: '1', fromTo: 'Tiết 1-4' },
+    { id: 'IT012', name: 'An toàn thông tin', lecturer: 'TS. Trần Văn N', day: 'Thứ 4', session: '2', fromTo: 'Tiết 5-8' },
+    { id: 'IT013', name: 'Lập trình di động', lecturer: 'TS. Phạm Thị O', day: 'Thứ 5', session: '3', fromTo: 'Tiết 9-12' },
 ];
 
 const SubjectRegistrationForm = ({ user, onLogout }: { user: { name?: string } | null; onLogout: () => void }) => {
@@ -42,7 +52,8 @@ const SubjectRegistrationForm = ({ user, onLogout }: { user: { name?: string } |
 
     const handleSearch = (searchText: string) => {
         const filtered = sampleSubjects.filter(subject =>
-            subject.id.toLowerCase().includes(searchText.toLowerCase()) // Filter by subject code
+            subject.id.toLowerCase().includes(searchText.toLowerCase()) ||
+            subject.name.toLowerCase().includes(searchText.toLowerCase())
         );
         setFilteredSubjects(filtered);
     };
@@ -101,7 +112,7 @@ const SubjectRegistrationForm = ({ user, onLogout }: { user: { name?: string } |
                     <Box sx={{ marginBottom: '1rem' }}>
                         <CustomSearchBox
                             onSearch={handleSearch}
-                            placeholder="Tìm kiếm mã môn học..."
+                            placeholder="Tìm kiếm theo mã môn học hoặc tên môn học"
                         />
                     </Box>
 
@@ -148,6 +159,9 @@ const CustomSearchBox = ({ onSearch, placeholder = "Search..." }: SearchBoxProps
 
     const handleTextChange = (e: ChangeEvent<HTMLInputElement>) => {
         setSearchText(e.target.value);
+        if (onSearch) {
+            onSearch(e.target.value);
+        }
     };
 
     const handleClick = () => {
@@ -206,14 +220,14 @@ const CustomSearchBox = ({ onSearch, placeholder = "Search..." }: SearchBoxProps
 const SubjectsList = ({ subjects, onEnroll }: { subjects: Subject[]; onEnroll: (subject: Subject) => void }) => {
     return (
         <TableContainer component={Paper} sx={{ mt: 2, borderRadius: '0.75rem', boxShadow: '0 4px 10px rgba(0, 0, 0, 0.1)' }}>
-            <Table size="medium">
+            <Table size="medium" sx={{ tableLayout: 'fixed' }}>
                 <TableHead>
                     <TableRow>
-                        <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '1.25rem', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6' }}>Mã lớp</TableCell>
-                        <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '1.25rem', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6' }}>Môn học</TableCell>
-                        <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '1.25rem', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6' }}>Giảng viên</TableCell>
-                        <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '1.25rem', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6' }}>Thời gian</TableCell>
-                        <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '1.25rem', textAlign: 'left', fontFamily: '"Varela Round", sans-serif', backgroundColor: '#6ebab6' }}>Hành động</TableCell>
+                        <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '1.25rem', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6', width: '12%' }}>Mã môn học</TableCell>
+                        <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '1.25rem', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6', width: '28%' }}>Môn học</TableCell>
+                        <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '1.25rem', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6', width: '22%' }}>Giảng viên</TableCell>
+                        <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '1.25rem', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6', width: '20%' }}>Thời gian</TableCell>
+                        <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '1.25rem', textAlign: 'left', fontFamily: '"Varela Round", sans-serif', backgroundColor: '#6ebab6', width: '18%' }}>Hành động</TableCell>
                     </TableRow>
                 </TableHead>
                 <TableBody>
@@ -227,11 +241,11 @@ const SubjectsList = ({ subjects, onEnroll }: { subjects: Subject[]; onEnroll: (
                                 '&:last-child td, &:last-child th': { borderBottom: 'none' }
                             }}
                         >
-                            <TableCell sx={{ fontSize: '1rem', fontFamily: '"Varela Round", sans-serif' }}>{subject.id}</TableCell>
-                            <TableCell sx={{ fontSize: '1rem', fontFamily: '"Varela Round", sans-serif' }}>{subject.name}</TableCell>
-                            <TableCell sx={{ fontSize: '1rem', fontFamily: '"Varela Round", sans-serif' }}>{subject.lecturer}</TableCell>
-                            <TableCell sx={{ fontSize: '1rem', fontFamily: '"Varela Round", sans-serif' }}>{`${subject.day}, ${subject.fromTo}`}</TableCell>
-                            <TableCell sx={{ textAlign: 'left', fontFamily: '"Varela Round", sans-serif' }}>
+                            <TableCell sx={{ fontSize: '1rem', fontFamily: '"Varela Round", sans-serif', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{subject.id}</TableCell>
+                            <TableCell sx={{ fontSize: '1rem', fontFamily: '"Varela Round", sans-serif', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{subject.name}</TableCell>
+                            <TableCell sx={{ fontSize: '1rem', fontFamily: '"Varela Round", sans-serif', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{subject.lecturer}</TableCell>
+                            <TableCell sx={{ fontSize: '1rem', fontFamily: '"Varela Round", sans-serif', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{`${subject.day}, ${subject.fromTo}`}</TableCell>
+                            <TableCell sx={{ textAlign: 'left', fontFamily: '"Varela Round", sans-serif', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                 <Button
                                     variant="contained"
                                     color="primary"

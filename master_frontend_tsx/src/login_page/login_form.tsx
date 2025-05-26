@@ -221,7 +221,7 @@ export default function LoginForm({ onLogin }: LoginFormProps) {
                                         onChange={handleRoleChange}
                                     >
                                         <Option value="student">Sinh viên</Option>
-                                        <Option value="academic">Giảng viên</Option>
+                                        <Option value="academic">Phòng đào tạo  </Option>
                                         <Option value="financial">Phòng tài chính</Option>
                                         <Option value="admin">Admin</Option>
                                     </Select>

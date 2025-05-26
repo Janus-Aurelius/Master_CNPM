@@ -15,6 +15,16 @@ const sampleSubjects: Subject[] = [
     { id: 'IT002', name: 'Lập trình hướng đối tượng', lecturer: 'PGS. TS. Trần Thị B', day: 'Thứ 3', session: '2', fromTo: 'Tiết 6-9' },
     { id: 'IT003', name: 'Cấu trúc dữ liệu và giải thuật', lecturer: 'TS. Lê Văn C', day: 'Thứ 4', session: '3', fromTo: 'Tiết 2-5' },
     { id: 'SE001', name: 'Nhập môn công nghệ phần mềm', lecturer: 'TS. Phạm Thị D', day: 'Thứ 5', session: '4', fromTo: 'Tiết 7-10' },
+    { id: 'IT004', name: 'Hệ điều hành', lecturer: 'TS. Nguyễn Văn E', day: 'Thứ 2', session: '2', fromTo: 'Tiết 5-8' },
+    { id: 'IT005', name: 'Mạng máy tính', lecturer: 'TS. Trần Văn F', day: 'Thứ 3', session: '3', fromTo: 'Tiết 9-12' },
+    { id: 'IT006', name: 'Cơ sở dữ liệu', lecturer: 'PGS. TS. Lê Thị G', day: 'Thứ 4', session: '1', fromTo: 'Tiết 1-4' },
+    { id: 'IT007', name: 'Phân tích thiết kế hệ thống', lecturer: 'TS. Đặng Văn H', day: 'Thứ 5', session: '2', fromTo: 'Tiết 5-8' },
+    { id: 'IT008', name: 'Công nghệ phần mềm', lecturer: 'TS. Nguyễn Thị I', day: 'Thứ 6', session: '3', fromTo: 'Tiết 9-12' },
+    { id: 'IT009', name: 'Trí tuệ nhân tạo', lecturer: 'TS. Phạm Văn K', day: 'Thứ 7', session: '1', fromTo: 'Tiết 1-4' },
+    { id: 'IT010', name: 'Kỹ thuật lập trình', lecturer: 'TS. Lê Văn L', day: 'Thứ 2', session: '4', fromTo: 'Tiết 13-16' },
+    { id: 'IT011', name: 'Lập trình web', lecturer: 'TS. Nguyễn Thị M', day: 'Thứ 3', session: '1', fromTo: 'Tiết 1-4' },
+    { id: 'IT012', name: 'An toàn thông tin', lecturer: 'TS. Trần Văn N', day: 'Thứ 4', session: '2', fromTo: 'Tiết 5-8' },
+    { id: 'IT013', name: 'Lập trình di động', lecturer: 'TS. Phạm Thị O', day: 'Thứ 5', session: '3', fromTo: 'Tiết 9-12' },
 ];
 
 export const EnrolledSubject = ({ user, handleUnenroll, onLogout }: EnrolledSubjectProps) => {
@@ -88,11 +98,11 @@ export const EnrolledSubject = ({ user, handleUnenroll, onLogout }: EnrolledSubj
                         <Table>
                         <TableHead>
                             <TableRow>
-                                <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '1.25rem', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6', boxShadow: '0 0px 0px rgba(0, 0, 0, 0.1)'}}></TableCell>
-                                <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '1.25rem', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6' }}>Mã lớp</TableCell>
-                                <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '1.25rem', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6' }}>Môn học</TableCell>
-                                <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '1.25rem', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6' }}>Giảng viên</TableCell>
-                                <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '1.25rem', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6' }}>Thời gian</TableCell>
+                                <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '1.25rem', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6', boxShadow: '0 0px 0px rgba(0, 0, 0, 0.1)', width: '60px', minWidth: '60px', maxWidth: '60px' }}></TableCell>
+                                <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '1.25rem', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6', width: '120px', minWidth: '120px', maxWidth: '120px' }}>Mã lớp</TableCell>
+                                <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '1.25rem', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6', width: '240px', minWidth: '240px', maxWidth: '240px' }}>Môn học</TableCell>
+                                <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '1.25rem', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6', width: '180px', minWidth: '180px', maxWidth: '180px' }}>Giảng viên</TableCell>
+                                <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '1.25rem', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6', width: '160px', minWidth: '160px', maxWidth: '160px' }}>Thời gian</TableCell>
                             </TableRow>
                         </TableHead>
                         <TableBody>
@@ -106,7 +116,7 @@ export const EnrolledSubject = ({ user, handleUnenroll, onLogout }: EnrolledSubj
                                         '&:last-child td, &:last-child th': { borderBottom: 'none' }
                                     }}
                                 >
-                                    <TableCell sx={{ textAlign: 'center', fontFamily: '"Varela Round", sans-serif', width: '3.125rem' }}>
+                                    <TableCell sx={{ textAlign: 'center', fontFamily: '"Varela Round", sans-serif', width: '60px', minWidth: '60px', maxWidth: '60px' }}>
                                         <Button
                                             variant="contained"
                                             color="error"
@@ -131,10 +141,10 @@ export const EnrolledSubject = ({ user, handleUnenroll, onLogout }: EnrolledSubj
                                             —
                                         </Button>
                                     </TableCell>
-                                    <TableCell sx={{ fontSize: '1rem', fontFamily: '"Varela Round", sans-serif'}}>{subject.id}</TableCell>
-                                    <TableCell sx={{ fontSize: '1rem', fontFamily: '"Varela Round", sans-serif'}}>{subject.name}</TableCell>
-                                    <TableCell sx={{ fontSize: '1rem', fontFamily: '"Varela Round", sans-serif'}}>{subject.lecturer}</TableCell>
-                                    <TableCell sx={{ fontSize: '1rem', fontFamily: '"Varela Round", sans-serif'}}>{`${subject.day}, ${subject.fromTo}`}</TableCell>
+                                    <TableCell sx={{ fontSize: '1rem', fontFamily: '"Varela Round", sans-serif', width: '120px', minWidth: '120px', maxWidth: '120px' }}>{subject.id}</TableCell>
+                                    <TableCell sx={{ fontSize: '1rem', fontFamily: '"Varela Round", sans-serif', width: '240px', minWidth: '240px', maxWidth: '240px' }}>{subject.name}</TableCell>
+                                    <TableCell sx={{ fontSize: '1rem', fontFamily: '"Varela Round", sans-serif', width: '180px', minWidth: '180px', maxWidth: '180px' }}>{subject.lecturer}</TableCell>
+                                    <TableCell sx={{ fontSize: '1rem', fontFamily: '"Varela Round", sans-serif', width: '160px', minWidth: '160px', maxWidth: '160px' }}>{`${subject.day}, ${subject.fromTo}`}</TableCell>
                                 </TableRow>
                             ))}
                         </TableBody>
