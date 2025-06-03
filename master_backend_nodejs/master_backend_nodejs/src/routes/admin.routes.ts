@@ -6,6 +6,7 @@ import adminController from '../controllers/AdminController/adminController';
 import { authenticateToken, authorizeRoles } from '../middleware/auth';
 import { checkMaintenance } from '../middleware/maintenance';
 
+
 const router = express.Router();
 const userController = new UserController();
 
@@ -25,6 +26,7 @@ router.use((req, res, next) => {
 router.get('/dashboard', (req, res, next) => adminController.getDashboard(req, res, next));
 router.get('/userManagement', (req, res, next) => adminController.getUserManagement(req, res, next));
 router.get('/config', (req, res, next) => adminController.getConfig(req, res, next));
+router.get('/activityLog', (req, res, next) => adminController.getActivityLog(req, res, next));
 
 // User management routes
 router.get('/users', (req, res, next) => userController.getAllUsers(req, res, next));

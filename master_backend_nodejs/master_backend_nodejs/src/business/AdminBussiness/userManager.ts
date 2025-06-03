@@ -1,6 +1,7 @@
 import UserService from '../../services/AdminService/UserService';
 import { User } from '../../models/user';
 import { AppError } from '../../middleware/errorHandler';
+import * as DashboardService from '../../services/AdminService/dashboardService';
 
 class UserManager {
     async getAllUsers(): Promise<User[]> {
@@ -39,18 +40,12 @@ class UserManager {
         return UserService.updateUser(id, { status });
     }
 
+
+
     async getDashboardStats() {
         try {
-            const users = await this.getAllUsers();
-            const activeUsers = users.filter(user => user.status);
-            const inactiveUsers = users.filter(user => !user.status);
-
-            return {
-                totalUsers: users.length,
-                activeUsers: activeUsers.length,
-                inactiveUsers: inactiveUsers.length,
-                recentUsers: users.slice(-5) // Last 5 users
-            };
+            // Gọi service để lấy dữ liệu
+            return await DashboardService.getDashboardStats();
         } catch (error) {
             throw new AppError(500, 'Error fetching dashboard stats');
         }
