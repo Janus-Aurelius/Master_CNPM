@@ -1,416 +1,250 @@
-import React, { useState, useMemo } from "react";
-import { ThemeLayout } from "../styles/theme_layout";
+import React, { useState, useEffect } from 'react';
+import { ThemeLayout } from "../styles/theme_layout.tsx";
+import Typography from "@mui/material/Typography";
+import TextField from '@mui/material/TextField';
+import Button from '@mui/material/Button';
+import Table from '@mui/material/Table';
+import TableBody from '@mui/material/TableBody';
+import TableCell from '@mui/material/TableCell';
+import TableContainer from '@mui/material/TableContainer';
+import TableHead from '@mui/material/TableHead';
+import TableRow from '@mui/material/TableRow';
+import Paper from '@mui/material/Paper';
+import Collapse from '@mui/material/Collapse';
+import IconButton from '@mui/material/IconButton';
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
+import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import { User } from "../types";
-import UserInfo from "../components/UserInfo";
-import {
-    Box, Paper, TextField, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
-    FormControl, InputLabel, Select, MenuItem, Grid, InputAdornment, Chip
-} from "@mui/material";
-import SearchIcon from '@mui/icons-material/Search';
-import FilterListIcon from '@mui/icons-material/FilterList';
-import { SelectChangeEvent } from '@mui/material/Select';
 
-// Enum trạng thái thanh toán
-export enum PaymentStatus {
-    PAID = "Đã đóng đủ",
-    PARTIAL = "Thiếu học phí",
-    UNPAID = "Chưa đóng học phí"
+// Define the PaymentHistory type representing individual payment transactions.
+interface PaymentHistory {
+    id: number;
+    date: string;
+    amount: number;
+    method: string;
 }
 
-// Interface dữ liệu sinh viên
-interface StudentPaymentStatus {
-    studentId: string;
-    fullName: string;
-    faculty: string;
-    major: string;
-    course: string;
-    paymentStatus: PaymentStatus;
+// Updated Invoice type with payment history included.
+interface Invoice {
+    id: number;
+    studentName: string;
+    semester: string;
+    year: number;
+    status: 'Pending' | 'Validated';
+    paymentHistory: PaymentHistory[];
 }
 
-interface PaymentStatusMgmFinancialProps {
+// Props definition for the Financial page component.
+interface FinancialPageProps {
     user: User | null;
     onLogout: () => void;
 }
 
-// Dữ liệu mẫu
-const sampleStudentPayments: StudentPaymentStatus[] = [
-    {
-        studentId: "23524325",
-        fullName: "Nguyễn Văn A",
-        faculty: "Công nghệ thông tin",
-        major: "Khoa học máy tính",
-        course: "K18",
-        paymentStatus: PaymentStatus.PAID
-    },
-    {
-        studentId: "22524234",
-        fullName: "Trần Thị B",
-        faculty: "Công nghệ thông tin",
-        major: "Kỹ thuật phần mềm",
-        course: "K17",
-        paymentStatus: PaymentStatus.PARTIAL
-    },
-    {
-        studentId: "23524324",
-        fullName: "Lê Văn C",
-        faculty: "Cơ điện tử",
-        major: "Cơ điện tử",
-        course: "K17",
-        paymentStatus: PaymentStatus.UNPAID
-    },
-    {
-        studentId: "24522344",
-        fullName: "Phạm Thị D",
-        faculty: "Công nghệ thông tin",
-        major: "Khoa học máy tính",
-        course: "K19",
-        paymentStatus: PaymentStatus.PARTIAL
-    },
-    {
-        studentId: "23524328",
-        fullName: "Ngô Văn E",
-        faculty: "Cơ điện tử",
-        major: "Cơ điện tử",
-        course: "K18",
-        paymentStatus: PaymentStatus.PAID
-    },
-    {
-        studentId: "24523235",
-        fullName: "Đặng Thị F",
-        faculty: "Công nghệ thông tin",
-        major: "Kỹ thuật phần mềm",
-        course: "K17",
-        paymentStatus: PaymentStatus.UNPAID
-    },
-];
+export default function PaymentStatusMgm({ onLogout }: FinancialPageProps) {
+    // State to hold invoice data.
+    const [invoices, setInvoices] = useState<Invoice[]>([]);
+    // State for managing search queries.
+    const [searchQuery, setSearchQuery] = useState('');
+    // State to manage expanded rows for showing payment history.
+    const [expandedRows, setExpandedRows] = useState<{ [invoiceId: number]: boolean }>({});
 
-// Lấy danh sách unique cho filter
-const getUnique = (arr: StudentPaymentStatus[], key: keyof StudentPaymentStatus) => {
-    return Array.from(new Set(arr.map(item => item[key])));
-};
+    // Simulate fetching invoice data, including payment history for each invoice.
+    useEffect(() => {
+        const fetchedInvoices: Invoice[] = [
+            {
+                id: 1,
+                studentName: 'John Doe',
+                semester: 'Fall',
+                year: 2024,
+                status: 'Pending',
+                paymentHistory: [
+                    {id: 101, date: '2024-09-01', amount: 500, method: 'Credit Card'},
+                    {id: 102, date: '2024-09-15', amount: 250, method: 'Bank Transfer'},
+                ]
+            },
+            {
+                id: 2,
+                studentName: 'Jane Smith',
+                semester: 'Spring',
+                year: 2024,
+                status: 'Validated',
+                paymentHistory: [
+                    {id: 103, date: '2024-02-10', amount: 750, method: 'Debit Card'}
+                ]
+            },
+            {
+                id: 3,
+                studentName: 'Alice Johnson',
+                semester: 'Fall',
+                year: 2023,
+                status: 'Pending',
+                paymentHistory: [
+                    {id: 104, date: '2023-09-05', amount: 600, method: 'Credit Card'}
+                ]
+            },
+            {
+                id: 4,
+                studentName: 'Bob Brown',
+                semester: 'Spring',
+                year: 2023,
+                status: 'Validated',
+                paymentHistory: [
+                    {id: 105, date: '2023-03-12', amount: 800, method: 'Bank Transfer'}
+                ]
+            },
+            // More dummy data can be added here.
+        ];
+        setInvoices(fetchedInvoices);
+    }, []);
 
-const columnWidths = {
-    studentId: 110,
-    fullName: 150,
-    faculty: 180,
-    major: 180,
-    course: 104,
-    paymentStatus: 160,
-};
+    // Function to group invoices by year.
+    const groupInvoicesByYear = (invoicesList: Invoice[]) => {
+        return invoicesList.reduce((groups: Record<number, Invoice[]>, invoice) => {
+            if (!groups[invoice.year]) {
+                groups[invoice.year] = [];
+            }
+            groups[invoice.year].push(invoice);
+            return groups;
+        }, {});
+    };
 
-export default function PaymentStatusMgmFinancial({ user, onLogout }: PaymentStatusMgmFinancialProps) {
-    const [searchQuery, setSearchQuery] = useState("");
-    const [facultyFilter, setFacultyFilter] = useState<string>("all");
-    const [majorFilter, setMajorFilter] = useState<string>("all");
-    const [courseFilter, setCourseFilter] = useState<string>("all");
-    const [statusFilter, setStatusFilter] = useState<string>("all");
+    // Filter invoices based on the search query.
+    const filteredInvoices = invoices.filter(invoice =>
+        invoice.studentName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        invoice.semester.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        invoice.year.toString().includes(searchQuery)
+    );
 
-    // Danh sách filter
-    const faculties = useMemo(() => getUnique(sampleStudentPayments, "faculty"), []);
-    const majors = useMemo(() => getUnique(sampleStudentPayments, "major"), []);
-    const courses = useMemo(() => getUnique(sampleStudentPayments, "course"), []);
+    // Group the filtered invoices by year.
+    const groupedInvoices = groupInvoicesByYear(filteredInvoices);
 
-    // Filter logic
-    const filteredData = useMemo(() => {
-        return sampleStudentPayments.filter(item => {
-            const matchesSearch =
-                item.studentId.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                item.fullName.toLowerCase().includes(searchQuery.toLowerCase());
-            const matchesFaculty = facultyFilter === "all" || item.faculty === facultyFilter;
-            const matchesMajor = majorFilter === "all" || item.major === majorFilter;
-            const matchesCourse = courseFilter === "all" || item.course === courseFilter;
-            const matchesStatus = statusFilter === "all" || item.paymentStatus === statusFilter;
-            return matchesSearch && matchesFaculty && matchesMajor && matchesCourse && matchesStatus;
-        });
-    }, [searchQuery, facultyFilter, majorFilter, courseFilter, statusFilter]);
+    // Function to handle payment validation.
+    const handleValidatePayment = (invoiceId: number) => {
+        // API call simulation to update the invoice status.
+        setInvoices(prevInvoices =>
+            prevInvoices.map(invoice =>
+                invoice.id === invoiceId ? {...invoice, status: 'Validated'} : invoice
+            )
+        );
+    };
 
-    // Màu trạng thái
-    const getStatusStyle = (status: PaymentStatus) => {
-        switch (status) {
-            case PaymentStatus.PAID:
-                return { bgcolor: '#e0f7fa', color: '#00838f' };
-            case PaymentStatus.PARTIAL:
-                return { bgcolor: '#fff8e1', color: '#fbc02d' };
-            case PaymentStatus.UNPAID:
-                return { bgcolor: '#ffebee', color: '#c62828' };
-            default:
-                return {};
-        }
+    // Toggle the visibility of the payment history for a given invoice.
+    const toggleHistory = (invoiceId: number) => {
+        setExpandedRows(prev => ({
+            ...prev,
+            [invoiceId]: !prev[invoiceId],
+        }));
     };
 
     return (
         <ThemeLayout role="financial" onLogout={onLogout}>
-            <UserInfo user={user} />
-            <Box sx={{ display: 'flex', justifyContent: 'center', mt: '0.25rem' }}>
-                <Paper
-                    elevation={3}
-                    sx={{
-                        textAlign: 'left',
-                        borderRadius: '16px',
-                        padding: '20px',
-                        fontSize: '18px',
-                        fontFamily: '"Varela Round", sans-serif',
-                        fontWeight: 450,
-                        backgroundColor: 'rgb(250, 250, 250)',
-                        boxShadow: '0 2px 5px rgba(0, 0, 0, 0.1)',
-                        color: 'rgb(39, 89, 217)',
-                        transition: 'all 0.25s ease',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        position: 'relative',
-                        overflow: 'auto',
-                        borderTopRightRadius: '16px',
-                        borderBottomRightRadius: '16px',
-                        marginTop: '3.5rem',
-                        flexGrow: 1,
-                        minHeight: '400px',
-                        maxHeight: 'calc(100vh - 150px)',
-                        paddingLeft: '16px',
-                        paddingRight: '16px',
-                        marginLeft: '0px',
-                        marginRight: '10px',
-                    }}
-                >
-                    <Typography
-                        component="h1"
-                        sx={{
-                            fontWeight: "bold",
-                            fontFamily: "Montserrat, sans-serif",
-                            fontStyle: "normal",
-                            color: "rgba(33, 33, 33, 0.8)",
-                            marginBottom: '20px',
-                            marginTop: '0px',
-                            textAlign: "center",
-                            fontSize: "30px",
-                        }}
-                    >
-                        Theo dõi tình trạng đóng học phí sinh viên
-                    </Typography>
-                    <Grid container spacing={2} alignItems="center" sx={{ mb: 2 }}>
-                        <Grid item xs={12} md={3.5}>
-                            <TextField
-                                fullWidth
-                                placeholder="Tìm kiếm theo MSSV hoặc Họ tên"
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                InputProps={{
-                                    startAdornment: (
-                                        <InputAdornment position="start">
-                                            <SearchIcon />
-                                        </InputAdornment>
-                                    ),
-                                }}
-                                variant="outlined"
-                                size="small"
-                                sx={{
-                                    fontFamily: '"Varela Round", sans-serif',
-                                    '& .MuiOutlinedInput-root': {
-                                        borderRadius: '9px',
-                                    },
-                                }}
-                            />
-                        </Grid>
-                        <Grid item xs={12} md={2}>
-                            <FormControl fullWidth size="small">
-                                <InputLabel>Khoa</InputLabel>
-                                <Select
-                                    value={facultyFilter}
-                                    label="Khoa"
-                                    onChange={(e: SelectChangeEvent<string>) => setFacultyFilter(e.target.value)}
-                                    startAdornment={<InputAdornment position="start"><FilterListIcon /></InputAdornment>}
-                                    sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px', '& .MuiOutlinedInput-notchedOutline': { borderRadius: '9px' } }}
-                                    MenuProps={{
-                                        PaperProps: {
-                                            elevation: 4,
-                                            sx: {
-                                                borderRadius: 3,
-                                                minWidth: 200,
-                                                boxShadow: '0 4px 24px 0 rgba(0,0,0,0.10)',
-                                                p: 1,
-                                            },
-                                        },
-                                        MenuListProps: {
-                                            sx: {
-                                                display: 'flex',
-                                                flexDirection: 'column',
-                                                gap: 0.5,
-                                                fontFamily: '"Varela Round", sans-serif',
-                                                borderRadius: 3,
-                                                p: 0,
-                                            },
-                                        },
-                                    }}
-                                >
-                                    <MenuItem value="all" sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>Tất cả</MenuItem>
-                                    {faculties.map(faculty => (
-                                        <MenuItem key={faculty} value={faculty} sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>{faculty}</MenuItem>
-                                    ))}
-                                </Select>
-                            </FormControl>
-                        </Grid>
-                        <Grid item xs={12} md={2}>
-                            <FormControl fullWidth size="small">
-                                <InputLabel>Ngành</InputLabel>
-                                <Select
-                                    value={majorFilter}
-                                    label="Ngành"
-                                    onChange={(e: SelectChangeEvent<string>) => setMajorFilter(e.target.value)}
-                                    sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px', '& .MuiOutlinedInput-notchedOutline': { borderRadius: '9px' } }}
-                                    MenuProps={{
-                                        PaperProps: {
-                                            elevation: 4,
-                                            sx: {
-                                                borderRadius: 3,
-                                                minWidth: 200,
-                                                boxShadow: '0 4px 24px 0 rgba(0,0,0,0.10)',
-                                                p: 1,
-                                            },
-                                        },
-                                        MenuListProps: {
-                                            sx: {
-                                                display: 'flex',
-                                                flexDirection: 'column',
-                                                gap: 0.5,
-                                                fontFamily: '"Varela Round", sans-serif',
-                                                borderRadius: 3,
-                                                p: 0,
-                                            },
-                                        },
-                                    }}
-                                >
-                                    <MenuItem value="all" sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>Tất cả</MenuItem>
-                                    {majors.map(major => (
-                                        <MenuItem key={major} value={major} sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>{major}</MenuItem>
-                                    ))}
-                                </Select>
-                            </FormControl>
-                        </Grid>
-                        <Grid item xs={12} md={1.5}>
-                            <FormControl fullWidth size="small">
-                                <InputLabel>Khóa</InputLabel>
-                                <Select
-                                    value={courseFilter}
-                                    label="Khóa"
-                                    onChange={(e: SelectChangeEvent<string>) => setCourseFilter(e.target.value)}
-                                    sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px', '& .MuiOutlinedInput-notchedOutline': { borderRadius: '9px' } }}
-                                    MenuProps={{
-                                        PaperProps: {
-                                            elevation: 4,
-                                            sx: {
-                                                borderRadius: 3,
-                                                minWidth: 200,
-                                                boxShadow: '0 4px 24px 0 rgba(0,0,0,0.10)',
-                                                p: 1,
-                                            },
-                                        },
-                                        MenuListProps: {
-                                            sx: {
-                                                display: 'flex',
-                                                flexDirection: 'column',
-                                                gap: 0.5,
-                                                fontFamily: '"Varela Round", sans-serif',
-                                                borderRadius: 3,
-                                                p: 0,
-                                            },
-                                        },
-                                    }}
-                                >
-                                    <MenuItem value="all" sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>Tất cả</MenuItem>
-                                    {courses.map(course => (
-                                        <MenuItem key={course} value={course} sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>{course}</MenuItem>
-                                    ))}
-                                </Select>
-                            </FormControl>
-                        </Grid>
-                        <Grid item xs={12} md={2}>
-                            <FormControl fullWidth size="small">
-                                <InputLabel>Trạng thái</InputLabel>
-                                <Select
-                                    value={statusFilter}
-                                    label="Trạng thái"
-                                    onChange={(e: SelectChangeEvent<string>) => setStatusFilter(e.target.value)}
-                                    sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px', '& .MuiOutlinedInput-notchedOutline': { borderRadius: '9px' } }}
-                                    MenuProps={{
-                                        PaperProps: {
-                                            elevation: 4,
-                                            sx: {
-                                                borderRadius: 3,
-                                                minWidth: 200,
-                                                boxShadow: '0 4px 24px 0 rgba(0,0,0,0.10)',
-                                                p: 1,
-                                            },
-                                        },
-                                        MenuListProps: {
-                                            sx: {
-                                                display: 'flex',
-                                                flexDirection: 'column',
-                                                gap: 0.5,
-                                                fontFamily: '"Varela Round", sans-serif',
-                                                borderRadius: 3,
-                                                p: 0,
-                                            },
-                                        },
-                                    }}
-                                >
-                                    <MenuItem value="all" sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>Tất cả</MenuItem>
-                                    {Object.values(PaymentStatus).map(status => (
-                                        <MenuItem key={status} value={status} sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>{status}</MenuItem>
-                                    ))}
-                                </Select>
-                            </FormControl>
-                        </Grid>
-                    </Grid>
-                    <TableContainer component={Paper} sx={{ borderRadius: '8px', boxShadow: 'none', border: '1px solid #e0e0e0', minWidth: 1100, width: '100%', maxWidth: '100%', marginTop: '1.5rem' }}>
-                        <Table size="medium" style={{ width: '100%', tableLayout: 'fixed' }}>
-                            <TableHead>
-                                <TableRow>
-                                    <TableCell sx={{ width: columnWidths.studentId, fontWeight: 'bold', color: '#FFFFFF', fontSize: '16px', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6' }}>MSSV</TableCell>
-                                    <TableCell sx={{ width: columnWidths.fullName, fontWeight: 'bold', color: '#FFFFFF', fontSize: '16px', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6' }}>Họ và tên</TableCell>
-                                    <TableCell sx={{ width: columnWidths.faculty, fontWeight: 'bold', color: '#FFFFFF', fontSize: '16px', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6' }}>Khoa</TableCell>
-                                    <TableCell sx={{ width: columnWidths.major, fontWeight: 'bold', color: '#FFFFFF', fontSize: '16px', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6' }}>Ngành</TableCell>
-                                    <TableCell sx={{ width: columnWidths.course, fontWeight: 'bold', color: '#FFFFFF', fontSize: '16px', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6' }}>Khóa</TableCell>
-                                    <TableCell sx={{ width: columnWidths.paymentStatus, fontWeight: 'bold', color: '#FFFFFF', fontSize: '16px', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6' }}>Tình trạng thanh toán</TableCell>
-                                </TableRow>
-                            </TableHead>
-                            <TableBody>
-                                {filteredData.length === 0 ? (
-                                    <TableRow>
-                                        <TableCell colSpan={6} align="center" sx={{ py: 4, color: '#888' }}>
-                                            Không có dữ liệu phù hợp
-                                        </TableCell>
-                                    </TableRow>
-                                ) : (
-                                    filteredData.map((row) => (
-                                        <TableRow key={row.studentId} sx={{ '&:hover': { backgroundColor: '#f5f5f5' } }}>
-                                            <TableCell sx={{ minWidth: columnWidths.studentId, fontSize: '14px', fontFamily: '"Varela Round", sans-serif', fontWeight: 800 }}>{row.studentId}</TableCell>
-                                            <TableCell sx={{ minWidth: columnWidths.fullName, fontSize: '14px', fontFamily: '"Varela Round", sans-serif' }}>{row.fullName}</TableCell>
-                                            <TableCell sx={{ minWidth: columnWidths.faculty, fontSize: '14px', fontFamily: '"Varela Round", sans-serif' }}>{row.faculty}</TableCell>
-                                            <TableCell sx={{ minWidth: columnWidths.major, fontSize: '14px', fontFamily: '"Varela Round", sans-serif' }}>{row.major}</TableCell>
-                                            <TableCell sx={{ minWidth: columnWidths.course, fontSize: '14px', fontFamily: '"Varela Round", sans-serif' }}>{row.course}</TableCell>
-                                            <TableCell sx={{ minWidth: columnWidths.paymentStatus, fontSize: '14px', fontFamily: '"Varela Round", sans-serif', p: 0 }}>
-                                                <Chip
-                                                    label={row.paymentStatus}
-                                                    sx={{
-                                                        bgcolor: getStatusStyle(row.paymentStatus).bgcolor,
-                                                        color: getStatusStyle(row.paymentStatus).color,
-                                                        fontWeight: 700,
-                                                        fontSize: '14px',
-                                                        borderRadius: '20px',
-                                                        px: 2,
-                                                        py: 1,
-                                                        height: '2rem',
-                                                    }}
-                                                />
-                                            </TableCell>
+            <div className="p-4 gap-y-6">
+                <Typography variant="h4">
+                    Quản lý tình trạng thanh toán của học sinh
+                </Typography>
+                <TextField
+                    label="Tìm kiếm"
+                    variant="outlined"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    fullWidth
+                />
+                {Object.keys(groupedInvoices)
+                    .sort((a, b) => Number(b) - Number(a))
+                    .map(year => (
+                        <div key={year} className="mb-8">
+                            <Typography variant="h5" className="mb-2">
+                                Năm {year}
+                            </Typography>
+                            <TableContainer component={Paper}>
+                                <Table>
+                                    <TableHead>
+                                        <TableRow>
+                                            <TableCell/>
+                                            <TableCell>ID</TableCell>
+                                            <TableCell>Tên học sinh</TableCell>
+                                            <TableCell>Học kỳ</TableCell>
+                                            <TableCell>Trạng thái thanh toán</TableCell>
+                                            <TableCell>Hành động</TableCell>
                                         </TableRow>
-                                    ))
-                                )}
-                            </TableBody>
-                        </Table>
-                    </TableContainer>
-                </Paper>
-            </Box>
+                                    </TableHead>
+                                    <TableBody>
+                                        {groupedInvoices[Number(year)].map((invoice) => (
+                                            <React.Fragment key={invoice.id}>
+                                                <TableRow>
+                                                    <TableCell>
+                                                        <IconButton
+                                                            size="small"
+                                                            onClick={() => toggleHistory(invoice.id)}
+                                                        >
+                                                            {expandedRows[invoice.id] ? (
+                                                                <KeyboardArrowUpIcon/>
+                                                            ) : (
+                                                                <KeyboardArrowDownIcon/>
+                                                            )}
+                                                        </IconButton>
+                                                    </TableCell>
+                                                    <TableCell>{invoice.id}</TableCell>
+                                                    <TableCell>{invoice.studentName}</TableCell>
+                                                    <TableCell>{invoice.semester}</TableCell>
+                                                    <TableCell>{invoice.status}</TableCell>
+                                                    <TableCell>
+                                                        {invoice.status === 'Pending' && (
+                                                            <Button
+                                                                variant="contained"
+                                                                color="primary"
+                                                                onClick={() => handleValidatePayment(invoice.id)}
+                                                            >
+                                                                Xác nhận thanh toán
+                                                            </Button>
+                                                        )}
+                                                    </TableCell>
+                                                </TableRow>
+                                                <TableRow>
+                                                    <TableCell style={{paddingBottom: '0rem', paddingTop: '0rem'}} colSpan={6}>
+                                                        <Collapse in={expandedRows[invoice.id]} timeout="auto"
+                                                                  unmountOnExit>
+                                                            <div className="p-2" style={{padding: '0.125rem'}}>
+                                                                <Typography variant="subtitle1" gutterBottom>
+                                                                    Lịch sử thanh toán
+                                                                </Typography>
+                                                                <Table size="small">
+                                                                    <TableHead>
+                                                                        <TableRow>
+                                                                            <TableCell>ID</TableCell>
+                                                                            <TableCell>Ngày</TableCell>
+                                                                            <TableCell>Số tiền</TableCell>
+                                                                            <TableCell>Phương thức</TableCell>
+                                                                        </TableRow>
+                                                                    </TableHead>
+                                                                    <TableBody>
+                                                                        {invoice.paymentHistory.map((payment) => (
+                                                                            <TableRow key={payment.id}>
+                                                                                <TableCell>{payment.id}</TableCell>
+                                                                                <TableCell>{payment.date}</TableCell>
+                                                                                <TableCell>{payment.amount}</TableCell>
+                                                                                <TableCell>{payment.method}</TableCell>
+                                                                            </TableRow>
+                                                                        ))}
+                                                                    </TableBody>
+                                                                </Table>
+                                                            </div>
+                                                        </Collapse>
+                                                    </TableCell>
+                                                </TableRow>
+                                            </React.Fragment>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            </TableContainer>
+                        </div>
+                    ))}
+            </div>
         </ThemeLayout>
-    );
-}
-
+    )
+};
+                {/*
+          Note: For handling a large number of invoices and associated payment histories,
+          consider implementing server-side pagination, data virtualization (e.g., using react-window),
+          and indexing strategies in your backend database.
+        */}

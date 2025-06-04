@@ -20,6 +20,7 @@ import {
     TableRow,
     TableCell,
     TableBody,
+    TablePagination,
     Chip,
     Divider
 } from "@mui/material";
@@ -43,20 +44,11 @@ interface ProgramSchedule{
 }
 
 export default function ProgramMgmAcademic({ user, onLogout }: AcademicPageProps) {
-    const [programs, setPrograms] = useState<ProgramSchedule[]>(
-        [
-            { id: 1, name: "Kỹ thuật phần mềm", startDate: "2023-09-01", endDate: "2027-06-30", department: "Công nghệ thông tin", totalCredits: 145, type: "Chuyên ngành" },
-            { id: 2, name: "Khoa học máy tính", startDate: "2023-09-01", endDate: "2027-06-30", department: "Công nghệ thông tin", totalCredits: 150, type: "Chuyên ngành" },
-            { id: 3, name: "Hệ thống thông tin", startDate: "2023-09-01", endDate: "2027-06-30", department: "Công nghệ thông tin", totalCredits: 140, type: "Cơ sở ngành" },
-            { id: 4, name: "Quản trị kinh doanh", startDate: "2023-09-01", endDate: "2027-06-30", department: "Kinh tế", totalCredits: 135, type: "Chuyên ngành" },
-            { id: 5, name: "Tài chính ngân hàng", startDate: "2023-09-01", endDate: "2027-06-30", department: "Kinh tế", totalCredits: 138, type: "Chuyên ngành" },
-            { id: 6, name: "Kế toán doanh nghiệp", startDate: "2023-09-01", endDate: "2027-06-30", department: "Kinh tế", totalCredits: 132, type: "Cơ sở ngành" },
-            { id: 7, name: "Luật kinh tế quốc tế", startDate: "2023-09-01", endDate: "2027-06-30", department: "Luật", totalCredits: 130, type: "Chuyên ngành" },
-            { id: 8, name: "Công nghệ sinh học", startDate: "2023-09-01", endDate: "2027-06-30", department: "Sinh học", totalCredits: 128, type: "Chuyên ngành" },
-            { id: 9, name: "Kỹ thuật điện tử", startDate: "2023-09-01", endDate: "2027-06-30", department: "Điện tử", totalCredits: 142, type: "Chuyên ngành" },
-            { id: 10, name: "Kỹ thuật phần mềm chuyên sâu", startDate: "2023-09-01", endDate: "2027-06-30", department: "Công nghệ thông tin", totalCredits: 140, type: "Chuyên ngành" }
-        ]
-    );
+    const [programs, setPrograms] = useState<ProgramSchedule[]>([
+        { id:1, name: "Kỹ thuật phần mềm", startDate: "2023-09-01", endDate: "2027-06-30", department: "Công nghệ thông tin", totalCredits: 145, type:"Chuyên ngành" },
+        { id: 2, name: "Khoa học máy tính", startDate: "2023-09-01", endDate: "2027-06-30", department: "Công nghệ thông tin", totalCredits: 150, type: "Chuyên ngành" },
+        { id: 3, name: "Hệ thống thông tin", startDate: "2023-09-01", endDate: "2027-06-30", department: "Công nghệ thông tin", totalCredits: 140, type:"Cơ sở ngành" }
+    ]);
     const [openDialog, setOpenDialog] = useState(false);
     const [currentProgram, setCurrentProgram] = useState<ProgramSchedule>({
         id: 0,
@@ -68,7 +60,18 @@ export default function ProgramMgmAcademic({ user, onLogout }: AcademicPageProps
         type:""
     });
     const [isEditing, setIsEditing] = useState(false);
+    const [page, setPage] = useState(0);
+    const [rowsPerPage, setRowsPerPage] = useState(5);
     const [confirmDelete, setConfirmDelete] = useState<{ open: boolean; id: number | null }>({ open: false, id: null });
+
+    const handleChangePage = (_event: unknown, newPage: number) => {
+        setPage(newPage);
+    };
+
+    const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
+        setRowsPerPage(parseInt(event.target.value, 10));
+        setPage(0);
+    };
 
     const handleOpenDialog = (edit: boolean = false, program?: ProgramSchedule) => {
         setIsEditing(edit);
@@ -155,8 +158,7 @@ export default function ProgramMgmAcademic({ user, onLogout }: AcademicPageProps
                         color: 'rgb(39, 89, 217)',
                         transition: 'all 0.25s ease',
                         display: 'flex',
-                        flexDirection: 'column',
-                        position: 'relative',
+                        flexDirection: 'column',                        position: 'relative',
                         overflow: 'auto',
                         '&::-webkit-scrollbar': {
                             width: '6px'
@@ -169,8 +171,8 @@ export default function ProgramMgmAcademic({ user, onLogout }: AcademicPageProps
                         borderBottomRightRadius: '16px',
                         marginTop: '3.5rem',
                         flexGrow: 1,
-                        minHeight: '400px',
-                        maxHeight: 'calc(100vh - 150px)',
+                        minHeight: '25rem',
+                        maxHeight: 'calc(100vh - 9.375rem)',
                         paddingLeft: '16px',
                         paddingRight: '16px',
                         marginLeft: '0px',
@@ -217,7 +219,9 @@ export default function ProgramMgmAcademic({ user, onLogout }: AcademicPageProps
                                 </TableRow>
                             </TableHead>
                             <TableBody>
-                                {programs.map((program) => (
+                                {programs
+                                    .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                                    .map((program) => (
                                     <TableRow 
                                         key={program.id} 
                                         sx={{
@@ -254,6 +258,15 @@ export default function ProgramMgmAcademic({ user, onLogout }: AcademicPageProps
                             </TableBody>
                         </Table>
                     </TableContainer>
+                    <TablePagination
+                        rowsPerPageOptions={[5, 10, 25]}
+                        component="div"
+                        count={programs.length}
+                        rowsPerPage={rowsPerPage}
+                        page={page}
+                        onPageChange={handleChangePage}
+                        onRowsPerPageChange={handleChangeRowsPerPage}
+                    />
                 </Paper>
             </Box>
             {/* Dialog for adding/editing programs */}

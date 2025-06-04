@@ -433,7 +433,7 @@ export default function OpenCourseMgmAcademic({user, onLogout }: OpenCourseMgmAc
                         <Grid item xs={12} md={3.85}>
                             <TextField
                                 fullWidth
-                                placeholder="Tìm kiếm theo Mã môn học hoặc Tên môn học"
+                                placeholder="Tìm kiếm theo mã môn học hoặc Tên môn học"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 InputProps={{
