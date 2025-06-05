@@ -15,7 +15,6 @@ import {
     TableContainer,
     TableHead,
     TableRow,
-    TablePagination,
     IconButton,
     Dialog,
     DialogTitle,
@@ -131,8 +130,6 @@ const columnWidths = {
 
 export default function UserManagement({user, onLogout}: UserManagementProps) {
     const [tabValue, setTabValue] = useState(0);
-    const [page, setPage] = useState(0);
-    const [rowsPerPage, setRowsPerPage] = useState(5);
     const [searchTerm, setSearchTerm] = useState("");
     const [filterRole, setFilterRole] = useState("all");
     const [users, setUsers] = useState(mockUsers);
@@ -143,24 +140,13 @@ export default function UserManagement({user, onLogout}: UserManagementProps) {
     const [snackbarOpen, setSnackbarOpen] = useState(false);
     const [snackbarMessage, setSnackbarMessage] = useState("");
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-    const [userToDelete, setUserToDelete] = useState<any>(null);
-
-    // Filter users based on search and role filter
+    const [userToDelete, setUserToDelete] = useState<any>(null);    // Filter users based on search and role filter
     const filteredUsers = users.filter(user => {
         const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
             user.email.toLowerCase().includes(searchTerm.toLowerCase());
         const matchesRole = filterRole === "all" || user.role === filterRole;
         return matchesSearch && matchesRole;
     });
-
-    const handleChangePage = (_event: unknown, newPage: number) => {
-        setPage(newPage);
-    };
-
-    const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
-        setRowsPerPage(parseInt(event.target.value, 10));
-        setPage(0);
-    };
 
     const handleChangeTab = (_event: React.SyntheticEvent, newValue: number) => {
         setTabValue(newValue);
@@ -253,8 +239,7 @@ export default function UserManagement({user, onLogout}: UserManagementProps) {
     return (
         <ThemeLayout role="admin" onLogout={onLogout}>
             <UserInfo user={user} />
-            <Box sx={{ display: 'flex', justifyContent: 'center', mt: '0.25rem' }}>
-                <Paper
+            <Box sx={{ display: 'flex', justifyContent: 'center', mt: '0.25rem' }}>                <Paper
                     elevation={3}
                     sx={{
                         textAlign: 'left',
@@ -270,14 +255,7 @@ export default function UserManagement({user, onLogout}: UserManagementProps) {
                         display: 'flex',
                         flexDirection: 'column',
                         position: 'relative',
-                        overflow: 'auto',
-                        '&::-webkit-scrollbar': {
-                            width: '6px'
-                        },
-                        '&::-webkit-scrollbar-thumb': {
-                            backgroundColor: 'rgba(0,0,0,0.2)',
-                            borderRadius: '6px'
-                        },
+                        overflow: 'hidden',
                         borderTopRightRadius: '16px',
                         borderBottomRightRadius: '16px',
                         marginTop: '3.5rem',
@@ -304,36 +282,7 @@ export default function UserManagement({user, onLogout}: UserManagementProps) {
                         }}
                     >
                         Quản lý người dùng
-                    </Typography>                    <Box sx={{ mb: 3 }}>
-                        <Tabs 
-                            value={tabValue} 
-                            onChange={handleChangeTab} 
-                            sx={{
-                                justifyContent: 'flex-start',
-                                '& .MuiTabs-flexContainer': {
-                                    justifyContent: 'flex-start',
-                                },
-                                '& .MuiTabs-indicator': {
-                                    backgroundColor: '#1976d2',
-                                    height: '3px',
-                                    borderRadius: '3px'
-                                },
-                                '& .MuiTab-root': {
-                                    fontFamily: '"Varela Round", sans-serif',
-                                    fontSize: '16px',
-                                    fontWeight: 600,
-                                    textTransform: 'none',
-                                    minHeight: '48px'
-                                },
-                                '& .Mui-selected': {
-                                    color: '#1976d2'
-                                }
-                            }}
-                        >
-                            <Tab label="Danh sách người dùng" />
-                            <Tab label="Cấu hình quyền" />
-                        </Tabs>
-                    </Box>
+                    </Typography>
 
                     {/* Users List Tab */}
                     {tabValue === 0 && (
@@ -422,10 +371,29 @@ export default function UserManagement({user, onLogout}: UserManagementProps) {
                                         Thêm người dùng
                                     </Button>
                                 </Grid>
-                            </Grid>
-
-                            <TableContainer component={Paper} sx={{ mt: 1, borderRadius: '8px', boxShadow: 'none', border: '1px solid #e0e0e0', width: '100%', maxWidth: '100%', minWidth: 1100 }}>
-                                <Table size="small">
+                            </Grid>                            <TableContainer 
+                                component={Paper} 
+                                sx={{ 
+                                    mt: 1, 
+                                    borderRadius: '8px', 
+                                    boxShadow: '0 4px 10px rgba(0, 0, 0, 0.1)', 
+                                    border: '1px solid #e0e0e0', 
+                                    width: '100%', 
+                                    maxWidth: '100%', 
+                                    minWidth: 1100,
+                                    maxHeight: 'calc(100vh - 350px)',
+                                    height: 'auto',
+                                    overflowY: 'auto',
+                                    '&::-webkit-scrollbar': {
+                                        width: '6px'
+                                    },
+                                    '&::-webkit-scrollbar-thumb': {
+                                        backgroundColor: 'rgba(0,0,0,0.2)',
+                                        borderRadius: '6px'
+                                    }
+                                }}
+                            >
+                                <Table stickyHeader size="small" sx={{ tableLayout: 'fixed' }}>
                                     <TableHead>
                                         <TableRow>
                                             <TableCell sx={{ minWidth: columnWidths.name, height: '50px', fontWeight: 'bold', color: '#FFFFFF', fontSize: '16px', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6' }}>Họ tên</TableCell>
@@ -437,121 +405,53 @@ export default function UserManagement({user, onLogout}: UserManagementProps) {
                                         </TableRow>
                                     </TableHead>
                                     <TableBody>
-                                        {filteredUsers
-                                            .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                                            .map((user) => (
-                                                <TableRow 
-                                                    key={user.id}
-                                                    sx={{ '&:hover': { backgroundColor: '#f5f5f5' }, '&:last-child td, &:last-child th': { borderBottom: 'none' } }}
-                                                >
-                                                    <TableCell sx={{ minWidth: columnWidths.name, height: '50px', fontSize: '14px', fontFamily: '"Varela Round", sans-serif', fontWeight: 800 }}>{user.name}</TableCell>
-                                                    <TableCell sx={{ minWidth: columnWidths.email, height: '50px', fontSize: '14px', fontFamily: '"Varela Round", sans-serif' }}>{user.email}</TableCell>
-                                                    <TableCell sx={{ minWidth: columnWidths.role, height: '50px', fontSize: '14px', fontFamily: '"Varela Round", sans-serif' }}>
-                                                        {user.role === 'student' && 'Sinh viên'}
-                                                        {user.role === 'academic' && 'Phòng đào tạo'}
-                                                        {user.role === 'financial' && 'Phòng tài chính'}
-                                                        {user.role === 'admin' && 'Quản trị viên'}
-                                                    </TableCell>
-                                                    <TableCell sx={{ minWidth: columnWidths.department, height: '50px', fontSize: '14px', fontFamily: '"Varela Round", sans-serif' }}>{user.department}</TableCell>
-                                                    <TableCell sx={{ minWidth: columnWidths.status, height: '50px', fontSize: '14px', fontFamily: '"Varela Round", sans-serif' }}>
-                                                        <Box
-                                                            sx={{
-                                                                display: 'inline-block',
-                                                                px: 2,
-                                                                py: 1,
-                                                                borderRadius: '20px',
-                                                                fontWeight: 700,
-                                                                fontSize: '14px',
-                                                                ...(user.status === 'active' ? 
-                                                                    { bgcolor: '#e0f7fa', color: '#00838f' } : 
-                                                                    { bgcolor: '#ffebee', color: '#c62828' })
-                                                            }}
-                                                        >
-                                                            {user.status === 'active' ? 'Hoạt động' : 'Vô hiệu'}
-                                                        </Box>
-                                                    </TableCell>
-                                                    <TableCell align="center" sx={{ minWidth: columnWidths.actions, height: '50px', fontSize: '14px', fontFamily: '"Varela Round", sans-serif' }}>
-                                                        <IconButton size="small" onClick={() => handleOpenEditDialog(user)}>
-                                                            <EditIcon fontSize="small" />
-                                                        </IconButton>
-                                                        <IconButton size="small" color="error" onClick={() => handleOpenDeleteDialog(user)}>
-                                                            <DeleteIcon fontSize="small" />
-                                                        </IconButton>
-                                                    </TableCell>
-                                                </TableRow>
-                                            ))}
+                                        {filteredUsers.map((user) => (
+                                            <TableRow 
+                                                key={user.id}
+                                                sx={{ '&:hover': { backgroundColor: '#f5f5f5' }, '&:last-child td, &:last-child th': { borderBottom: 'none' } }}
+                                            >
+                                                <TableCell sx={{ minWidth: columnWidths.name, height: '50px', fontSize: '14px', fontFamily: '"Varela Round", sans-serif', fontWeight: 800 }}>{user.name}</TableCell>
+                                                <TableCell sx={{ minWidth: columnWidths.email, height: '50px', fontSize: '14px', fontFamily: '"Varela Round", sans-serif' }}>{user.email}</TableCell>
+                                                <TableCell sx={{ minWidth: columnWidths.role, height: '50px', fontSize: '14px', fontFamily: '"Varela Round", sans-serif' }}>
+                                                    {user.role === 'student' && 'Sinh viên'}
+                                                    {user.role === 'academic' && 'Phòng đào tạo'}
+                                                    {user.role === 'financial' && 'Phòng tài chính'}
+                                                    {user.role === 'admin' && 'Quản trị viên'}
+                                                </TableCell>
+                                                <TableCell sx={{ minWidth: columnWidths.department, height: '50px', fontSize: '14px', fontFamily: '"Varela Round", sans-serif' }}>{user.department}</TableCell>
+                                                <TableCell sx={{ minWidth: columnWidths.status, height: '50px', fontSize: '14px', fontFamily: '"Varela Round", sans-serif' }}>
+                                                    <Box
+                                                        sx={{
+                                                            display: 'inline-block',
+                                                            px: 2,
+                                                            py: 1,
+                                                            borderRadius: '20px',
+                                                            fontWeight: 700,
+                                                            fontSize: '14px',
+                                                            ...(user.status === 'active' ? 
+                                                                { bgcolor: '#e0f7fa', color: '#00838f' } : 
+                                                                { bgcolor: '#ffebee', color: '#c62828' })
+                                                        }}
+                                                    >
+                                                        {user.status === 'active' ? 'Hoạt động' : 'Vô hiệu'}
+                                                    </Box>
+                                                </TableCell>
+                                                <TableCell align="center" sx={{ minWidth: columnWidths.actions, height: '50px', fontSize: '14px', fontFamily: '"Varela Round", sans-serif' }}>
+                                                    <IconButton size="small" onClick={() => handleOpenEditDialog(user)}>
+                                                        <EditIcon fontSize="small" />
+                                                    </IconButton>
+                                                    <IconButton size="small" color="error" onClick={() => handleOpenDeleteDialog(user)}>
+                                                        <DeleteIcon fontSize="small" />
+                                                    </IconButton>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
                                     </TableBody>
                                 </Table>
                             </TableContainer>
-                            <TablePagination
-                                rowsPerPageOptions={[5, 10, 25]}
-                                component="div"
-                                count={filteredUsers.length}
-                                rowsPerPage={rowsPerPage}
-                                page={page}
-                                onPageChange={handleChangePage}
-                                onRowsPerPageChange={handleChangeRowsPerPage}
-                            />
                         </Box>
                     )}
 
-                    {/* Role Configuration Tab */}
-                    {tabValue === 1 && (
-                        <Box sx={{ p: 2 }}>
-                            <Typography
-                                variant="h6" 
-                                sx={{ 
-                                    mb: 2, 
-                                    fontFamily: '"Varela Round", sans-serif',
-                                    fontWeight: 'bold',
-                                    color: '#1976d2',
-                                }}
-                            >
-                                Cấu hình quyền hệ thống
-                            </Typography>
-                            <Typography variant="body2" color="text.secondary" sx={{ mb: 3, fontFamily: '"Varela Round", sans-serif' }}>
-                                Điều chỉnh quyền truy cập cho từng vai trò trong hệ thống.
-                            </Typography>
-
-                            <Grid container spacing={3}>
-                                {roles.map(role => (
-                                    <Grid item xs={12} md={6} key={role.id}>
-                                        <Card sx={{ borderRadius: '12px', boxShadow: '0 4px 24px 0 rgba(0,0,0,0.10)' }}>
-                                            <CardContent>
-                                                <Typography 
-                                                    variant="h6" 
-                                                    sx={{ 
-                                                        mb: 2, 
-                                                        fontFamily: '"Varela Round", sans-serif',
-                                                        fontWeight: 'bold',
-                                                        color: '#1976d2',
-                                                    }}
-                                                >
-                                                    {role.displayName}
-                                                </Typography>
-                                                <Divider sx={{ mb: 2 }} />
-                                                <FormGroup>
-                                                    {role.permissions.map(permission => (
-                                                        <FormControlLabel
-                                                            key={permission.id}
-                                                            control={
-                                                                <Checkbox
-                                                                    checked={permission.granted}
-                                                                    onChange={(e) => handleUpdatePermission(role.id, permission.id, e.target.checked)}
-                                                                />
-                                                            }
-                                                            sx={{ fontFamily: '"Varela Round", sans-serif' }}
-                                                            label={permissionNames[permission.name as keyof typeof permissionNames] || permission.name}
-                                                        />
-                                                    ))}
-                                                </FormGroup>
-                                            </CardContent>
-                                        </Card>
-                                    </Grid>
-                                ))}
-                            </Grid>
-                        </Box>
-                    )}
 
                     {/* User Dialog (Add/Edit) */}
                     <Dialog 

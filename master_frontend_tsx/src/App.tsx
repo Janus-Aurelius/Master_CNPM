@@ -16,6 +16,7 @@ import ProgramMgmAcademic from "./academic_affair_pages/programMgm_academic.tsx"
 import CourseMgmAcademic from "./academic_affair_pages/courseMgm_academic.tsx";
 import StudentSubjectReqMgmAcademic from "./academic_affair_pages/studentSubjectReqMgm_academic.tsx";
 import OpenCourseMgmAcademic from "./academic_affair_pages/openCourseMgm_academic.tsx";
+import StudentMgmAcademic from "./academic_affair_pages/studentMgm_academic.tsx";
 //Financial
 import FinancialPage from "./financial_dpm_pages/dashboard_financial.tsx";
 import PaymentStatusMgm from "./financial_dpm_pages/paymentStatusMgm_financial.tsx";
@@ -99,9 +100,7 @@ export default function App() {
                             {/* Add more student routes here */}
                         </Routes>
                     </ProtectedRoute>
-                } />
-
-                <Route path="/academic/*" element={
+                } />                <Route path="/academic/*" element={
                     <ProtectedRoute allowedRoles={['academic']}>
                         <Routes>
                             <Route index element={<AcademicPage user={user} onLogout={handleLogout} />} />
@@ -110,6 +109,7 @@ export default function App() {
                             <Route path="subjectMgm" element={<CourseMgmAcademic user={user} onLogout={handleLogout} />} />
                             <Route path="studentSubjectReq" element={<StudentSubjectReqMgmAcademic user={user} onLogout={handleLogout} />} />
                             <Route path="openCourseMgm" element={<OpenCourseMgmAcademic user={user} onLogout={handleLogout} />} />
+                            <Route path="studentMgm" element={<StudentMgmAcademic user={user} onLogout={handleLogout} />} />
                         </Routes>
                     </ProtectedRoute>
                 } />

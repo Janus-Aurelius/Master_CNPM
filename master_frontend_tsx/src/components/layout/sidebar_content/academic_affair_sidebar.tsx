@@ -20,6 +20,7 @@ import LibraryBooksOutlined from '@mui/icons-material/LibraryBooksOutlined';
 import HelpOutlineOutlined from '@mui/icons-material/HelpOutlineOutlined';
 import ClassOutlined from '@mui/icons-material/ClassOutlined';
 import LogoutOutlined from '@mui/icons-material/LogoutOutlined';
+import PeopleOutline from '@mui/icons-material/PeopleOutline';
 
 interface StyledNavItemProps {
     sx?: React.CSSProperties;
@@ -174,6 +175,8 @@ export const AcademicSidebarContent = ({ onLogout }: AcademicSidebarContentProps
                         </NavItem>
                         <NavItem to="/academic/openCourseMgm" sx={{ color: '#0173d3' }} selected={selectedPath === "/academic/openCourseMgm"} icon={<ClassOutlined />}>
                             Quản lý môn học mở
+                        </NavItem>                        <NavItem to="/academic/studentMgm" sx={{ color: '#0173d3' }} selected={selectedPath.includes("/academic/studentMgm")} icon={<PeopleOutline />}>
+                            Quản lý sinh viên
                         </NavItem>
                     </Stack>
                 </div>
