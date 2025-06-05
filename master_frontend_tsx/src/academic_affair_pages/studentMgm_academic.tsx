@@ -424,24 +424,49 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
                                 }}
                             />
                         </Grid>
-                        <Grid item xs={12} md={2.5}>
-                            <FormControl fullWidth size="small">
+                        <Grid item xs={12} md={2.5}>                                <FormControl fullWidth size="small">
                                 <InputLabel id="status-filter-label">Trạng thái</InputLabel>
                                 <Select
                                     labelId="status-filter-label"
                                     value={statusFilter}
                                     label="Trạng thái"
                                     onChange={(e) => setStatusFilter(e.target.value)}
-                                    sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}
+                                    sx={{ 
+                                        fontFamily: '"Varela Round", sans-serif', 
+                                        borderRadius: '9px',
+                                        '& .MuiOutlinedInput-notchedOutline': {
+                                            borderRadius: '9px',
+                                        }
+                                    }}
+                                    MenuProps={{
+                                        PaperProps: {
+                                            elevation: 4,
+                                            sx: {
+                                                borderRadius: 3,
+                                                minWidth: 200,
+                                                boxShadow: '0 4px 24px 0 rgba(0,0,0,0.10)',
+                                                p: 1,
+                                            },
+                                        },
+                                        MenuListProps: {
+                                            sx: {
+                                                display: 'flex',
+                                                flexDirection: 'column',
+                                                gap: 0.5,
+                                                fontFamily: '"Varela Round", sans-serif',
+                                                borderRadius: 3,
+                                                p: 0,
+                                            },
+                                        },
+                                    }}
                                 >
-                                    <MenuItem value="all">Tất cả trạng thái</MenuItem>
+                                    <MenuItem value="all" sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>Tất cả trạng thái</MenuItem>
                                     {uniqueStatuses.map(status => (
-                                        <MenuItem key={status} value={status}>{status}</MenuItem>
+                                        <MenuItem key={status} value={status} sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>{status}</MenuItem>
                                     ))}
                                 </Select>
                             </FormControl>
-                        </Grid>
-                        <Grid item xs={12} md={2.5}>
+                        </Grid>                        <Grid item xs={12} md={2.5}>
                             <FormControl fullWidth size="small">
                                 <InputLabel id="program-filter-label">Ngành học</InputLabel>
                                 <Select
@@ -449,11 +474,38 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
                                     value={programFilter}
                                     label="Ngành học"
                                     onChange={(e) => setProgramFilter(e.target.value)}
-                                    sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}
+                                    sx={{ 
+                                        fontFamily: '"Varela Round", sans-serif', 
+                                        borderRadius: '9px',
+                                        '& .MuiOutlinedInput-notchedOutline': {
+                                            borderRadius: '9px',
+                                        }
+                                    }}
+                                    MenuProps={{
+                                        PaperProps: {
+                                            elevation: 4,
+                                            sx: {
+                                                borderRadius: 3,
+                                                minWidth: 200,
+                                                boxShadow: '0 4px 24px 0 rgba(0,0,0,0.10)',
+                                                p: 1,
+                                            },
+                                        },
+                                        MenuListProps: {
+                                            sx: {
+                                                display: 'flex',
+                                                flexDirection: 'column',
+                                                gap: 0.5,
+                                                fontFamily: '"Varela Round", sans-serif',
+                                                borderRadius: 3,
+                                                p: 0,
+                                            },
+                                        },
+                                    }}
                                 >
-                                    <MenuItem value="all">Tất cả ngành học</MenuItem>
+                                    <MenuItem value="all" sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>Tất cả ngành học</MenuItem>
                                     {uniquePrograms.map(program => (
-                                        <MenuItem key={program} value={program}>{program}</MenuItem>
+                                        <MenuItem key={program} value={program} sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>{program}</MenuItem>
                                     ))}
                                 </Select>
                             </FormControl>
@@ -695,8 +747,7 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
                                     }}
                                 />
                             </Grid>
-                            <Grid item xs={12} md={6}>
-                                <FormControl fullWidth margin="normal" sx={{ background: '#f7faff', borderRadius: '12px' }}>
+                            <Grid item xs={12} md={6}>                                <FormControl fullWidth margin="normal" sx={{ background: '#f7faff', borderRadius: '12px' }}>
                                     <InputLabel id="gender-select-label" sx={{ fontWeight: 500 }}>Giới tính</InputLabel>
                                     <Select
                                         labelId="gender-select-label"
@@ -705,10 +756,31 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
                                         label="Giới tính"
                                         onChange={handleSelectChange}
                                         sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '12px', '& .MuiOutlinedInput-notchedOutline': { borderRadius: '12px', borderColor: '#d8d8d8' } }}
+                                        MenuProps={{
+                                            PaperProps: {
+                                                elevation: 4,
+                                                sx: {
+                                                    borderRadius: 3,
+                                                    minWidth: 200,
+                                                    boxShadow: '0 4px 24px 0 rgba(0,0,0,0.10)',
+                                                    p: 1,
+                                                },
+                                            },
+                                            MenuListProps: {
+                                                sx: {
+                                                    display: 'flex',
+                                                    flexDirection: 'column',
+                                                    gap: 0.5,
+                                                    fontFamily: '"Varela Round", sans-serif',
+                                                    borderRadius: 3,
+                                                    p: 0,
+                                                },
+                                            },
+                                        }}
                                     >
-                                        <MenuItem value="Nam">Nam</MenuItem>
-                                        <MenuItem value="Nữ">Nữ</MenuItem>
-                                        <MenuItem value="Khác">Khác</MenuItem>
+                                        <MenuItem value="Nam" sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>Nam</MenuItem>
+                                        <MenuItem value="Nữ" sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>Nữ</MenuItem>
+                                        <MenuItem value="Khác" sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>Khác</MenuItem>
                                     </Select>
                                 </FormControl>
                             </Grid>
@@ -805,8 +877,7 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
                                     }}
                                 />
                             </Grid>
-                            <Grid item xs={12} md={6}>
-                                <FormControl fullWidth margin="normal" sx={{ background: '#f7faff', borderRadius: '12px' }}>
+                            <Grid item xs={12} md={6}>                                <FormControl fullWidth margin="normal" sx={{ background: '#f7faff', borderRadius: '12px' }}>
                                     <InputLabel id="status-select-label" sx={{ fontWeight: 500 }}>Trạng thái</InputLabel>
                                     <Select
                                         labelId="status-select-label"
@@ -815,10 +886,31 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
                                         label="Trạng thái"
                                         onChange={handleSelectChange}
                                         sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '12px', '& .MuiOutlinedInput-notchedOutline': { borderRadius: '12px', borderColor: '#d8d8d8' } }}
+                                        MenuProps={{
+                                            PaperProps: {
+                                                elevation: 4,
+                                                sx: {
+                                                    borderRadius: 3,
+                                                    minWidth: 200,
+                                                    boxShadow: '0 4px 24px 0 rgba(0,0,0,0.10)',
+                                                    p: 1,
+                                                },
+                                            },
+                                            MenuListProps: {
+                                                sx: {
+                                                    display: 'flex',
+                                                    flexDirection: 'column',
+                                                    gap: 0.5,
+                                                    fontFamily: '"Varela Round", sans-serif',
+                                                    borderRadius: 3,
+                                                    p: 0,
+                                                },
+                                            },
+                                        }}
                                     >
-                                        <MenuItem value="Đang học">Đang học</MenuItem>
-                                        <MenuItem value="Tạm nghỉ">Tạm nghỉ</MenuItem>
-                                        <MenuItem value="Thôi học">Thôi học</MenuItem>
+                                        <MenuItem value="Đang học" sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>Đang học</MenuItem>
+                                        <MenuItem value="Tạm nghỉ" sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>Tạm nghỉ</MenuItem>
+                                        <MenuItem value="Thôi học" sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>Thôi học</MenuItem>
                                     </Select>
                                 </FormControl>
                             </Grid>
@@ -1068,7 +1160,9 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
                                 variant="outlined" 
                                 onClick={() => {
                                     closeStudentDetails();
-                                    handleOpenDialog(true, detailDialog.student);
+                                    if (detailDialog.student) {
+                                        handleOpenDialog(true, detailDialog.student);
+                                    }
                                 }}
                                 startIcon={<EditIcon />}
                                 sx={{ 
