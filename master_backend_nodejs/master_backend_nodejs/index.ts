@@ -1,64 +1,75 @@
-// src/index.ts
 import express from 'express';
 import path from 'path';
 import cookieParser from 'cookie-parser';
 import logger from 'morgan';
-import { getCoursesHandler, addCourseHandler } from './src/controllers/courseController';
-import authRoutes from "./src/routes/authRoutes";
-import protectedRoutes from "./src/routes/protectedRoutes";
-import {authenticateToken, authorizeRoles} from "./src/middleware/auth";
-import academicRoutes from "./src/routes/academicRoutes";
-import financialRoutes from "./src/routes/financialRoutes";
-import adminRoutes from "./src/routes/adminRoutes";
-import studentRoutes from "./src/routes/studentRoutes";
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
+
+// Controllers
+import { getCoursesHandler, addCourseHandler } from './src/controllers/courseController';
+
+// Routes
+import authRoutes from "./src/routes/auth.routes";
+import protectedRoutes from "./src/routes/protected.routes";
+import academicRoutes from "./src/routes/academic.routes";
+import financialRoutes from "./src/routes/financial.routes";
+import adminRoutes from "./src/routes/admin.routes";
+import studentRoutes from "./src/routes/student.routes";
+
+// Middleware
+import { authenticateToken, authorizeRoles } from "./src/middleware/auth";
 import { errorHandler } from './src/middleware/errorHandler';
 import { validateCourse } from './src/middleware/validateCourse';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Middleware setup
+// Security Middleware
+app.use(helmet());
+app.use(cors({
+    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+    credentials: true
+}));
+
+// Rate Limiting
+const limiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100 // limit each IP to 100 requests per windowMs
+});
+app.use(limiter);
+
+// Basic Middleware
 app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
-app.use(cors({
-    origin: 'http://localhost:3000', // hoặc domain FE của bạn
-    credentials: true
-}));
-app.use(helmet());
 
-const limiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 phút
-    max: 100 // tối đa 100 request mỗi 15 phút
-});
-app.use(limiter);
-
-// Public routes
-app.use("/auth", authRoutes);
-app.use("/auth/student", authenticateToken, authorizeRoles(['student']), studentRoutes);
-
-// Protected routes
+// Public Routes
+app.use("/api/auth", authRoutes);
 app.get("/api", (req, res) => {res.send("Welcome to the API.")});
+
+// Protected Routes
 app.use("/api/dashboard", protectedRoutes);
 app.use("/api/academic", authenticateToken, authorizeRoles(['academic']), academicRoutes);
 app.use("/api/financial", authenticateToken, authorizeRoles(['financial']), financialRoutes);
 app.use("/api/admin", authenticateToken, authorizeRoles(['admin']), adminRoutes);
+app.use("/api/student", authenticateToken, authorizeRoles(['student']), studentRoutes);
 
-// Basic routes
+// Course Routes
+app.get("/api/courses", getCoursesHandler);
+app.post("/api/courses", authenticateToken, validateCourse, addCourseHandler);
+
+// Root Route
 app.get("/", (req, res) => {
-    res.send("API is running. Try /courses to access courses.");
+    res.send("API is running. Try /api/courses to access courses.");
 });
-app.get("/courses", getCoursesHandler);
-app.post("/courses", validateCourse, addCourseHandler);
 
+// Error Handling
 app.use(errorHandler);
 
-// Start server
+// Start Server
 app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);
 });

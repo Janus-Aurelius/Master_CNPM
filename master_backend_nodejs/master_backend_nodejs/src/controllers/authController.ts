@@ -23,17 +23,34 @@ const ROLE_REDIRECTS: Record<string, string> = {
 };
 
 // Implement the missing function
+<<<<<<< HEAD
 const findUserByCredentials = async (email: string, password: string): Promise<User | null> => {
     // In a real application, you would hash and check passwords securely
     const user = users.find(u => u.email === email && u.password === password);
+=======
+const findUserByCredentials = async (emailOrUsername: string, password: string): Promise<User | null> => {
+    // Check both email and username
+    const user = users.find(u => 
+        (u.email === emailOrUsername || u.name === emailOrUsername) && 
+        u.password === password
+    );
+>>>>>>> origin/Trung
     return user || null;
 };
 
 export const login = async (req: Request, res: Response) => {
+<<<<<<< HEAD
     const { email, password } = req.body;
 
     try {
         const user = await findUserByCredentials(email, password);
+=======
+    const { email, username, password } = req.body;
+    const emailOrUsername = email || username;
+
+    try {
+        const user = await findUserByCredentials(emailOrUsername, password);
+>>>>>>> origin/Trung
 
         if (!user) {
             return res.status(401).json({ error: "Invalid credentials" });
