@@ -6,21 +6,18 @@ import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 
-// Controllers
-import { getCoursesHandler, addCourseHandler } from './src/controllers/courseController';
+// Route imports
+import authRoutes from './src/routes/auth.routes';
+import courseRoutes from './src/routes/course.routes';
+import protectedRoutes from './src/routes/protected.routes';
+import academicRoutes from './src/routes/academic.routes';
+import financialRoutes from './src/routes/financial.routes';
+import adminRoutes from './src/routes/admin.routes';
+import studentRoutes from './src/routes/student.routes';
 
-// Routes
-import authRoutes from "./src/routes/auth.routes";
-import protectedRoutes from "./src/routes/protected.routes";
-import academicRoutes from "./src/routes/academic.routes";
-import financialRoutes from "./src/routes/financial.routes";
-import adminRoutes from "./src/routes/admin.routes";
-import studentRoutes from "./src/routes/student.routes";
-
-// Middleware
-import { authenticateToken, authorizeRoles } from "./src/middleware/auth";
+// Middleware imports
+import { authenticateToken, authorizeRoles } from './src/middleware/auth';
 import { errorHandler } from './src/middleware/errorHandler';
-import { validateCourse } from './src/middleware/validateCourse';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -46,24 +43,24 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Public Routes
-app.use("/api/auth", authRoutes);
-app.get("/api", (req, res) => {res.send("Welcome to the API.")});
+// Public Auth Routes
+app.use('/auth', authRoutes);
+
+// Course Routes (RESTful)
+app.use('/api/courses', courseRoutes);
+
+// Student Routes (protected)
+app.use('/api/student', authenticateToken, authorizeRoles(['student']), studentRoutes);
 
 // Protected Routes
-app.use("/api/dashboard", protectedRoutes);
-app.use("/api/academic", authenticateToken, authorizeRoles(['academic']), academicRoutes);
-app.use("/api/financial", authenticateToken, authorizeRoles(['financial']), financialRoutes);
-app.use("/api/admin", authenticateToken, authorizeRoles(['admin']), adminRoutes);
-app.use("/api/student", authenticateToken, authorizeRoles(['student']), studentRoutes);
-
-// Course Routes
-app.get("/api/courses", getCoursesHandler);
-app.post("/api/courses", authenticateToken, validateCourse, addCourseHandler);
+app.use('/api/dashboard', protectedRoutes);
+app.use('/api/academic', authenticateToken, authorizeRoles(['academic']), academicRoutes);
+app.use('/api/financial', authenticateToken, authorizeRoles(['financial']), financialRoutes);
+app.use('/api/admin', authenticateToken, authorizeRoles(['admin']), adminRoutes);
 
 // Root Route
-app.get("/", (req, res) => {
-    res.send("API is running. Try /api/courses to access courses.");
+app.get('/', (req, res) => {
+    res.send('API is running. Try /api/courses to access courses.');
 });
 
 // Error Handling

@@ -8,10 +8,17 @@ const TOKEN_EXPIRY = '24h';
 
 // Static user store for demonstration
 const users: User[] = [
+<<<<<<< HEAD
     { id: 1, email: 'student@example.com', name: 'Student User', role: 'student', password: 'password', status: true },
     { id: 2, email: 'financial@example.com', name: 'Financial Dept', role: 'financial', password: 'password', status: true },
     { id: 3, email: 'academic@example.com', name: 'Academic Dept', role: 'academic', password: 'password', status: true },
     { id: 4, email: 'admin@example.com', name: 'Administrator', role: 'admin', password: 'password', status: true },
+=======
+    { id: 1, email: 'student@example.com', name: 'Student User', role: 'student', password: 'password', status: true, createdAt: new Date(), updatedAt: new Date() },
+    { id: 2, email: 'financial@example.com', name: 'Financial Dept', role: 'financial', password: 'password', status: true, createdAt: new Date(), updatedAt: new Date() },
+    { id: 3, email: 'academic@example.com', name: 'Academic Dept', role: 'academic', password: 'password', status: true, createdAt: new Date(), updatedAt: new Date() },
+    { id: 4, email: 'admin@example.com', name: 'Administrator', role: 'admin', password: 'password', status: true, createdAt: new Date(), updatedAt: new Date() },
+>>>>>>> origin/Trong
 ];
 
 // Role to dashboard URL mapping
@@ -24,6 +31,7 @@ const ROLE_REDIRECTS: Record<string, string> = {
 
 // Implement the missing function
 <<<<<<< HEAD
+<<<<<<< HEAD
 const findUserByCredentials = async (email: string, password: string): Promise<User | null> => {
     // In a real application, you would hash and check passwords securely
     const user = users.find(u => u.email === email && u.password === password);
@@ -35,15 +43,24 @@ const findUserByCredentials = async (emailOrUsername: string, password: string):
         u.password === password
     );
 >>>>>>> origin/Trung
+=======
+const findUserByCredentials = async (email: string, password: string): Promise<User | null> => {
+    // In a real application, you would hash and check passwords securely
+    const user = users.find(u => u.email === email && u.password === password);
+>>>>>>> origin/Trong
     return user || null;
 };
 
 export const login = async (req: Request, res: Response) => {
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> origin/Trong
     const { email, password } = req.body;
 
     try {
         const user = await findUserByCredentials(email, password);
+<<<<<<< HEAD
 =======
     const { email, username, password } = req.body;
     const emailOrUsername = email || username;
@@ -51,6 +68,8 @@ export const login = async (req: Request, res: Response) => {
     try {
         const user = await findUserByCredentials(emailOrUsername, password);
 >>>>>>> origin/Trung
+=======
+>>>>>>> origin/Trong
 
         if (!user) {
             return res.status(401).json({ error: "Invalid credentials" });

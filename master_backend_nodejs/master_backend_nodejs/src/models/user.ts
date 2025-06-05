@@ -6,4 +6,9 @@ export interface User
     email: string;
     password: string;
     role: "student" | "admin" | "financial" | "academic";
+<<<<<<< HEAD
+=======
+    createdAt: Date;
+    updatedAt: Date;
+>>>>>>> origin/Trong
 }
