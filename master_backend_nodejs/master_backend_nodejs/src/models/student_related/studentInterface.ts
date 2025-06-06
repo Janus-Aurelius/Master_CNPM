@@ -1,14 +1,23 @@
 export interface IStudent {
-    id: string;
     studentId: string;
     name: string;
     email: string;
+    phone: string;
+    address: string;
+    dateOfBirth: Date;
+    enrollmentYear: number;
     major: string;
-    class: string;
+    faculty: string;
+    program: string;
     status: 'active' | 'inactive';
-    dateOfBirth: string;
-    gender: 'male' | 'female' | 'other';
-    hometown: {
+    avatarUrl?: string;
+    credits: {
+        completed: number;
+        current: number;
+        required: number;
+    };
+    gender?: 'male' | 'female' | 'other';
+    hometown?: {
         district: string;
         province: string;
         isRemoteArea: boolean;
@@ -17,17 +26,21 @@ export interface IStudent {
 
 export interface IStudentSchedule {
     student: IStudent;
+    semester: string;
+    subjects: ISubject[];
+}
+
+export interface ISubject {
+    id: string;
+    name: string;
+    credit: number;
     schedule: IScheduleItem[];
-    currentSemester: string;
-    totalCredits: number;
-    gpa: number;
+    lecturer: string;
 }
 
 export interface IScheduleItem {
     day: string;
-    startTime: string;
-    endTime: string;
-    subject: string;
+    time: string;
     room: string;
 }
 

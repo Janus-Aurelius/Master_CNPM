@@ -1,7 +1,7 @@
-import UserService from '../../services/AdminService/UserService';
+import UserService from '../../services/adminService/UserService';
 import { User } from '../../models/user';
 import { AppError } from '../../middleware/errorHandler';
-import * as DashboardService from '../../services/AdminService/dashboardService';
+import * as DashboardService from '../../services/adminService/dashboardService';
 
 class UserManager {
     async getAllUsers(): Promise<User[]> {

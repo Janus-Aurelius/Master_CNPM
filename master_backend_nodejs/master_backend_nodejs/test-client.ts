@@ -79,9 +79,6 @@ async function testAllRoles() {
 }
 
 // Run the tests
-<<<<<<< HEAD
-testAllRoles();
-=======
 testAllRoles();
 
 const BASE_URL = 'http://localhost:3000/api/admin';
@@ -190,4 +187,3 @@ async function runTests() {
 
 // Chạy tests
 runTests().catch(console.error);
->>>>>>> origin/Trong

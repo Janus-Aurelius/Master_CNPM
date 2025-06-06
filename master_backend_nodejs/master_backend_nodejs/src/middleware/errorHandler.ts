@@ -1,14 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 
-<<<<<<< HEAD
-export function errorHandler(err: any, req: Request, res: Response, next: NextFunction) {
-    console.error(err.stack);
-    res.status(err.status || 500).json({
-        status: 'error',
-        message: err.message || 'Internal Server Error'
-    });
-}
-=======
+/**
+ * Custom error class with additional information about HTTP status codes
+ */
 export class AppError extends Error {
     statusCode: number;
     status: string;
@@ -24,25 +18,40 @@ export class AppError extends Error {
     }
 }
 
+/**
+ * Global error handler middleware
+ * Handles both AppError instances (operational errors) and unexpected errors
+ */
 export const errorHandler = (
-    err: Error | AppError,
-    req: Request,
-    res: Response,
+    err: Error | AppError | any,
+    req: Request, 
+    res: Response, 
     next: NextFunction
-) => {
+): void => {
+    // Handle AppError instances
     if (err instanceof AppError) {
-        return res.status(err.statusCode).json({
+        res.status(err.statusCode).json({
             status: err.status,
             message: err.message
         });
+        return;
+    }
+    
+    // Handle standard errors with status property (backward compatibility)
+    if (err.status) {
+        res.status(err.status).json({
+            status: 'error',
+            message: err.message || 'Error occurred'
+        });
+        return;
     }
 
-    // Log unexpected errors
-    console.error('Unexpected error:', err);
+    // Log all error stacks
+    console.error('Error:', err.stack || err);
 
-    return res.status(500).json({
+    // Default case: handle as 500 internal server error
+    res.status(500).json({
         status: 'error',
-        message: 'Something went wrong'
+        message: err.message || 'Internal Server Error'
     });
-}; 
->>>>>>> origin/Trong
+};

@@ -8,12 +8,12 @@ import rateLimit from 'express-rate-limit';
 
 // Route imports
 import authRoutes from './src/routes/auth.routes';
-import courseRoutes from './src/routes/course.routes';
+import courseRoutes from './src/routes/academic/course.routes';
 import protectedRoutes from './src/routes/protected.routes';
-import academicRoutes from './src/routes/academic.routes';
-import financialRoutes from './src/routes/financial.routes';
-import adminRoutes from './src/routes/admin.routes';
-import studentRoutes from './src/routes/student.routes';
+import academicRoutes from './src/routes/academic/academic.routes';
+import financialRoutes from './src/routes/financial/financial.routes';
+import adminRoutes from './src/routes/admin/admin.routes';
+import studentRoutes from './src/routes/student/student.routes.js';
 
 // Middleware imports
 import { authenticateToken, authorizeRoles } from './src/middleware/auth';

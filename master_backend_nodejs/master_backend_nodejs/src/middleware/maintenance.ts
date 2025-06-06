@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { maintenanceManager } from '../business/AdminBussiness';
+import { maintenanceManager } from '../business/adminBussiness';
 
 export const checkMaintenance = (req: Request, res: Response, next: NextFunction) => {
     if (maintenanceManager.isInMaintenanceMode()) {

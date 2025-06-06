@@ -1,4 +1,4 @@
-import { Course } from "./course";
+import Course from "./course";
 
 export default interface Program
 {

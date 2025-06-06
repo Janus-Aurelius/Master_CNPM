@@ -2,27 +2,17 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> origin/Trong
-// Sử dụng biến môi trường cho secret key
-const secretKey = process.env.JWT_SECRET || '1234567890';
+// Sử dụng biến môi trường hoặc giá trị mặc định
+const JWT_SECRET = process.env.JWT_SECRET || '1234567890';
 
 // Định nghĩa interface cho payload của token
-<<<<<<< HEAD
-=======
-const secretKey = process.env.JWT_SECRET || '1234567890';
-
->>>>>>> origin/Trung
-=======
->>>>>>> origin/Trong
 interface UserPayload {
     id: number;
+    email: string;
     role: string;
 }
 
-// Add type declaration for the user property on Request
+// Khai báo type cho request.user
 declare global {
     namespace Express {
         interface Request {
@@ -31,70 +21,63 @@ declare global {
     }
 }
 
+// Middleware để xác thực JWT token
 export const authenticateToken = (req: Request, res: Response, next: NextFunction): void => {
-    // Check both cookie and Authorization header
-<<<<<<< HEAD
-<<<<<<< HEAD
+  try {
+    // Lấy token từ header Authorization hoặc cookie (hỗ trợ cả hai)
+    const authHeader = req.headers['authorization'];
     const token = 
-        (req.headers.authorization && req.headers.authorization.split(' ')[1]) || 
-=======
-    const token =
-        (req.headers.authorization && req.headers.authorization.split(' ')[1]) ||
->>>>>>> origin/Trung
-=======
-    const token = 
-        (req.headers.authorization && req.headers.authorization.split(' ')[1]) || 
->>>>>>> origin/Trong
-        req.cookies?.auth_token;
-
+        (authHeader && authHeader.split(' ')[1]) || // Bearer TOKEN
+        req.cookies?.auth_token;  // Hỗ trợ cookie
+    
     if (!token) {
-        res.status(401).json({ error: 'No token provided' });
-<<<<<<< HEAD
-<<<<<<< HEAD
-        return;
-=======
-        return; // Don't return the response object
->>>>>>> origin/Trung
-=======
-        return;
->>>>>>> origin/Trong
+      res.status(401).json({ 
+          success: false,
+          message: 'Yêu cầu đăng nhập' 
+      });
+      return;
     }
-
-    try {
-        const decoded = jwt.verify(token, secretKey) as UserPayload;
-        req.user = decoded;
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> origin/Trong
-        next();
-    } catch (error) {
-        console.error('Token verification failed:', error);
-        res.status(403).json({ error: 'Failed to authenticate token' });
-<<<<<<< HEAD
-=======
-        next(); // Call next() to continue
-    } catch (error) {
-        console.error('Token verification failed:', error);
-        res.status(403).json({ error: 'Failed to authenticate token' });
-        // Don't return the response object
->>>>>>> origin/Trung
-=======
->>>>>>> origin/Trong
-    }
+    
+    // Xác thực token
+    const decoded = jwt.verify(token, JWT_SECRET) as UserPayload;
+    req.user = decoded;
+    next();
+  } catch (error) {
+    console.error('Lỗi xác thực token:', error);
+    res.status(403).json({ 
+        success: false,
+        message: 'Phiên đăng nhập không hợp lệ hoặc đã hết hạn' 
+    });
+  }
 };
 
+// Middleware để kiểm tra vai trò
 export const authorizeRoles = (roles: string[]) => {
-    return (req: Request, res: Response, next: NextFunction): void => {
-        if (!req.user) {
-            res.status(401).json({ error: 'Authentication required' });
-            return;
-        }
-
-        if (roles.includes(req.user.role)) {
-            next();
-        } else {
-            res.status(403).json({ error: 'Insufficient permissions' });
-        }
-    };
+  return (req: Request, res: Response, next: NextFunction): void => {
+    try {
+      if (!req.user) {
+        res.status(401).json({ 
+            success: false,
+            message: 'Yêu cầu đăng nhập' 
+        });
+        return;
+      }
+      
+      if (!roles.includes(req.user.role)) {
+        res.status(403).json({ 
+            success: false,
+            message: 'Bạn không có quyền truy cập chức năng này' 
+        });
+        return;
+      }
+      
+      next();
+    } catch (error) {
+      console.error('Lỗi phân quyền:', error);
+      res.status(500).json({ 
+          success: false,
+          message: 'Đã có lỗi xảy ra khi kiểm tra quyền' 
+      });
+    }
+  };
 };

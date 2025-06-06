@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { OpenCourseController } from '../../controllers/academic/openCourse.controller';
+import { OpenCourseController } from '../../controllers/academicController/openCourse.controller';
 
 const router = Router();
 

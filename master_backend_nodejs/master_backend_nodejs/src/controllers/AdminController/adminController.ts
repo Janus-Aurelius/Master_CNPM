@@ -1,19 +1,12 @@
 import { Request, Response, NextFunction } from 'express';
-import { userManager } from '../../business/AdminBussiness/userManager';
-import { AppError } from '../../middleware/errorHandler';
-import * as activityLogManager from '../../business/AdminBussiness/activitylogManager';
+import { userManager } from '../../business/adminBussiness/userManager';
+import { activitylogManager } from '../../business/adminBussiness/activitylogManager';
 
-
-
-
-
-class AdminController {
-
-    async getActivityLog(req: Request, res: Response, next: NextFunction) {
+class AdminController {async getActivityLog(req: Request, res: Response, next: NextFunction) {
         try {
             const page = parseInt(req.query.page as string) || 1;
             const size = parseInt(req.query.size as string) || 10;
-            const result = await activityLogManager.getActivityLogs(page, size);
+            const result = await activitylogManager.getActivityLogs(page, size);
             res.status(200).json({
                 success: true,
                 data: result
@@ -32,20 +25,17 @@ class AdminController {
         } catch (error) {
             next(error);
         }
-    }
-
-    async getUserManagement(req: Request, res: Response, next: NextFunction) {
+    }    async getUserManagement(req: Request, res: Response, next: NextFunction) {
         try {
             const { search, role, page, size } = req.query;
-            const result = await userManager.getAllUsers({
-                search: search as string,
-                role: role as string,
-                page: page ? parseInt(page as string) : 1,
-                size: size ? parseInt(size as string) : 10
-            });
+            const users = await userManager.getAllUsers();
+            // TODO: Implement filtering and pagination logic
             res.status(200).json({
                 success: true,
-                ...result
+                data: users,
+                total: users.length,
+                page: page ? parseInt(page as string) : 1,
+                size: size ? parseInt(size as string) : 10
             });
         } catch (error) {
             next(error);

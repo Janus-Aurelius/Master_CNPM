@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { maintenanceManager } from '../../business/AdminBussiness/maintenanceManager';
+import { maintenanceManager } from '../../business/adminBussiness/maintenanceManager';
 import { AppError } from '../../middleware/errorHandler';
 
 export class MaintenanceController {

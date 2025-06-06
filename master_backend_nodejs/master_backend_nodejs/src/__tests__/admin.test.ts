@@ -1,6 +1,6 @@
 import request from 'supertest';
 import express from 'express';
-import adminRoutes from '../routes/admin.routes';
+import adminRoutes from '../routes/admin/admin.routes';
 import { describe, it, expect, beforeAll } from '@jest/globals';
 import jwt from 'jsonwebtoken';
 

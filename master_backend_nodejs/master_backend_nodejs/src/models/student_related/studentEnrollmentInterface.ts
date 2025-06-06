@@ -17,11 +17,24 @@ export interface IEnrollment {
 
 export interface IEnrolledSubject {
     enrollment: IEnrollment;
-    schedule: {
-        day: string;
-        startTime: string;
-        endTime: string;
-        room: string;
-    }[];
-    instructor: string;
-} 
+    subjectDetails: {
+        id: string;
+        name: string;
+        lecturer: string;
+        credits: number;
+        maxStudents: number;
+        currentStudents: number;
+        schedule: {
+            day: string;
+            session: string;
+            room: string;
+        }[];
+    };
+    grade: {
+        midterm?: number;
+        final?: number;
+        total?: number;
+        letter?: string;
+    } | null;
+    attendanceRate: number;
+}
