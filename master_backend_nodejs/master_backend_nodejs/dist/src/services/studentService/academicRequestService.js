@@ -48,6 +48,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.academicRequestService = void 0;
+var databaseService_1 = require("../database/databaseService");
 // Mock data for academic requests
 var requests = [
     {
@@ -96,45 +97,160 @@ var requests = [
 exports.academicRequestService = {
     createRequest: function (requestData) {
         return __awaiter(this, void 0, void 0, function () {
-            var newRequest;
+            var requestId, insertedRequest, newRequest, error_1, newRequest;
             return __generator(this, function (_a) {
-                newRequest = __assign(__assign({}, requestData), { id: Math.random().toString(36).substr(2, 9), createdAt: new Date(), updatedAt: new Date() });
-                requests.push(newRequest);
-                return [2 /*return*/, newRequest];
+                switch (_a.label) {
+                    case 0:
+                        _a.trys.push([0, 2, , 3]);
+                        requestId = "REQ_".concat(Date.now(), "_").concat(Math.random().toString(36).substr(2, 6));
+                        return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("\n                INSERT INTO academic_requests (\n                    id, student_id, type, status, description, created_at, updated_at\n                ) VALUES ($1, $2, $3, $4, $5, NOW(), NOW())\n                RETURNING *\n            ", [requestId, requestData.studentId, requestData.type, requestData.status, requestData.description])];
+                    case 1:
+                        insertedRequest = _a.sent();
+                        newRequest = {
+                            id: requestId,
+                            studentId: requestData.studentId,
+                            type: requestData.type,
+                            status: requestData.status,
+                            description: requestData.description,
+                            createdAt: new Date(),
+                            updatedAt: new Date(),
+                            response: requestData.response,
+                            actionBy: requestData.actionBy
+                        };
+                        // Fallback to in-memory storage
+                        requests.push(newRequest);
+                        return [2 /*return*/, newRequest];
+                    case 2:
+                        error_1 = _a.sent();
+                        console.error('Error creating academic request:', error_1);
+                        newRequest = __assign(__assign({}, requestData), { id: Math.random().toString(36).substr(2, 9), createdAt: new Date(), updatedAt: new Date() });
+                        requests.push(newRequest);
+                        return [2 /*return*/, newRequest];
+                    case 3: return [2 /*return*/];
+                }
             });
         });
     },
     getStudentRequests: function (studentId) {
         return __awaiter(this, void 0, void 0, function () {
+            var dbRequests, error_2;
             return __generator(this, function (_a) {
-                return [2 /*return*/, requests.filter(function (req) { return req.studentId === studentId; })];
+                switch (_a.label) {
+                    case 0:
+                        _a.trys.push([0, 2, , 3]);
+                        return [4 /*yield*/, databaseService_1.DatabaseService.query("\n                SELECT * FROM academic_requests \n                WHERE student_id = $1 \n                ORDER BY created_at DESC\n            ", [studentId])];
+                    case 1:
+                        dbRequests = _a.sent();
+                        if (dbRequests && dbRequests.length > 0) {
+                            return [2 /*return*/, dbRequests.map(function (req) { return ({
+                                    id: req.id,
+                                    studentId: req.student_id,
+                                    type: req.type,
+                                    status: req.status,
+                                    description: req.description,
+                                    createdAt: req.created_at,
+                                    updatedAt: req.updated_at,
+                                    response: req.response,
+                                    actionBy: req.action_by
+                                }); })];
+                        }
+                        // Fallback to in-memory data
+                        return [2 /*return*/, requests.filter(function (req) { return req.studentId === studentId; })];
+                    case 2:
+                        error_2 = _a.sent();
+                        console.error('Error getting student requests:', error_2);
+                        return [2 /*return*/, requests.filter(function (req) { return req.studentId === studentId; })];
+                    case 3: return [2 /*return*/];
+                }
             });
         });
     },
     updateRequestStatus: function (requestId, status, actionBy, response) {
         return __awaiter(this, void 0, void 0, function () {
-            var request;
+            var updatedRequest, request, error_3, request;
             return __generator(this, function (_a) {
-                request = requests.find(function (req) { return req.id === requestId; });
-                if (request) {
-                    request.status = status;
-                    request.updatedAt = new Date();
-                    request.actionBy = actionBy;
-                    if (response) {
-                        request.response = response;
-                    }
-                    return [2 /*return*/, request];
+                switch (_a.label) {
+                    case 0:
+                        _a.trys.push([0, 2, , 3]);
+                        return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("\n                UPDATE academic_requests \n                SET status = $1, action_by = $2, response = $3, updated_at = NOW()\n                WHERE id = $4\n                RETURNING *\n            ", [status, actionBy, response, requestId])];
+                    case 1:
+                        updatedRequest = _a.sent();
+                        if (updatedRequest) {
+                            return [2 /*return*/, {
+                                    id: updatedRequest.id,
+                                    studentId: updatedRequest.student_id,
+                                    type: updatedRequest.type,
+                                    status: updatedRequest.status,
+                                    description: updatedRequest.description,
+                                    createdAt: updatedRequest.created_at,
+                                    updatedAt: updatedRequest.updated_at,
+                                    response: updatedRequest.response,
+                                    actionBy: updatedRequest.action_by
+                                }];
+                        }
+                        request = requests.find(function (req) { return req.id === requestId; });
+                        if (request) {
+                            request.status = status;
+                            request.actionBy = actionBy;
+                            request.response = response;
+                            request.updatedAt = new Date();
+                            return [2 /*return*/, request];
+                        }
+                        return [2 /*return*/, null];
+                    case 2:
+                        error_3 = _a.sent();
+                        console.error('Error updating request status:', error_3);
+                        request = requests.find(function (req) { return req.id === requestId; });
+                        if (request) {
+                            request.status = status;
+                            request.updatedAt = new Date();
+                            request.actionBy = actionBy;
+                            if (response) {
+                                request.response = response;
+                            }
+                            return [2 /*return*/, request];
+                        }
+                        return [2 /*return*/, null];
+                    case 3: return [2 /*return*/];
                 }
-                return [2 /*return*/, null];
             });
         });
     },
     getRequestHistory: function (studentId) {
         return __awaiter(this, void 0, void 0, function () {
+            var dbRequests, error_4;
             return __generator(this, function (_a) {
-                return [2 /*return*/, requests
-                        .filter(function (req) { return req.studentId === studentId; })
-                        .sort(function (a, b) { return b.createdAt.getTime() - a.createdAt.getTime(); })];
+                switch (_a.label) {
+                    case 0:
+                        _a.trys.push([0, 2, , 3]);
+                        return [4 /*yield*/, databaseService_1.DatabaseService.query("\n                SELECT * FROM academic_requests \n                WHERE student_id = $1 \n                AND status IN ('approved', 'rejected')\n                ORDER BY updated_at DESC\n                LIMIT 20\n            ", [studentId])];
+                    case 1:
+                        dbRequests = _a.sent();
+                        if (dbRequests && dbRequests.length > 0) {
+                            return [2 /*return*/, dbRequests.map(function (req) { return ({
+                                    id: req.id,
+                                    studentId: req.student_id,
+                                    type: req.type,
+                                    status: req.status,
+                                    description: req.description,
+                                    createdAt: req.created_at,
+                                    updatedAt: req.updated_at,
+                                    response: req.response,
+                                    actionBy: req.action_by
+                                }); })];
+                        }
+                        // Fallback to in-memory data
+                        return [2 /*return*/, requests
+                                .filter(function (req) { return req.studentId === studentId; })
+                                .sort(function (a, b) { return b.createdAt.getTime() - a.createdAt.getTime(); })];
+                    case 2:
+                        error_4 = _a.sent();
+                        console.error('Error getting request history:', error_4);
+                        return [2 /*return*/, requests
+                                .filter(function (req) { return req.studentId === studentId; })
+                                .sort(function (a, b) { return b.createdAt.getTime() - a.createdAt.getTime(); })];
+                    case 3: return [2 /*return*/];
+                }
             });
         });
     }

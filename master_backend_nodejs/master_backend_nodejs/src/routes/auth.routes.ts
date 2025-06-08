@@ -1,9 +1,7 @@
 // src/routes/auth.routes.ts
 import { Router, RequestHandler } from 'express';
 import { checkMaintenance } from '../middleware/maintenance';
-
-// Import controller functions
-const authController = require('../controllers/authController');
+import * as authController from '../controllers/authController';
 
 const router = Router();
 
@@ -26,7 +24,7 @@ router.post('/logout', authController.logout as RequestHandler);
  * @desc    Xác thực token hiện tại
  * @access  Private
  */
-router.get('/verify', authController.verifyToken as RequestHandler);
+router.get('/verify', authController.me as RequestHandler);
 
 /**
  * @route   POST /refresh

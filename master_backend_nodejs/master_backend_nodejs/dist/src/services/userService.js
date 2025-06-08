@@ -1,12 +1,4 @@
 "use strict";
-// src/services/userService.ts
-/**
- * Mock User Service
- *
- * Trong môi trường production thực tế, service này sẽ kết nối với database
- * để lấy và lưu thông tin người dùng. Đối với đồ án nhỏ, chúng ta sử dụng
- * mock data để đơn giản hóa.
- */
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -43,81 +35,136 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.isTokenBlacklisted = exports.blacklistToken = exports.getUserById = exports.getUserByEmail = void 0;
-// Mock user database - Quyền được xác định dựa trên email
-var users = [
-    {
-        id: 1,
-        email: 'student@uit.edu.vn',
-        name: 'Nguyễn Văn A',
-        role: 'student', // Sinh viên
-        passwordHash: 'password' // Trong thực tế, đây phải là mật khẩu đã hash
-    },
-    {
-        id: 2,
-        email: 'financial@uit.edu.vn',
-        name: 'Trần Thị B',
-        role: 'financial', // Phòng tài chính
-        passwordHash: 'password'
-    },
-    {
-        id: 3,
-        email: 'academic@uit.edu.vn',
-        name: 'Lê Văn C',
-        role: 'academic', // Phòng đào tạo
-        passwordHash: 'password'
-    },
-    {
-        id: 4,
-        email: 'admin@uit.edu.vn',
-        name: 'Phạm Quang D',
-        role: 'admin', // Quản trị viên
-        passwordHash: 'password'
-    },
-    // Thêm nhiều người dùng với các vai trò khác nhau để kiểm tra
-    {
-        id: 5,
-        email: 'student123@uit.edu.vn',
-        name: 'Hoàng Thị E',
-        role: 'student',
-        passwordHash: 'password'
-    },
-];
+exports.isTokenBlacklisted = exports.blacklistToken = exports.verifyPassword = exports.getUserById = exports.getUserByEmail = void 0;
+// User Service for final_cnpm database
+var databaseService_1 = require("./database/databaseService");
+var bcrypt_1 = __importDefault(require("bcrypt"));
+/**
+ * User Service adapted for final_cnpm database structure
+ */
 // Token blacklist để quản lý đăng xuất
 var tokenBlacklist = new Set();
 /**
- * Lấy thông tin người dùng theo email
+ * Map database roles to application roles
+ */
+var roleMapping = {
+    'N1': 'admin', // Admin
+    'N2': 'academic', // Giảng viên
+    'N3': 'student', // Sinh viên
+    'N4': 'financial' // Kế toán
+};
+/**
+ * Get user by username (tendangnhap) from final_cnpm database
  */
 var getUserByEmail = function (email) { return __awaiter(void 0, void 0, void 0, function () {
-    var user;
+    var dbUser, additionalInfo, error_1;
     return __generator(this, function (_a) {
-        user = users.find(function (u) { return u.email === email; });
-        return [2 /*return*/, user || null];
+        switch (_a.label) {
+            case 0:
+                _a.trys.push([0, 5, , 6]);
+                return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("\n            SELECT \n                nd.tendangnhap,\n                nd.userid,\n                nd.matkhau,\n                nd.manhom,\n                nd.masosinhvien,\n                nnd.tennhom\n            FROM nguoidung nd\n            LEFT JOIN nhomnguoidung nnd ON nd.manhom = nnd.manhom\n            WHERE nd.tendangnhap = $1\n        ", [email])];
+            case 1:
+                dbUser = _a.sent();
+                if (!dbUser) return [3 /*break*/, 4];
+                additionalInfo = null;
+                if (!dbUser.masosinhvien) return [3 /*break*/, 3];
+                return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("\n                    SELECT \n                        sv.hoten,\n                        sv.ngaysinh,\n                        sv.gioitinh,\n                        sv.manganh\n                    FROM sinhvien sv\n                    WHERE sv.masosinhvien = $1\n                ", [dbUser.masosinhvien])];
+            case 2:
+                additionalInfo = _a.sent();
+                _a.label = 3;
+            case 3: return [2 /*return*/, {
+                    id: dbUser.userid || dbUser.tendangnhap,
+                    email: dbUser.tendangnhap, // Using tendangnhap as email
+                    name: (additionalInfo === null || additionalInfo === void 0 ? void 0 : additionalInfo.hoten) || dbUser.tennhom || 'User',
+                    role: roleMapping[dbUser.manhom] || 'user',
+                    passwordHash: dbUser.matkhau,
+                    studentId: dbUser.masosinhvien,
+                    groupId: dbUser.manhom,
+                    groupName: dbUser.tennhom
+                }];
+            case 4: return [2 /*return*/, null];
+            case 5:
+                error_1 = _a.sent();
+                console.error('Database error in getUserByEmail:', error_1);
+                return [2 /*return*/, null];
+            case 6: return [2 /*return*/];
+        }
     });
 }); };
 exports.getUserByEmail = getUserByEmail;
 /**
- * Lấy thông tin người dùng theo ID
+ * Get user by ID from final_cnpm database
  */
 var getUserById = function (id) { return __awaiter(void 0, void 0, void 0, function () {
-    var user;
+    var dbUser, additionalInfo, error_2;
     return __generator(this, function (_a) {
-        user = users.find(function (u) { return u.id === id; });
-        return [2 /*return*/, user || null];
+        switch (_a.label) {
+            case 0:
+                _a.trys.push([0, 5, , 6]);
+                return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("\n            SELECT \n                nd.tendangnhap,\n                nd.userid,\n                nd.matkhau,\n                nd.manhom,\n                nd.masosinhvien,\n                nnd.tennhom\n            FROM nguoidung nd\n            LEFT JOIN nhomnguoidung nnd ON nd.manhom = nnd.manhom\n            WHERE nd.userid = $1 OR nd.tendangnhap = $1\n        ", [id])];
+            case 1:
+                dbUser = _a.sent();
+                if (!dbUser) return [3 /*break*/, 4];
+                additionalInfo = null;
+                if (!dbUser.masosinhvien) return [3 /*break*/, 3];
+                return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("\n                    SELECT \n                        sv.hoten,\n                        sv.ngaysinh,\n                        sv.gioitinh,\n                        sv.manganh\n                    FROM sinhvien sv\n                    WHERE sv.masosinhvien = $1\n                ", [dbUser.masosinhvien])];
+            case 2:
+                additionalInfo = _a.sent();
+                _a.label = 3;
+            case 3: return [2 /*return*/, {
+                    id: dbUser.userid || dbUser.tendangnhap,
+                    email: dbUser.tendangnhap,
+                    name: (additionalInfo === null || additionalInfo === void 0 ? void 0 : additionalInfo.hoten) || dbUser.tennhom || 'User',
+                    role: roleMapping[dbUser.manhom] || 'user',
+                    passwordHash: dbUser.matkhau,
+                    studentId: dbUser.masosinhvien,
+                    groupId: dbUser.manhom,
+                    groupName: dbUser.tennhom
+                }];
+            case 4: return [2 /*return*/, null];
+            case 5:
+                error_2 = _a.sent();
+                console.error('Database error in getUserById:', error_2);
+                return [2 /*return*/, null];
+            case 6: return [2 /*return*/];
+        }
     });
 }); };
 exports.getUserById = getUserById;
 /**
- * Thêm token vào blacklist khi đăng xuất
+ * Verify password - check if it's plain text or hashed
  */
+var verifyPassword = function (inputPassword, storedPassword) { return __awaiter(void 0, void 0, void 0, function () {
+    var error_3;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                _a.trys.push([0, 4, , 5]);
+                if (!storedPassword.startsWith('$2b$')) return [3 /*break*/, 2];
+                return [4 /*yield*/, bcrypt_1.default.compare(inputPassword, storedPassword)];
+            case 1: return [2 /*return*/, _a.sent()];
+            case 2: 
+            // Plain text comparison for existing data
+            return [2 /*return*/, inputPassword === storedPassword];
+            case 3: return [3 /*break*/, 5];
+            case 4:
+                error_3 = _a.sent();
+                console.error('Password verification error:', error_3);
+                return [2 /*return*/, false];
+            case 5: return [2 /*return*/];
+        }
+    });
+}); };
+exports.verifyPassword = verifyPassword;
+// Token blacklist functions
 var blacklistToken = function (token) {
     tokenBlacklist.add(token);
 };
 exports.blacklistToken = blacklistToken;
-/**
- * Kiểm tra xem token có trong blacklist không
- */
 var isTokenBlacklisted = function (token) {
     return tokenBlacklist.has(token);
 };

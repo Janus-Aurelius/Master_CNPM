@@ -1,8 +1,5 @@
 // src/business/shared/crossRoleValidationService.ts
-import { OpenCourseBusiness } from '../academicBusiness/openCourse.business';
-import { SubjectBusiness } from '../academicBusiness/subject.business';
-import { ProgramBusiness } from '../academicBusiness/program.business';
-import { financialService } from '../../services/financialService/financialService';
+import { DatabaseService } from '../../services/database/databaseService';
 import { ValidationError } from '../../utils/errors/validation.error';
 import { AcademicRulesEngine } from './academicRulesEngine';
 
@@ -19,6 +16,27 @@ export interface StudentEligibilityCheck {
     hasPaymentIssues: boolean;
     creditLimitExceeded: boolean;
     errors: string[];
+}
+
+export interface PaymentValidationResult {
+    isValid: boolean;
+    critical: boolean;
+    errors: string[];
+    warnings: string[];
+}
+
+export interface PrerequisiteValidationResult {
+    isValid: boolean;
+    errors: string[];
+    missingPrerequisites: string[];
+}
+
+export interface CreditValidationResult {
+    isValid: boolean;
+    isWarning: boolean;
+    errors: string[];
+    currentCredits: number;
+    maxCredits: number;
 }
 
 export class CrossRoleValidationService {
@@ -43,7 +61,13 @@ export class CrossRoleValidationService {
             }
 
             // 2. Course availability check (Academic Affairs)
-            const course = await OpenCourseBusiness.getCourseById(parseInt(courseId));
+            const course = await DatabaseService.queryOne(`
+                SELECT oc.*, s.subject_name, s.credits, s.prerequisites, s.subject_code
+                FROM open_courses oc 
+                JOIN subjects s ON oc.subject_id = s.id 
+                WHERE oc.id = $1
+            `, [parseInt(courseId)]);
+            
             if (!course) {
                 errors.push('Course not found');
                 return { isValid: false, errors, warnings };
@@ -55,28 +79,38 @@ export class CrossRoleValidationService {
             }
 
             // 4. Course capacity validation
-            if (course.currentStudents >= course.maxStudents) {
+            if (course.current_students >= course.max_students) {
                 errors.push('Course has reached maximum capacity');
             }
 
             // 5. Registration period validation
             const now = new Date();
-            const regStart = new Date(course.registrationStartDate);
-            const regEnd = new Date(course.registrationEndDate);
+            const regStart = new Date(course.registration_start_date);
+            const regEnd = new Date(course.registration_end_date);
             
             if (now < regStart) {
                 errors.push('Registration period has not started yet');
             } else if (now > regEnd) {
                 errors.push('Registration period has ended');
+            }            // 6. Check if student already enrolled
+            const existingEnrollment = await DatabaseService.queryOne(`
+                SELECT id FROM enrollments 
+                WHERE student_id = (SELECT id FROM students WHERE student_id = $1) 
+                AND course_id = $2 
+                AND is_enrolled = true
+            `, [studentId, parseInt(courseId)]);
+
+            if (existingEnrollment) {
+                errors.push('Student is already enrolled in this course');
             }
 
-            // 6. Prerequisites validation (Academic Affairs)
+            // 7. Prerequisites validation (Academic Affairs)
             const prerequisitesValid = await this.validatePrerequisites(studentId, course.prerequisites);
             if (!prerequisitesValid.isValid) {
                 errors.push(...prerequisitesValid.errors);
             }
 
-            // 7. Payment status validation (Financial Department)
+            // 8. Payment status validation (Financial Department)
             const paymentValid = await this.validatePaymentStatus(studentId, semester);
             if (!paymentValid.isValid) {
                 warnings.push(...paymentValid.warnings);
@@ -85,8 +119,8 @@ export class CrossRoleValidationService {
                 }
             }
 
-            // 8. Credit limit validation
-            const creditValid = await this.validateCreditLimits(studentId, course.subjectCode, semester);
+            // 9. Credit limit validation
+            const creditValid = await this.validateCreditLimits(studentId, course.subject_code, semester);
             if (!creditValid.isValid) {
                 if (creditValid.isWarning) {
                     warnings.push(...creditValid.errors);
@@ -102,7 +136,7 @@ export class CrossRoleValidationService {
             };
 
         } catch (error) {
-            console.error('Error in course registration validation:', error);
+            console.error('Course registration validation error:', error);
             return {
                 isValid: false,
                 errors: ['Internal validation error occurred'],
@@ -112,245 +146,281 @@ export class CrossRoleValidationService {
     }
 
     /**
-     * Validate student prerequisites for a course
+     * Validate prerequisites using database
      */
     private static async validatePrerequisites(
         studentId: string, 
         prerequisites: string[]
-    ): Promise<{ isValid: boolean; errors: string[] }> {
-        const errors: string[] = [];
-        
+    ): Promise<PrerequisiteValidationResult> {
         if (!prerequisites || prerequisites.length === 0) {
-            return { isValid: true, errors: [] };
+            return { isValid: true, errors: [], missingPrerequisites: [] };
         }
 
-        // TODO: Implement prerequisite checking logic
-        // This would involve checking student's completed courses
-        // against the required prerequisites
-        
-        for (const prerequisite of prerequisites) {
-            // Mock validation - replace with actual logic
-            const hasCompleted = await this.checkStudentCompletedCourse(studentId, prerequisite);
-            if (!hasCompleted) {
-                errors.push(`Prerequisite not met: ${prerequisite}`);
+        const errors: string[] = [];
+        const missingPrerequisites: string[] = [];
+
+        try {
+            // Get student's completed courses
+            const completedCourses = await DatabaseService.query(`
+                SELECT DISTINCT s.subject_code 
+                FROM grades g
+                JOIN enrollments e ON g.enrollment_id = e.id
+                JOIN open_courses oc ON e.course_id = oc.id
+                JOIN subjects s ON oc.subject_id = s.id
+                JOIN students st ON e.student_id = st.id
+                WHERE st.student_id = $1 
+                AND g.grade_value >= 4.0
+                AND g.status = 'finalized'
+            `, [studentId]);
+
+            const completedSubjects = completedCourses.map((c: any) => c.subject_code);
+
+            for (const prereq of prerequisites) {
+                if (!completedSubjects.includes(prereq)) {
+                    missingPrerequisites.push(prereq);
+                    errors.push(`Missing prerequisite: ${prereq}`);
+                }
             }
-        }
 
-        return {
-            isValid: errors.length === 0,
-            errors
-        };
+            return {
+                isValid: missingPrerequisites.length === 0,
+                errors,
+                missingPrerequisites
+            };
+
+        } catch (error) {
+            console.error('Prerequisites validation error:', error);
+            return {
+                isValid: false,
+                errors: ['Could not validate prerequisites'],
+                missingPrerequisites: []
+            };
+        }
     }
 
     /**
-     * Validate student payment status
+     * Validate payment status using database
      */
     private static async validatePaymentStatus(
         studentId: string, 
         semester: string
-    ): Promise<{ isValid: boolean; errors: string[]; warnings: string[]; critical: boolean }> {
-        const errors: string[] = [];
-        const warnings: string[] = [];
-
+    ): Promise<PaymentValidationResult> {
         try {
-            // Get student payment information from Financial Department
-            const paymentInfo = await financialService.getStudentPayment(studentId);
-            
-            if (!paymentInfo) {
+            // Check tuition payment status for current semester
+            const tuitionRecord = await DatabaseService.queryOne(`
+                SELECT * FROM tuition_records 
+                WHERE student_id = (SELECT id FROM students WHERE student_id = $1)
+                AND semester = $2
+            `, [studentId, semester]);
+
+            if (!tuitionRecord) {
                 return {
-                    isValid: true,
-                    errors: [],
-                    warnings: ['No payment record found'],
-                    critical: false
+                    isValid: false,
+                    critical: true,
+                    errors: ['No tuition record found for current semester'],
+                    warnings: []
                 };
             }
 
+            const errors: string[] = [];
+            const warnings: string[] = [];
+            let critical = false;
+
             // Check payment status
-            switch (paymentInfo.paymentStatus) {
-                case 'UNPAID':
-                    if (paymentInfo.totalAmount > 0) {
-                        warnings.push('Student has unpaid tuition fees');
-                        // Could block registration based on policy
-                        // errors.push('Cannot register with unpaid tuition fees');
-                    }
-                    break;
-                case 'PARTIAL':
-                    warnings.push('Student has partially paid tuition fees');
-                    break;
-                case 'PAID':
-                    // All good
-                    break;
-                default:
-                    warnings.push('Unknown payment status');
+            if (tuitionRecord.payment_status === 'unpaid') {
+                critical = true;
+                errors.push('Tuition payment is required before course registration');
+            } else if (tuitionRecord.payment_status === 'partial') {
+                const remainingAmount = tuitionRecord.total_amount - tuitionRecord.paid_amount;
+                if (remainingAmount > tuitionRecord.total_amount * 0.5) { // More than 50% unpaid
+                    critical = true;
+                    errors.push(`Significant tuition balance remaining: ${remainingAmount.toLocaleString()} VND`);
+                } else {
+                    warnings.push(`Tuition balance remaining: ${remainingAmount.toLocaleString()} VND`);
+                }
+            }
+
+            // Check due date
+            if (tuitionRecord.due_date && new Date() > new Date(tuitionRecord.due_date)) {
+                if (tuitionRecord.payment_status !== 'paid') {
+                    critical = true;
+                    errors.push('Tuition payment is overdue');
+                }
             }
 
             return {
-                isValid: errors.length === 0,
+                isValid: !critical,
+                critical,
                 errors,
-                warnings,
-                critical: errors.length > 0
+                warnings
             };
 
         } catch (error) {
-            console.error('Error validating payment status:', error);
+            console.error('Payment validation error:', error);
             return {
                 isValid: false,
-                errors: ['Error checking payment status'],
-                warnings: [],
-                critical: true
+                critical: true,
+                errors: ['Could not validate payment status'],
+                warnings: []
             };
         }
     }
 
     /**
-     * Validate credit limits for student registration
+     * Validate credit limits using database
      */
     private static async validateCreditLimits(
         studentId: string, 
         subjectCode: string, 
         semester: string
-    ): Promise<{ isValid: boolean; errors: string[]; isWarning: boolean }> {
-        const errors: string[] = [];
-        
+    ): Promise<CreditValidationResult> {
         try {
-            // Get subject credit information
-            const subjects = await SubjectBusiness.getAllSubjects();
-            const subject = subjects.find(s => s.subjectCode === subjectCode);
-            
+            // Get subject credits
+            const subject = await DatabaseService.queryOne(`
+                SELECT credits FROM subjects WHERE subject_code = $1
+            `, [subjectCode]);
+
             if (!subject) {
                 return {
                     isValid: false,
-                    errors: ['Subject information not found'],
-                    isWarning: false
+                    isWarning: false,
+                    errors: ['Subject not found'],
+                    currentCredits: 0,
+                    maxCredits: 0
                 };
             }
 
-            // TODO: Implement actual credit limit checking
-            // This would involve:
-            // 1. Getting student's current registered credits for the semester
-            // 2. Adding the new subject's credits
-            // 3. Checking against maximum allowed credits per semester
-            
-            const maxCreditsPerSemester = 24; // Example limit
-            const currentCredits = await this.getStudentCurrentCredits(studentId, semester);
-            const newTotalCredits = currentCredits + subject.credits;
-            
-            if (newTotalCredits > maxCreditsPerSemester) {
-                errors.push(`Credit limit exceeded. Current: ${currentCredits}, Adding: ${subject.credits}, Max allowed: ${maxCreditsPerSemester}`);
+            // Get current semester enrolled credits
+            const currentCredits = await DatabaseService.queryOne(`
+                SELECT COALESCE(SUM(s.credits), 0) as total_credits
+                FROM enrollments e
+                JOIN open_courses oc ON e.course_id = oc.id
+                JOIN subjects s ON oc.subject_id = s.id
+                WHERE e.student_id = (SELECT id FROM students WHERE student_id = $1)
+                AND oc.semester = $2
+                AND e.status IN ('registered', 'enrolled')
+            `, [studentId, semester]);
+
+            const newTotalCredits = (currentCredits?.total_credits || 0) + subject.credits;
+            const maxCredits = 24; // Standard maximum credits per semester
+
+            const errors: string[] = [];
+            let isWarning = false;
+
+            if (newTotalCredits > maxCredits) {
+                errors.push(`Credit limit exceeded. Current: ${currentCredits?.total_credits || 0}, Adding: ${subject.credits}, Max: ${maxCredits}`);
                 return {
                     isValid: false,
+                    isWarning: false,
                     errors,
-                    isWarning: false
+                    currentCredits: currentCredits?.total_credits || 0,
+                    maxCredits
                 };
-            }
-
-            // Warning for high credit load
-            if (newTotalCredits > maxCreditsPerSemester * 0.8) {
-                errors.push(`High credit load warning: ${newTotalCredits}/${maxCreditsPerSemester} credits`);
+            } else if (newTotalCredits > maxCredits * 0.8) { // Warning at 80%
+                isWarning = true;
+                errors.push(`Approaching credit limit. Total will be: ${newTotalCredits}/${maxCredits} credits`);
                 return {
-                    isValid: true,
+                    isValid: false,
+                    isWarning: true,
                     errors,
-                    isWarning: true
+                    currentCredits: currentCredits?.total_credits || 0,
+                    maxCredits
                 };
             }
 
             return {
                 isValid: true,
+                isWarning: false,
                 errors: [],
-                isWarning: false
+                currentCredits: currentCredits?.total_credits || 0,
+                maxCredits
             };
 
         } catch (error) {
-            console.error('Error validating credit limits:', error);
+            console.error('Credit validation error:', error);
             return {
                 isValid: false,
-                errors: ['Error checking credit limits'],
-                isWarning: false
+                isWarning: false,
+                errors: ['Could not validate credit limits'],
+                currentCredits: 0,
+                maxCredits: 0
             };
         }
     }
 
     /**
-     * Check if student has completed a specific course
-     * TODO: Implement with actual database query
+     * Comprehensive student eligibility check
      */
-    private static async checkStudentCompletedCourse(studentId: string, courseCode: string): Promise<boolean> {
-        // Mock implementation - replace with actual database query
-        // This should check the student's academic record for completed courses
-        return false; // Placeholder
-    }
-
-    /**
-     * Get student's current registered credits for a semester
-     * TODO: Implement with actual database query
-     */
-    private static async getStudentCurrentCredits(studentId: string, semester: string): Promise<number> {
-        // Mock implementation - replace with actual database query
-        // This should sum up credits from all courses the student is registered for in the semester
-        return 0; // Placeholder
-    }    /**
-     * Complete student eligibility check combining all factors
-     */
-    static async checkStudentEligibility(
-        studentId: string, 
-        courseId: string, 
-        semester: string
-    ): Promise<StudentEligibilityCheck> {
-        const errors: string[] = [];
-        
+    static async checkStudentEligibility(studentId: string, courseId: string): Promise<StudentEligibilityCheck> {
         try {
-            // 1. Academic Rules Engine checks
-            const prerequisiteCheck = await AcademicRulesEngine.checkPrerequisites(studentId, courseId);
-            const academicEligibility = await AcademicRulesEngine.checkAcademicEligibility(studentId, 3); // Assuming 3 credits
-            const scheduleConflict = await AcademicRulesEngine.checkScheduleConflicts(studentId, courseId, semester);
+            const student = await DatabaseService.queryOne(`
+                SELECT * FROM students WHERE student_id = $1
+            `, [studentId]);
 
-            // 2. Financial validation
-            const paymentValidation = await this.validatePaymentStatus(studentId, semester);
-
-            // Compile results
-            const prerequisitesMet = prerequisiteCheck.isMet;
-            const hasScheduleConflict = scheduleConflict.hasConflict;
-            const hasPaymentIssues = !paymentValidation.isValid || paymentValidation.critical;
-            const creditLimitExceeded = !academicEligibility.canEnroll;
-
-            // Add specific errors
-            if (!prerequisitesMet) {
-                errors.push(...prerequisiteCheck.details);
-            }
-            
-            if (hasScheduleConflict) {
-                errors.push(`Schedule conflict with: ${scheduleConflict.conflictingCourses.map(c => c.courseId).join(', ')}`);
-            }
-            
-            if (!academicEligibility.canEnroll) {
-                errors.push(`Academic eligibility failed: GPA ${academicEligibility.gpaRequirement.currentGPA} < ${academicEligibility.gpaRequirement.minRequiredGPA}`);
-            }
-            
-            if (creditLimitExceeded) {
-                errors.push(`Credit limit exceeded: ${academicEligibility.creditLimitStatus.currentCredits}/${academicEligibility.creditLimitStatus.maxCredits}`);
+            if (!student) {
+                return {
+                    canRegister: false,
+                    prerequisitesMet: false,
+                    hasScheduleConflict: false,
+                    hasPaymentIssues: true,
+                    creditLimitExceeded: false,
+                    errors: ['Student not found']
+                };
             }
 
-            errors.push(...paymentValidation.errors);
+            // Get current semester from system settings or use default
+            const currentSemester = await DatabaseService.queryOne(`
+                SELECT setting_value FROM system_settings WHERE setting_key = 'current_semester'
+            `);
+
+            const semester = currentSemester?.setting_value || '2024-1';
+
+            const validation = await this.validateCourseRegistration(studentId, courseId, semester);
 
             return {
-                canRegister: prerequisitesMet && !hasScheduleConflict && !hasPaymentIssues && !creditLimitExceeded,
-                prerequisitesMet,
-                hasScheduleConflict,
-                hasPaymentIssues,
-                creditLimitExceeded,
-                errors
+                canRegister: validation.isValid,
+                prerequisitesMet: !validation.errors.some(e => e.includes('prerequisite')),
+                hasScheduleConflict: validation.errors.some(e => e.includes('schedule') || e.includes('conflict')),
+                hasPaymentIssues: validation.errors.some(e => e.includes('payment') || e.includes('tuition')),
+                creditLimitExceeded: validation.errors.some(e => e.includes('credit limit')),
+                errors: [...validation.errors, ...validation.warnings]
             };
 
         } catch (error) {
-            console.error('Error checking student eligibility:', error);
+            console.error('Student eligibility check error:', error);
             return {
                 canRegister: false,
                 prerequisitesMet: false,
                 hasScheduleConflict: false,
-                hasPaymentIssues: true,
+                hasPaymentIssues: false,
                 creditLimitExceeded: false,
-                errors: ['System error during eligibility check']
+                errors: ['Internal error during eligibility check']
             };
+        }
+    }
+
+    /**
+     * Check for schedule conflicts
+     */
+    static async checkScheduleConflict(studentId: string, courseId: string): Promise<boolean> {
+        try {
+            const conflictingCourses = await DatabaseService.query(`
+                SELECT oc1.id, oc1.subject_id, s1.subject_name
+                FROM enrollments e1
+                JOIN open_courses oc1 ON e1.course_id = oc1.id
+                JOIN subjects s1 ON oc1.subject_id = s1.id
+                JOIN open_courses oc2 ON oc2.id = $2
+                WHERE e1.student_id = (SELECT id FROM students WHERE student_id = $1)
+                AND e1.status IN ('registered', 'enrolled')
+                AND oc1.schedule && oc2.schedule
+                AND oc1.id != oc2.id
+            `, [studentId, parseInt(courseId)]);
+
+            return conflictingCourses.length > 0;
+
+        } catch (error) {
+            console.error('Schedule conflict check error:', error);
+            return false;
         }
     }
 }

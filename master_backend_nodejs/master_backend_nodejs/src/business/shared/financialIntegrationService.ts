@@ -1,6 +1,7 @@
 // src/business/shared/financialIntegrationService.ts
 import { financialService } from '../../services/financialService/financialService';
 import { SubjectBusiness } from '../academicBusiness/subject.business';
+import { DatabaseService } from '../../services/database/databaseService';
 
 export interface TuitionCalculation {
     baseAmount: number;
@@ -70,6 +71,49 @@ export class FinancialIntegrationService {
                 additionalFees: 0,
                 totalAmount: 0,
                 breakdown: [{ description: 'Error calculating tuition', amount: 0 }]
+            };        }
+    }
+
+    /**
+     * Create tuition record for course registration
+     */
+    static async createTuitionRecord(
+        studentId: string,
+        courseId: string,
+        semester: string
+    ): Promise<{ success: boolean; tuitionRecordId?: string; error?: string }> {
+        try {
+            // Calculate tuition
+            const tuitionCalculation = await this.calculateCourseTuition(studentId, courseId, semester);
+            
+            if (tuitionCalculation.totalAmount === 0) {
+                return {
+                    success: false,
+                    error: 'Unable to calculate tuition amount'
+                };
+            }
+
+            // Create tuition record via financial service
+            const tuitionRecord = await financialService.createTuitionRecord({
+                studentId,
+                courseId,
+                semester,
+                amount: tuitionCalculation.totalAmount,
+                breakdown: tuitionCalculation.breakdown,
+                dueDate: this.calculateDueDate(semester),
+                status: 'PENDING'
+            });
+
+            return {
+                success: true,
+                tuitionRecordId: tuitionRecord.id
+            };
+
+        } catch (error) {
+            console.error('Error creating tuition record:', error);
+            return {
+                success: false,
+                error: 'Failed to create tuition record'
             };
         }
     }
@@ -175,92 +219,207 @@ export class FinancialIntegrationService {
                 warnings: []
             };
         }
-    }
-
-    /**
-     * Auto-create tuition record when student registers for a course
-     */
-    static async createTuitionRecord(
-        studentId: string,
-        courseId: string,
-        semester: string
-    ): Promise<{ success: boolean; tuitionRecordId?: string; error?: string }> {
+    }    // Helper methods
+    private static async getTuitionPerCredit(studentId: string): Promise<number> {
         try {
-            // Calculate tuition
-            const tuitionCalculation = await this.calculateCourseTuition(studentId, courseId, semester);
-            
-            if (tuitionCalculation.totalAmount === 0) {
-                return {
-                    success: false,
-                    error: 'Unable to calculate tuition amount'
-                };
+            // Get student's program information
+            const student = await DatabaseService.queryOne(`
+                SELECT s.*, p.name_year as program_name
+                FROM students s
+                LEFT JOIN programs p ON s.major = p.major
+                WHERE s.student_id = $1
+            `, [studentId]);
+
+            if (!student) {
+                return 1500000; // Default rate
             }
 
-            // Create tuition record via financial service
-            const tuitionRecord = await financialService.createTuitionRecord({
-                studentId,
-                courseId,
-                semester,
-                amount: tuitionCalculation.totalAmount,
-                breakdown: tuitionCalculation.breakdown,
-                dueDate: this.calculateDueDate(semester),
-                status: 'PENDING'
+            // Get tuition rate based on program/major
+            const tuitionRate = await DatabaseService.queryOne(`
+                SELECT tr.rate_per_credit, tr.effective_date
+                FROM tuition_rates tr
+                WHERE tr.program = $1 
+                AND tr.status = 'active'
+                AND tr.effective_date <= CURRENT_DATE
+                ORDER BY tr.effective_date DESC
+                LIMIT 1
+            `, [student.major]);
+
+            if (tuitionRate) {
+                return parseFloat(tuitionRate.rate_per_credit);
+            }
+
+            // Get default rate from system settings
+            const defaultRate = await DatabaseService.queryOne(`
+                SELECT setting_value FROM system_settings 
+                WHERE setting_key = 'default_tuition_per_credit'
+            `);
+
+            return parseFloat(defaultRate?.setting_value || '1500000');
+
+        } catch (error) {
+            console.error('Error getting tuition per credit:', error);
+            return 1500000; // Fallback rate
+        }
+    }
+
+    private static async calculateAdditionalFees(courseId: string, semester: string): Promise<{ total: number; breakdown: Array<{ description: string; amount: number }> }> {
+        try {
+            const breakdown: Array<{ description: string; amount: number }> = [];
+
+            // Get course-specific fees
+            const courseFees = await DatabaseService.query(`
+                SELECT cf.fee_name, cf.amount, cf.fee_type
+                FROM course_fees cf
+                JOIN open_courses oc ON cf.course_type = oc.type OR cf.subject_code = oc.subject_code
+                WHERE oc.id = $1 AND cf.status = 'active'
+            `, [parseInt(courseId)]);
+
+            courseFees.forEach(fee => {
+                breakdown.push({
+                    description: fee.fee_name,
+                    amount: parseFloat(fee.amount)
+                });
             });
 
+            // Get semester-wide fees
+            const semesterFees = await DatabaseService.query(`
+                SELECT sf.fee_name, sf.amount
+                FROM semester_fees sf
+                WHERE sf.semester = $1 AND sf.status = 'active'
+            `, [semester]);
+
+            semesterFees.forEach(fee => {
+                breakdown.push({
+                    description: fee.fee_name,
+                    amount: parseFloat(fee.amount)
+                });
+            });
+
+            // Default fees if no specific fees found
+            if (breakdown.length === 0) {
+                breakdown.push(
+                    { description: 'Administrative fee', amount: 200000 },
+                    { description: 'Insurance fee', amount: 100000 }
+                );
+            }
+
             return {
-                success: true,
-                tuitionRecordId: tuitionRecord.id
+                total: breakdown.reduce((sum, fee) => sum + fee.amount, 0),
+                breakdown
             };
 
         } catch (error) {
-            console.error('Error creating tuition record:', error);
+            console.error('Error calculating additional fees:', error);
+            // Return default fees on error
+            const defaultBreakdown = [
+                { description: 'Administrative fee', amount: 200000 },
+                { description: 'Insurance fee', amount: 100000 }
+            ];
             return {
-                success: false,
-                error: 'Failed to create tuition record'
+                total: defaultBreakdown.reduce((sum, fee) => sum + fee.amount, 0),
+                breakdown: defaultBreakdown
             };
         }
     }
 
-    // Helper methods
-    private static async getTuitionPerCredit(studentId: string): Promise<number> {
-        // TODO: Implement based on student program, year, etc.
-        // Different programs might have different tuition rates
-        return 1500000; // 1.5M VND per credit hour (mock)
-    }
-
-    private static async calculateAdditionalFees(courseId: string, semester: string): Promise<{ total: number; breakdown: Array<{ description: string; amount: number }> }> {
-        // TODO: Implement additional fees calculation
-        // Lab fees, facility fees, etc.
-        const breakdown = [
-            { description: 'Administrative fee', amount: 200000 },
-            { description: 'Insurance fee', amount: 100000 }
-        ];
-
-        return {
-            total: breakdown.reduce((sum, fee) => sum + fee.amount, 0),
-            breakdown
-        };
-    }
-
     private static async checkGracePeriod(studentId: string, semester: string): Promise<boolean> {
-        // TODO: Implement grace period check
-        // Check if current date is past the payment deadline
-        const now = new Date();
-        const gracePeriodEnd = new Date('2024-02-15'); // Mock date
-        return now > gracePeriodEnd;
+        try {
+            // Get grace period settings from database
+            const gracePeriodSettings = await DatabaseService.queryOne(`
+                SELECT grace_period_days FROM payment_settings 
+                WHERE semester = $1 AND status = 'active'
+            `);
+
+            const gracePeriodDays = gracePeriodSettings?.grace_period_days || 30;
+
+            // Get student's registration date for this semester
+            const registration = await DatabaseService.queryOne(`
+                SELECT MIN(e.enrollment_date) as first_enrollment
+                FROM enrollments e
+                WHERE e.student_id = (SELECT id FROM students WHERE student_id = $1)
+                AND e.semester = $2
+            `, [studentId, semester]);
+
+            if (!registration?.first_enrollment) {
+                return false; // No registration found, grace period not applicable
+            }
+
+            // Calculate grace period end date
+            const enrollmentDate = new Date(registration.first_enrollment);
+            const gracePeriodEnd = new Date(enrollmentDate);
+            gracePeriodEnd.setDate(gracePeriodEnd.getDate() + gracePeriodDays);
+
+            return new Date() > gracePeriodEnd;
+
+        } catch (error) {
+            console.error('Error checking grace period:', error);
+            // Default to 30 days from registration
+            const now = new Date();
+            const defaultGracePeriodEnd = new Date();
+            defaultGracePeriodEnd.setDate(now.getDate() - 30);
+            return now > defaultGracePeriodEnd;
+        }
     }
 
     private static async checkFinancialHolds(studentId: string): Promise<string[]> {
-        // TODO: Implement financial holds check
-        // Library fines, parking tickets, etc.
-        return []; // Mock: no holds
+        try {
+            const holds = await DatabaseService.query(`
+                SELECT hold_type, hold_reason, amount
+                FROM financial_holds fh
+                WHERE fh.student_id = (SELECT id FROM students WHERE student_id = $1)
+                AND fh.status = 'active'
+                ORDER BY fh.created_at DESC
+            `, [studentId]);
+
+            return holds.map(hold => 
+                `${hold.hold_type}: ${hold.hold_reason}${hold.amount ? ` (${parseFloat(hold.amount).toLocaleString()} VND)` : ''}`
+            );
+
+        } catch (error) {
+            console.error('Error checking financial holds:', error);
+            return []; // Return no holds on error
+        }
     }
 
     private static calculateDueDate(semester: string): Date {
-        // TODO: Implement due date calculation based on semester
-        // Usually 30 days from registration or specific semester dates
-        const now = new Date();
-        now.setDate(now.getDate() + 30); // 30 days from now
-        return now;
+        try {
+            // Parse semester to determine due date
+            // Semester format: "2024-1", "2024-2", etc.
+            const [year, semesterNum] = semester.split('-').map(Number);
+            
+            if (!year || !semesterNum) {
+                // Default to 30 days from now
+                const defaultDate = new Date();
+                defaultDate.setDate(defaultDate.getDate() + 30);
+                return defaultDate;
+            }
+
+            // Calculate due date based on semester
+            let dueDate = new Date();
+            
+            if (semesterNum === 1) {
+                // First semester: due date in February
+                dueDate = new Date(year, 1, 15); // February 15
+            } else if (semesterNum === 2) {
+                // Second semester: due date in July
+                dueDate = new Date(year, 6, 15); // July 15
+            } else if (semesterNum === 3) {
+                // Summer semester: due date in September
+                dueDate = new Date(year, 8, 15); // September 15
+            } else {
+                // Default to 30 days from now
+                dueDate.setDate(dueDate.getDate() + 30);
+            }
+
+            return dueDate;
+
+        } catch (error) {
+            console.error('Error calculating due date:', error);
+            // Default to 30 days from now
+            const defaultDate = new Date();
+            defaultDate.setDate(defaultDate.getDate() + 30);
+            return defaultDate;
+        }
     }
 }

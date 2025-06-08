@@ -1,7 +1,7 @@
-// src/controllers/authController.ts
+// Auth Controller for final_cnpm database
 import { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
-import { getUserByEmail, getUserById, blacklistToken, isTokenBlacklisted } from '../services/userService';
+import { getUserByEmail, getUserById, verifyPassword, blacklistToken, isTokenBlacklisted } from '../services/userService';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 const JWT_EXPIRES = '24h';
@@ -9,17 +9,16 @@ const JWT_EXPIRES = '24h';
 export const login = async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
-    // Bỏ qua trường role từ frontend (nếu có)
 
-    // Kiểm tra email
-    if (!email) {
+    // Validate input
+    if (!email || !password) {
       return res.status(400).json({ 
         success: false, 
-        message: 'Email không được để trống' 
+        message: 'Tên đăng nhập và mật khẩu không được để trống' 
       });
     }
 
-    // Lấy thông tin người dùng từ mock service
+    // Get user from database
     const user = await getUserByEmail(email);
     if (!user) {
       return res.status(401).json({ 
@@ -28,16 +27,16 @@ export const login = async (req: Request, res: Response) => {
       });
     }
 
-    // Trong môi trường phát triển, kiểm tra mật khẩu đơn giản
-    // Trong thực tế, cần sử dụng bcrypt
-    if (password !== user.passwordHash) {
+    // Verify password (handles both plain text and hashed passwords)
+    const isPasswordValid = await verifyPassword(password, user.passwordHash);
+    if (!isPasswordValid) {
       return res.status(401).json({ 
         success: false, 
         message: 'Thông tin đăng nhập không đúng' 
       });
     }
 
-    // Định nghĩa đường dẫn chuyển hướng dựa trên vai trò từ database
+    // Define redirect URLs based on role
     const redirectMap: Record<string, string> = {
       'student': '/student',
       'financial': '/financial',
@@ -45,134 +44,147 @@ export const login = async (req: Request, res: Response) => {
       'admin': '/admin'
     };
     
-    // Lấy đường dẫn chuyển hướng dựa vào vai trò từ database
     const redirectUrl = redirectMap[user.role] || '/';
 
-    // Tạo JWT token
+    // Create JWT tokens
     const token = jwt.sign(
-      { id: user.id, email: user.email, role: user.role },
+      { 
+        id: user.id, 
+        email: user.email, 
+        role: user.role,
+        studentId: user.studentId 
+      },
       JWT_SECRET,
       { expiresIn: JWT_EXPIRES }
     );
 
-    // Tạo refresh token
     const refreshToken = jwt.sign(
       { id: user.id },
       JWT_SECRET,
       { expiresIn: '7d' }
     );
 
-    // Trả về thông tin người dùng và token
-    res.status(200).json({
+    console.log(`✅ User logged in: ${user.email} (${user.role})`);
+
+    res.json({
       success: true,
       user: {
         id: user.id,
         email: user.email,
         name: user.name,
-        role: user.role
+        role: user.role,
+        studentId: user.studentId,
+        groupName: user.groupName
       },
       token,
       refreshToken,
-      redirectUrl // Trả về đường dẫn chuyển hướng để frontend có thể redirect
+      redirectUrl
     });
+
   } catch (error) {
     console.error('Login error:', error);
     res.status(500).json({ 
       success: false, 
-      message: 'Đã có lỗi xảy ra khi đăng nhập' 
+      message: 'Lỗi server nội bộ' 
     });
   }
 };
 
-export const logout = (req: Request, res: Response) => {
+export const logout = async (req: Request, res: Response) => {
   try {
-    // Lấy token từ header
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
+    const token = req.headers.authorization?.replace('Bearer ', '');
     
-    // Thêm token vào blacklist nếu có
     if (token) {
       blacklistToken(token);
     }
-    
-    res.status(200).json({ 
+
+    res.json({ 
       success: true, 
       message: 'Đăng xuất thành công' 
     });
   } catch (error) {
     console.error('Logout error:', error);
     res.status(500).json({ 
-      success: false,
-      message: 'Đã có lỗi xảy ra khi đăng xuất' 
-    });
-  }
-};
-
-export const verifyToken = (req: Request, res: Response) => {
-  try {
-    // Token đã được xác thực trong middleware authenticateToken
-    const user = req.user;
-    res.status(200).json({ 
-      success: true, 
-      valid: true, 
-      user 
-    });
-  } catch (error) {
-    res.status(401).json({ 
-      success: false,
-      valid: false 
+      success: false, 
+      message: 'Lỗi server nội bộ' 
     });
   }
 };
 
 export const refreshToken = async (req: Request, res: Response) => {
   try {
-    const { refreshToken: refreshTokenValue } = req.body;
+    const { refreshToken } = req.body;
 
-    if (!refreshTokenValue) {
-      return res.status(400).json({ 
-        success: false,
-        message: 'Refresh token không được để trống' 
-      });
-    }
-
-    // Kiểm tra token có trong blacklist không
-    if (isTokenBlacklisted(refreshTokenValue)) {
+    if (!refreshToken) {
       return res.status(401).json({ 
-        success: false,
-        message: 'Refresh token đã hết hạn hoặc đã bị vô hiệu hóa' 
+        success: false, 
+        message: 'Refresh token không được cung cấp' 
       });
     }
 
-    // Xác thực refresh token
-    const decoded = jwt.verify(refreshTokenValue, JWT_SECRET) as any;
-    
-    // Lấy thông tin người dùng
+    const decoded = jwt.verify(refreshToken, JWT_SECRET) as any;
     const user = await getUserById(decoded.id);
-    
+
     if (!user) {
       return res.status(401).json({ 
-        success: false,
-        message: 'Refresh token không hợp lệ' 
+        success: false, 
+        message: 'Người dùng không tồn tại' 
       });
     }
 
-    // Tạo JWT token mới
     const newToken = jwt.sign(
-      { id: user.id, email: user.email, role: user.role },
+      { 
+        id: user.id, 
+        email: user.email, 
+        role: user.role,
+        studentId: user.studentId 
+      },
       JWT_SECRET,
       { expiresIn: JWT_EXPIRES }
     );
 
-    res.status(200).json({ 
+    res.json({
       success: true,
-      token: newToken 
+      token: newToken
     });
+
   } catch (error) {
     console.error('Refresh token error:', error);
     res.status(401).json({ 
-      success: false,
-      message: 'Refresh token không hợp lệ hoặc đã hết hạn' 
+      success: false, 
+      message: 'Refresh token không hợp lệ' 
+    });
+  }
+};
+
+export const me = async (req: Request, res: Response) => {
+  try {
+    const user = await getUserById(req.user?.id?.toString() || '');
+    
+    if (!user) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Người dùng không tồn tại' 
+      });
+    }
+
+    res.json({
+      success: true,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+        studentId: user.studentId,
+        groupName: user.groupName
+      }
+    });
+
+  } catch (error) {
+    console.error('Get user info error:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Lỗi server nội bộ' 
     });
   }
 };

@@ -2,6 +2,7 @@
 import { SubjectBusiness } from '../academicBusiness/subject.business';
 import { ProgramBusiness } from '../academicBusiness/program.business';
 import { OpenCourseBusiness } from '../academicBusiness/openCourse.business';
+import { DatabaseService } from '../../services/database/databaseService';
 
 export interface PrerequisiteCheck {
     isMet: boolean;
@@ -199,50 +200,166 @@ export class AcademicRulesEngine {
                 conflictingCourses: []
             };
         }
-    }
-
-    // Helper methods
+    }    // Helper methods
     private static async getStudentCompletedCourses(studentId: string) {
-        // TODO: Implement actual database query
-        // For now, return mock data
-        return [
-            { courseId: 'CS101', courseName: 'Intro to CS', grade: 'A' },
-            { courseId: 'MATH101', courseName: 'Calculus I', grade: 'B+' }
-        ];
+        try {
+            const completedCourses = await DatabaseService.query(`
+                SELECT 
+                    e.course_id,
+                    e.course_name,
+                    e.letter_grade as grade,
+                    e.total_grade,
+                    oc.subject_code as courseId,
+                    s.subject_name as courseName
+                FROM enrollments e
+                JOIN open_courses oc ON e.course_id = oc.id
+                JOIN subjects s ON oc.subject_code = s.subject_code
+                WHERE e.student_id = (SELECT id FROM students WHERE student_id = $1)
+                AND e.status = 'completed'
+                AND e.total_grade >= 5.0
+                ORDER BY e.created_at DESC
+            `, [studentId]);
+
+            return completedCourses.map(course => ({
+                courseId: course.courseId,
+                courseName: course.courseName,
+                grade: course.grade || 'N/A'
+            }));
+        } catch (error) {
+            console.error('Error fetching completed courses:', error);
+            return [];
+        }
     }
 
     private static async getCurrentSemesterCredits(studentId: string): Promise<number> {
-        // TODO: Implement actual database query
-        return 15; // Mock: student currently has 15 credits
+        try {
+            // Get current semester from system settings
+            const currentSemester = await DatabaseService.queryOne(`
+                SELECT setting_value FROM system_settings WHERE setting_key = 'current_semester'
+            `);
+            
+            const semester = currentSemester?.setting_value || '2024-1';
+
+            const result = await DatabaseService.queryOne(`
+                SELECT COALESCE(SUM(e.credits), 0) as total_credits
+                FROM enrollments e
+                WHERE e.student_id = (SELECT id FROM students WHERE student_id = $1)
+                AND e.semester = $2
+                AND e.status IN ('registered', 'enrolled')
+            `, [studentId, semester]);
+
+            return parseInt(result?.total_credits || '0');
+        } catch (error) {
+            console.error('Error fetching current semester credits:', error);
+            return 0;
+        }
     }
 
     private static async getStudentGPA(studentId: string): Promise<number> {
-        // TODO: Implement actual database query
-        return 3.2; // Mock GPA
+        try {
+            const result = await DatabaseService.queryOne(`
+                SELECT 
+                    COALESCE(AVG(e.total_grade), 0) as gpa,
+                    COUNT(e.id) as completed_courses
+                FROM enrollments e
+                WHERE e.student_id = (SELECT id FROM students WHERE student_id = $1)
+                AND e.status = 'completed'
+                AND e.total_grade IS NOT NULL
+                AND e.total_grade >= 0
+            `, [studentId]);
+
+            return parseFloat(result?.gpa || '0');
+        } catch (error) {
+            console.error('Error fetching student GPA:', error);
+            return 0;
+        }
     }
 
     private static async getAcademicStanding(studentId: string): Promise<'GOOD' | 'PROBATION' | 'SUSPENSION'> {
-        // TODO: Implement actual database query based on GPA and other factors
-        return 'GOOD';
-    }
+        try {
+            const gpa = await this.getStudentGPA(studentId);
+            
+            // Get academic standing rules from database or use defaults
+            const standingRules = await DatabaseService.queryOne(`
+                SELECT * FROM academic_standing_rules WHERE status = 'active'
+            `);
 
-    private static async getStudentEnrolledCourses(studentId: string, semester: string) {
-        // TODO: Implement actual database query
-        return [
-            { courseId: 'CS201', courseName: 'Data Structures' },
-            { courseId: 'MATH201', courseName: 'Calculus II' }
-        ];
+            const probationThreshold = standingRules?.probation_gpa || 2.0;
+            const suspensionThreshold = standingRules?.suspension_gpa || 1.0;
+
+            if (gpa < suspensionThreshold) {
+                return 'SUSPENSION';
+            } else if (gpa < probationThreshold) {
+                return 'PROBATION';
+            } else {
+                return 'GOOD';
+            }
+        } catch (error) {
+            console.error('Error determining academic standing:', error);
+            return 'GOOD'; // Default to good standing on error
+        }
+    }    private static async getStudentEnrolledCourses(studentId: string, semester: string) {
+        try {
+            const enrolledCourses = await DatabaseService.query(`
+                SELECT 
+                    e.course_id,
+                    e.course_name,
+                    oc.subject_code as courseId,
+                    s.subject_name as courseName,
+                    e.is_enrolled
+                FROM enrollments e
+                JOIN open_courses oc ON e.course_id = oc.id
+                JOIN subjects s ON oc.subject_code = s.subject_code
+                WHERE e.student_id = (SELECT id FROM students WHERE student_id = $1)
+                AND e.semester = $2
+                AND e.is_enrolled = true
+                ORDER BY oc.subject_code
+            `, [studentId, semester]);
+
+            return enrolledCourses.map(course => ({
+                courseId: course.courseId,
+                courseName: course.courseName
+            }));
+        } catch (error) {
+            console.error('Error fetching enrolled courses:', error);
+            return [];
+        }
     }
 
     private static async getCourseSchedule(courseId: string, semester: string) {
-        // TODO: Implement actual database query
-        return {
-            timeSlot: 'MON 08:00-10:00',
-            room: 'A101',
-            dayOfWeek: 'MONDAY',
-            startTime: '08:00',
-            endTime: '10:00'
-        };
+        try {
+            const schedule = await DatabaseService.queryOne(`
+                SELECT 
+                    oc.schedule,
+                    oc.room,
+                    s.subject_name
+                FROM open_courses oc
+                JOIN subjects s ON oc.subject_code = s.subject_code
+                WHERE oc.id = $1 AND oc.semester = $2
+            `, [parseInt(courseId), semester]);
+
+            if (!schedule) {
+                return null;
+            }
+
+            // Parse schedule string (assuming format like "MON 08:00-10:00")
+            const scheduleData = schedule.schedule || '';
+            const parts = scheduleData.split(' ');
+            const dayOfWeek = parts[0] || 'UNKNOWN';
+            const timeRange = parts[1] || '00:00-00:00';
+            const [startTime, endTime] = timeRange.split('-');
+
+            return {
+                timeSlot: scheduleData,
+                room: schedule.room,
+                dayOfWeek,
+                startTime: startTime || '00:00',
+                endTime: endTime || '00:00'
+            };
+        } catch (error) {
+            console.error('Error fetching course schedule:', error);
+            return null;
+        }
     }
 
     private static hasTimeConflict(schedule1: any, schedule2: any): boolean {

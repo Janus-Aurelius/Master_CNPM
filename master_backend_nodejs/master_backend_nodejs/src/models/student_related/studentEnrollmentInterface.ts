@@ -1,15 +1,12 @@
-export type EnrollmentStatus = 
-    | 'registered'
-    | 'waiting'
-    | 'dropped';
-
+// Simplified boolean enrollment status as per supervisor's feedback
+// Only two states: enrolled (true) or not enrolled (false)
 export interface IEnrollment {
     id: string;
     studentId: string;
     courseId: string;
     courseName: string;
     semester: string;
-    status: EnrollmentStatus;
+    isEnrolled: boolean; // true = enrolled, false = not enrolled/dropped
     credits: number;
     midtermGrade?: number;
     finalGrade?: number;

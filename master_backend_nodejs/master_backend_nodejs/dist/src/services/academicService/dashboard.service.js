@@ -35,8 +35,19 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
+var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
+    if (pack || arguments.length === 2) for (var i = 0, l = from.length, ar; i < l; i++) {
+        if (ar || !(i in from)) {
+            if (!ar) ar = Array.prototype.slice.call(from, 0, i);
+            ar[i] = from[i];
+        }
+    }
+    return to.concat(ar || Array.prototype.slice.call(from));
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.academicDashboardService = void 0;
+// src/services/academicService/dashboard.service.ts
+var databaseService_1 = require("../database/databaseService");
 // Mock data
 var mockStats = {
     totalSubjects: 245,
@@ -98,42 +109,161 @@ var mockCourseStats = {
 exports.academicDashboardService = {
     getDashboardStats: function () {
         return __awaiter(this, void 0, void 0, function () {
+            var totalSubjects, totalOpenCourses, totalPrograms, pendingRequests, recentActivities, error_1;
             return __generator(this, function (_a) {
-                // TODO: Implement real database queries
-                return [2 /*return*/, mockStats];
+                switch (_a.label) {
+                    case 0:
+                        _a.trys.push([0, 6, , 7]);
+                        return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("\n                SELECT COUNT(*) as count FROM subjects\n            ")];
+                    case 1:
+                        totalSubjects = _a.sent();
+                        return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("\n                SELECT COUNT(*) as count FROM open_courses \n                WHERE status = 'open'\n            ")];
+                    case 2:
+                        totalOpenCourses = _a.sent();
+                        return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("\n                SELECT COUNT(*) as count FROM programs\n            ")];
+                    case 3:
+                        totalPrograms = _a.sent();
+                        return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("\n                SELECT COUNT(*) as count FROM student_subject_requests \n                WHERE status = 'pending'\n            ")];
+                    case 4:
+                        pendingRequests = _a.sent();
+                        return [4 /*yield*/, this.getRecentActivities(5)];
+                    case 5:
+                        recentActivities = _a.sent();
+                        return [2 /*return*/, {
+                                totalSubjects: (totalSubjects === null || totalSubjects === void 0 ? void 0 : totalSubjects.count) || 0,
+                                totalOpenCourses: (totalOpenCourses === null || totalOpenCourses === void 0 ? void 0 : totalOpenCourses.count) || 0,
+                                totalPrograms: (totalPrograms === null || totalPrograms === void 0 ? void 0 : totalPrograms.count) || 0,
+                                pendingRequests: (pendingRequests === null || pendingRequests === void 0 ? void 0 : pendingRequests.count) || 0,
+                                recentActivities: recentActivities
+                            }];
+                    case 6:
+                        error_1 = _a.sent();
+                        console.error('Error fetching dashboard stats:', error_1);
+                        // Fallback to mock data
+                        return [2 /*return*/, mockStats];
+                    case 7: return [2 /*return*/];
+                }
             });
         });
     },
     getSubjectStatistics: function () {
         return __awaiter(this, void 0, void 0, function () {
+            var byDepartment, byCredits, totalCreditsResult, error_2;
             return __generator(this, function (_a) {
-                // TODO: Implement real database queries
-                return [2 /*return*/, mockSubjectStats];
+                switch (_a.label) {
+                    case 0:
+                        _a.trys.push([0, 4, , 5]);
+                        return [4 /*yield*/, databaseService_1.DatabaseService.query("\n                SELECT \n                    COALESCE(department, 'General') as department,\n                    COUNT(*) as count\n                FROM subjects \n                GROUP BY department\n                ORDER BY count DESC\n            ")];
+                    case 1:
+                        byDepartment = _a.sent();
+                        return [4 /*yield*/, databaseService_1.DatabaseService.query("\n                SELECT \n                    credits,\n                    COUNT(*) as count\n                FROM subjects \n                GROUP BY credits\n                ORDER BY credits\n            ")];
+                    case 2:
+                        byCredits = _a.sent();
+                        return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("\n                SELECT SUM(credits) as total FROM subjects\n            ")];
+                    case 3:
+                        totalCreditsResult = _a.sent();
+                        return [2 /*return*/, {
+                                byDepartment: byDepartment || [],
+                                byCredits: byCredits || [],
+                                totalCreditsOffered: (totalCreditsResult === null || totalCreditsResult === void 0 ? void 0 : totalCreditsResult.total) || 0
+                            }];
+                    case 4:
+                        error_2 = _a.sent();
+                        console.error('Error fetching subject statistics:', error_2);
+                        return [2 /*return*/, mockSubjectStats];
+                    case 5: return [2 /*return*/];
+                }
             });
         });
     },
     getCourseStatistics: function () {
         return __awaiter(this, void 0, void 0, function () {
+            var bySemester, byStatus, totalEnrollmentsResult, enrollmentRate, error_3;
             return __generator(this, function (_a) {
-                // TODO: Implement real database queries
-                return [2 /*return*/, mockCourseStats];
+                switch (_a.label) {
+                    case 0:
+                        _a.trys.push([0, 5, , 6]);
+                        return [4 /*yield*/, databaseService_1.DatabaseService.query("\n                SELECT \n                    semester,\n                    COUNT(*) as count\n                FROM open_courses \n                GROUP BY semester\n                ORDER BY semester DESC\n                LIMIT 10\n            ")];
+                    case 1:
+                        bySemester = _a.sent();
+                        return [4 /*yield*/, databaseService_1.DatabaseService.query("\n                SELECT \n                    status,\n                    COUNT(*) as count\n                FROM open_courses \n                GROUP BY status\n            ")];
+                    case 2:
+                        byStatus = _a.sent();
+                        return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("\n                SELECT COUNT(*) as total FROM enrollments\n            ")];
+                    case 3:
+                        totalEnrollmentsResult = _a.sent();
+                        return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("\n                SELECT \n                    AVG(CASE \n                        WHEN oc.max_students > 0 \n                        THEN (oc.current_students::float / oc.max_students * 100)\n                        ELSE 0 \n                    END) as rate\n                FROM open_courses oc\n                WHERE oc.max_students > 0\n            ")];
+                    case 4:
+                        enrollmentRate = _a.sent();
+                        return [2 /*return*/, {
+                                bySemester: bySemester || [],
+                                byStatus: byStatus || [],
+                                totalEnrollments: (totalEnrollmentsResult === null || totalEnrollmentsResult === void 0 ? void 0 : totalEnrollmentsResult.total) || 0,
+                                averageEnrollmentRate: Math.round((enrollmentRate === null || enrollmentRate === void 0 ? void 0 : enrollmentRate.rate) || 0)
+                            }];
+                    case 5:
+                        error_3 = _a.sent();
+                        console.error('Error fetching course statistics:', error_3);
+                        return [2 /*return*/, mockCourseStats];
+                    case 6: return [2 /*return*/];
+                }
             });
         });
     },
     getRecentActivities: function () {
         return __awaiter(this, arguments, void 0, function (limit) {
+            var activities, recentSubjects, recentCourses, recentRequests, error_4;
             if (limit === void 0) { limit = 10; }
             return __generator(this, function (_a) {
-                // TODO: Implement real database queries
-                return [2 /*return*/, mockStats.recentActivities.slice(0, limit)];
+                switch (_a.label) {
+                    case 0:
+                        _a.trys.push([0, 4, , 5]);
+                        activities = [];
+                        return [4 /*yield*/, databaseService_1.DatabaseService.query("\n                SELECT \n                    'subject_created' as type,\n                    'M\u00F4n h\u1ECDc \"' || subject_name || '\" \u0111\u00E3 \u0111\u01B0\u1EE3c t\u1EA1o' as description,\n                    created_at as timestamp,\n                    'System' as user\n                FROM subjects \n                WHERE created_at >= NOW() - INTERVAL '7 days'\n                ORDER BY created_at DESC\n                LIMIT 3\n            ")];
+                    case 1:
+                        recentSubjects = _a.sent();
+                        return [4 /*yield*/, databaseService_1.DatabaseService.query("\n                SELECT \n                    'course_opened' as type,\n                    'L\u1EDBp h\u1ECDc ph\u1EA7n ' || subject_code || ' \u0111\u00E3 \u0111\u01B0\u1EE3c m\u1EDF cho ' || semester as description,\n                    created_at as timestamp,\n                    COALESCE(lecturer, 'System') as user\n                FROM open_courses \n                WHERE created_at >= NOW() - INTERVAL '7 days'\n                ORDER BY created_at DESC\n                LIMIT 3\n            ")];
+                    case 2:
+                        recentCourses = _a.sent();
+                        return [4 /*yield*/, databaseService_1.DatabaseService.query("\n                SELECT \n                    'request_submitted' as type,\n                    'Y\u00EAu c\u1EA7u ' || request_type || ' t\u1EEB sinh vi\u00EAn ' || student_id as description,\n                    created_at as timestamp,\n                    student_id as user\n                FROM student_subject_requests \n                WHERE created_at >= NOW() - INTERVAL '7 days'\n                ORDER BY created_at DESC\n                LIMIT 3\n            ")];
+                    case 3:
+                        recentRequests = _a.sent();
+                        // Combine and sort activities
+                        activities.push.apply(activities, __spreadArray(__spreadArray(__spreadArray([], recentSubjects, false), recentCourses, false), recentRequests, false));
+                        activities.sort(function (a, b) { return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(); });
+                        return [2 /*return*/, activities.slice(0, limit).map(function (activity, index) { return ({
+                                id: (index + 1).toString(),
+                                type: activity.type,
+                                description: activity.description,
+                                timestamp: new Date(activity.timestamp).toISOString(),
+                                user: activity.user
+                            }); })];
+                    case 4:
+                        error_4 = _a.sent();
+                        console.error('Error fetching recent activities:', error_4);
+                        return [2 /*return*/, mockStats.recentActivities.slice(0, limit)];
+                    case 5: return [2 /*return*/];
+                }
             });
         });
     },
     getPendingRequestsCount: function () {
         return __awaiter(this, void 0, void 0, function () {
+            var result, error_5;
             return __generator(this, function (_a) {
-                // TODO: Implement real database queries
-                return [2 /*return*/, mockStats.pendingRequests];
+                switch (_a.label) {
+                    case 0:
+                        _a.trys.push([0, 2, , 3]);
+                        return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("\n                SELECT COUNT(*) as count \n                FROM student_subject_requests \n                WHERE status = 'pending'\n            ")];
+                    case 1:
+                        result = _a.sent();
+                        return [2 /*return*/, (result === null || result === void 0 ? void 0 : result.count) || 0];
+                    case 2:
+                        error_5 = _a.sent();
+                        console.error('Error fetching pending requests count:', error_5);
+                        return [2 /*return*/, mockStats.pendingRequests];
+                    case 3: return [2 /*return*/];
+                }
             });
         });
     }

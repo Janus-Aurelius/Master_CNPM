@@ -2,11 +2,11 @@ import { Pool } from 'pg';
 
 export class Database {
     private static pool = new Pool({
-        host: process.env.DB_HOST || 'localhost',
+        host: process.env.DB_HOST || 'db',
         port: Number(process.env.DB_PORT) || 5432,
         user: process.env.DB_USER || 'postgres',
-        password: process.env.DB_PASSWORD || '',
-        database: process.env.DB_NAME || 'master_cnpm',
+        password: String(process.env.DB_PASSWORD || 'secret'),
+        database: process.env.DB_NAME || 'mydb',
         max: 20, // maximum number of clients in the pool
         idleTimeoutMillis: 30000, // how long a client is allowed to remain idle before being closed
         connectionTimeoutMillis: 2000, // how long to wait for a connection

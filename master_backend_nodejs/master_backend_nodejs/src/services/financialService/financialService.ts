@@ -1,123 +1,57 @@
-import { ITuitionRecord } from '../../models/student_related/studentTuitionPaymentInterface';
-import { tuitionRecords } from '../studentService/studentTuitionPaymentService';
-
-// Mock data cho financial department
-const mockStudentPayments = [
-    {
-        studentId: "23524325",
-        fullName: "Nguyễn Văn A",
-        faculty: "Công nghệ thông tin",
-        major: "Khoa học máy tính",
-        course: "K18",
-        paymentStatus: "PAID",
-        semester: "HK1 2024-2025",
-        totalAmount: 2100000,
-        paidAmount: 2100000
-    },
-    {
-        studentId: "22524234", 
-        fullName: "Trần Thị B",
-        faculty: "Công nghệ thông tin",
-        major: "Kỹ thuật phần mềm",
-        course: "K17",
-        paymentStatus: "PARTIAL",
-        semester: "HK1 2024-2025",
-        totalAmount: 2100000,
-        paidAmount: 1000000
-    },
-    {
-        studentId: "23524324",
-        fullName: "Lê Văn C", 
-        faculty: "Cơ điện tử",
-        major: "Cơ điện tử",
-        course: "K17",
-        paymentStatus: "UNPAID",
-        semester: "HK1 2024-2025",
-        totalAmount: 2100000,
-        paidAmount: 0
-    }
-];
-
-const mockTuitionSettings = {
-    "HK1 2024-2025": {
-        pricePerCredit: 150000,
-        baseFee: 500000,
-        laboratoryFee: 200000,
-        libraryFee: 100000
-    }
-};
+import { ITuitionRecord } from '../../models/student_related/studentPaymentInterface';
+import { DatabaseService } from '../database/databaseService';
 
 export const financialService = {
-    // Dashboard functions
     async countTotalStudents(): Promise<number> {
-        return mockStudentPayments.length;
+        const result = await DatabaseService.queryOne(`SELECT COUNT(DISTINCT student_id) as count FROM tuition_records`);
+        return result?.count || 0;
     },
-
     async countStudentsByPaymentStatus(status: string): Promise<number> {
-        return mockStudentPayments.filter(student => student.paymentStatus === status).length;
+        const result = await DatabaseService.queryOne(`SELECT COUNT(*) as count FROM tuition_records WHERE status = $1`, [status]);
+        return result?.count || 0;
     },
-
     async getTotalRevenue(): Promise<number> {
-        return mockStudentPayments.reduce((total, student) => total + student.paidAmount, 0);
+        const result = await DatabaseService.queryOne(`SELECT SUM(paid_amount) as total FROM tuition_records`);
+        return result?.total || 0;
     },
-
     async getOutstandingAmount(): Promise<number> {
-        return mockStudentPayments.reduce((total, student) => 
-            total + (student.totalAmount - student.paidAmount), 0);
+        const result = await DatabaseService.queryOne(`SELECT SUM(total_amount - paid_amount) as outstanding FROM tuition_records`);
+        return result?.outstanding || 0;
     },
-
-    // Payment Status Management
-    async getAllStudentPayments(filters: { 
-        semester?: string, 
-        faculty?: string, 
-        course?: string 
-    }): Promise<any[]> {
-        let filteredPayments = [...mockStudentPayments];
-        
-        if (filters.semester) {
-            filteredPayments = filteredPayments.filter(p => p.semester === filters.semester);
-        }
-        if (filters.faculty) {
-            filteredPayments = filteredPayments.filter(p => p.faculty === filters.faculty);
-        }
-        if (filters.course) {
-            filteredPayments = filteredPayments.filter(p => p.course === filters.course);
-        }
-        
-        return filteredPayments;
+    async getAllStudentPayments(filters: { semester?: string, faculty?: string, course?: string }): Promise<any[]> {
+        let query = `SELECT * FROM tuition_records`;
+        const conditions = [];
+        const params = [];
+        if (filters.semester) { conditions.push('semester = $' + (params.length + 1)); params.push(filters.semester); }
+        if (filters.faculty) { conditions.push('faculty = $' + (params.length + 1)); params.push(filters.faculty); }
+        if (filters.course) { conditions.push('course = $' + (params.length + 1)); params.push(filters.course); }
+        if (conditions.length > 0) query += ' WHERE ' + conditions.join(' AND ');
+        return await DatabaseService.query(query, params);
     },
-
     async getStudentPayment(studentId: string): Promise<any | null> {
-        return mockStudentPayments.find(student => student.studentId === studentId) || null;
+        const result = await DatabaseService.queryOne(`SELECT * FROM tuition_records WHERE student_id = $1`, [studentId]);
+        return result || null;
     },
-
-    async updateStudentPayment(studentId: string, paymentData: {
-        paymentStatus: string,
-        amountPaid: number,
-        semester: string
-    }): Promise<boolean> {
-        const studentIndex = mockStudentPayments.findIndex(student => student.studentId === studentId);
-        if (studentIndex === -1) return false;
-        
-        mockStudentPayments[studentIndex] = {
-            ...mockStudentPayments[studentIndex],
-            paymentStatus: paymentData.paymentStatus,
-            paidAmount: paymentData.amountPaid,
-            semester: paymentData.semester
-        };
-        
-        return true;
-    },    // Tuition Settings Management
+    async updateStudentPayment(studentId: string, paymentData: { paymentStatus: string, amountPaid: number, semester: string }): Promise<boolean> {
+        try {
+            await DatabaseService.query(`UPDATE tuition_records SET status = $1, paid_amount = $2, semester = $3 WHERE student_id = $4`, [paymentData.paymentStatus, paymentData.amountPaid, paymentData.semester, studentId]);
+            return true;
+        } catch {
+            return false;
+        }
+    },
     async getTuitionSettings(semester: string): Promise<any> {
-        return mockTuitionSettings[semester as keyof typeof mockTuitionSettings] || null;
+        const result = await DatabaseService.queryOne(`SELECT * FROM tuition_settings WHERE semester = $1`, [semester]);
+        return result || null;
     },
-
     async updateTuitionSettings(semester: string, settings: any): Promise<boolean> {
-        (mockTuitionSettings as any)[semester] = settings;
-        return true;
+        try {
+            await DatabaseService.query(`UPDATE tuition_settings SET price_per_credit = $1, base_fee = $2, laboratory_fee = $3, library_fee = $4 WHERE semester = $5`, [settings.pricePerCredit, settings.baseFee, settings.laboratoryFee, settings.libraryFee, semester]);
+            return true;
+        } catch {
+            return false;
+        }
     },
-
-    // Create tuition record for course registration
     async createTuitionRecord(tuitionData: {
         studentId: string;
         courseId: string;
@@ -127,35 +61,66 @@ export const financialService = {
         dueDate: Date;
         status: string;
     }): Promise<{ id: string; success: boolean }> {
-        const newRecord = {
-            id: `TR_${Date.now()}_${tuitionData.studentId}`,
-            studentId: tuitionData.studentId,
-            courseId: tuitionData.courseId,
-            semester: tuitionData.semester,
-            totalAmount: tuitionData.amount,
-            paidAmount: 0,
-            remainingAmount: tuitionData.amount,
-            status: tuitionData.status,
-            dueDate: tuitionData.dueDate,
-            breakdown: tuitionData.breakdown,
-            createdAt: new Date()
-        };
+        try {
+            // Create tuition record in database
+            const tuitionRecord = await DatabaseService.insert('tuition_records', {
+                student_id: tuitionData.studentId,
+                semester: tuitionData.semester,
+                total_amount: tuitionData.amount,
+                paid_amount: 0,
+                remaining_amount: tuitionData.amount,
+                status: tuitionData.status.toLowerCase(),
+                due_date: tuitionData.dueDate
+            });
 
-        // Add to tuitionRecords (mock storage)
-        tuitionRecords.push(newRecord as any);
-        
-        return {
-            id: newRecord.id,
-            success: true
-        };
+            // Create course items for this tuition record
+            if (tuitionData.courseId) {
+                const course = await DatabaseService.queryOne(`
+                    SELECT oc.*, s.subject_name, s.credits 
+                    FROM open_courses oc 
+                    JOIN subjects s ON oc.subject_id = s.id 
+                    WHERE oc.id = $1
+                `, [parseInt(tuitionData.courseId)]);
+
+                if (course) {
+                    await DatabaseService.insert('tuition_course_items', {
+                        tuition_record_id: tuitionRecord.id,
+                        course_id: parseInt(tuitionData.courseId),
+                        course_name: course.subject_name,
+                        credits: course.credits,
+                        price: tuitionData.amount
+                    });
+                }
+            }
+
+            return {
+                id: tuitionRecord.id,
+                success: true
+            };
+        } catch (error) {
+            console.error('Error creating tuition record:', error);
+            return {
+                id: '',
+                success: false
+            };
+        }
     },
-
-    // Existing function
     async getUnpaidTuitionReport(semester: string, year: string): Promise<{ studentId: string, remainingAmount: number }[]> {
-        // Lọc các record chưa hoàn thành đóng học phí theo học kỳ/năm học
-        const semesterQuery = `${semester} ${year}`;
-        return tuitionRecords
-            .filter(r => r.semester === semesterQuery && r.status !== 'PAID')
-            .map(r => ({ studentId: r.studentId, remainingAmount: r.remainingAmount }));
+        try {
+            const semesterQuery = `${semester} ${year}`;
+            const unpaidRecords = await DatabaseService.query(`
+                SELECT student_id, remaining_amount 
+                FROM tuition_records 
+                WHERE semester = $1 AND status != 'paid'
+            `, [semesterQuery]);
+
+            return unpaidRecords.map((r: any) => ({ 
+                studentId: r.student_id, 
+                remainingAmount: r.remaining_amount 
+            }));
+        } catch (error) {
+            console.error('Error getting unpaid tuition report:', error);
+            return [];
+        }
     }
 };

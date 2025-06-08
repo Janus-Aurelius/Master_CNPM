@@ -57,7 +57,7 @@ var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.financialService = void 0;
-var studentTuitionPaymentService_1 = require("../studentService/studentTuitionPaymentService");
+var databaseService_1 = require("../database/databaseService");
 // Mock data cho financial department
 var mockStudentPayments = [
     {
@@ -171,8 +171,7 @@ exports.financialService = {
                 return [2 /*return*/, true];
             });
         });
-    },
-    // Tuition Settings Management
+    }, // Tuition Settings Management
     getTuitionSettings: function (semester) {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
@@ -187,16 +186,78 @@ exports.financialService = {
                 return [2 /*return*/, true];
             });
         });
+    }, // Create tuition record for course registration using database
+    createTuitionRecord: function (tuitionData) {
+        return __awaiter(this, void 0, void 0, function () {
+            var tuitionRecord, course, error_1;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        _a.trys.push([0, 5, , 6]);
+                        return [4 /*yield*/, databaseService_1.DatabaseService.insert('tuition_records', {
+                                student_id: tuitionData.studentId,
+                                semester: tuitionData.semester,
+                                total_amount: tuitionData.amount,
+                                paid_amount: 0,
+                                remaining_amount: tuitionData.amount,
+                                status: tuitionData.status.toLowerCase(),
+                                due_date: tuitionData.dueDate
+                            })];
+                    case 1:
+                        tuitionRecord = _a.sent();
+                        if (!tuitionData.courseId) return [3 /*break*/, 4];
+                        return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("\n                    SELECT oc.*, s.subject_name, s.credits \n                    FROM open_courses oc \n                    JOIN subjects s ON oc.subject_id = s.id \n                    WHERE oc.id = $1\n                ", [parseInt(tuitionData.courseId)])];
+                    case 2:
+                        course = _a.sent();
+                        if (!course) return [3 /*break*/, 4];
+                        return [4 /*yield*/, databaseService_1.DatabaseService.insert('tuition_course_items', {
+                                tuition_record_id: tuitionRecord.id,
+                                course_id: parseInt(tuitionData.courseId),
+                                course_name: course.subject_name,
+                                credits: course.credits,
+                                price: tuitionData.amount
+                            })];
+                    case 3:
+                        _a.sent();
+                        _a.label = 4;
+                    case 4: return [2 /*return*/, {
+                            id: tuitionRecord.id,
+                            success: true
+                        }];
+                    case 5:
+                        error_1 = _a.sent();
+                        console.error('Error creating tuition record:', error_1);
+                        return [2 /*return*/, {
+                                id: '',
+                                success: false
+                            }];
+                    case 6: return [2 /*return*/];
+                }
+            });
+        });
     },
-    // Existing function
+    // Get unpaid tuition report using database
     getUnpaidTuitionReport: function (semester, year) {
         return __awaiter(this, void 0, void 0, function () {
-            var semesterQuery;
+            var semesterQuery, unpaidRecords, error_2;
             return __generator(this, function (_a) {
-                semesterQuery = "".concat(semester, " ").concat(year);
-                return [2 /*return*/, studentTuitionPaymentService_1.tuitionRecords
-                        .filter(function (r) { return r.semester === semesterQuery && r.status !== 'PAID'; })
-                        .map(function (r) { return ({ studentId: r.studentId, remainingAmount: r.remainingAmount }); })];
+                switch (_a.label) {
+                    case 0:
+                        _a.trys.push([0, 2, , 3]);
+                        semesterQuery = "".concat(semester, " ").concat(year);
+                        return [4 /*yield*/, databaseService_1.DatabaseService.query("\n                SELECT student_id, remaining_amount \n                FROM tuition_records \n                WHERE semester = $1 AND status != 'paid'\n            ", [semesterQuery])];
+                    case 1:
+                        unpaidRecords = _a.sent();
+                        return [2 /*return*/, unpaidRecords.map(function (r) { return ({
+                                studentId: r.student_id,
+                                remainingAmount: r.remaining_amount
+                            }); })];
+                    case 2:
+                        error_2 = _a.sent();
+                        console.error('Error getting unpaid tuition report:', error_2);
+                        return [2 /*return*/, []];
+                    case 3: return [2 /*return*/];
+                }
             });
         });
     }

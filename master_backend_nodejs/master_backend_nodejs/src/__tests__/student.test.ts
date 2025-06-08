@@ -8,10 +8,10 @@ import { subjectRegistrationService, subjects } from '../services/studentService
 import { enrollmentService, enrollments, enrolledSubjects } from '../services/studentService/enrollmentService';
 import { gradeService, grades } from '../services/studentService/gradeService';
 import { studentTuitionPaymentService, tuitionRecords, paymentReceipts } from '../services/studentService/studentTuitionPaymentService';
-import { EnrollmentStatus, IEnrolledSubject } from '../models/student_related/studentEnrollmentInterface';
+import { IEnrolledSubject, IEnrollment } from '../models/student_related/studentEnrollmentInterface';
 import { IGrade } from '../models/student_related/studentDashboardInterface';
 import { IStudentOverview } from '../models/student_related/studentDashboardInterface';
-import { ITuitionRecord } from '../models/student_related/studentTuitionPaymentInterface';
+import { ITuitionRecord } from '../models/student_related/studentPaymentInterface';
 
 // Mock authentication middleware
 jest.mock('../middleware/auth', () => ({
@@ -110,13 +110,13 @@ const mockSubject = {
     ]
 };
 
-const mockEnrollment = {
+const mockEnrollment: IEnrollment = {
     id: 'ENR001',
     studentId: 'SV001',
     courseId: 'IT001',
     courseName: 'Introduction to Programming',
     semester: 'HK1 2023-2024',
-    status: 'registered' as EnrollmentStatus,
+    isEnrolled: true, // Using boolean instead of status enum
     credits: 3
 };
 

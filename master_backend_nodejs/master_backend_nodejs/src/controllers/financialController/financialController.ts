@@ -33,14 +33,21 @@ export const getAllPaymentStatus = async (req: Request, res: Response): Promise<
 
 export const getStudentPaymentStatus = async (req: Request, res: Response): Promise<void> => {
     try {
-        const { studentId } = req.params;
+        let studentId: string | undefined = undefined;
+        if (req.user?.role === 'student') {
+            studentId = req.user.studentId;
+        } else {
+            studentId = req.params.studentId;
+        }
+        if (!studentId) {
+            res.status(400).json({ message: 'Missing studentId' });
+            return;
+        }
         const paymentStatus = await financialBusiness.getStudentPaymentStatus(studentId);
-        
         if (!paymentStatus) {
             res.status(404).json({ message: 'Student payment information not found' });
             return;
         }
-        
         res.status(200).json(paymentStatus);
     } catch (error) {
         console.error('Error getting student payment status:', error);
@@ -50,9 +57,17 @@ export const getStudentPaymentStatus = async (req: Request, res: Response): Prom
 
 export const updatePaymentStatus = async (req: Request, res: Response): Promise<void> => {
     try {
-        const { studentId } = req.params;
+        let studentId: string | undefined = undefined;
+        if (req.user?.role === 'student') {
+            studentId = req.user.studentId;
+        } else {
+            studentId = req.params.studentId;
+        }
+        if (!studentId) {
+            res.status(400).json({ message: 'Missing studentId' });
+            return;
+        }
         const { paymentStatus, amountPaid, semester } = req.body;
-        
         const updated = await financialBusiness.updatePaymentStatus(
             studentId, 
             { 
@@ -61,12 +76,10 @@ export const updatePaymentStatus = async (req: Request, res: Response): Promise<
                 semester 
             }
         );
-        
         if (!updated) {
             res.status(404).json({ message: 'Payment record not found' });
             return;
         }
-        
         res.status(200).json({ message: 'Payment status updated successfully' });
     } catch (error) {
         console.error('Error updating payment status:', error);

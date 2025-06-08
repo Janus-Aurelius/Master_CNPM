@@ -1,10 +1,9 @@
+import 'dotenv/config';
 import express from 'express';
 import path from 'path';
 import cookieParser from 'cookie-parser';
 import logger from 'morgan';
 import cors from 'cors';
-import helmet from 'helmet';
-import rateLimit from 'express-rate-limit';
 
 // Route imports
 import authRoutes from './src/routes/auth.routes';
@@ -13,7 +12,7 @@ import protectedRoutes from './src/routes/protected.routes';
 import academicRoutes from './src/routes/academic/academic.routes';
 import financialRoutes from './src/routes/financial/financial.routes';
 import adminRoutes from './src/routes/admin/admin.routes';
-import studentRoutes from './src/routes/student/student.routes.js';
+import studentRoutes from './src/routes/student/student.routes';
 
 // Middleware imports
 import { authenticateToken, authorizeRoles } from './src/middleware/auth';
@@ -22,19 +21,11 @@ import { errorHandler } from './src/middleware/errorHandler';
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Security Middleware
-app.use(helmet());
+// CORS Configuration
 app.use(cors({
     origin: process.env.FRONTEND_URL || 'http://localhost:3000',
     credentials: true
 }));
-
-// Rate Limiting
-const limiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100 // limit each IP to 100 requests per windowMs
-});
-app.use(limiter);
 
 // Basic Middleware
 app.use(logger('dev'));

@@ -1,3 +1,4 @@
+// Consolidated Student Interface - Main interface file for all student-related types
 export interface IStudent {
     studentId: string;
     name: string;
@@ -24,6 +25,17 @@ export interface IStudent {
     };
 }
 
+// Legacy simple student interface for backward compatibility
+export interface IStudentSimple {
+    id: string;
+    studentId: string;
+    name: string;
+    email: string;
+    major: string;
+    class: string;
+    status: 'active' | 'inactive';
+}
+
 export interface IStudentSchedule {
     student: IStudent;
     semester: string;
@@ -44,4 +56,16 @@ export interface IScheduleItem {
     room: string;
 }
 
-// TODO: Thêm các trường về đối tượng ưu tiên, khoa/ngành cho phòng đào tạo xử lý sau 
+export interface IStudentDashboard {
+    student: IStudent;
+    schedule: {
+        day: string;
+        startTime: string;
+        endTime: string;
+        subject: string;
+        room: string;
+    }[];
+    currentSemester: string;
+    totalCredits: number;
+    gpa: number;
+}

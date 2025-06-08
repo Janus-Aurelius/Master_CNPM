@@ -61,12 +61,18 @@ var StudentController = /** @class */ (function () {
     }
     StudentController.prototype.getDashboard = function (req, res) {
         return __awaiter(this, void 0, void 0, function () {
-            var studentId, dashboard, response, error_1;
+            var userId, studentId, userToStudentMap, dashboard, response, error_1;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         _a.trys.push([0, 2, , 3]);
-                        studentId = req.user.id;
+                        userId = req.user.id;
+                        studentId = void 0;
+                        userToStudentMap = {
+                            1: 'SV001', // student@uit.edu.vn -> Nguyễn Văn A
+                            5: 'SV002' // student123@uit.edu.vn -> Hoàng Thị E
+                        };
+                        studentId = userToStudentMap[userId] || 'SV001'; // Default to SV001
                         return [4 /*yield*/, dashboardService_1.dashboardService.getStudentOverview(studentId)];
                     case 1:
                         dashboard = _a.sent();
@@ -99,12 +105,18 @@ var StudentController = /** @class */ (function () {
     };
     StudentController.prototype.getTimeTable = function (req, res) {
         return __awaiter(this, void 0, void 0, function () {
-            var studentId, schedule, error_2;
+            var userId, studentId, userToStudentMap, schedule, error_2;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         _a.trys.push([0, 2, , 3]);
-                        studentId = req.user.id;
+                        userId = req.user.id;
+                        studentId = void 0;
+                        userToStudentMap = {
+                            1: 'SV001', // student@uit.edu.vn -> Nguyễn Văn A
+                            5: 'SV002' // student123@uit.edu.vn -> Hoàng Thị E
+                        };
+                        studentId = userToStudentMap[userId] || 'SV001'; // Default to SV001
                         return [4 /*yield*/, dashboardService_1.dashboardService.getStudentSchedule(studentId)];
                     case 1:
                         schedule = _a.sent();

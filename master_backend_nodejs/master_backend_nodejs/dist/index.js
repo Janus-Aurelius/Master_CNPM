@@ -8,8 +8,6 @@ var path_1 = __importDefault(require("path"));
 var cookie_parser_1 = __importDefault(require("cookie-parser"));
 var morgan_1 = __importDefault(require("morgan"));
 var cors_1 = __importDefault(require("cors"));
-var helmet_1 = __importDefault(require("helmet"));
-var express_rate_limit_1 = __importDefault(require("express-rate-limit"));
 // Route imports
 var auth_routes_1 = __importDefault(require("./src/routes/auth.routes"));
 var course_routes_1 = __importDefault(require("./src/routes/academic/course.routes"));
@@ -17,24 +15,17 @@ var protected_routes_1 = __importDefault(require("./src/routes/protected.routes"
 var academic_routes_1 = __importDefault(require("./src/routes/academic/academic.routes"));
 var financial_routes_1 = __importDefault(require("./src/routes/financial/financial.routes"));
 var admin_routes_1 = __importDefault(require("./src/routes/admin/admin.routes"));
-var student_routes_js_1 = __importDefault(require("./src/routes/student/student.routes.js"));
+var student_routes_1 = __importDefault(require("./src/routes/student/student.routes"));
 // Middleware imports
 var auth_1 = require("./src/middleware/auth");
 var errorHandler_1 = require("./src/middleware/errorHandler");
 var app = (0, express_1.default)();
 var PORT = process.env.PORT || 3000;
-// Security Middleware
-app.use((0, helmet_1.default)());
+// CORS Configuration
 app.use((0, cors_1.default)({
     origin: process.env.FRONTEND_URL || 'http://localhost:3000',
     credentials: true
 }));
-// Rate Limiting
-var limiter = (0, express_rate_limit_1.default)({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100 // limit each IP to 100 requests per windowMs
-});
-app.use(limiter);
 // Basic Middleware
 app.use((0, morgan_1.default)('dev'));
 app.use(express_1.default.json());
@@ -46,7 +37,7 @@ app.use('/auth', auth_routes_1.default);
 // Course Routes (RESTful)
 app.use('/api/courses', course_routes_1.default);
 // Student Routes (protected)
-app.use('/api/student', auth_1.authenticateToken, (0, auth_1.authorizeRoles)(['student']), student_routes_js_1.default);
+app.use('/api/student', auth_1.authenticateToken, (0, auth_1.authorizeRoles)(['student']), student_routes_1.default);
 // Protected Routes
 app.use('/api/dashboard', protected_routes_1.default);
 app.use('/api/academic', auth_1.authenticateToken, (0, auth_1.authorizeRoles)(['academic']), academic_routes_1.default);

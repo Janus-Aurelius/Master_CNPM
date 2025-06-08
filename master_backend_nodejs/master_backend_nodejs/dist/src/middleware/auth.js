@@ -6,7 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.authorizeRoles = exports.authenticateToken = void 0;
 var jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 // Sử dụng biến môi trường hoặc giá trị mặc định
-var JWT_SECRET = process.env.JWT_SECRET || '1234567890';
+var JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 // Middleware để xác thực JWT token
 var authenticateToken = function (req, res, next) {
     var _a;

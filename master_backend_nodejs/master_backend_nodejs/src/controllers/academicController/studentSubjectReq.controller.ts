@@ -59,7 +59,15 @@ export class StudentSubjectReqController {
 
     static async getRequestsByStudentId(req: Request, res: Response) {
         try {
-            const { studentId } = req.params;
+            let studentId: string | undefined = undefined;
+            if (req.user?.role === 'student') {
+                studentId = req.user.studentId;
+            } else {
+                studentId = req.params.studentId;
+            }
+            if (!studentId) {
+                return res.status(400).json({ success: false, message: 'Missing studentId' });
+            }
             const requests = await StudentSubjectReqBusiness.getRequestsByStudentId(studentId);
             res.status(200).json({ success: true, data: requests });
         } catch (error) {

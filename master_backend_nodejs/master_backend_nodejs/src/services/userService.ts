@@ -1,81 +1,151 @@
-// src/services/userService.ts
-/**
- * Mock User Service
- * 
- * Trong môi trường production thực tế, service này sẽ kết nối với database
- * để lấy và lưu thông tin người dùng. Đối với đồ án nhỏ, chúng ta sử dụng
- * mock data để đơn giản hóa.
- */
+// User Service for final_cnpm database
+import { DatabaseService } from './database/databaseService';
+import bcrypt from 'bcrypt';
 
-// Mock user database - Quyền được xác định dựa trên email
-const users = [
-    { 
-        id: 1, 
-        email: 'student@uit.edu.vn', 
-        name: 'Nguyễn Văn A', 
-        role: 'student', // Sinh viên
-        passwordHash: 'password' // Trong thực tế, đây phải là mật khẩu đã hash
-    },
-    { 
-        id: 2, 
-        email: 'financial@uit.edu.vn', 
-        name: 'Trần Thị B', 
-        role: 'financial', // Phòng tài chính
-        passwordHash: 'password' 
-    },
-    { 
-        id: 3, 
-        email: 'academic@uit.edu.vn', 
-        name: 'Lê Văn C', 
-        role: 'academic', // Phòng đào tạo
-        passwordHash: 'password' 
-    },
-    { 
-        id: 4, 
-        email: 'admin@uit.edu.vn', 
-        name: 'Phạm Quang D', 
-        role: 'admin', // Quản trị viên
-        passwordHash: 'password' 
-    },
-    // Thêm nhiều người dùng với các vai trò khác nhau để kiểm tra
-    { 
-        id: 5, 
-        email: 'student123@uit.edu.vn', 
-        name: 'Hoàng Thị E', 
-        role: 'student',
-        passwordHash: 'password' 
-    },
-];
+/**
+ * User Service adapted for final_cnpm database structure
+ */
 
 // Token blacklist để quản lý đăng xuất
 const tokenBlacklist = new Set<string>();
 
 /**
- * Lấy thông tin người dùng theo email
+ * Map database roles to application roles
+ */
+const roleMapping: Record<string, string> = {
+    'N1': 'admin',        // Admin
+    'N2': 'academic',     // Giảng viên
+    'N3': 'student',      // Sinh viên
+    'N4': 'financial'     // Kế toán
+};
+
+/**
+ * Get user by username (tendangnhap) from final_cnpm database
  */
 export const getUserByEmail = async (email: string) => {
-    const user = users.find(u => u.email === email);
-    return user || null;
+    try {
+        // Query nguoidung table with role information
+        const dbUser = await DatabaseService.queryOne(`
+            SELECT 
+                nd.tendangnhap,
+                nd.userid,
+                nd.matkhau,
+                nd.manhom,
+                nd.masosinhvien,
+                nnd.tennhom
+            FROM nguoidung nd
+            LEFT JOIN nhomnguoidung nnd ON nd.manhom = nnd.manhom
+            WHERE nd.tendangnhap = $1
+        `, [email]);
+
+        if (dbUser) {
+            // Get additional info if user is a student
+            let additionalInfo = null;
+            if (dbUser.masosinhvien) {
+                additionalInfo = await DatabaseService.queryOne(`
+                    SELECT 
+                        sv.hoten,
+                        sv.ngaysinh,
+                        sv.gioitinh,
+                        sv.manganh
+                    FROM sinhvien sv
+                    WHERE sv.masosinhvien = $1
+                `, [dbUser.masosinhvien]);
+            }
+
+            return {
+                id: dbUser.userid || dbUser.tendangnhap,
+                email: dbUser.tendangnhap, // Using tendangnhap as email
+                name: additionalInfo?.hoten || dbUser.tennhom || 'User',
+                role: roleMapping[dbUser.manhom] || 'user',
+                passwordHash: dbUser.matkhau,
+                studentId: dbUser.masosinhvien,
+                groupId: dbUser.manhom,
+                groupName: dbUser.tennhom
+            };
+        }
+
+        return null;
+    } catch (error) {
+        console.error('Database error in getUserByEmail:', error);
+        return null;
+    }
 };
 
 /**
- * Lấy thông tin người dùng theo ID
+ * Get user by ID from final_cnpm database
  */
-export const getUserById = async (id: number) => {
-    const user = users.find(u => u.id === id);
-    return user || null;
+export const getUserById = async (id: string) => {
+    try {
+        const dbUser = await DatabaseService.queryOne(`
+            SELECT 
+                nd.tendangnhap,
+                nd.userid,
+                nd.matkhau,
+                nd.manhom,
+                nd.masosinhvien,
+                nnd.tennhom
+            FROM nguoidung nd
+            LEFT JOIN nhomnguoidung nnd ON nd.manhom = nnd.manhom
+            WHERE nd.userid = $1 OR nd.tendangnhap = $1
+        `, [id]);
+
+        if (dbUser) {
+            let additionalInfo = null;
+            if (dbUser.masosinhvien) {
+                additionalInfo = await DatabaseService.queryOne(`
+                    SELECT 
+                        sv.hoten,
+                        sv.ngaysinh,
+                        sv.gioitinh,
+                        sv.manganh
+                    FROM sinhvien sv
+                    WHERE sv.masosinhvien = $1
+                `, [dbUser.masosinhvien]);
+            }
+
+            return {
+                id: dbUser.userid || dbUser.tendangnhap,
+                email: dbUser.tendangnhap,
+                name: additionalInfo?.hoten || dbUser.tennhom || 'User',
+                role: roleMapping[dbUser.manhom] || 'user',
+                passwordHash: dbUser.matkhau,
+                studentId: dbUser.masosinhvien,
+                groupId: dbUser.manhom,
+                groupName: dbUser.tennhom
+            };
+        }
+
+        return null;
+    } catch (error) {
+        console.error('Database error in getUserById:', error);
+        return null;
+    }
 };
 
 /**
- * Thêm token vào blacklist khi đăng xuất
+ * Verify password - check if it's plain text or hashed
  */
+export const verifyPassword = async (inputPassword: string, storedPassword: string): Promise<boolean> => {
+    try {
+        // Check if stored password is hashed (starts with $2b$)
+        if (storedPassword.startsWith('$2b$')) {
+            return await bcrypt.compare(inputPassword, storedPassword);
+        } else {
+            // Plain text comparison for existing data
+            return inputPassword === storedPassword;
+        }
+    } catch (error) {
+        console.error('Password verification error:', error);
+        return false;
+    }
+};
+
+// Token blacklist functions
 export const blacklistToken = (token: string) => {
     tokenBlacklist.add(token);
 };
 
-/**
- * Kiểm tra xem token có trong blacklist không
- */
-export const isTokenBlacklisted = (token: string) => {
+export const isTokenBlacklisted = (token: string): boolean => {
     return tokenBlacklist.has(token);
 };

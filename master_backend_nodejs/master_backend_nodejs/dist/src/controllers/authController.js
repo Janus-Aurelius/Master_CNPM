@@ -39,24 +39,23 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.refreshToken = exports.verifyToken = exports.logout = exports.login = void 0;
+exports.me = exports.refreshToken = exports.logout = exports.login = void 0;
 var jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 var userService_1 = require("../services/userService");
 var JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 var JWT_EXPIRES = '24h';
 var login = function (req, res) { return __awaiter(void 0, void 0, void 0, function () {
-    var _a, email, password, user, redirectMap, redirectUrl, token, refreshToken_1, error_1;
+    var _a, email, password, user, isPasswordValid, redirectMap, redirectUrl, token, refreshToken_1, error_1;
     return __generator(this, function (_b) {
         switch (_b.label) {
             case 0:
-                _b.trys.push([0, 2, , 3]);
+                _b.trys.push([0, 3, , 4]);
                 _a = req.body, email = _a.email, password = _a.password;
-                // Bỏ qua trường role từ frontend (nếu có)
-                // Kiểm tra email
-                if (!email) {
+                // Validate input
+                if (!email || !password) {
                     return [2 /*return*/, res.status(400).json({
                             success: false,
-                            message: 'Email không được để trống'
+                            message: 'Tên đăng nhập và mật khẩu không được để trống'
                         })];
                 }
                 return [4 /*yield*/, (0, userService_1.getUserByEmail)(email)];
@@ -68,9 +67,10 @@ var login = function (req, res) { return __awaiter(void 0, void 0, void 0, funct
                             message: 'Thông tin đăng nhập không đúng'
                         })];
                 }
-                // Trong môi trường phát triển, kiểm tra mật khẩu đơn giản
-                // Trong thực tế, cần sử dụng bcrypt
-                if (password !== user.passwordHash) {
+                return [4 /*yield*/, (0, userService_1.verifyPassword)(password, user.passwordHash)];
+            case 2:
+                isPasswordValid = _b.sent();
+                if (!isPasswordValid) {
                     return [2 /*return*/, res.status(401).json({
                             success: false,
                             message: 'Thông tin đăng nhập không đúng'
@@ -83,108 +83,97 @@ var login = function (req, res) { return __awaiter(void 0, void 0, void 0, funct
                     'admin': '/admin'
                 };
                 redirectUrl = redirectMap[user.role] || '/';
-                token = jsonwebtoken_1.default.sign({ id: user.id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: JWT_EXPIRES });
+                token = jsonwebtoken_1.default.sign({
+                    id: user.id,
+                    email: user.email,
+                    role: user.role,
+                    studentId: user.studentId
+                }, JWT_SECRET, { expiresIn: JWT_EXPIRES });
                 refreshToken_1 = jsonwebtoken_1.default.sign({ id: user.id }, JWT_SECRET, { expiresIn: '7d' });
-                // Trả về thông tin người dùng và token
-                res.status(200).json({
+                console.log("\u2705 User logged in: ".concat(user.email, " (").concat(user.role, ")"));
+                res.json({
                     success: true,
                     user: {
                         id: user.id,
                         email: user.email,
                         name: user.name,
-                        role: user.role
+                        role: user.role,
+                        studentId: user.studentId,
+                        groupName: user.groupName
                     },
                     token: token,
                     refreshToken: refreshToken_1,
-                    redirectUrl: redirectUrl // Trả về đường dẫn chuyển hướng để frontend có thể redirect
+                    redirectUrl: redirectUrl
                 });
-                return [3 /*break*/, 3];
-            case 2:
+                return [3 /*break*/, 4];
+            case 3:
                 error_1 = _b.sent();
                 console.error('Login error:', error_1);
                 res.status(500).json({
                     success: false,
-                    message: 'Đã có lỗi xảy ra khi đăng nhập'
+                    message: 'Lỗi server nội bộ'
                 });
-                return [3 /*break*/, 3];
-            case 3: return [2 /*return*/];
+                return [3 /*break*/, 4];
+            case 4: return [2 /*return*/];
         }
     });
 }); };
 exports.login = login;
-var logout = function (req, res) {
-    try {
-        // Lấy token từ header
-        var authHeader = req.headers['authorization'];
-        var token = authHeader && authHeader.split(' ')[1];
-        // Thêm token vào blacklist nếu có
-        if (token) {
-            (0, userService_1.blacklistToken)(token);
+var logout = function (req, res) { return __awaiter(void 0, void 0, void 0, function () {
+    var token;
+    var _a;
+    return __generator(this, function (_b) {
+        try {
+            token = (_a = req.headers.authorization) === null || _a === void 0 ? void 0 : _a.replace('Bearer ', '');
+            if (token) {
+                (0, userService_1.blacklistToken)(token);
+            }
+            res.json({
+                success: true,
+                message: 'Đăng xuất thành công'
+            });
         }
-        res.status(200).json({
-            success: true,
-            message: 'Đăng xuất thành công'
-        });
-    }
-    catch (error) {
-        console.error('Logout error:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Đã có lỗi xảy ra khi đăng xuất'
-        });
-    }
-};
+        catch (error) {
+            console.error('Logout error:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Lỗi server nội bộ'
+            });
+        }
+        return [2 /*return*/];
+    });
+}); };
 exports.logout = logout;
-var verifyToken = function (req, res) {
-    try {
-        // Token đã được xác thực trong middleware authenticateToken
-        var user = req.user;
-        res.status(200).json({
-            success: true,
-            valid: true,
-            user: user
-        });
-    }
-    catch (error) {
-        res.status(401).json({
-            success: false,
-            valid: false
-        });
-    }
-};
-exports.verifyToken = verifyToken;
 var refreshToken = function (req, res) { return __awaiter(void 0, void 0, void 0, function () {
-    var refreshTokenValue, decoded, user, newToken, error_2;
+    var refreshToken_2, decoded, user, newToken, error_2;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
                 _a.trys.push([0, 2, , 3]);
-                refreshTokenValue = req.body.refreshToken;
-                if (!refreshTokenValue) {
-                    return [2 /*return*/, res.status(400).json({
-                            success: false,
-                            message: 'Refresh token không được để trống'
-                        })];
-                }
-                // Kiểm tra token có trong blacklist không
-                if ((0, userService_1.isTokenBlacklisted)(refreshTokenValue)) {
+                refreshToken_2 = req.body.refreshToken;
+                if (!refreshToken_2) {
                     return [2 /*return*/, res.status(401).json({
                             success: false,
-                            message: 'Refresh token đã hết hạn hoặc đã bị vô hiệu hóa'
+                            message: 'Refresh token không được cung cấp'
                         })];
                 }
-                decoded = jsonwebtoken_1.default.verify(refreshTokenValue, JWT_SECRET);
+                decoded = jsonwebtoken_1.default.verify(refreshToken_2, JWT_SECRET);
                 return [4 /*yield*/, (0, userService_1.getUserById)(decoded.id)];
             case 1:
                 user = _a.sent();
                 if (!user) {
                     return [2 /*return*/, res.status(401).json({
                             success: false,
-                            message: 'Refresh token không hợp lệ'
+                            message: 'Người dùng không tồn tại'
                         })];
                 }
-                newToken = jsonwebtoken_1.default.sign({ id: user.id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: JWT_EXPIRES });
-                res.status(200).json({
+                newToken = jsonwebtoken_1.default.sign({
+                    id: user.id,
+                    email: user.email,
+                    role: user.role,
+                    studentId: user.studentId
+                }, JWT_SECRET, { expiresIn: JWT_EXPIRES });
+                res.json({
                     success: true,
                     token: newToken
                 });
@@ -194,7 +183,7 @@ var refreshToken = function (req, res) { return __awaiter(void 0, void 0, void 0
                 console.error('Refresh token error:', error_2);
                 res.status(401).json({
                     success: false,
-                    message: 'Refresh token không hợp lệ hoặc đã hết hạn'
+                    message: 'Refresh token không hợp lệ'
                 });
                 return [3 /*break*/, 3];
             case 3: return [2 /*return*/];
@@ -202,3 +191,44 @@ var refreshToken = function (req, res) { return __awaiter(void 0, void 0, void 0
     });
 }); };
 exports.refreshToken = refreshToken;
+var me = function (req, res) { return __awaiter(void 0, void 0, void 0, function () {
+    var user, error_3;
+    var _a, _b;
+    return __generator(this, function (_c) {
+        switch (_c.label) {
+            case 0:
+                _c.trys.push([0, 2, , 3]);
+                return [4 /*yield*/, (0, userService_1.getUserById)(((_b = (_a = req.user) === null || _a === void 0 ? void 0 : _a.id) === null || _b === void 0 ? void 0 : _b.toString()) || '')];
+            case 1:
+                user = _c.sent();
+                if (!user) {
+                    return [2 /*return*/, res.status(404).json({
+                            success: false,
+                            message: 'Người dùng không tồn tại'
+                        })];
+                }
+                res.json({
+                    success: true,
+                    user: {
+                        id: user.id,
+                        email: user.email,
+                        name: user.name,
+                        role: user.role,
+                        studentId: user.studentId,
+                        groupName: user.groupName
+                    }
+                });
+                return [3 /*break*/, 3];
+            case 2:
+                error_3 = _c.sent();
+                console.error('Get user info error:', error_3);
+                res.status(500).json({
+                    success: false,
+                    message: 'Lỗi server nội bộ'
+                });
+                return [3 /*break*/, 3];
+            case 3: return [2 /*return*/];
+        }
+    });
+}); };
+exports.me = me;

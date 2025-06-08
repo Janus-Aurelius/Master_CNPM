@@ -1,5 +1,5 @@
 import { studentTuitionPaymentService } from '../../services/studentService/studentTuitionPaymentService';
-import { TuitionCourseItem, ITuitionRecord } from '../../models/student_related/studentTuitionPaymentInterface';
+import { TuitionCourseItem, ITuitionRecord } from '../../models/student_related/studentPaymentInterface';
 
 export const tuitionPaymentManager = {
     // Xác nhận đăng ký, tạo phiếu học phí

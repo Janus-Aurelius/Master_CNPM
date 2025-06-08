@@ -1,4 +1,6 @@
 // src/services/academicService/dashboard.service.ts
+import { DatabaseService } from '../database/databaseService';
+
 interface AcademicDashboardStats {
     totalSubjects: number;
     totalOpenCourses: number;
@@ -28,90 +30,94 @@ interface CourseStatistics {
     averageEnrollmentRate: number;
 }
 
-// Mock data
-const mockStats: AcademicDashboardStats = {
-    totalSubjects: 245,
-    totalOpenCourses: 89,
-    totalPrograms: 12,
-    pendingRequests: 15,
-    recentActivities: [
-        {
-            id: '1',
-            type: 'subject_created',
-            description: 'Môn học "Trí tuệ nhân tạo nâng cao" đã được tạo',
-            timestamp: '2025-06-05T10:30:00Z',
-            user: 'TS. Nguyễn Văn A'
-        },
-        {
-            id: '2',
-            type: 'course_opened',
-            description: 'Lớp học phần IT001 đã được mở cho HK1 2025-2026',
-            timestamp: '2025-06-05T09:15:00Z',
-            user: 'PGS. Trần Thị B'
-        },
-        {
-            id: '3',
-            type: 'request_submitted',
-            description: 'Yêu cầu thêm môn học từ sinh viên SV001',
-            timestamp: '2025-06-05T08:45:00Z',
-            user: 'Nguyễn Minh C'
-        }
-    ]
-};
-
-const mockSubjectStats: SubjectStatistics = {
-    byDepartment: [
-        { department: 'Khoa học máy tính', count: 98 },
-        { department: 'Công nghệ thông tin', count: 87 },
-        { department: 'Toán học', count: 45 },
-        { department: 'Vật lý', count: 15 }
-    ],
-    byCredits: [
-        { credits: 2, count: 45 },
-        { credits: 3, count: 125 },
-        { credits: 4, count: 65 },
-        { credits: 5, count: 10 }
-    ],
-    totalCreditsOffered: 735
-};
-
-const mockCourseStats: CourseStatistics = {
-    bySemester: [
-        { semester: 'HK1 2024-2025', count: 45 },
-        { semester: 'HK2 2024-2025', count: 44 }
-    ],
-    byStatus: [
-        { status: 'open', count: 67 },
-        { status: 'closed', count: 15 },
-        { status: 'cancelled', count: 7 }
-    ],
-    totalEnrollments: 2456,
-    averageEnrollmentRate: 78.5
-};
-
 export const academicDashboardService = {
     async getDashboardStats(): Promise<AcademicDashboardStats> {
-        // TODO: Implement real database queries
-        return mockStats;
+        try {
+            const totalSubjects = await DatabaseService.queryOne(`SELECT COUNT(*) as count FROM subjects`);
+            const totalOpenCourses = await DatabaseService.queryOne(`SELECT COUNT(*) as count FROM open_courses WHERE status = 'open'`);
+            const totalPrograms = await DatabaseService.queryOne(`SELECT COUNT(*) as count FROM programs`);
+            const pendingRequests = await DatabaseService.queryOne(`SELECT COUNT(*) as count FROM student_subject_requests WHERE status = 'pending'`);
+            const recentActivities = await this.getRecentActivities(5);
+            return {
+                totalSubjects: totalSubjects?.count || 0,
+                totalOpenCourses: totalOpenCourses?.count || 0,
+                totalPrograms: totalPrograms?.count || 0,
+                pendingRequests: pendingRequests?.count || 0,
+                recentActivities
+            };
+        } catch (error) {
+            console.error('Error fetching dashboard stats:', error);
+            throw error;
+        }
     },
 
     async getSubjectStatistics(): Promise<SubjectStatistics> {
-        // TODO: Implement real database queries
-        return mockSubjectStats;
+        try {
+            const byDepartment = await DatabaseService.query(`
+                SELECT COALESCE(department, 'General') as department, COUNT(*) as count
+                FROM subjects GROUP BY department ORDER BY count DESC
+            `);
+            const byCredits = await DatabaseService.query(`
+                SELECT credits, COUNT(*) as count FROM subjects GROUP BY credits ORDER BY credits
+            `);
+            const totalCreditsResult = await DatabaseService.queryOne(`SELECT SUM(credits) as total FROM subjects`);
+            return {
+                byDepartment: byDepartment || [],
+                byCredits: byCredits || [],
+                totalCreditsOffered: totalCreditsResult?.total || 0
+            };
+        } catch (error) {
+            console.error('Error fetching subject statistics:', error);
+            throw error;
+        }
     },
 
     async getCourseStatistics(): Promise<CourseStatistics> {
-        // TODO: Implement real database queries
-        return mockCourseStats;
+        try {
+            const bySemester = await DatabaseService.query(`
+                SELECT semester, COUNT(*) as count FROM open_courses GROUP BY semester ORDER BY semester DESC
+            `);
+            const byStatus = await DatabaseService.query(`
+                SELECT status, COUNT(*) as count FROM open_courses GROUP BY status
+            `);
+            const totalEnrollmentsResult = await DatabaseService.queryOne(`SELECT COUNT(*) as total FROM enrollments`);
+            const avgEnrollmentRateResult = await DatabaseService.queryOne(`SELECT AVG(enrollment_rate) as avg FROM open_courses`);
+            return {
+                bySemester: bySemester || [],
+                byStatus: byStatus || [],
+                totalEnrollments: totalEnrollmentsResult?.total || 0,
+                averageEnrollmentRate: avgEnrollmentRateResult?.avg || 0
+            };
+        } catch (error) {
+            console.error('Error fetching course statistics:', error);
+            throw error;
+        }
     },
 
-    async getRecentActivities(limit: number = 10): Promise<RecentActivity[]> {
-        // TODO: Implement real database queries
-        return mockStats.recentActivities.slice(0, limit);
+    async getRecentActivities(limit: number = 5): Promise<RecentActivity[]> {
+        try {
+            const activities = await DatabaseService.query(`
+                SELECT id, type, description, timestamp, user
+                FROM recent_activities
+                ORDER BY timestamp DESC
+                LIMIT $1
+            `, [limit]);
+            return activities;
+        } catch (error) {
+            console.error('Error fetching recent activities:', error);
+            return [];
+        }
     },
 
     async getPendingRequestsCount(): Promise<number> {
-        // TODO: Implement real database queries
-        return mockStats.pendingRequests;
+        try {
+            const result = await DatabaseService.queryOne(`
+                SELECT COUNT(*) as count FROM student_subject_requests WHERE status = 'pending'
+            `);
+            return result?.count || 0;
+        } catch (error) {
+            console.error('Error fetching pending requests count:', error);
+            return 0;
+        }
     }
 };

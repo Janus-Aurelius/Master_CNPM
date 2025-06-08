@@ -3,14 +3,15 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 
 // Sử dụng biến môi trường hoặc giá trị mặc định
-const JWT_SECRET = process.env.JWT_SECRET || '1234567890';
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
-// Định nghĩa interface cho payload của token
-interface UserPayload {
-    id: number;
-    email: string;
-    role: string;
-}
+// Khai báo lại type cho payload của token (dựa trên cấu trúc đã dùng)
+type UserPayload = {
+  id: string;
+  email: string;
+  role: string;
+  [key: string]: any;
+};
 
 // Khai báo type cho request.user
 declare global {
@@ -24,12 +25,10 @@ declare global {
 // Middleware để xác thực JWT token
 export const authenticateToken = (req: Request, res: Response, next: NextFunction): void => {
   try {
-    // Lấy token từ header Authorization hoặc cookie (hỗ trợ cả hai)
     const authHeader = req.headers['authorization'];
     const token = 
-        (authHeader && authHeader.split(' ')[1]) || // Bearer TOKEN
-        req.cookies?.auth_token;  // Hỗ trợ cookie
-    
+        (authHeader && authHeader.split(' ')[1]) ||
+        req.cookies?.auth_token;
     if (!token) {
       res.status(401).json({ 
           success: false,
@@ -37,9 +36,16 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
       });
       return;
     }
-    
     // Xác thực token
     const decoded = jwt.verify(token, JWT_SECRET) as UserPayload;
+    // Validate payload
+    if (!decoded.id || !decoded.role || !decoded.email) {
+      res.status(403).json({ 
+          success: false,
+          message: 'Token không hợp lệ' 
+      });
+      return;
+    }
     req.user = decoded;
     next();
   } catch (error) {
