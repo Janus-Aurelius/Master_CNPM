@@ -2,16 +2,8 @@
 import { financialService } from '../../services/financialService/financialService';
 import { SubjectBusiness } from '../academicBusiness/subject.business';
 import { DatabaseService } from '../../services/database/databaseService';
-
-export interface TuitionCalculation {
-    baseAmount: number;
-    additionalFees: number;
-    totalAmount: number;
-    breakdown: Array<{
-        description: string;
-        amount: number;
-    }>;
-}
+import { ITuitionCalculation, TuitionCourseItem } from '../../models/student_related/studentPaymentInterface';
+import { calculateTuition } from '../financialBusiness/financialManager';
 
 export interface PaymentEligibility {
     canRegister: boolean;
@@ -31,7 +23,7 @@ export class FinancialIntegrationService {
         studentId: string,
         courseId: string,
         semester: string
-    ): Promise<TuitionCalculation> {
+    ): Promise<ITuitionCalculation> {
         try {
             // Get course/subject information
             const subjects = await SubjectBusiness.getAllSubjects();
@@ -41,37 +33,21 @@ export class FinancialIntegrationService {
                 throw new Error(`Subject ${courseId} not found`);
             }
 
-            // Base tuition calculation
-            const creditHour = subject.credits || 3;
-            const tuitionPerCredit = await this.getTuitionPerCredit(studentId);
-            const baseAmount = creditHour * tuitionPerCredit;
-
-            // Additional fees calculation
-            const additionalFees = await this.calculateAdditionalFees(courseId, semester);
-
-            const breakdown = [
-                {
-                    description: `Tuition (${creditHour} credits × ${tuitionPerCredit.toLocaleString()} VND)`,
-                    amount: baseAmount
-                },
-                ...additionalFees.breakdown
-            ];
-
-            return {
-                baseAmount,
-                additionalFees: additionalFees.total,
-                totalAmount: baseAmount + additionalFees.total,
-                breakdown
+            // Create course item
+            const courseItem: TuitionCourseItem = {
+                courseId,
+                courseName: subject.name,
+                credits: subject.credits || 3,
+                amount: 0 // Will be calculated below
             };
+
+            // Calculate tuition
+            return await calculateTuition(studentId, semester, [courseItem]);
 
         } catch (error) {
             console.error('Error calculating course tuition:', error);
-            return {
-                baseAmount: 0,
-                additionalFees: 0,
-                totalAmount: 0,
-                breakdown: [{ description: 'Error calculating tuition', amount: 0 }]
-            };        }
+            throw error;
+        }
     }
 
     /**
@@ -99,8 +75,11 @@ export class FinancialIntegrationService {
                 courseId,
                 semester,
                 amount: tuitionCalculation.totalAmount,
-                breakdown: tuitionCalculation.breakdown,
-                dueDate: this.calculateDueDate(semester),
+                breakdown: tuitionCalculation.adjustments.map(adj => ({
+                    description: adj.description,
+                    amount: adj.amount
+                })),
+                dueDate: tuitionCalculation.dueDate,
                 status: 'PENDING'
             });
 

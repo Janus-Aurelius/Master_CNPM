@@ -28,14 +28,35 @@ class AdminController {async getActivityLog(req: Request, res: Response, next: N
     }    async getUserManagement(req: Request, res: Response, next: NextFunction) {
         try {
             const { search, role, page, size } = req.query;
-            const users = await userManager.getAllUsers();
-            // TODO: Implement filtering and pagination logic
+            const { users: userList, total, page: currentPage, totalPages } = await userManager.getAllUsers();
+            let users = userList;
+
+            // Filter by role
+            if (role && typeof role === 'string') {
+                users = users.filter(user => user.role === role);
+            }
+
+            // Filter by search (name or email)
+            if (search && typeof search === 'string') {
+                const searchLower = search.toLowerCase();
+                users = users.filter(user =>
+                    user.name.toLowerCase().includes(searchLower) ||
+                    user.email.toLowerCase().includes(searchLower)
+                );
+            }
+
+            // Pagination
+            const pageNum = page ? parseInt(page as string) : 1;
+            const pageSize = size ? parseInt(size as string) : 10;
+            const start = (pageNum - 1) * pageSize;
+            const pagedUsers = users.slice(start, start + pageSize);
+
             res.status(200).json({
                 success: true,
-                data: users,
-                total: users.length,
-                page: page ? parseInt(page as string) : 1,
-                size: size ? parseInt(size as string) : 10
+                data: pagedUsers,
+                total,
+                page: pageNum,
+                size: pageSize
             });
         } catch (error) {
             next(error);

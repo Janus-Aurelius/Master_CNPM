@@ -3,10 +3,10 @@ import { Request, Response, NextFunction } from 'express';
 
 const paymentValidationRules = (): ValidationChain[] => {
     return [
-        body('tuitionRecordId')
+        body('studentId')
             .isString()
             .notEmpty()
-            .withMessage('Tuition record ID is required'),
+            .withMessage('Student ID is required'),
         body('amount')
             .isNumeric()
             .notEmpty()
@@ -16,18 +16,31 @@ const paymentValidationRules = (): ValidationChain[] => {
         body('paymentMethod')
             .isString()
             .notEmpty()
-            .withMessage('Payment method is required')
-            .isIn(['BANK_TRANSFER', 'CASH', 'CREDIT_CARD'])
-            .withMessage('Invalid payment method')
+            .withMessage('Payment method is required'),
+        body('semester')
+            .isString()
+            .notEmpty()
+            .withMessage('Semester is required'),
+        body('status')
+            .isString()
+            .isIn(['PENDING', 'COMPLETED', 'FAILED', 'REFUNDED'])
+            .withMessage('Invalid payment status'),
+        body('paymentDate')
+            .isISO8601()
+            .withMessage('Invalid payment date format'),
+        body('notes')
+            .optional()
+            .isString()
+            .withMessage('Notes must be a string')
     ];
 };
 
 const validate = (req: Request, res: Response, next: NextFunction) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-        return res.status(400).json({ 
+        return res.status(400).json({
             success: false,
-            errors: errors.array() 
+            errors: errors.array()
         });
     }
     next();

@@ -1,11 +1,52 @@
 // src/business/academicBusiness/course.business.ts
 import Course from "../../models/academic_related/course";
 import * as courseService from "../../services/courseService/courseService";
+import { ValidationError } from "../../utils/errors/validation.error";
+
+const validateCreditValue = (credits: number): boolean => {
+    return Number.isInteger(credits) && credits > 0 && credits <= 6;
+};
+
+const validateTimeFormat = (time: string): boolean => {
+    const timeRegex = /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/;
+    return timeRegex.test(time);
+};
+
+const validateSchedule = (schedule: Course['schedule']): boolean => {
+    if (!schedule) return false;
+    
+    const { day, session, fromTo, room } = schedule;
+    if (!day || !session || !fromTo || !room) return false;
+    
+    const validDays = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'];
+    if (!validDays.includes(day)) return false;
+    
+    const [startTime, endTime] = fromTo.split('-').map(t => t.trim());
+    if (!validateTimeFormat(startTime) || !validateTimeFormat(endTime)) return false;
+    
+    // Check if end time is after start time
+    const start = new Date(`2000-01-01T${startTime}`);
+    const end = new Date(`2000-01-01T${endTime}`);
+    if (end <= start) return false;
+    
+    return true;
+};
 
 export const validateAndAddCourse = async (course: Course): Promise<Course> => {
-    if (course.credits <= 0) {
-        throw new Error("Course credits must be positive");
+    const errors: string[] = [];
+
+    if (!validateCreditValue(course.credits)) {
+        errors.push('Course credits must be between 1 and 6');
     }
+
+    if (!validateSchedule(course.schedule)) {
+        errors.push('Invalid schedule format');
+    }
+
+    if (errors.length > 0) {
+        throw new ValidationError(errors.join(', '));
+    }
+
     return courseService.addCourse(course);
 };
 

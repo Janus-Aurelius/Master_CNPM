@@ -252,12 +252,12 @@ export const subjectRegistrationService = {
             const subject = await DatabaseService.queryOne(`
                 SELECT id, max_students, current_students FROM subjects WHERE id = $1 AND semester = $2
             `, [subjectId, semester]);
-            if (!subject) {
-                throw new Error('Subject not found');
-            }
+        if (!subject) {
+            throw new Error('Subject not found');
+        }
             if (subject.current_students >= subject.max_students) {
-                throw new Error('Subject is full');
-            }
+            throw new Error('Subject is full');
+        }
             // Check if already enrolled
             const existing = await DatabaseService.queryOne(`
                 SELECT id FROM enrollments WHERE student_id = $1 AND course_id = $2 AND semester = $3 AND is_enrolled = true

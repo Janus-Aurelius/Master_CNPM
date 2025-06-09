@@ -1,44 +1,189 @@
-import UserService from '../../services/adminService/UserService';
 import { User } from '../../models/user';
 import { AppError } from '../../middleware/errorHandler';
 import * as DashboardService from '../../services/adminService/dashboardService';
 import { DatabaseService } from '../../services/database/databaseService';
 
 class UserManager {
-    async getAllUsers(): Promise<User[]> {
-        return UserService.getAllUsers();
+    async getAllUsers(page: number = 1, limit: number = 10, filters?: {
+        role?: string,
+        status?: boolean,
+        search?: string
+    }): Promise<{ users: User[], total: number, page: number, totalPages: number }> {
+        try {
+            const offset = (page - 1) * limit;
+            let whereConditions = [];
+            let queryParams = [];
+            let paramIndex = 1;
+
+            if (filters?.role) {
+                whereConditions.push(`role = $${paramIndex}`);
+                queryParams.push(filters.role);
+                paramIndex++;
+            }
+
+            if (filters?.status !== undefined) {
+                whereConditions.push(`status = $${paramIndex}`);
+                queryParams.push(filters.status);
+                paramIndex++;
+            }
+
+            if (filters?.search) {
+                whereConditions.push(`(name ILIKE $${paramIndex} OR email ILIKE $${paramIndex})`);
+                queryParams.push(`%${filters.search}%`);
+                paramIndex++;
+            }
+
+            const whereClause = whereConditions.length > 0 
+                ? `WHERE ${whereConditions.join(' AND ')}` 
+                : '';
+
+            // Get total count
+            const totalCount = await DatabaseService.queryOne<{ total: string }>(`
+                SELECT COUNT(*) as total
+                FROM users
+                ${whereClause}
+            `, queryParams);
+
+            // Get paginated users
+            const users = await DatabaseService.query<User>(`
+                SELECT *
+                FROM users
+                ${whereClause}
+                ORDER BY created_at DESC
+                LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
+            `, [...queryParams, limit, offset]);
+
+            return {
+                users,
+                total: parseInt(totalCount?.total || '0'),
+                page,
+                totalPages: Math.ceil(parseInt(totalCount?.total || '0') / limit)
+            };
+        } catch (error) {
+            console.error('Error getting users:', error);
+            throw new AppError(500, 'Error retrieving users');
+        }
     }
 
     async getUserById(id: number): Promise<User | null> {
-        return UserService.getUserById(id);
+        try {
+            const user = await DatabaseService.queryOne<User>(`
+                SELECT * FROM users WHERE id = $1
+            `, [id]);
+            return user || null;
+        } catch (error) {
+            console.error('Error getting user:', error);
+            throw new AppError(500, 'Error retrieving user');
+        }
     }
 
     async createUser(userData: Omit<User, 'id' | 'createdAt' | 'updatedAt'>): Promise<User> {
-        const existingUsers = await UserService.getAllUsers();
-        if (existingUsers.some((user: User) => user.email === userData.email)) {
-            throw new AppError(400, 'Email already exists');
+        try {
+            const existingUser = await DatabaseService.queryOne<User>(`
+                SELECT * FROM users WHERE email = $1
+            `, [userData.email]);
+
+            if (existingUser) {
+                throw new AppError(400, 'Email already exists');
+            }
+
+            const result = await DatabaseService.query<User>(`
+                INSERT INTO users (name, email, role, status, created_at, updated_at)
+                VALUES ($1, $2, $3, $4, NOW(), NOW())
+                RETURNING *
+            `, [userData.name, userData.email, userData.role, userData.status]);
+
+            return result[0];
+        } catch (error) {
+            if (error instanceof AppError) throw error;
+            console.error('Error creating user:', error);
+            throw new AppError(500, 'Error creating user');
         }
-        return UserService.createUser({
-            ...userData,
-            createdAt: new Date(),
-            updatedAt: new Date()
-        });
     }
 
     async updateUser(id: number, userData: Partial<User>): Promise<User | null> {
-        const existingUsers = await UserService.getAllUsers();
-        if (userData.email && existingUsers.some((user: User) => user.email === userData.email && user.id !== id)) {
-            throw new AppError(400, 'Email already exists');
+        try {
+            if (userData.email) {
+                const existingUser = await DatabaseService.queryOne<User>(`
+                    SELECT * FROM users WHERE email = $1 AND id != $2
+                `, [userData.email, id]);
+
+                if (existingUser) {
+                    throw new AppError(400, 'Email already exists');
+                }
+            }
+
+            const result = await DatabaseService.query<User>(`
+                UPDATE users 
+                SET 
+                    name = COALESCE($1, name),
+                    email = COALESCE($2, email),
+                    role = COALESCE($3, role),
+                    status = COALESCE($4, status),
+                    updated_at = NOW()
+                WHERE id = $5
+                RETURNING *
+            `, [userData.name, userData.email, userData.role, userData.status, id]);
+
+            return result[0] || null;
+        } catch (error) {
+            if (error instanceof AppError) throw error;
+            console.error('Error updating user:', error);
+            throw new AppError(500, 'Error updating user');
         }
-        return UserService.updateUser(id, userData);
     }
 
     async deleteUser(id: number): Promise<boolean> {
-        return UserService.deleteUser(id);
+        try {
+            // Start transaction
+            await DatabaseService.query('BEGIN');
+
+            try {
+                // Delete related records first
+                await DatabaseService.query(`
+                    DELETE FROM user_sessions WHERE user_id = $1;
+                    DELETE FROM audit_logs WHERE user_id = $1;
+                    DELETE FROM academic_requests WHERE student_id = (SELECT student_id FROM students WHERE user_id = $1);
+                    DELETE FROM enrollments WHERE student_id = (SELECT student_id FROM students WHERE user_id = $1);
+                    DELETE FROM tuition_records WHERE student_id = (SELECT student_id FROM students WHERE user_id = $1);
+                    DELETE FROM payment_receipts WHERE student_id = (SELECT student_id FROM students WHERE user_id = $1);
+                    DELETE FROM students WHERE user_id = $1;
+                `, [id]);
+
+                // Finally delete the user
+                const result = await DatabaseService.query<User>(`
+                    DELETE FROM users WHERE id = $1 RETURNING *
+                `, [id]);
+
+                // Commit transaction
+                await DatabaseService.query('COMMIT');
+
+                return result.length > 0;
+            } catch (error) {
+                // Rollback on error
+                await DatabaseService.query('ROLLBACK');
+                throw error;
+            }
+        } catch (error) {
+            console.error('Error deleting user:', error);
+            throw new AppError(500, 'Error deleting user and related data');
+        }
     }
 
     async changeUserStatus(id: number, status: boolean): Promise<User | null> {
-        return UserService.updateUser(id, { status });
+        try {
+            const result = await DatabaseService.query<User>(`
+                UPDATE users 
+                SET 
+                    status = $1
+                WHERE id = $2
+                RETURNING *
+            `, [status, id]);
+            return result[0] || null;
+        } catch (error) {
+            console.error('Error changing user status:', error);
+            throw new AppError(500, 'Error changing user status');
+        }
     }
 
     async getDashboardStats() {

@@ -244,7 +244,7 @@ export const dashboardService = {
             const updatedOverview = await this.getStudentOverview(overview.student.studentId);
             if (!updatedOverview) {
                 throw new Error('Failed to get updated overview');
-            }
+        }
             return updatedOverview;
         } catch (error) {
             console.error('Error updating student overview:', error);

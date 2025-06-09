@@ -35,7 +35,7 @@ export const financialService = {
     async updateStudentPayment(studentId: string, paymentData: { paymentStatus: string, amountPaid: number, semester: string }): Promise<boolean> {
         try {
             await DatabaseService.query(`UPDATE tuition_records SET status = $1, paid_amount = $2, semester = $3 WHERE student_id = $4`, [paymentData.paymentStatus, paymentData.amountPaid, paymentData.semester, studentId]);
-            return true;
+        return true;
         } catch {
             return false;
         }
@@ -47,7 +47,7 @@ export const financialService = {
     async updateTuitionSettings(semester: string, settings: any): Promise<boolean> {
         try {
             await DatabaseService.query(`UPDATE tuition_settings SET price_per_credit = $1, base_fee = $2, laboratory_fee = $3, library_fee = $4 WHERE semester = $5`, [settings.pricePerCredit, settings.baseFee, settings.laboratoryFee, settings.libraryFee, semester]);
-            return true;
+        return true;
         } catch {
             return false;
         }

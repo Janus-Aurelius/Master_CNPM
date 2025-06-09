@@ -40,16 +40,16 @@ export interface ITuitionInfo {
 
 // New payment and tuition interfaces (preferred)
 export interface ITuitionRecord {
-    id: string; // Mã phiếu học phí
-    studentId: string; // Mã sinh viên
-    semester: string; // Học kỳ
-    totalAmount: number; // Tổng số tiền phải đóng
-    paidAmount: number; // Tổng số tiền đã đóng
-    remainingAmount: number; // Số tiền còn lại
-    status: 'PENDING' | 'PARTIAL' | 'PAID' | 'OVERPAID'; // Trạng thái thanh toán
+    id: string;
+    studentId: string;
+    semester: string;
+    totalAmount: number;
+    paidAmount: number;
+    outstandingAmount: number;
+    paymentStatus: 'PAID' | 'PARTIAL' | 'UNPAID';
+    courses: TuitionCourseItem[];
     createdAt: string;
     updatedAt: string;
-    courses: TuitionCourseItem[]; // Danh sách môn học đã đăng ký
 }
 
 // Interface cho từng môn học trong phiếu học phí
@@ -57,14 +57,123 @@ export interface TuitionCourseItem {
     courseId: string;
     courseName: string;
     credits: number;
-    price: number;
+    amount: number;
+    semester: string;
+    academicYear: string;
 }
 
 // Interface cho phiếu thu học phí
 export interface ITuitionPaymentReceipt {
-    id: string; // Mã phiếu thu
-    tuitionRecordId: string; // Liên kết tới phiếu học phí
-    amount: number; // Số tiền đóng lần này
+    id: string;
+    tuitionRecordId: string;
+    studentId: string;
+    amount: number;
+    paymentMethod: string;
+    receiptNumber: string;
     paymentDate: string;
-    status: 'SUCCESS' | 'FAILED';
+    notes?: string;
+    createdAt: string;
+}
+
+// Interface cho tuition settings
+export interface ITuitionSetting {
+    id?: number;
+    faculty: string;
+    program: string;
+    creditCost: number;
+    semester: string;
+    academicYear: string;
+    effectiveDate: Date;
+    expiryDate: Date;
+    fees: {
+        type: string;
+        amount: number;
+        description: string;
+        mandatory: boolean;
+    }[];
+    discounts: {
+        type: string;
+        percentage: number;
+        description: string;
+        priority: boolean;
+        maxStackable: number;
+        conditions?: {
+            type: string;
+            value: any;
+        }[];
+    }[];
+    paymentDeadlines: {
+        early: Date;
+        regular: Date;
+        late: Date;
+    };
+    settings: {
+        lateFeePercentage: number;
+        earlyDiscountPercentage: number;
+        maxTotalDiscount: number;
+    };
+}
+
+// Interface cho payment data structure
+export interface IPaymentData {
+    studentId: string;
+    amount: number;
+    paymentMethod: string;
+    receiptNumber: string;
+    paymentDate: Date;
+    notes?: string;
+    semester: string;
+    status: 'PENDING' | 'COMPLETED' | 'FAILED' | 'REFUNDED';
+}
+
+// Interface cho payment validation
+export interface IPaymentValidation {
+    isValid: boolean;
+    errors: string[];
+    warnings: string[];
+    details: {
+        amount: number;
+        expectedAmount: number;
+        difference: number;
+        status: 'VALID' | 'INVALID' | 'WARNING';
+    };
+}
+
+// Interface cho payment audit
+export interface IPaymentAudit {
+    id: number;
+    tuitionRecordId: number;
+    studentId: string;
+    action: string;
+    amount: number;
+    previousAmount?: number;
+    previousStatus?: string;
+    newStatus?: string;
+    paymentMethod?: string;
+    receiptNumber?: string;
+    notes?: string;
+    performedBy: string;
+    timestamp: Date;
+}
+
+// Interface cho tuition calculation
+export interface ITuitionCalculation {
+    baseAmount: number;
+    fees: {
+        type: string;
+        amount: number;
+        description: string;
+        isMandatory: boolean;
+    }[];
+    discounts: {
+        type: string;
+        percentage: number;
+        amount: number;
+        description: string;
+        isPriority: boolean;
+    }[];
+    feesTotal: number;
+    discountsTotal: number;
+    totalAmount: number;
+    finalAmount: number;
 }

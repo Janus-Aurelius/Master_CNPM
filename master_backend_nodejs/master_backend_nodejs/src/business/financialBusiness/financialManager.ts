@@ -2,6 +2,15 @@
 import { financialService } from '../../services/financialService/financialService';
 import { DatabaseService } from '../../services/database/databaseService';
 import { AppError } from '../../middleware/errorHandler';
+import { 
+    ITuitionRecord, 
+    TuitionCourseItem, 
+    ITuitionPaymentReceipt,
+    IPaymentValidation,
+    IPaymentAudit,
+    ITuitionCalculation,
+    IPaymentData
+} from '../../models/student_related/studentPaymentInterface';
 
 // Utility function to get current semester
 const getCurrentSemester = (): string => {
@@ -335,20 +344,14 @@ export const getStudentPaymentStatus = async (studentId: string) => {
     }
 };
 
-export const updatePaymentStatus = async (studentId: string, paymentData: {
-    paymentStatus: string,
-    amountPaid: number,
-    semester: string,
-    paymentMethod?: string,
-    notes?: string
-}) => {
+export const updatePaymentStatus = async (studentId: string, paymentData: IPaymentData) => {
     try {
         // Validate input data
-        if (!paymentData.paymentStatus || !paymentData.semester) {
+        if (!paymentData.studentId || !paymentData.semester) {
             throw new AppError(400, 'Missing required payment data');
         }
 
-        if (!['PAID', 'PARTIAL', 'UNPAID'].includes(paymentData.paymentStatus)) {
+        if (!['PENDING', 'COMPLETED', 'FAILED', 'REFUNDED'].includes(paymentData.status)) {
             throw new AppError(400, 'Invalid payment status');
         }
 
@@ -363,78 +366,120 @@ export const updatePaymentStatus = async (studentId: string, paymentData: {
         }
 
         const record = currentRecord[0];
-        const newPaidAmount = parseFloat(record.paid_amount) + paymentData.amountPaid;
+        const newPaidAmount = parseFloat(record.paid_amount) + paymentData.amount;
         const newOutstandingAmount = parseFloat(record.total_amount) - newPaidAmount;
 
-        // Update tuition record
-        await DatabaseService.query(`
-            UPDATE tuition_records 
-            SET 
-                paid_amount = $1,
-                outstanding_amount = $2,
-                payment_status = $3,
-                updated_at = NOW()
-            WHERE student_id = $4 AND semester = $5
-        `, [
-            newPaidAmount,
-            Math.max(0, newOutstandingAmount),
-            paymentData.paymentStatus,
-            studentId,
-            paymentData.semester
-        ]);
+        // Validate payment amount
+        if (paymentData.amount < 0) {
+            throw new AppError(400, 'Payment amount cannot be negative');
+        }
 
-        // Create payment receipt if amount paid > 0
-        if (paymentData.amountPaid > 0) {
-            const receiptNumber = `RCP-${Date.now()}-${studentId}`;
+        if (paymentData.amount > newOutstandingAmount) {
+            throw new AppError(400, 'Payment amount exceeds outstanding amount');
+        }
+
+        // Start transaction
+        await DatabaseService.query('BEGIN');
+
+        try {
+            // Update tuition record
             await DatabaseService.query(`
-                INSERT INTO payment_receipts (
+                UPDATE tuition_records 
+                SET 
+                    paid_amount = $1,
+                    outstanding_amount = $2,
+                    payment_status = $3,
+                    updated_at = NOW()
+                WHERE student_id = $4 AND semester = $5
+            `, [
+                newPaidAmount,
+                Math.max(0, newOutstandingAmount),
+                paymentData.status,
+                studentId,
+                paymentData.semester
+            ]);
+
+            // Create payment receipt if amount paid > 0
+            let receiptNumber = paymentData.receiptNumber;
+            if (paymentData.amount > 0 && !receiptNumber) {
+                receiptNumber = `RCP-${Date.now()}-${studentId}`;
+                await DatabaseService.query(`
+                    INSERT INTO payment_receipts (
+                        tuition_record_id,
+                        student_id,
+                        amount,
+                        payment_method,
+                        receipt_number,
+                        payment_date,
+                        notes,
+                        created_at
+                    ) VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
+                `, [
+                    record.id,
+                    studentId,
+                    paymentData.amount,
+                    paymentData.paymentMethod,
+                    receiptNumber,
+                    paymentData.paymentDate,
+                    paymentData.notes || ''
+                ]);
+            }
+
+            // Create detailed audit log
+            await DatabaseService.query(`
+                INSERT INTO payment_audit_logs (
                     tuition_record_id,
                     student_id,
+                    action,
                     amount,
+                    previous_amount,
+                    previous_status,
+                    new_status,
                     payment_method,
                     receipt_number,
-                    payment_date,
                     notes,
+                    performed_by,
                     created_at
-                ) VALUES ($1, $2, $3, $4, $5, NOW(), $6, NOW())
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW())
             `, [
                 record.id,
                 studentId,
-                paymentData.amountPaid,
-                paymentData.paymentMethod || 'CASH',
+                'PAYMENT_UPDATED',
+                paymentData.amount,
+                record.paid_amount,
+                record.payment_status,
+                paymentData.status,
+                paymentData.paymentMethod,
                 receiptNumber,
-                paymentData.notes || ''
+                paymentData.notes || '',
+                'financial-system'
             ]);
+
+            // Commit transaction
+            await DatabaseService.query('COMMIT');
+
+            return {
+                success: true,
+                message: 'Payment status updated successfully',
+                receiptNumber,
+                audit: {
+                    action: 'PAYMENT_UPDATED',
+                    amount: paymentData.amount,
+                    previousAmount: record.paid_amount,
+                    previousStatus: record.payment_status,
+                    newStatus: paymentData.status,
+                    timestamp: new Date().toISOString()
+                }
+            };
+        } catch (error) {
+            // Rollback on error
+            await DatabaseService.query('ROLLBACK');
+            throw error;
         }
-
-        // Log the payment update
-        await DatabaseService.query(`
-            INSERT INTO audit_logs (
-                action_type,
-                details,
-                user_id,
-                created_at
-            ) VALUES ($1, $2, $3, NOW())
-        `, [
-            'PAYMENT_UPDATED',
-            `Payment status updated for student ${studentId}: ${paymentData.paymentStatus}, Amount: ${paymentData.amountPaid}`,
-            'financial-system'
-        ]);
-
-        return {
-            success: true,
-            message: 'Payment status updated successfully',
-            receiptNumber: paymentData.amountPaid > 0 ? `RCP-${Date.now()}-${studentId}` : null
-        };
     } catch (error) {
         if (error instanceof AppError) throw error;
         console.error('Error updating payment status:', error);
-        // Fallback to service layer
-        try {
-            return await financialService.updateStudentPayment(studentId, paymentData);
-        } catch (fallbackError) {
-            throw new AppError(500, 'Error updating payment status');
-        }
+        throw new AppError(500, 'Error updating payment status');
     }
 };
 
@@ -758,4 +803,472 @@ const generateOverdueReport = async (semester: string, filters: any) => {
             days_overdue: parseInt(item.days_overdue)
         }))
     };
+};
+
+export const validatePayment = async (
+    studentId: string,
+    amount: number,
+    semester: string
+): Promise<IPaymentValidation> => {
+    try {
+        const record = await DatabaseService.queryOne(`
+            SELECT * FROM tuition_records 
+            WHERE student_id = $1 AND semester = $2
+        `, [studentId, semester]);
+
+        if (!record) {
+            return {
+                isValid: false,
+                errors: ['Tuition record not found'],
+                warnings: [],
+                details: {
+                    amount,
+                    expectedAmount: 0,
+                    difference: amount,
+                    status: 'INVALID'
+                }
+            };
+        }
+
+        const errors: string[] = [];
+        const warnings: string[] = [];
+        const expectedAmount = parseFloat(record.outstanding_amount);
+        const difference = expectedAmount - amount;
+
+        if (amount < 0) {
+            errors.push('Payment amount cannot be negative');
+        }
+
+        if (amount > expectedAmount) {
+            errors.push('Payment amount exceeds outstanding amount');
+        }
+
+        if (difference > 0 && difference < 100000) { // Less than 100k VND difference
+            warnings.push(`Payment amount is less than outstanding amount by ${difference.toLocaleString()} VND`);
+        }
+
+        return {
+            isValid: errors.length === 0,
+            errors,
+            warnings,
+            details: {
+                amount,
+                expectedAmount,
+                difference,
+                status: errors.length > 0 ? 'INVALID' : warnings.length > 0 ? 'WARNING' : 'VALID'
+            }
+        };
+    } catch (error) {
+        console.error('Error validating payment:', error);
+        return {
+            isValid: false,
+            errors: ['Error validating payment'],
+            warnings: [],
+            details: {
+                amount,
+                expectedAmount: 0,
+                difference: amount,
+                status: 'INVALID'
+            }
+        };
+    }
+};
+
+export const getPaymentAuditTrail = async (
+    studentId: string,
+    semester: string
+): Promise<IPaymentAudit[]> => {
+    try {
+        const auditLogs = await DatabaseService.query(`
+            SELECT 
+                id,
+                tuition_record_id,
+                student_id,
+                action,
+                amount,
+                previous_amount,
+                previous_status,
+                new_status,
+                payment_method,
+                receipt_number,
+                notes,
+                performed_by,
+                created_at as timestamp
+            FROM payment_audit_logs
+            WHERE student_id = $1 
+            AND tuition_record_id IN (
+                SELECT id FROM tuition_records 
+                WHERE student_id = $1 AND semester = $2
+            )
+            ORDER BY created_at DESC
+        `, [studentId, semester]);
+
+        return auditLogs.map(log => ({
+            id: log.id,
+            tuitionRecordId: log.tuition_record_id,
+            studentId: log.student_id,
+            action: log.action,
+            amount: parseFloat(log.amount),
+            previousAmount: log.previous_amount ? parseFloat(log.previous_amount) : undefined,
+            previousStatus: log.previous_status,
+            newStatus: log.new_status,
+            paymentMethod: log.payment_method,
+            receiptNumber: log.receipt_number,
+            notes: log.notes,
+            performedBy: log.performed_by,
+            timestamp: log.timestamp
+        }));
+    } catch (error) {
+        console.error('Error getting payment audit trail:', error);
+        throw new AppError(500, 'Error retrieving payment audit trail');
+    }
+};
+
+interface IDiscount {
+    type: string;
+    percentage: number;
+    description: string;
+    priority: boolean;
+    maxStackable: number;
+    conditions?: {
+        type: string;
+        value: any;
+    }[];
+}
+
+interface IDiscountResult {
+    type: string;
+    percentage: number;
+    amount: number;
+    description: string;
+    isPriority: boolean;
+}
+
+export const calculateTuition = async (
+    studentId: string,
+    semester: string,
+    courses: TuitionCourseItem[]
+): Promise<ITuitionCalculation> => {
+    try {
+        // Get tuition settings
+        const settings = await getTuitionSettings(semester);
+        
+        // Calculate base amount
+        const baseAmount = courses.reduce((total, course) => total + (course.credits * settings.baseTuitionPerCredit), 0);
+        
+        // Get fee items
+        const feeItems = settings.fees.map((fee: { type: string; amount: number; description: string; mandatory: boolean }) => ({
+            type: fee.type,
+            amount: fee.amount,
+            description: fee.description,
+            isMandatory: fee.mandatory
+        }));
+
+        // Get student info for priority check
+        const studentInfo = await DatabaseService.queryOne(`
+            SELECT 
+                sv.masosinhvien,
+                sv.vungxa,
+                sv.dienchinhsach,
+                sv.xeploaihocbong
+            FROM sinhvien sv
+            WHERE sv.masosinhvien = $1
+        `, [studentId]);
+
+        // Calculate applicable discounts
+        const applicableDiscounts = (settings.discounts as IDiscount[])
+            .filter((discount: IDiscount) => {
+                // Check if student meets discount conditions
+                if (discount.conditions) {
+                    return discount.conditions.every((condition: { type: string; value: any }) => {
+                        switch (condition.type) {
+                            case 'remote_area':
+                                return studentInfo?.vungxa === condition.value;
+                            case 'poor_family':
+                                return studentInfo?.dienchinhsach === condition.value;
+                            case 'excellent_student':
+                                return studentInfo?.xeploaihocbong === condition.value;
+                            default:
+                                return false;
+                        }
+                    });
+                }
+                return true;
+            })
+            .sort((a: IDiscount, b: IDiscount) => b.percentage - a.percentage) // Sort by highest percentage first
+            .slice(0, settings.settings.maxTotalDiscount); // Limit number of applicable discounts
+
+        // Calculate discount amounts
+        const discounts = applicableDiscounts.map((discount: IDiscount): IDiscountResult => ({
+            type: discount.type,
+            percentage: discount.percentage,
+            amount: (baseAmount * discount.percentage) / 100,
+            description: discount.description,
+            isPriority: discount.priority
+        }));
+
+        // Calculate totals
+        const feesTotal = feeItems.reduce((total: number, fee: { amount: number }) => total + fee.amount, 0);
+        const discountsTotal = discounts.reduce((total: number, discount: IDiscountResult) => total + discount.amount, 0);
+        const totalAmount = baseAmount + feesTotal;
+        const finalAmount = Math.max(0, totalAmount - discountsTotal); // Ensure amount doesn't go below 0
+
+        return {
+            baseAmount,
+            fees: feeItems,
+            discounts,
+            feesTotal,
+            discountsTotal,
+            totalAmount,
+            finalAmount
+        };
+    } catch (error) {
+        console.error('Error calculating tuition:', error);
+        throw new Error('Failed to calculate tuition');
+    }
+};
+
+// Tuition Settings Management
+export const validateTuitionSetting = async (setting: {
+    faculty: string;
+    program: string;
+    creditCost: number;
+    semester: string;
+    academicYear: string;
+    effectiveDate: Date;
+    expiryDate: Date;
+}): Promise<{ isValid: boolean; errors: string[] }> => {
+    const errors: string[] = [];
+
+    // Validate required fields
+    if (!setting.faculty) errors.push('Faculty is required');
+    if (!setting.program) errors.push('Program is required');
+    if (!setting.semester) errors.push('Semester is required');
+    if (!setting.academicYear) errors.push('Academic year is required');
+    if (!setting.effectiveDate) errors.push('Effective date is required');
+    if (!setting.expiryDate) errors.push('Expiry date is required');
+
+    // Validate credit cost
+    if (typeof setting.creditCost !== 'number' || setting.creditCost <= 0) {
+        errors.push('Credit cost must be a positive number');
+    }
+
+    // Validate dates
+    if (setting.effectiveDate >= setting.expiryDate) {
+        errors.push('Effective date must be before expiry date');
+    }
+
+    // Validate semester format
+    if (!/^(Spring|Summer|Fall)\s\d{4}$/.test(setting.semester)) {
+        errors.push('Invalid semester format. Expected format: Spring/Summer/Fall YYYY');
+    }
+
+    // Validate academic year format
+    if (!/^\d{4}-\d{4}$/.test(setting.academicYear)) {
+        errors.push('Invalid academic year format. Expected format: YYYY-YYYY');
+    }
+
+    // Check for overlapping settings
+    const overlappingSettings = await DatabaseService.query(`
+        SELECT * FROM tuition_settings 
+        WHERE faculty = $1 
+        AND program = $2 
+        AND semester = $3 
+        AND academic_year = $4
+        AND (
+            (effective_date <= $5 AND expiry_date >= $5)
+            OR (effective_date <= $6 AND expiry_date >= $6)
+            OR (effective_date >= $5 AND expiry_date <= $6)
+        )
+    `, [
+        setting.faculty,
+        setting.program,
+        setting.semester,
+        setting.academicYear,
+        setting.effectiveDate,
+        setting.expiryDate
+    ]);
+
+    if (overlappingSettings.length > 0) {
+        errors.push('Tuition setting overlaps with existing settings for the same faculty and program');
+    }
+
+    return {
+        isValid: errors.length === 0,
+        errors
+    };
+};
+
+// Payment Conditions Validation
+export const validatePaymentConditions = async (
+    studentId: string,
+    semester: string,
+    amount: number
+): Promise<{ isValid: boolean; errors: string[]; warnings: string[] }> => {
+    const errors: string[] = [];
+    const warnings: string[] = [];
+
+    try {
+        // Get student's payment history
+        const paymentHistory = await DatabaseService.query(`
+            SELECT * FROM payment_receipts 
+            WHERE student_id = $1 
+            ORDER BY payment_date DESC
+        `, [studentId]);
+
+        // Get current tuition record
+        const tuitionRecord = await DatabaseService.queryOne(`
+            SELECT * FROM tuition_records 
+            WHERE student_id = $1 AND semester = $2
+        `, [studentId, semester]);
+
+        if (!tuitionRecord) {
+            errors.push('No tuition record found for the specified semester');
+            return { isValid: false, errors, warnings };
+        }
+
+        // Check outstanding amount
+        const outstandingAmount = parseFloat(tuitionRecord.outstanding_amount);
+        if (amount > outstandingAmount) {
+            errors.push(`Payment amount (${amount}) exceeds outstanding amount (${outstandingAmount})`);
+        }
+
+        // Check for previous late payments
+        const latePayments = paymentHistory.filter((payment: any) => {
+            const paymentDate = new Date(payment.payment_date);
+            const dueDate = new Date(tuitionRecord.due_date);
+            return paymentDate > dueDate;
+        });
+
+        if (latePayments.length > 0) {
+            warnings.push('Student has history of late payments');
+        }
+
+        // Check payment frequency
+        const recentPayments = paymentHistory.filter((payment: any) => {
+            const paymentDate = new Date(payment.payment_date);
+            const thirtyDaysAgo = new Date();
+            thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+            return paymentDate >= thirtyDaysAgo;
+        });
+
+        if (recentPayments.length >= 3) {
+            warnings.push('Student has made multiple payments in the last 30 days');
+        }
+
+        // Check for payment holds
+        const holds = await DatabaseService.query(`
+            SELECT * FROM payment_holds 
+            WHERE student_id = $1 AND is_active = true
+        `, [studentId]);
+
+        if (holds.length > 0) {
+            errors.push('Student has active payment holds');
+        }
+
+        return {
+            isValid: errors.length === 0,
+            errors,
+            warnings
+        };
+    } catch (error) {
+        console.error('Error validating payment conditions:', error);
+        errors.push('Error validating payment conditions');
+        return { isValid: false, errors, warnings };
+    }
+};
+
+export class FinancialManager {
+    // ... existing code ...
+}
+
+export default new FinancialManager();
+
+// Tuition Settings Management
+export const deleteTuitionSetting = async (id: string): Promise<void> => {
+    try {
+        await DatabaseService.query(`
+            DELETE FROM tuition_settings WHERE id = $1
+        `, [id]);
+    } catch (error) {
+        console.error('Error deleting tuition setting:', error);
+        throw new AppError(500, 'Error deleting tuition setting');
+    }
+};
+
+// Payment Receipts Management
+export const getAllReceipts = async (studentId?: string, semester?: string): Promise<any[]> => {
+    try {
+        let whereConditions = [];
+        let queryParams = [];
+        let paramIndex = 1;
+
+        if (studentId) {
+            whereConditions.push(`student_id = $${paramIndex}`);
+            queryParams.push(studentId);
+            paramIndex++;
+        }
+
+        if (semester) {
+            whereConditions.push(`semester = $${paramIndex}`);
+            queryParams.push(semester);
+            paramIndex++;
+        }
+
+        const whereClause = whereConditions.length > 0 
+            ? `WHERE ${whereConditions.join(' AND ')}` 
+            : '';
+
+        const receipts = await DatabaseService.query(`
+            SELECT * FROM payment_receipts
+            ${whereClause}
+            ORDER BY payment_date DESC
+        `, queryParams);
+
+        return receipts;
+    } catch (error) {
+        console.error('Error getting receipts:', error);
+        throw new AppError(500, 'Error retrieving receipts');
+    }
+};
+
+export const getReceiptById = async (id: string): Promise<any> => {
+    try {
+        const receipt = await DatabaseService.queryOne(`
+            SELECT * FROM payment_receipts WHERE id = $1
+        `, [id]);
+        return receipt;
+    } catch (error) {
+        console.error('Error getting receipt:', error);
+        throw new AppError(500, 'Error retrieving receipt');
+    }
+};
+
+export const createReceipt = async (receiptData: any): Promise<any> => {
+    try {
+        const result = await DatabaseService.query(`
+            INSERT INTO payment_receipts (
+                student_id,
+                amount,
+                payment_method,
+                receipt_number,
+                payment_date,
+                notes,
+                created_at
+            ) VALUES ($1, $2, $3, $4, $5, $6, NOW())
+            RETURNING *
+        `, [
+            receiptData.studentId,
+            receiptData.amount,
+            receiptData.paymentMethod,
+            receiptData.receiptNumber,
+            receiptData.paymentDate,
+            receiptData.notes
+        ]);
+
+        return result[0];
+    } catch (error) {
+        console.error('Error creating receipt:', error);
+        throw new AppError(500, 'Error creating receipt');
+    }
 };
