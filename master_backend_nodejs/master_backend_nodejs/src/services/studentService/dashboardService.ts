@@ -90,15 +90,15 @@ export const dashboardService = {
             return {
                 student: {
                     studentId: student.studentId,
-                    name: student.name,
+                    fullName: student.name,
+                    dateOfBirth: student.dateOfBirth,
+                    gender: student.gender,
+                    hometown: student.hometown,
+                    districtId: student.districtId,
+                    priorityObjectId: student.priorityObjectId,
+                    majorId: student.major,
                     email: student.email,
                     phone: student.phone,
-                    address: student.address,
-                    dateOfBirth: student.dateOfBirth,
-                    enrollmentYear: student.enrollmentYear,
-                    major: student.major,
-                    faculty: student.faculty,
-                    program: student.program,
                     status: student.status,
                     avatarUrl: student.avatarUrl,
                     credits: {
@@ -188,15 +188,15 @@ export const dashboardService = {
             return {
                 student: {
                     studentId: student.studentId,
-                    name: student.name,
+                    fullName: student.name,
+                    dateOfBirth: student.dateOfBirth,
+                    gender: student.gender,
+                    hometown: student.hometown,
+                    districtId: student.districtId,
+                    priorityObjectId: student.priorityObjectId,
+                    majorId: student.major,
                     email: student.email,
                     phone: student.phone,
-                    address: student.address,
-                    dateOfBirth: student.dateOfBirth,
-                    enrollmentYear: student.enrollmentYear,
-                    major: student.major,
-                    faculty: student.faculty,
-                    program: student.program,
                     status: student.status,
                     avatarUrl: student.avatarUrl,
                     credits: {
@@ -229,14 +229,12 @@ export const dashboardService = {
                     name = $1,
                     email = $2,
                     phone = $3,
-                    address = $4,
                     updated_at = NOW()
-                WHERE student_id = $5
+                WHERE student_id = $4
             `, [
-                overview.student.name,
+                overview.student.fullName,
                 overview.student.email,
                 overview.student.phone,
-                overview.student.address,
                 overview.student.studentId
             ]);
 

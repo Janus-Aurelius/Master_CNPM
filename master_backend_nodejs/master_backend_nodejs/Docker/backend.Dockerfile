@@ -9,7 +9,8 @@ COPY package*.json ./
 
 # 4. Cài đặt dependencies
 RUN npm install
-RUN npm install express-validator @types/uuid --save
+RUN npm install -g typescript
+RUN npm install express-validator @types/uuid typescript @types/node --save-dev
 
 # 5. Copy toàn bộ source code
 COPY . .

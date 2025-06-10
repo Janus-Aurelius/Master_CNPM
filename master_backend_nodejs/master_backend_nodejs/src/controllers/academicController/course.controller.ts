@@ -15,7 +15,7 @@ export const getCoursesHandler = async (req: Request, res: Response, next: NextF
 export const getCourseByIdHandler = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const { id } = req.params;
-        const course = await courseBusiness.getCourseById(parseInt(id));
+        const course = await courseBusiness.getCourseById(id);
         
         if (!course) {
             throw new AppError(404, 'Course not found');
@@ -41,7 +41,7 @@ export const updateCourseHandler = async (req: Request, res: Response, next: Nex
     try {
         const { id } = req.params;
         const courseData = req.body;
-        const updatedCourse = await courseBusiness.updateCourse(parseInt(id), courseData);
+        const updatedCourse = await courseBusiness.updateCourse(id, courseData);
         
         if (!updatedCourse) {
             throw new AppError(404, 'Course not found');
@@ -56,7 +56,7 @@ export const updateCourseHandler = async (req: Request, res: Response, next: Nex
 export const deleteCourseHandler = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const { id } = req.params;
-        const success = await courseBusiness.deleteCourse(parseInt(id));
+        const success = await courseBusiness.deleteCourse(id);
         
         if (!success) {
             throw new AppError(404, 'Course not found');

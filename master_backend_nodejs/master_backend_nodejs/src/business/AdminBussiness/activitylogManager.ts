@@ -1,4 +1,4 @@
-import * as activityLogService from '../../services/adminService/activitylogService';
+import * as activityLogService from '../../services/AdminService/activitylogService';
 import { AppError } from '../../middleware/errorHandler';
 
 export const activitylogManager = {

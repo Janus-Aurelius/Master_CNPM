@@ -27,7 +27,7 @@ export class FinancialIntegrationService {
         try {
             // Get course/subject information
             const subjects = await SubjectBusiness.getAllSubjects();
-            const subject = subjects.find(s => s.subjectCode === courseId);
+            const subject = subjects.find(s => s.subjectId === courseId);
 
             if (!subject) {
                 throw new Error(`Subject ${courseId} not found`);
@@ -37,7 +37,7 @@ export class FinancialIntegrationService {
             const courseItem: TuitionCourseItem = {
                 courseId,
                 courseName: subject.subjectName,
-                credits: subject.credits || 3,
+                credits: subject.totalHours || 3,
                 amount: 0, // Will be calculated below
                 semester,
                 academicYear: '2023-2024' // Assuming a default academic year

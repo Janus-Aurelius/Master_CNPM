@@ -1,10 +1,10 @@
 // src/business/academicBusiness/course.business.ts
-import Course from "../../models/academic_related/course";
+import ICourse from "../../models/academic_related/course";
 import * as courseService from "../../services/courseService/courseService";
 import { ValidationError } from "../../utils/errors/validation.error";
 
-const validateCreditValue = (credits: number): boolean => {
-    return Number.isInteger(credits) && credits > 0 && credits <= 6;
+const validateTotalHours = (hours: number): boolean => {
+    return Number.isInteger(hours) && hours > 0 && hours <= 60;
 };
 
 const validateTimeFormat = (time: string): boolean => {
@@ -12,7 +12,7 @@ const validateTimeFormat = (time: string): boolean => {
     return timeRegex.test(time);
 };
 
-const validateSchedule = (schedule: Course['schedule']): boolean => {
+const validateSchedule = (schedule: ICourse['schedule']): boolean => {
     if (!schedule) return false;
     
     const { day, session, fromTo, room } = schedule;
@@ -21,7 +21,7 @@ const validateSchedule = (schedule: Course['schedule']): boolean => {
     const validDays = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'];
     if (!validDays.includes(day)) return false;
     
-    const [startTime, endTime] = fromTo.split('-').map(t => t.trim());
+    const [startTime, endTime] = fromTo.split('-').map((t: string) => t.trim());
     if (!validateTimeFormat(startTime) || !validateTimeFormat(endTime)) return false;
     
     // Check if end time is after start time
@@ -32,11 +32,11 @@ const validateSchedule = (schedule: Course['schedule']): boolean => {
     return true;
 };
 
-export const validateAndAddCourse = async (course: Course): Promise<Course> => {
+export const validateAndAddCourse = async (course: ICourse): Promise<ICourse> => {
     const errors: string[] = [];
 
-    if (!validateCreditValue(course.credits)) {
-        errors.push('Course credits must be between 1 and 6');
+    if (!validateTotalHours(course.totalHours)) {
+        errors.push('Course total hours must be between 1 and 60');
     }
 
     if (!validateSchedule(course.schedule)) {
@@ -50,44 +50,44 @@ export const validateAndAddCourse = async (course: Course): Promise<Course> => {
     return courseService.addCourse(course);
 };
 
-export const listCourses = async (): Promise<Course[]> => {
+export const listCourses = async (): Promise<ICourse[]> => {
     return courseService.getCourses();
 };
 
-export const getCourseById = async (id: number): Promise<Course | null> => {
+export const getCourseById = async (subjectId: string): Promise<ICourse | null> => {
     const courses = await courseService.getCourses();
-    return courses.find(course => course.id === id) || null;
+    return courses.find(course => course.subjectId === subjectId) || null;
 };
 
-export const createCourse = async (courseData: Omit<Course, 'id'>): Promise<Course> => {
-    const newCourse: Course = {
+export const createCourse = async (courseData: Omit<ICourse, 'subjectId'>): Promise<ICourse> => {
+    const newCourse: ICourse = {
         ...courseData,
-        id: Date.now() // Temporary ID generation
+        subjectId: `SUB${Date.now()}` // Temporary ID generation
     };
     
     return validateAndAddCourse(newCourse);
 };
 
-export const updateCourse = async (id: number, courseData: Partial<Course>): Promise<Course | null> => {
-    const existingCourse = await getCourseById(id);
+export const updateCourse = async (subjectId: string, courseData: Partial<ICourse>): Promise<ICourse | null> => {
+    const existingCourse = await getCourseById(subjectId);
     if (!existingCourse) {
         return null;
     }
     
-    const updatedCourse: Course = {
+    const updatedCourse: ICourse = {
         ...existingCourse,
         ...courseData,
-        id // Keep original ID
+        subjectId // Keep original ID
     };
     
-    if (updatedCourse.credits <= 0) {
-        throw new Error("Course credits must be positive");
+    if (updatedCourse.totalHours <= 0) {
+        throw new Error("Course total hours must be positive");
     }
     
     return updatedCourse;
 };
 
-export const deleteCourse = async (id: number): Promise<boolean> => {
-    const course = await getCourseById(id);
+export const deleteCourse = async (subjectId: string): Promise<boolean> => {
+    const course = await getCourseById(subjectId);
     return course !== null;
 };

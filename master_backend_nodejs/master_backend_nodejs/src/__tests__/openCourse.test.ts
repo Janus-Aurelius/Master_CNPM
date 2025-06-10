@@ -10,15 +10,19 @@ describe('OpenCourseBusiness', () => {
     const mockCourses = [
         {
             id: 1,
-            subjectCode: 'CS101',
+            subjectId: 'CS101',
             subjectName: 'Introduction to Programming',
-            semester: 'Fall',
-            academicYear: '2024',
+            semesterId: '2024-1',
+            subjectTypeId: 'CORE',
+            totalHours: 45,
             maxStudents: 50,
             currentStudents: 30,
             lecturer: 'Dr. Smith',
-            schedule: 'Mon/Wed 10:00-11:30',
-            room: 'Room 101',
+            schedule: {
+                day: 'Monday',
+                session: '1-3',
+                room: 'Room 101'
+            },
             status: 'open' as const,
             startDate: '2024-09-01',
             endDate: '2024-12-15',
@@ -31,15 +35,19 @@ describe('OpenCourseBusiness', () => {
         },
         {
             id: 2,
-            subjectCode: 'CS102',
+            subjectId: 'CS102',
             subjectName: 'Data Structures',
-            semester: 'Fall',
-            academicYear: '2024',
+            semesterId: '2024-1',
+            subjectTypeId: 'CORE',
+            totalHours: 45,
             maxStudents: 40,
             currentStudents: 40,
             lecturer: 'Dr. Johnson',
-            schedule: 'Tue/Thu 13:00-14:30',
-            room: 'Room 102',
+            schedule: {
+                day: 'Tuesday',
+                session: '4-6',
+                room: 'Room 102'
+            },
             status: 'closed' as const,
             startDate: '2024-09-01',
             endDate: '2024-12-15',
@@ -87,15 +95,19 @@ describe('OpenCourseBusiness', () => {
 
     describe('createCourse', () => {
         const newCourse = {
-            subjectCode: 'CS103',
+            subjectId: 'CS103',
             subjectName: 'Algorithms',
-            semester: 'Spring',
-            academicYear: '2025',
+            semesterId: '2024-2',
+            subjectTypeId: 'CORE',
+            totalHours: 45,
             maxStudents: 45,
             currentStudents: 0,
             lecturer: 'Dr. Brown',
-            schedule: 'Mon/Wed 14:00-15:30',
-            room: 'Room 103',
+            schedule: {
+                day: 'Monday',
+                session: '4-6',
+                room: 'Room 103'
+            },
             status: 'open' as const,
             startDate: '2025-01-15',
             endDate: '2025-05-01',
@@ -113,7 +125,7 @@ describe('OpenCourseBusiness', () => {
         });
 
         it('should validate required fields', async () => {
-            const invalidCourse = { ...newCourse, subjectCode: '' };
+            const invalidCourse = { ...newCourse, subjectId: '' };
             await expect(OpenCourseBusiness.createCourse(invalidCourse)).rejects.toThrow(ValidationError);
         });
 
@@ -182,14 +194,14 @@ describe('OpenCourseBusiness', () => {
     describe('getCoursesBySemester', () => {
         it('should return courses by semester', async () => {
             (OpenCourseService.getCoursesBySemester as jest.Mock).mockResolvedValue(mockCourses);
-            const result = await OpenCourseBusiness.getCoursesBySemester('Fall', '2024');
+            const result = await OpenCourseBusiness.getCoursesBySemester('2024-1', '2024');
             expect(result).toEqual(mockCourses);
-            expect(OpenCourseService.getCoursesBySemester).toHaveBeenCalledWith('Fall', '2024');
+            expect(OpenCourseService.getCoursesBySemester).toHaveBeenCalledWith('2024-1', '2024');
         });
 
         it('should validate required parameters', async () => {
             await expect(OpenCourseBusiness.getCoursesBySemester('', '2024')).rejects.toThrow(ValidationError);
-            await expect(OpenCourseBusiness.getCoursesBySemester('Fall', '')).rejects.toThrow(ValidationError);
+            await expect(OpenCourseBusiness.getCoursesBySemester('2024-1', '')).rejects.toThrow(ValidationError);
         });
     });
 
@@ -232,4 +244,4 @@ describe('OpenCourseBusiness', () => {
             expect(OpenCourseService.updateCourseStatus).toHaveBeenCalledWith(1, 'cancelled');
         });
     });
-}); 
+});

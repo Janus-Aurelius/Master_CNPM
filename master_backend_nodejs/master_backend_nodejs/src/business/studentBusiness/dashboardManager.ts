@@ -1,6 +1,7 @@
 import { dashboardService } from '../../services/studentService/dashboardService';
 import { IStudentOverview } from '../../models/student_related/studentDashboardInterface';
 import { DatabaseService } from '../../services/database/databaseService';
+import { IPayment } from '../../models/payment'
 
 class DashboardManager {
     public async getStudentDashboard(studentId: string): Promise<IStudentOverview | null> {
@@ -48,24 +49,22 @@ class DashboardManager {
             const dashboardData: IStudentOverview = {
                 student: {
                     studentId: student.student_id,
-                    name: student.name,
+                    fullName: student.name,
+                    dateOfBirth: student.date_of_birth || new Date(),
+                    gender: student.gender,
+                    hometown: student.hometown ? JSON.parse(student.hometown) : undefined,
+                    districtId: student.district_id,
+                    priorityObjectId: student.priority_object_id,
+                    majorId: student.major,
                     email: student.email,
                     phone: student.phone,
-                    address: student.address,
-                    dateOfBirth: student.date_of_birth || new Date(),
-                    enrollmentYear: student.enrollment_year,
-                    major: student.major,
-                    faculty: student.faculty || 'Unknown',
-                    program: student.program_name || student.major,
                     status: student.status || 'active',
                     avatarUrl: student.avatar_url,
                     credits: {
                         completed: parseInt(student.credits_earned) || 0,
                         current: parseInt(student.current_credits) || 0,
                         required: student.required_credits || 120
-                    },
-                    gender: student.gender,
-                    hometown: student.hometown ? JSON.parse(student.hometown) : undefined
+                    }
                 },
                 enrolledSubjects: parseInt(student.current_enrollments) || 0,
                 totalCredits: parseInt(student.current_credits) || 0,
@@ -190,16 +189,19 @@ class DashboardManager {
                 WHERE tr.student_id = $1
                 ORDER BY pr.payment_date DESC
                 LIMIT 5
-            `, [studentId]);            return payments.map(payment => ({
-                id: parseInt(payment.id),
-                studentId: studentId,
-                courseId: 0, // Default since payment is for tuition record, not specific course
-                amount: parseFloat(payment.amount),
-                date: payment.paymentDate,
+            `, [studentId]);
+
+            const recentPayments: IPayment[] = payments.map(payment => ({
+                paymentId: payment.id.toString(),
+                paymentDate: payment.paymentDate,
+                registrationId: payment.courseId.toString(),
+                paymentAmount: payment.amount,
                 status: payment.status,
                 paymentMethod: payment.paymentMethod,
                 transactionId: payment.id
             }));
+
+            return recentPayments;
 
         } catch (error) {
             console.error('Error getting recent payments:', error);

@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
-import { userManager } from '../../business/adminBussiness/userManager';
-import { activitylogManager } from '../../business/adminBussiness/activitylogManager';
+import { userManager } from '../../business/AdminBussiness/userManager';
+import { activitylogManager } from '../../business/AdminBussiness/activitylogManager';
 
 class AdminController {async getActivityLog(req: Request, res: Response, next: NextFunction) {
         try {
@@ -40,8 +40,8 @@ class AdminController {async getActivityLog(req: Request, res: Response, next: N
             if (search && typeof search === 'string') {
                 const searchLower = search.toLowerCase();
                 users = users.filter(user =>
-                    user.name.toLowerCase().includes(searchLower) ||
-                    user.email.toLowerCase().includes(searchLower)
+                    user.username.toLowerCase().includes(searchLower) ||
+                    user.email?.toLowerCase().includes(searchLower)
                 );
             }
 

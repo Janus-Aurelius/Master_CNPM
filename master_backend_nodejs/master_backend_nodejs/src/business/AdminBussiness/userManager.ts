@@ -1,6 +1,6 @@
-import { User } from '../../models/user';
+import { IUser } from '../../models/user';
 import { AppError } from '../../middleware/errorHandler';
-import * as DashboardService from '../../services/adminService/dashboardService';
+import * as DashboardService from '../../services/AdminService/dashboardService';
 import { DatabaseService } from '../../services/database/databaseService';
 
 class UserManager {
@@ -8,7 +8,7 @@ class UserManager {
         role?: string,
         status?: boolean,
         search?: string
-    }): Promise<{ users: User[], total: number, page: number, totalPages: number }> {
+    }): Promise<{ users: IUser[], total: number, page: number, totalPages: number }> {
         try {
             const offset = (page - 1) * limit;
             let whereConditions = [];
@@ -45,7 +45,7 @@ class UserManager {
             `, queryParams);
 
             // Get paginated users
-            const users = await DatabaseService.query<User>(`
+            const users = await DatabaseService.query<IUser>(`
                 SELECT *
                 FROM users
                 ${whereClause}
@@ -65,9 +65,9 @@ class UserManager {
         }
     }
 
-    async getUserById(id: number): Promise<User | null> {
+    async getUserById(id: number): Promise<IUser | null> {
         try {
-            const user = await DatabaseService.queryOne<User>(`
+            const user = await DatabaseService.queryOne<IUser>(`
                 SELECT * FROM users WHERE id = $1
             `, [id]);
             return user || null;
@@ -77,9 +77,9 @@ class UserManager {
         }
     }
 
-    async createUser(userData: Omit<User, 'id' | 'createdAt' | 'updatedAt'>): Promise<User> {
+    async createUser(userData: Omit<IUser, 'id' | 'createdAt' | 'updatedAt'>): Promise<IUser> {
         try {
-            const existingUser = await DatabaseService.queryOne<User>(`
+            const existingUser = await DatabaseService.queryOne<IUser>(`
                 SELECT * FROM users WHERE email = $1
             `, [userData.email]);
 
@@ -87,7 +87,7 @@ class UserManager {
                 throw new AppError(400, 'Email already exists');
             }
 
-            const result = await DatabaseService.query<User>(`
+            const result = await DatabaseService.query<IUser>(`
                 INSERT INTO users (name, email, role, status, created_at, updated_at)
                 VALUES ($1, $2, $3, $4, NOW(), NOW())
                 RETURNING *
@@ -101,10 +101,10 @@ class UserManager {
         }
     }
 
-    async updateUser(id: number, userData: Partial<User>): Promise<User | null> {
+    async updateUser(id: number, userData: Partial<IUser>): Promise<IUser | null> {
         try {
             if (userData.email) {
-                const existingUser = await DatabaseService.queryOne<User>(`
+                const existingUser = await DatabaseService.queryOne<IUser>(`
                     SELECT * FROM users WHERE email = $1 AND id != $2
                 `, [userData.email, id]);
 
@@ -113,7 +113,7 @@ class UserManager {
                 }
             }
 
-            const result = await DatabaseService.query<User>(`
+            const result = await DatabaseService.query<IUser>(`
                 UPDATE users 
                 SET 
                     name = COALESCE($1, name),
@@ -151,7 +151,7 @@ class UserManager {
                 `, [id]);
 
                 // Finally delete the user
-                const result = await DatabaseService.query<User>(`
+                const result = await DatabaseService.query<IUser>(`
                     DELETE FROM users WHERE id = $1 RETURNING *
                 `, [id]);
 
@@ -170,9 +170,9 @@ class UserManager {
         }
     }
 
-    async changeUserStatus(id: number, status: boolean): Promise<User | null> {
+    async changeUserStatus(id: number, status: boolean): Promise<IUser | null> {
         try {
-            const result = await DatabaseService.query<User>(`
+            const result = await DatabaseService.query<IUser>(`
                 UPDATE users 
                 SET 
                     status = $1

@@ -44,9 +44,9 @@ export class AcademicRulesEngine {
         courseId: string
     ): Promise<PrerequisiteCheck> {
         try {
-            // Get course prerequisites - need to convert courseId to number or find by subjectCode
+            // Get course prerequisites - need to convert courseId to number or find by subjectId
             const subjects = await SubjectBusiness.getAllSubjects();
-            const courseInfo = subjects.find(subject => subject.subjectCode === courseId);
+            const courseInfo = subjects.find(subject => subject.subjectId === courseId);
             
             if (!courseInfo) {
                 return {

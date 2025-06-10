@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
-import { userManager } from '../../business/adminBussiness/userManager';
-import { User } from '../../models/user';
+import { userManager } from '../../business/AdminBussiness/userManager';
+import { IUser } from '../../models/user';
 import { AppError } from '../../middleware/errorHandler';
 
 export class UserController {
@@ -36,7 +36,7 @@ export class UserController {
 
     async createUser(req: Request, res: Response, next: NextFunction) {
         try {
-            const userData: Omit<User, 'id'> = req.body;
+            const userData: Omit<IUser, 'id'> = req.body;
             const newUser = await userManager.createUser(userData);
             
             res.status(201).json({

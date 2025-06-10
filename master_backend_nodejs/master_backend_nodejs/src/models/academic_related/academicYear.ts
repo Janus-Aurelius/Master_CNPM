@@ -1,10 +1,10 @@
 import Semester from "./semester";
-import Program from "./program";
+import { ICurriculum } from "./program";
 
 export default interface AcademicYear {
     id: string;
     name_year: string;
     semesterList: Semester[];
-    programList: Program[];
+    programList: ICurriculum [];
     status: "active" | "inactive";
 }

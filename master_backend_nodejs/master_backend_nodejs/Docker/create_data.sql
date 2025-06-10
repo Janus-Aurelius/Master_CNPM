@@ -1,3 +1,26 @@
+TRUNCATE TABLE
+    CHUONGTRINHHOC,
+    DANHSACHMONHOCMO,
+    CT_PHIEUDANGKY,
+    PHIEUTHUHP,
+    BAOCAOSINHVIENNOHP,
+    PHANQUYEN,
+    NGUOIDUNG,
+    MONHOC,
+    PHIEUDANGKY,
+    CHUCNANG,
+    NHOMNGUOIDUNG,
+    LOAIMON,
+    SINHVIEN,
+    HOCKYNAMHOC,
+    HUYEN,
+    DOITUONGUUTIEN,
+    NGANHHOC,
+    TINH,
+    KHOA
+CASCADE;
+
+
 INSERT INTO TINH (MaTinh, TenTinh) VALUES
   ('02', 'Thành phố Hồ Chí Minh');  -- Mã tỉnh HCM là 02 :contentReference[oaicite:6]{index=6}
 
@@ -35,8 +58,8 @@ INSERT INTO NGANHHOC (MaNganh, TenNganh, MaKhoa) VALUES
   ('CNTT_Nhat','Công nghệ thông tin Việt–Nhật','HTTT');
   
 
--- Cập nhật loại môn: chỉ hai loại LT và TH
-TRUNCATE TABLE LOAIMON;
+
+
 
 INSERT INTO LOAIMON (MaLoaiMon, TenLoaiMon, SoTietMotTC, SoTienMotTC) VALUES
   ('LT', 'Lý thuyết',   15, 27000),

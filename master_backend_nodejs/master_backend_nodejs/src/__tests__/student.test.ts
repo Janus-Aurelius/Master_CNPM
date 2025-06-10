@@ -95,21 +95,21 @@ const mockSchedule = {
 };
 
 const mockSubject = {
-    id: 'IT001',
-    name: 'Introduction to Programming',
-    lecturer: 'Dr. Smith',
-    credits: 3,
-    maxStudents: 50,
-    currentStudents: 30,
-    prerequisites: [],
+    subjectId: 'IT001',
+    subjectName: 'Introduction to Programming',
+    subjectTypeId: 'LT',
+    totalHours: 45,
     description: 'Basic programming concepts',
-    schedule: [
-        {
-            day: 'Monday',
-            session: '1-3',
-            room: 'A101'
-        }
-    ]
+    prerequisiteSubjects: [],
+    type: 'Required' as 'Required' | 'Elective',
+    department: 'Information Technology',
+    lecturer: 'Dr. Smith',
+    schedule: {
+        day: 'Monday',
+        session: '1-3',
+        fromTo: '07:00-09:30',
+        room: 'A101'
+    }
 };
 
 const mockEnrollment: IEnrollment = {

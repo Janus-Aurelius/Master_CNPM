@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { SubjectBusiness } from '../../business/academicBusiness/subject.business';
+import { ISubject } from '../../models/academic_related/subject';
 
 export class SubjectController {
     static async getAllSubjects(req: Request, res: Response) {
@@ -13,8 +14,8 @@ export class SubjectController {
 
     static async getSubjectById(req: Request, res: Response) {
         try {
-            const { id } = req.params;
-            const subject = await SubjectBusiness.getSubjectById(Number(id));
+            const { subjectId } = req.params;
+            const subject = await SubjectBusiness.getSubjectById(subjectId);
             if (!subject) {
                 return res.status(404).json({ success: false, message: 'Subject not found' });
             }
@@ -26,7 +27,7 @@ export class SubjectController {
 
     static async createSubject(req: Request, res: Response) {
         try {
-            const subjectData = req.body;
+            const subjectData = req.body as Omit<ISubject, 'subjectId'>;
             
             // Validate data
             const errors = SubjectBusiness.validateSubjectData(subjectData);
@@ -62,9 +63,9 @@ export class SubjectController {
 
     static async updateSubject(req: Request, res: Response) {
         try {
-            const { id } = req.params;
-            const subjectData = req.body;
-            const updatedSubject = await SubjectBusiness.updateSubject(Number(id), subjectData);
+            const { subjectId } = req.params;
+            const subjectData = req.body as Partial<ISubject>;
+            const updatedSubject = await SubjectBusiness.updateSubject(subjectId, subjectData);
             res.status(200).json({ success: true, data: updatedSubject });
         } catch (error) {
             res.status(500).json({ success: false, message: 'Error updating subject', error });
@@ -73,8 +74,8 @@ export class SubjectController {
 
     static async deleteSubject(req: Request, res: Response) {
         try {
-            const { id } = req.params;
-            await SubjectBusiness.deleteSubject(Number(id));
+            const { subjectId } = req.params;
+            await SubjectBusiness.deleteSubject(subjectId);
             res.status(200).json({ success: true, message: 'Subject deleted successfully' });
         } catch (error) {
             res.status(500).json({ success: false, message: 'Error deleting subject', error });

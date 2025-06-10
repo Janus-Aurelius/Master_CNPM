@@ -1,9 +1,9 @@
-import { OpenCourse } from '../../models/academic_related/openCourse';
+import { IOfferedSubject } from '../../models/academic_related/openCourse';
 import { Database } from '../../config/database';
 import { DatabaseError } from '../../utils/errors/database.error';
 
 export class OpenCourseService {
-    static async getAllCourses(): Promise<OpenCourse[]> {
+    static async getAllCourses(): Promise<IOfferedSubject[]> {
         try {
             const query = 'SELECT * FROM open_courses ORDER BY created_at DESC';
             return await Database.query(query);
@@ -12,7 +12,7 @@ export class OpenCourseService {
         }
     }
 
-    static async getCourseById(id: number): Promise<OpenCourse | null> {
+    static async getCourseById(id: number): Promise<IOfferedSubject | null> {
         try {
             const query = 'SELECT * FROM open_courses WHERE id = $1';
             const result = await Database.query(query, [id]);
@@ -22,76 +22,113 @@ export class OpenCourseService {
         }
     }
 
-    static async createCourse(courseData: Omit<OpenCourse, 'id' | 'createdAt' | 'updatedAt'>): Promise<OpenCourse> {
+    static async createCourse(courseData: Omit<IOfferedSubject, 'id' | 'createdAt' | 'updatedAt'>): Promise<IOfferedSubject> {
         try {
             const query = `
                 INSERT INTO open_courses (
-                    subject_code, subject_name, semester, academic_year,
-                    max_students, current_students, lecturer, schedule,
-                    room, status, start_date, end_date,
-                    registration_start_date, registration_end_date,
-                    prerequisites, description
-                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
-                RETURNING *
+                    subject_id,
+                    semester_id,
+                    subject_name,
+                    subject_type_id,
+                    total_hours,
+                    max_students,
+                    current_students,
+                    lecturer,
+                    schedule,
+                    status,
+                    start_date,
+                    end_date,
+                    registration_start_date,
+                    registration_end_date,
+                    prerequisites,
+                    description,
+                    created_at,
+                    updated_at
+                ) VALUES (
+                    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, NOW(), NOW()
+                ) RETURNING *
             `;
-            const result = await Database.query(query, [
-                courseData.subjectCode,
+
+            const values = [
+                courseData.subjectId,
+                courseData.semesterId,
                 courseData.subjectName,
-                courseData.semester,
-                courseData.academicYear,
+                courseData.subjectTypeId,
+                courseData.totalHours,
                 courseData.maxStudents,
                 courseData.currentStudents,
                 courseData.lecturer,
-                courseData.schedule,
-                courseData.room,
-                courseData.status,
+                courseData.schedule ? JSON.stringify(courseData.schedule) : null,
+                courseData.status || 'open',
                 courseData.startDate,
                 courseData.endDate,
                 courseData.registrationStartDate,
                 courseData.registrationEndDate,
-                JSON.stringify(courseData.prerequisites),
+                courseData.prerequisites ? JSON.stringify(courseData.prerequisites) : null,
                 courseData.description
-            ]);
-            return result[0];
+            ];
+
+            const result = await Database.query(query, values);
+            return this.mapToIOfferedSubject(result);
         } catch (error) {
-            throw new DatabaseError('Error creating open course');
+            console.error('Error creating course:', error);
+            throw new DatabaseError('Failed to create course');
         }
     }
 
-    static async updateCourse(id: number, courseData: Partial<OpenCourse>): Promise<OpenCourse> {
+    private static mapToIOfferedSubject(data: any): IOfferedSubject {
+        return {
+            subjectId: data.subject_id,
+            semesterId: data.semester_id,
+            subjectName: data.subject_name,
+            subjectTypeId: data.subject_type_id,
+            totalHours: data.total_hours,
+            maxStudents: data.max_students,
+            currentStudents: data.current_students,
+            lecturer: data.lecturer,
+            schedule: data.schedule ? JSON.parse(data.schedule) : undefined,
+            status: data.status,
+            startDate: data.start_date,
+            endDate: data.end_date,
+            registrationStartDate: data.registration_start_date,
+            registrationEndDate: data.registration_end_date,
+            prerequisites: data.prerequisites ? JSON.parse(data.prerequisites) : undefined,
+            description: data.description,
+            createdAt: data.created_at,
+            updatedAt: data.updated_at
+        };
+    }
+
+    static async updateCourse(id: number, courseData: Partial<IOfferedSubject>): Promise<IOfferedSubject> {
         try {
             const query = `
                 UPDATE open_courses 
-                SET subject_code = COALESCE($1, subject_code),
+                SET subject_id = COALESCE($1, subject_id),
                     subject_name = COALESCE($2, subject_name),
-                    semester = COALESCE($3, semester),
-                    academic_year = COALESCE($4, academic_year),
-                    max_students = COALESCE($5, max_students),
-                    current_students = COALESCE($6, current_students),
-                    lecturer = COALESCE($7, lecturer),
-                    schedule = COALESCE($8, schedule),
-                    room = COALESCE($9, room),
-                    status = COALESCE($10, status),
-                    start_date = COALESCE($11, start_date),
-                    end_date = COALESCE($12, end_date),
-                    registration_start_date = COALESCE($13, registration_start_date),
-                    registration_end_date = COALESCE($14, registration_end_date),
-                    prerequisites = COALESCE($15, prerequisites),
-                    description = COALESCE($16, description),
+                    semester_id = COALESCE($3, semester_id),
+                    max_students = COALESCE($4, max_students),
+                    current_students = COALESCE($5, current_students),
+                    lecturer = COALESCE($6, lecturer),
+                    schedule = COALESCE($7, schedule),
+                    status = COALESCE($8, status),
+                    start_date = COALESCE($9, start_date),
+                    end_date = COALESCE($10, end_date),
+                    registration_start_date = COALESCE($11, registration_start_date),
+                    registration_end_date = COALESCE($12, registration_end_date),
+                    prerequisites = COALESCE($13, prerequisites),
+                    description = COALESCE($14, description),
                     updated_at = CURRENT_TIMESTAMP
-                WHERE id = $17
+                WHERE id = $15
                 RETURNING *
             `;
             const result = await Database.query(query, [
-                courseData.subjectCode,
+                courseData.subjectId,
                 courseData.subjectName,
-                courseData.semester,
-                courseData.academicYear,
+                courseData.semesterId,
                 courseData.maxStudents,
                 courseData.currentStudents,
                 courseData.lecturer,
-                courseData.schedule,
-                courseData.room,
+                courseData.schedule ? JSON.stringify(courseData.schedule) : null,
                 courseData.status,
                 courseData.startDate,
                 courseData.endDate,
@@ -119,7 +156,7 @@ export class OpenCourseService {
         }
     }
 
-    static async getCoursesByStatus(status: OpenCourse['status']): Promise<OpenCourse[]> {
+    static async getCoursesByStatus(status: IOfferedSubject['status']): Promise<IOfferedSubject[]> {
         try {
             const query = 'SELECT * FROM open_courses WHERE status = $1 ORDER BY created_at DESC';
             return await Database.query(query, [status]);
@@ -128,7 +165,7 @@ export class OpenCourseService {
         }
     }
 
-    static async getCoursesBySemester(semester: string, academicYear: string): Promise<OpenCourse[]> {
+    static async getCoursesBySemester(semester: string, academicYear: string): Promise<IOfferedSubject[]> {
         try {
             const query = 'SELECT * FROM open_courses WHERE semester = $1 AND academic_year = $2 ORDER BY created_at DESC';
             return await Database.query(query, [semester, academicYear]);
@@ -137,7 +174,7 @@ export class OpenCourseService {
         }
     }
 
-    static async updateCourseStatus(id: number, status: OpenCourse['status']): Promise<OpenCourse> {
+    static async updateCourseStatus(id: number, status: IOfferedSubject['status']): Promise<IOfferedSubject> {
         try {
             const query = `
                 UPDATE open_courses 
