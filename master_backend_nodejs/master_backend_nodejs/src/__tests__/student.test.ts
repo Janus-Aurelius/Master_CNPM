@@ -101,6 +101,8 @@ const mockSubject = {
     credits: 3,
     maxStudents: 50,
     currentStudents: 30,
+    prerequisites: [],
+    description: 'Basic programming concepts',
     schedule: [
         {
             day: 'Monday',
@@ -136,6 +138,8 @@ const mockTuitionRecord = {
     semester: 'HK1 2023-2024',
     totalAmount: 3000000,
     paidAmount: 0,
+    outstandingAmount: 3000000,
+    paymentStatus: 'UNPAID' as 'UNPAID' | 'PARTIAL' | 'PAID',
     remainingAmount: 3000000,
     status: 'PENDING' as 'PENDING' | 'PARTIAL' | 'PAID' | 'OVERPAID',
     createdAt: new Date().toISOString(),
@@ -145,7 +149,9 @@ const mockTuitionRecord = {
             courseId: 'IT001',
             courseName: 'Introduction to Programming',
             credits: 3,
-            price: 3000000
+            amount: 3000000,
+            semester: 'HK1 2023-2024',
+            academicYear: '2023-2024'
         }
     ]
 };

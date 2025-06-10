@@ -16,7 +16,7 @@ export class SubjectBusiness {
     static async createSubject(subjectData: Omit<Subject, 'id' | 'createdAt' | 'updatedAt'>): Promise<Subject> {
         const query = `
             INSERT INTO subjects (
-                subject_code, name, credits, description, 
+                subject_code, subjectName, credits, description, 
                 prerequisite_subjects, type, department, 
                 lecturer, schedule
             ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
@@ -24,7 +24,7 @@ export class SubjectBusiness {
         `;
         const result = await Database.query(query, [
             subjectData.subjectCode,
-            subjectData.name,
+            subjectData.subjectName,
             subjectData.credits,
             subjectData.description,
             JSON.stringify(subjectData.prerequisiteSubjects),
@@ -39,7 +39,7 @@ export class SubjectBusiness {
     static async updateSubject(id: number, subjectData: Partial<Subject>): Promise<Subject> {
         const query = `
             UPDATE subjects 
-            SET subject_code = $1, name = $2, credits = $3, 
+            SET subject_code = $1, subjectName = $2, credits = $3, 
                 description = $4, prerequisite_subjects = $5, 
                 type = $6, department = $7
             WHERE id = $8
@@ -47,7 +47,7 @@ export class SubjectBusiness {
         `;
         const result = await Database.query(query, [
             subjectData.subjectCode,
-            subjectData.name,
+            subjectData.subjectName,
             subjectData.credits,
             subjectData.description,
             JSON.stringify(subjectData.prerequisiteSubjects),
@@ -67,7 +67,7 @@ export class SubjectBusiness {
         const errors: string[] = [];
         
         if (!subjectData.subjectCode) errors.push('Subject code is required');
-        if (!subjectData.name) errors.push('Subject name is required');
+        if (!subjectData.subjectName) errors.push('Subject name is required');
         if (!subjectData.credits) errors.push('Credits is required');
         if (!subjectData.type) errors.push('Type is required');
         if (!subjectData.department) errors.push('Department is required');

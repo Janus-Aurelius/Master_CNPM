@@ -23,8 +23,8 @@ router.get('/timetable', (req: Request, res: Response) => {
 });
 
 // Subject Registration
-router.get('/subjects', studentController.getAvailableSubjects);
-router.get('/subjects/search', studentController.searchSubjects);
+router.get('/subjects', studentController.getAvailableSubjects as unknown as RequestHandler);
+router.get('/subjects/search', studentController.searchSubjects as unknown as RequestHandler);
 router.post('/subjects/register', (req: Request, res: Response) => {
     // Ensure studentId is set from authenticated user
     if (!req.body.studentId && req.user) {
@@ -107,7 +107,7 @@ router.post('/tuition/confirm', (req: Request, res: Response) => {
     studentController.confirmRegistration(req, res);
 });
 
-router.put('/tuition/edit', studentController.editRegistration);
+router.put('/tuition/edit', studentController.editRegistration as unknown as RequestHandler);
 
 // Grades
 router.get('/grades', (req: Request, res: Response) => {

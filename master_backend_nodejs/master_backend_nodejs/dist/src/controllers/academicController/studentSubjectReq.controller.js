@@ -142,18 +142,28 @@ var StudentSubjectReqController = /** @class */ (function () {
     StudentSubjectReqController.getRequestsByStudentId = function (req, res) {
         return __awaiter(this, void 0, void 0, function () {
             var studentId, requests, error_5;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
+            var _a;
+            return __generator(this, function (_b) {
+                switch (_b.label) {
                     case 0:
-                        _a.trys.push([0, 2, , 3]);
-                        studentId = req.params.studentId;
+                        _b.trys.push([0, 2, , 3]);
+                        studentId = undefined;
+                        if (((_a = req.user) === null || _a === void 0 ? void 0 : _a.role) === 'student') {
+                            studentId = req.user.studentId;
+                        }
+                        else {
+                            studentId = req.params.studentId;
+                        }
+                        if (!studentId) {
+                            return [2 /*return*/, res.status(400).json({ success: false, message: 'Missing studentId' })];
+                        }
                         return [4 /*yield*/, studentSubjectReq_business_1.StudentSubjectReqBusiness.getRequestsByStudentId(studentId)];
                     case 1:
-                        requests = _a.sent();
+                        requests = _b.sent();
                         res.status(200).json({ success: true, data: requests });
                         return [3 /*break*/, 3];
                     case 2:
-                        error_5 = _a.sent();
+                        error_5 = _b.sent();
                         res.status(500).json({ success: false, message: 'Error fetching student requests', error: error_5 });
                         return [3 /*break*/, 3];
                     case 3: return [2 /*return*/];

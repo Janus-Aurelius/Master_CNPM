@@ -5,6 +5,7 @@ import { AcademicDashboardController } from '../../controllers/academicControlle
 import * as courseController from '../../controllers/academicController/course.controller';
 import { authenticateToken, authorizeRoles } from '../../middleware/auth';
 import { validateSubjectData } from '../../middleware/subjectValidation';
+import { ProgramController } from '../../controllers/academicController/program.controller';
 
 const router = Router();
 
@@ -33,6 +34,13 @@ router.get('/dashboard/activities', (req: Request, res: Response): void => {
     });
 });
 
+router.get('/dashboard/requests', (req: Request, res: Response): void => {
+    AcademicDashboardController.getStudentRequests(req, res).catch(err => {
+        console.error(err);
+        res.status(500).json({ success: false, message: 'Internal server error' });
+    });
+});
+
 // Course Management Routes
 router.get('/courseMgm', courseController.getCoursesHandler);
 router.get('/courseMgm/:id', courseController.getCourseByIdHandler);
@@ -40,9 +48,12 @@ router.post('/courseMgm', courseController.createCourseHandler);
 router.put('/courseMgm/:id', courseController.updateCourseHandler);
 router.delete('/courseMgm/:id', courseController.deleteCourseHandler);
 
-router.get('/programsMgm', (req: Request, res: Response): void => {
-    res.json({ data: 'Academic affairs deparment program management' });
-});
+router.get('/programsMgm', ProgramController.getAllPrograms);
+router.post('/programsMgm', ProgramController.createProgram);
+router.put('/programsMgm/:maNganh/:maMonHoc/:maHocKy', ProgramController.updateProgram);
+router.delete('/programsMgm/:maNganh/:maMonHoc/:maHocKy', ProgramController.deleteProgram);
+router.get('/programsMgm/nganh/:maNganh', ProgramController.getProgramsByNganh);
+router.get('/programsMgm/hocky/:maHocKy', ProgramController.getProgramsByHocKy);
 
 router.get('/studentSubjectReq', (req: Request, res: Response): void => {
     res.json({ data: 'Academic affairs deparment student subject request management' });

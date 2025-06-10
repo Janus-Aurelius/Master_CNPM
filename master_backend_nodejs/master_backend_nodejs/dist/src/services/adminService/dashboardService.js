@@ -38,15 +38,37 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getDashboardStats = void 0;
 // src/services/AdminService/dashboardService.ts
+var databaseService_1 = require("../database/databaseService");
 var getDashboardStats = function () { return __awaiter(void 0, void 0, void 0, function () {
+    var totalStudents, pendingPayments, newRegistrations, systemWarnings, error_1;
     return __generator(this, function (_a) {
-        // Dữ liệu mock, sau này thay bằng truy vấn DB thực tế
-        return [2 /*return*/, {
-                totalStudents: 1247,
-                pendingPayments: 34,
-                newRegistrations: 56,
-                systemWarnings: 3
-            }];
+        switch (_a.label) {
+            case 0:
+                _a.trys.push([0, 5, , 6]);
+                return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("SELECT COUNT(*) as count FROM students")];
+            case 1:
+                totalStudents = _a.sent();
+                return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("SELECT COUNT(*) as count FROM payments WHERE status = 'pending'")];
+            case 2:
+                pendingPayments = _a.sent();
+                return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("SELECT COUNT(*) as count FROM registrations WHERE created_at >= NOW() - INTERVAL '7 days'")];
+            case 3:
+                newRegistrations = _a.sent();
+                return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("SELECT COUNT(*) as count FROM system_warnings WHERE resolved = false")];
+            case 4:
+                systemWarnings = _a.sent();
+                return [2 /*return*/, {
+                        totalStudents: (totalStudents === null || totalStudents === void 0 ? void 0 : totalStudents.count) || 0,
+                        pendingPayments: (pendingPayments === null || pendingPayments === void 0 ? void 0 : pendingPayments.count) || 0,
+                        newRegistrations: (newRegistrations === null || newRegistrations === void 0 ? void 0 : newRegistrations.count) || 0,
+                        systemWarnings: (systemWarnings === null || systemWarnings === void 0 ? void 0 : systemWarnings.count) || 0
+                    }];
+            case 5:
+                error_1 = _a.sent();
+                console.error('Error fetching admin dashboard stats:', error_1);
+                throw error_1;
+            case 6: return [2 /*return*/];
+        }
     });
 }); };
 exports.getDashboardStats = getDashboardStats;

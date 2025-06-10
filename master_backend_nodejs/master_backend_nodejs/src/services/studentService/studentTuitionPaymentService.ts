@@ -302,3 +302,6 @@ export const studentTuitionPaymentService = {
     }
 };
 
+export const tuitionRecords: ITuitionRecord[] = [];
+export const paymentReceipts: ITuitionPaymentReceipt[] = [];
+

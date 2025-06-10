@@ -81,8 +81,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ProgramBusiness = void 0;
-var database_1 = require("../../config/database");
-var database_error_1 = require("../../utils/errors/database.error");
+var program_service_1 = require("../../services/courseService/program.service");
 var validation_error_1 = require("../../utils/errors/validation.error");
 var XLSX = __importStar(require("xlsx"));
 var ProgramBusiness = /** @class */ (function () {
@@ -90,17 +89,17 @@ var ProgramBusiness = /** @class */ (function () {
     }
     ProgramBusiness.getAllPrograms = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var query, error_1;
+            var error_1;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         _a.trys.push([0, 2, , 3]);
-                        query = 'SELECT * FROM programs ORDER BY id';
-                        return [4 /*yield*/, database_1.Database.query(query)];
+                        return [4 /*yield*/, program_service_1.ProgramService.getAllPrograms()];
                     case 1: return [2 /*return*/, _a.sent()];
                     case 2:
                         error_1 = _a.sent();
-                        throw new database_error_1.DatabaseError('Error fetching programs');
+                        console.error('Error in ProgramBusiness.getAllPrograms:', error_1);
+                        throw error_1;
                     case 3: return [2 /*return*/];
                 }
             });
@@ -108,19 +107,17 @@ var ProgramBusiness = /** @class */ (function () {
     };
     ProgramBusiness.getProgramById = function (id) {
         return __awaiter(this, void 0, void 0, function () {
-            var query, result, error_2;
+            var error_2;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         _a.trys.push([0, 2, , 3]);
-                        query = 'SELECT * FROM programs WHERE id = $1';
-                        return [4 /*yield*/, database_1.Database.query(query, [id])];
-                    case 1:
-                        result = _a.sent();
-                        return [2 /*return*/, result[0] || null];
+                        return [4 /*yield*/, program_service_1.ProgramService.getProgramById(id)];
+                    case 1: return [2 /*return*/, _a.sent()];
                     case 2:
                         error_2 = _a.sent();
-                        throw new database_error_1.DatabaseError('Error fetching program by ID');
+                        console.error('Error in ProgramBusiness.getProgramById:', error_2);
+                        throw error_2;
                     case 3: return [2 /*return*/];
                 }
             });
@@ -128,91 +125,99 @@ var ProgramBusiness = /** @class */ (function () {
     };
     ProgramBusiness.createProgram = function (programData) {
         return __awaiter(this, void 0, void 0, function () {
-            var errors, query, result, error_3;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        errors = this.validateProgramData(programData);
-                        if (errors.length > 0) {
-                            throw new validation_error_1.ValidationError(errors.join(', '));
-                        }
-                        _a.label = 1;
-                    case 1:
-                        _a.trys.push([1, 3, , 4]);
-                        query = "\n                INSERT INTO programs (\n                    name_year, department, major, \n                    course_list, total_credit, status\n                ) VALUES ($1, $2, $3, $4, $5, $6)\n                RETURNING *\n            ";
-                        return [4 /*yield*/, database_1.Database.query(query, [
-                                programData.name_year,
-                                programData.department,
-                                programData.major,
-                                JSON.stringify(programData.courseList),
-                                programData.totalCredit,
-                                programData.status
-                            ])];
-                    case 2:
-                        result = _a.sent();
-                        return [2 /*return*/, result[0]];
-                    case 3:
-                        error_3 = _a.sent();
-                        throw new database_error_1.DatabaseError('Error creating program');
-                    case 4: return [2 /*return*/];
-                }
-            });
-        });
-    };
-    ProgramBusiness.updateProgram = function (id, programData) {
-        return __awaiter(this, void 0, void 0, function () {
-            var existingProgram, errors, query, result, error_4;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.getProgramById(id)];
-                    case 1:
-                        existingProgram = _a.sent();
-                        if (!existingProgram) {
-                            throw new validation_error_1.ValidationError('Program not found');
-                        }
-                        errors = this.validateProgramData(__assign(__assign({}, existingProgram), programData));
-                        if (errors.length > 0) {
-                            throw new validation_error_1.ValidationError(errors.join(', '));
-                        }
-                        _a.label = 2;
-                    case 2:
-                        _a.trys.push([2, 4, , 5]);
-                        query = "\n                UPDATE programs \n                SET name_year = $1, department = $2, major = $3,\n                    course_list = $4, total_credit = $5, status = $6\n                WHERE id = $7\n                RETURNING *\n            ";
-                        return [4 /*yield*/, database_1.Database.query(query, [
-                                programData.name_year || existingProgram.name_year,
-                                programData.department || existingProgram.department,
-                                programData.major || existingProgram.major,
-                                JSON.stringify(programData.courseList || existingProgram.courseList),
-                                programData.totalCredit || existingProgram.totalCredit,
-                                programData.status || existingProgram.status,
-                                id
-                            ])];
-                    case 3:
-                        result = _a.sent();
-                        return [2 /*return*/, result[0]];
-                    case 4:
-                        error_4 = _a.sent();
-                        throw new database_error_1.DatabaseError('Error updating program');
-                    case 5: return [2 /*return*/];
-                }
-            });
-        });
-    };
-    ProgramBusiness.deleteProgram = function (id) {
-        return __awaiter(this, void 0, void 0, function () {
-            var query, error_5;
+            var errors, error_3;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         _a.trys.push([0, 2, , 3]);
-                        query = 'DELETE FROM programs WHERE id = $1';
-                        return [4 /*yield*/, database_1.Database.query(query, [id])];
+                        errors = this.validateProgramData(programData);
+                        if (errors.length > 0) {
+                            throw new validation_error_1.ValidationError("Invalid program data: ".concat(errors.join(', ')));
+                        }
+                        return [4 /*yield*/, program_service_1.ProgramService.createProgram(programData)];
+                    case 1: return [2 /*return*/, _a.sent()];
+                    case 2:
+                        error_3 = _a.sent();
+                        console.error('Error in ProgramBusiness.createProgram:', error_3);
+                        throw error_3;
+                    case 3: return [2 /*return*/];
+                }
+            });
+        });
+    };
+    ProgramBusiness.updateProgram = function (maNganh, maMonHoc, maHocKy, programData) {
+        return __awaiter(this, void 0, void 0, function () {
+            var errors, error_4;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        _a.trys.push([0, 2, , 3]);
+                        errors = this.validateProgramData(__assign(__assign({}, programData), { maNganh: maNganh, maMonHoc: maMonHoc, maHocKy: maHocKy }));
+                        if (errors.length > 0) {
+                            throw new validation_error_1.ValidationError("Invalid program data: ".concat(errors.join(', ')));
+                        }
+                        return [4 /*yield*/, program_service_1.ProgramService.updateProgram(maNganh, maMonHoc, maHocKy, programData)];
+                    case 1: return [2 /*return*/, _a.sent()];
+                    case 2:
+                        error_4 = _a.sent();
+                        console.error('Error in ProgramBusiness.updateProgram:', error_4);
+                        throw error_4;
+                    case 3: return [2 /*return*/];
+                }
+            });
+        });
+    };
+    ProgramBusiness.deleteProgram = function (maNganh, maMonHoc, maHocKy) {
+        return __awaiter(this, void 0, void 0, function () {
+            var error_5;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        _a.trys.push([0, 2, , 3]);
+                        return [4 /*yield*/, program_service_1.ProgramService.deleteProgram(maNganh, maMonHoc, maHocKy)];
                     case 1:
                         _a.sent();
                         return [3 /*break*/, 3];
                     case 2:
                         error_5 = _a.sent();
-                        throw new database_error_1.DatabaseError('Error deleting program');
+                        console.error('Error in ProgramBusiness.deleteProgram:', error_5);
+                        throw error_5;
+                    case 3: return [2 /*return*/];
+                }
+            });
+        });
+    };
+    ProgramBusiness.getProgramsByNganh = function (maNganh) {
+        return __awaiter(this, void 0, void 0, function () {
+            var error_6;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        _a.trys.push([0, 2, , 3]);
+                        return [4 /*yield*/, program_service_1.ProgramService.getProgramsByNganh(maNganh)];
+                    case 1: return [2 /*return*/, _a.sent()];
+                    case 2:
+                        error_6 = _a.sent();
+                        console.error('Error in ProgramBusiness.getProgramsByNganh:', error_6);
+                        throw error_6;
+                    case 3: return [2 /*return*/];
+                }
+            });
+        });
+    };
+    ProgramBusiness.getProgramsByHocKy = function (maHocKy) {
+        return __awaiter(this, void 0, void 0, function () {
+            var error_7;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        _a.trys.push([0, 2, , 3]);
+                        return [4 /*yield*/, program_service_1.ProgramService.getProgramsByHocKy(maHocKy)];
+                    case 1: return [2 /*return*/, _a.sent()];
+                    case 2:
+                        error_7 = _a.sent();
+                        console.error('Error in ProgramBusiness.getProgramsByHocKy:', error_7);
+                        throw error_7;
                     case 3: return [2 /*return*/];
                 }
             });
@@ -220,26 +225,17 @@ var ProgramBusiness = /** @class */ (function () {
     };
     ProgramBusiness.validateProgramData = function (programData) {
         var errors = [];
-        if (!programData.name_year)
-            errors.push('Program name and year is required');
-        if (!programData.department)
-            errors.push('Department is required');
-        if (!programData.major)
-            errors.push('Major is required');
-        if (!programData.courseList || !Array.isArray(programData.courseList)) {
-            errors.push('Course list must be an array');
-        }
-        if (typeof programData.totalCredit !== 'number' || programData.totalCredit <= 0) {
-            errors.push('Total credit must be a positive number');
-        }
-        if (!programData.status || !['active', 'inactive'].includes(programData.status)) {
-            errors.push('Status must be either active or inactive');
-        }
+        if (!programData.maNganh)
+            errors.push('Mã ngành là bắt buộc');
+        if (!programData.maMonHoc)
+            errors.push('Mã môn học là bắt buộc');
+        if (!programData.maHocKy)
+            errors.push('Mã học kỳ là bắt buộc');
         return errors;
     };
     ProgramBusiness.processExcelData = function (file) {
         return __awaiter(this, void 0, void 0, function () {
-            var workbook, sheetName, sheet, data, programs, _i, data_1, row, program, errors, _a, _b, error_6;
+            var workbook, sheetName, sheet, data, programs, _i, data_1, row, program, errors, _a, _b, error_8;
             return __generator(this, function (_c) {
                 switch (_c.label) {
                     case 0:
@@ -269,9 +265,9 @@ var ProgramBusiness = /** @class */ (function () {
                         return [3 /*break*/, 1];
                     case 4: return [2 /*return*/, programs];
                     case 5:
-                        error_6 = _c.sent();
-                        if (error_6 instanceof validation_error_1.ValidationError) {
-                            throw error_6;
+                        error_8 = _c.sent();
+                        if (error_8 instanceof validation_error_1.ValidationError) {
+                            throw error_8;
                         }
                         throw new Error('Error processing Excel file');
                     case 6: return [2 /*return*/];
@@ -281,12 +277,10 @@ var ProgramBusiness = /** @class */ (function () {
     };
     ProgramBusiness.mapExcelRowToProgram = function (row) {
         return {
-            name_year: row['Program Name and Year'],
-            department: row['Department'],
-            major: row['Major'],
-            courseList: row['Course List'].split(',').map(function (course) { return course.trim(); }),
-            totalCredit: parseInt(row['Total Credits']),
-            status: row['Status'].toLowerCase()
+            maNganh: row['Mã ngành'],
+            maMonHoc: row['Mã môn học'],
+            maHocKy: row['Mã học kỳ'],
+            ghiChu: row['Ghi chú'] || ''
         };
     };
     return ProgramBusiness;

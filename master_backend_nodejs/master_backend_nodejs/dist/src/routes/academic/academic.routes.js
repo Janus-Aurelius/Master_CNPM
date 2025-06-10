@@ -40,6 +40,7 @@ var dashboard_controller_1 = require("../../controllers/academicController/dashb
 var courseController = __importStar(require("../../controllers/academicController/course.controller"));
 var auth_1 = require("../../middleware/auth");
 var subjectValidation_1 = require("../../middleware/subjectValidation");
+var program_controller_1 = require("../../controllers/academicController/program.controller");
 var router = (0, express_1.Router)();
 // Protect all routes
 router.use(auth_1.authenticateToken, (0, auth_1.authorizeRoles)(['academic']));
@@ -62,15 +63,24 @@ router.get('/dashboard/activities', function (req, res) {
         res.status(500).json({ success: false, message: 'Internal server error' });
     });
 });
+router.get('/dashboard/requests', function (req, res) {
+    dashboard_controller_1.AcademicDashboardController.getStudentRequests(req, res).catch(function (err) {
+        console.error(err);
+        res.status(500).json({ success: false, message: 'Internal server error' });
+    });
+});
 // Course Management Routes
 router.get('/courseMgm', courseController.getCoursesHandler);
 router.get('/courseMgm/:id', courseController.getCourseByIdHandler);
 router.post('/courseMgm', courseController.createCourseHandler);
 router.put('/courseMgm/:id', courseController.updateCourseHandler);
 router.delete('/courseMgm/:id', courseController.deleteCourseHandler);
-router.get('/programsMgm', function (req, res) {
-    res.json({ data: 'Academic affairs deparment program management' });
-});
+router.get('/programsMgm', program_controller_1.ProgramController.getAllPrograms);
+router.post('/programsMgm', program_controller_1.ProgramController.createProgram);
+router.put('/programsMgm/:maNganh/:maMonHoc/:maHocKy', program_controller_1.ProgramController.updateProgram);
+router.delete('/programsMgm/:maNganh/:maMonHoc/:maHocKy', program_controller_1.ProgramController.deleteProgram);
+router.get('/programsMgm/nganh/:maNganh', program_controller_1.ProgramController.getProgramsByNganh);
+router.get('/programsMgm/hocky/:maHocKy', program_controller_1.ProgramController.getProgramsByHocKy);
 router.get('/studentSubjectReq', function (req, res) {
     res.json({ data: 'Academic affairs deparment student subject request management' });
 });

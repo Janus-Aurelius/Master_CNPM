@@ -36,105 +36,241 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.subjectRegistrationService = exports.subjects = void 0;
-// Mock data for subjects
-var subjects = [
-    {
-        id: 'IT001',
-        name: 'Nhập môn lập trình',
-        lecturer: 'TS. Nguyễn Văn A',
-        credits: 4,
-        maxStudents: 60,
-        currentStudents: 45,
-        schedule: [
-            { day: 'Thứ 2', session: '1', room: 'E3.1' },
-            { day: 'Thứ 4', session: '2', room: 'E3.1' }
-        ]
-    },
-    {
-        id: 'IT002',
-        name: 'Lập trình hướng đối tượng',
-        lecturer: 'PGS. TS. Trần Thị B',
-        credits: 4,
-        maxStudents: 60,
-        currentStudents: 40,
-        schedule: [
-            { day: 'Thứ 3', session: '2', room: 'E2.5' },
-            { day: 'Thứ 5', session: '3', room: 'E2.5' }
-        ]
-    },
-    {
-        id: 'IT003',
-        name: 'Cấu trúc dữ liệu và giải thuật',
-        lecturer: 'TS. Lê Văn C',
-        credits: 4,
-        maxStudents: 60,
-        currentStudents: 50,
-        schedule: [
-            { day: 'Thứ 4', session: '3', room: 'E4.2' },
-            { day: 'Thứ 6', session: '4', room: 'E4.2' }
-        ]
-    },
-    {
-        id: 'SE001',
-        name: 'Nhập môn công nghệ phần mềm',
-        lecturer: 'TS. Phạm Thị D',
-        credits: 3,
-        maxStudents: 60,
-        currentStudents: 35,
-        schedule: [
-            { day: 'Thứ 5', session: '4', room: 'B1.2' }
-        ]
-    },
-    {
-        id: 'MA001',
-        name: 'Giải tích 1',
-        lecturer: 'GS. TS. Trần Văn E',
-        credits: 4,
-        maxStudents: 70,
-        currentStudents: 60,
-        schedule: [
-            { day: 'Thứ 2', session: '3', room: 'C2.1' },
-            { day: 'Thứ 4', session: '1', room: 'C2.1' }
-        ]
-    }
-];
-exports.subjects = subjects;
+exports.subjects = exports.subjectRegistrationService = void 0;
+var databaseService_1 = require("../database/databaseService");
 exports.subjectRegistrationService = {
     getAvailableSubjects: function (semester) {
         return __awaiter(this, void 0, void 0, function () {
+            var subjects_1, error_1;
             return __generator(this, function (_a) {
-                // TODO: Implement database query
-                return [2 /*return*/, subjects.filter(function (subject) { return subject.currentStudents < subject.maxStudents; })];
+                switch (_a.label) {
+                    case 0:
+                        _a.trys.push([0, 2, , 3]);
+                        return [4 /*yield*/, databaseService_1.DatabaseService.query("\n                SELECT \n                    s.id,\n                    s.name,\n                    s.lecturer,\n                    s.credits,\n                    s.max_students as \"maxStudents\",\n                    s.current_students as \"currentStudents\",\n                    s.prerequisites,\n                    s.description,\n                    s.semester,\n                    json_agg(\n                        json_build_object(\n                            'day', c.day,\n                            'session', c.session,\n                            'room', c.room\n                        )\n                    ) as schedule\n                FROM subjects s\n                LEFT JOIN classes c ON s.id = c.subject_id\n                WHERE s.semester = $1\n                GROUP BY \n                    s.id, s.name, s.lecturer, s.credits,\n                    s.max_students, s.current_students,\n                    s.prerequisites, s.description, s.semester\n            ", [semester])];
+                    case 1:
+                        subjects_1 = _a.sent();
+                        return [2 /*return*/, subjects_1.map(function (subject) { return ({
+                                id: subject.id,
+                                name: subject.name,
+                                lecturer: subject.lecturer,
+                                credits: subject.credits,
+                                maxStudents: subject.maxStudents,
+                                currentStudents: subject.currentStudents,
+                                prerequisites: subject.prerequisites || [],
+                                description: subject.description || '',
+                                schedule: subject.schedule || [],
+                                semester: subject.semester
+                            }); })];
+                    case 2:
+                        error_1 = _a.sent();
+                        console.error('Error getting available subjects:', error_1);
+                        throw error_1;
+                    case 3: return [2 /*return*/];
+                }
+            });
+        });
+    },
+    getSubjectById: function (subjectId) {
+        return __awaiter(this, void 0, void 0, function () {
+            var subject, error_2;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        _a.trys.push([0, 2, , 3]);
+                        return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("\n                SELECT \n                    s.id,\n                    s.name,\n                    s.lecturer,\n                    s.credits,\n                    s.max_students as \"maxStudents\",\n                    s.current_students as \"currentStudents\",\n                    s.prerequisites,\n                    s.description,\n                    s.semester,\n                    json_agg(\n                        json_build_object(\n                            'day', c.day,\n                            'session', c.session,\n                            'room', c.room\n                        )\n                    ) as schedule\n                FROM subjects s\n                LEFT JOIN classes c ON s.id = c.subject_id\n                WHERE s.id = $1\n                GROUP BY \n                    s.id, s.name, s.lecturer, s.credits,\n                    s.max_students, s.current_students,\n                    s.prerequisites, s.description, s.semester\n            ", [subjectId])];
+                    case 1:
+                        subject = _a.sent();
+                        if (!subject)
+                            return [2 /*return*/, null];
+                        return [2 /*return*/, {
+                                id: subject.id,
+                                name: subject.name,
+                                lecturer: subject.lecturer,
+                                credits: subject.credits,
+                                maxStudents: subject.maxStudents,
+                                currentStudents: subject.currentStudents,
+                                prerequisites: subject.prerequisites || [],
+                                description: subject.description || '',
+                                schedule: subject.schedule || [],
+                                semester: subject.semester
+                            }];
+                    case 2:
+                        error_2 = _a.sent();
+                        console.error('Error getting subject by id:', error_2);
+                        throw error_2;
+                    case 3: return [2 /*return*/];
+                }
+            });
+        });
+    },
+    checkPrerequisites: function (studentId, subjectId) {
+        return __awaiter(this, void 0, void 0, function () {
+            var subject, prerequisites, completedSubjects, completedSubjectIds_1, error_3;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        _a.trys.push([0, 3, , 4]);
+                        return [4 /*yield*/, this.getSubjectById(subjectId)];
+                    case 1:
+                        subject = _a.sent();
+                        if (!subject || !subject.prerequisites.length)
+                            return [2 /*return*/, true];
+                        prerequisites = subject.prerequisites;
+                        return [4 /*yield*/, databaseService_1.DatabaseService.query("\n                SELECT subject_id\n                FROM grades\n                WHERE student_id = $1 AND letter_grade IN ('A', 'B', 'C', 'D')\n            ", [studentId])];
+                    case 2:
+                        completedSubjects = _a.sent();
+                        completedSubjectIds_1 = completedSubjects.map(function (s) { return s.subject_id; });
+                        return [2 /*return*/, prerequisites.every(function (prereq) { return completedSubjectIds_1.includes(prereq); })];
+                    case 3:
+                        error_3 = _a.sent();
+                        console.error('Error checking prerequisites:', error_3);
+                        throw error_3;
+                    case 4: return [2 /*return*/];
+                }
+            });
+        });
+    },
+    checkScheduleConflict: function (studentId, subjectId) {
+        return __awaiter(this, void 0, void 0, function () {
+            var currentSemester, enrolledSchedules, newSubjectSchedule, _i, enrolledSchedules_1, enrolled, _a, newSubjectSchedule_1, newSchedule, error_4;
+            return __generator(this, function (_b) {
+                switch (_b.label) {
+                    case 0:
+                        _b.trys.push([0, 4, , 5]);
+                        return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("\n                SELECT semester\n                FROM enrollments\n                WHERE student_id = $1 AND is_enrolled = true\n                LIMIT 1\n            ", [studentId])];
+                    case 1:
+                        currentSemester = _b.sent();
+                        if (!currentSemester)
+                            return [2 /*return*/, false];
+                        return [4 /*yield*/, databaseService_1.DatabaseService.query("\n                SELECT c.day, c.session\n                FROM enrollments e\n                JOIN subjects s ON e.course_id = s.id\n                JOIN classes c ON s.id = c.subject_id\n                WHERE e.student_id = $1 \n                AND e.semester = $2\n                AND e.is_enrolled = true\n            ", [studentId, currentSemester.semester])];
+                    case 2:
+                        enrolledSchedules = _b.sent();
+                        return [4 /*yield*/, databaseService_1.DatabaseService.query("\n                SELECT day, session\n                FROM classes\n                WHERE subject_id = $1\n            ", [subjectId])];
+                    case 3:
+                        newSubjectSchedule = _b.sent();
+                        // Check for conflicts
+                        for (_i = 0, enrolledSchedules_1 = enrolledSchedules; _i < enrolledSchedules_1.length; _i++) {
+                            enrolled = enrolledSchedules_1[_i];
+                            for (_a = 0, newSubjectSchedule_1 = newSubjectSchedule; _a < newSubjectSchedule_1.length; _a++) {
+                                newSchedule = newSubjectSchedule_1[_a];
+                                if (enrolled.day === newSchedule.day && enrolled.session === newSchedule.session) {
+                                    return [2 /*return*/, true]; // Conflict found
+                                }
+                            }
+                        }
+                        return [2 /*return*/, false]; // No conflicts
+                    case 4:
+                        error_4 = _b.sent();
+                        console.error('Error checking schedule conflict:', error_4);
+                        throw error_4;
+                    case 5: return [2 /*return*/];
+                }
+            });
+        });
+    },
+    checkCreditLimit: function (studentId, subjectId) {
+        return __awaiter(this, void 0, void 0, function () {
+            var currentSemester, currentCredits, newSubject, MAX_CREDITS_PER_SEMESTER, error_5;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        _a.trys.push([0, 4, , 5]);
+                        return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("\n                SELECT semester\n                FROM enrollments\n                WHERE student_id = $1 AND is_enrolled = true\n                LIMIT 1\n            ", [studentId])];
+                    case 1:
+                        currentSemester = _a.sent();
+                        if (!currentSemester)
+                            return [2 /*return*/, true];
+                        return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("\n                SELECT COALESCE(SUM(credits), 0) as total_credits\n                FROM enrollments\n                WHERE student_id = $1 \n                AND semester = $2\n                AND is_enrolled = true\n            ", [studentId, currentSemester.semester])];
+                    case 2:
+                        currentCredits = _a.sent();
+                        return [4 /*yield*/, this.getSubjectById(subjectId)];
+                    case 3:
+                        newSubject = _a.sent();
+                        if (!newSubject)
+                            return [2 /*return*/, false];
+                        MAX_CREDITS_PER_SEMESTER = 24;
+                        return [2 /*return*/, (currentCredits.total_credits + newSubject.credits) <= MAX_CREDITS_PER_SEMESTER];
+                    case 4:
+                        error_5 = _a.sent();
+                        console.error('Error checking credit limit:', error_5);
+                        throw error_5;
+                    case 5: return [2 /*return*/];
+                }
             });
         });
     },
     searchSubjects: function (query, semester) {
         return __awaiter(this, void 0, void 0, function () {
+            var subjects_2, error_6;
             return __generator(this, function (_a) {
-                // TODO: Implement database query
-                return [2 /*return*/, subjects.filter(function (subject) {
-                        return subject.name.toLowerCase().includes(query.toLowerCase()) ||
-                            subject.id.toLowerCase().includes(query.toLowerCase());
-                    })];
+                switch (_a.label) {
+                    case 0:
+                        _a.trys.push([0, 2, , 3]);
+                        return [4 /*yield*/, databaseService_1.DatabaseService.query("\n                SELECT \n                    s.id,\n                    s.name,\n                    s.lecturer,\n                    s.credits,\n                    s.max_students as \"maxStudents\",\n                    s.current_students as \"currentStudents\",\n                    s.prerequisites,\n                    s.description,\n                    s.semester,\n                    json_agg(\n                        json_build_object(\n                            'day', c.day,\n                            'session', c.session,\n                            'room', c.room\n                        )\n                    ) as schedule\n                FROM subjects s\n                LEFT JOIN classes c ON s.id = c.subject_id\n                WHERE s.semester = $1 AND (LOWER(s.name) LIKE $2 OR LOWER(s.id) LIKE $2)\n                GROUP BY \n                    s.id, s.name, s.lecturer, s.credits,\n                    s.max_students, s.current_students,\n                    s.prerequisites, s.description, s.semester\n            ", [semester, "%".concat(query.toLowerCase(), "%")])];
+                    case 1:
+                        subjects_2 = _a.sent();
+                        return [2 /*return*/, subjects_2.map(function (subject) { return ({
+                                id: subject.id,
+                                name: subject.name,
+                                lecturer: subject.lecturer,
+                                credits: subject.credits,
+                                maxStudents: subject.maxStudents,
+                                currentStudents: subject.currentStudents,
+                                prerequisites: subject.prerequisites || [],
+                                description: subject.description || '',
+                                schedule: subject.schedule || [],
+                                semester: subject.semester
+                            }); })];
+                    case 2:
+                        error_6 = _a.sent();
+                        console.error('Error searching subjects:', error_6);
+                        throw error_6;
+                    case 3: return [2 /*return*/];
+                }
             });
         });
     },
     registerSubject: function (studentId, subjectId, semester) {
         return __awaiter(this, void 0, void 0, function () {
-            var subject;
+            var subject, existing, error_7;
             return __generator(this, function (_a) {
-                subject = subjects.find(function (s) { return s.id === subjectId; });
-                if (!subject) {
-                    throw new Error('Subject not found');
+                switch (_a.label) {
+                    case 0:
+                        _a.trys.push([0, 5, , 6]);
+                        return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("\n                SELECT id, max_students, current_students FROM subjects WHERE id = $1 AND semester = $2\n            ", [subjectId, semester])];
+                    case 1:
+                        subject = _a.sent();
+                        if (!subject) {
+                            throw new Error('Subject not found');
+                        }
+                        if (subject.current_students >= subject.max_students) {
+                            throw new Error('Subject is full');
+                        }
+                        return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("\n                SELECT id FROM enrollments WHERE student_id = $1 AND course_id = $2 AND semester = $3 AND is_enrolled = true\n            ", [studentId, subjectId, semester])];
+                    case 2:
+                        existing = _a.sent();
+                        if (existing) {
+                            throw new Error('Already enrolled');
+                        }
+                        // Register
+                        return [4 /*yield*/, databaseService_1.DatabaseService.query("\n                INSERT INTO enrollments (student_id, course_id, course_name, semester, is_enrolled, credits, created_at, updated_at)\n                VALUES ($1, $2, (SELECT name FROM subjects WHERE id = $2), $3, true, (SELECT credits FROM subjects WHERE id = $2), NOW(), NOW())\n            ", [studentId, subjectId, semester])];
+                    case 3:
+                        // Register
+                        _a.sent();
+                        // Update subject current_students
+                        return [4 /*yield*/, databaseService_1.DatabaseService.query("\n                UPDATE subjects SET current_students = current_students + 1 WHERE id = $1\n            ", [subjectId])];
+                    case 4:
+                        // Update subject current_students
+                        _a.sent();
+                        return [2 /*return*/, true];
+                    case 5:
+                        error_7 = _a.sent();
+                        console.error('Error registering subject:', error_7);
+                        throw error_7;
+                    case 6: return [2 /*return*/];
                 }
-                if (subject.currentStudents >= subject.maxStudents) {
-                    throw new Error('Subject is full');
-                }
-                // Increment current students
-                subject.currentStudents += 1;
-                return [2 /*return*/, true];
             });
         });
     }
 };
+exports.subjects = [];

@@ -56,7 +56,7 @@ var EnrollmentManager = /** @class */ (function () {
                         if (!semesterPattern.test(semester)) {
                             throw new Error('Invalid semester format');
                         }
-                        return [4 /*yield*/, databaseService_1.DatabaseService.query("\n                SELECT \n                    e.id as enrollment_id,\n                    e.course_id,\n                    e.course_name,\n                    e.semester,\n                    e.status,\n                    e.credits,\n                    e.midterm_grade,\n                    e.final_grade,\n                    e.total_grade,\n                    e.letter_grade,\n                    e.enrollment_date,\n                    oc.subject_code,\n                    oc.lecturer,\n                    oc.schedule,\n                    oc.room,\n                    oc.max_students,\n                    oc.current_students,\n                    s.subject_name,\n                    s.type,\n                    s.description,\n                    s.credits as subject_credits\n                FROM enrollments e\n                JOIN open_courses oc ON e.course_id = oc.id\n                JOIN subjects s ON oc.subject_code = s.subject_code\n                WHERE e.student_id = (SELECT id FROM students WHERE student_id = $1)\n                AND e.semester = $2\n                AND e.status IN ('registered', 'enrolled', 'completed')\n                ORDER BY e.enrollment_date DESC\n            ", [studentId, semester])];
+                        return [4 /*yield*/, databaseService_1.DatabaseService.query("\n                SELECT \n                    e.id as enrollment_id,\n                    e.course_id,\n                    e.course_name,\n                    e.semester,\n                    e.is_enrolled,\n                    e.credits,\n                    e.midterm_grade,\n                    e.final_grade,\n                    e.total_grade,\n                    e.letter_grade,\n                    e.enrollment_date,\n                    e.drop_date,\n                    oc.subject_code,\n                    oc.lecturer,\n                    oc.schedule,\n                    oc.room,\n                    oc.max_students,\n                    oc.current_students,\n                    s.subject_name,\n                    s.type,\n                    s.description,\n                    s.credits as subject_credits\n                FROM enrollments e\n                JOIN open_courses oc ON e.course_id = oc.id\n                JOIN subjects s ON oc.subject_code = s.subject_code\n                WHERE e.student_id = (SELECT id FROM students WHERE student_id = $1)\n                AND e.semester = $2\n                AND e.is_enrolled = true\n                ORDER BY e.enrollment_date DESC\n            ", [studentId, semester])];
                     case 1:
                         enrolledSubjects = _a.sent();
                         // Transform to match IEnrolledSubject interface
@@ -67,7 +67,7 @@ var EnrollmentManager = /** @class */ (function () {
                                     courseId: subject.subject_code,
                                     courseName: subject.course_name,
                                     semester: subject.semester,
-                                    status: subject.status,
+                                    isEnrolled: subject.is_enrolled, // Updated to use boolean
                                     credits: subject.credits
                                 },
                                 subjectDetails: {
@@ -110,16 +110,16 @@ var EnrollmentManager = /** @class */ (function () {
                         if (!studentId || !courseId) {
                             throw new Error('Student ID and Course ID are required');
                         }
-                        return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("\n                SELECT e.*, oc.current_students, oc.id as course_internal_id\n                FROM enrollments e\n                JOIN open_courses oc ON e.course_id = oc.id\n                WHERE e.student_id = (SELECT id FROM students WHERE student_id = $1)\n                AND oc.subject_code = $2\n                AND e.status = 'registered'\n            ", [studentId, courseId])];
+                        return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("\n                SELECT e.*, oc.current_students, oc.id as course_internal_id\n                FROM enrollments e\n                JOIN open_courses oc ON e.course_id = oc.id\n                WHERE e.student_id = (SELECT id FROM students WHERE student_id = $1)\n                AND oc.subject_code = $2\n                AND e.is_enrolled = true\n            ", [studentId, courseId])];
                     case 1:
                         enrollment = _a.sent();
                         if (!enrollment) {
                             throw new Error('Active enrollment not found');
                         }
-                        // Update enrollment status to dropped
-                        return [4 /*yield*/, databaseService_1.DatabaseService.update('enrollments', { status: 'dropped', drop_date: new Date() }, { id: enrollment.id })];
+                        // Update enrollment to not enrolled (dropped)
+                        return [4 /*yield*/, databaseService_1.DatabaseService.update('enrollments', { is_enrolled: false, drop_date: new Date() }, { id: enrollment.id })];
                     case 2:
-                        // Update enrollment status to dropped
+                        // Update enrollment to not enrolled (dropped)
                         _a.sent();
                         // Update course current students count
                         return [4 /*yield*/, databaseService_1.DatabaseService.query("\n                UPDATE open_courses \n                SET current_students = GREATEST(current_students - 1, 0) \n                WHERE id = $1\n            ", [enrollment.course_internal_id])];
@@ -149,7 +149,7 @@ var EnrollmentManager = /** @class */ (function () {
                         if (!studentId || !courseId) {
                             throw new Error('Student ID and Course ID are required');
                         }
-                        return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("\n                SELECT \n                    e.id,\n                    e.course_id,\n                    e.course_name,\n                    e.semester,\n                    e.status,\n                    e.credits,\n                    e.enrollment_date,\n                    oc.subject_code\n                FROM enrollments e\n                JOIN open_courses oc ON e.course_id = oc.id\n                WHERE e.student_id = (SELECT id FROM students WHERE student_id = $1)\n                AND oc.subject_code = $2\n                ORDER BY e.enrollment_date DESC\n                LIMIT 1\n            ", [studentId, courseId])];
+                        return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("\n                SELECT \n                    e.id,\n                    e.course_id,\n                    e.course_name,\n                    e.semester,\n                    e.is_enrolled,\n                    e.credits,\n                    e.enrollment_date,\n                    oc.subject_code\n                FROM enrollments e\n                JOIN open_courses oc ON e.course_id = oc.id\n                WHERE e.student_id = (SELECT id FROM students WHERE student_id = $1)\n                AND oc.subject_code = $2\n                ORDER BY e.enrollment_date DESC\n                LIMIT 1\n            ", [studentId, courseId])];
                     case 1:
                         enrollment = _a.sent();
                         if (!enrollment) {
@@ -161,7 +161,7 @@ var EnrollmentManager = /** @class */ (function () {
                                 courseId: enrollment.subject_code,
                                 courseName: enrollment.course_name,
                                 semester: enrollment.semester,
-                                status: enrollment.status,
+                                isEnrolled: enrollment.is_enrolled, // Updated to boolean
                                 credits: enrollment.credits
                             }];
                     case 2:
@@ -186,7 +186,7 @@ var EnrollmentManager = /** @class */ (function () {
                         if (!studentId) {
                             throw new Error('Student ID is required');
                         }
-                        return [4 /*yield*/, databaseService_1.DatabaseService.query("\n                SELECT \n                    e.id,\n                    e.course_name,\n                    e.semester,\n                    e.status,\n                    e.credits,\n                    e.total_grade,\n                    e.letter_grade,\n                    e.enrollment_date,\n                    oc.subject_code,\n                    s.subject_name,\n                    s.type\n                FROM enrollments e\n                JOIN open_courses oc ON e.course_id = oc.id\n                JOIN subjects s ON oc.subject_code = s.subject_code\n                WHERE e.student_id = (SELECT id FROM students WHERE student_id = $1)\n                ORDER BY e.semester DESC, e.enrollment_date DESC\n            ", [studentId])];
+                        return [4 /*yield*/, databaseService_1.DatabaseService.query("\n                SELECT \n                    e.id,\n                    e.course_name,\n                    e.semester,\n                    e.is_enrolled,\n                    e.credits,\n                    e.total_grade,\n                    e.letter_grade,\n                    e.enrollment_date,\n                    e.drop_date,\n                    oc.subject_code,\n                    s.subject_name,\n                    s.type\n                FROM enrollments e\n                JOIN open_courses oc ON e.course_id = oc.id\n                JOIN subjects s ON oc.subject_code = s.subject_code\n                WHERE e.student_id = (SELECT id FROM students WHERE student_id = $1)\n                ORDER BY e.semester DESC, e.enrollment_date DESC\n            ", [studentId])];
                     case 1:
                         history_1 = _a.sent();
                         return [2 /*return*/, history_1];
@@ -200,7 +200,7 @@ var EnrollmentManager = /** @class */ (function () {
         });
     };
     /**
-     * Get enrollment statistics for a student
+     * Get enrollment statistics for a student - Updated for boolean enrollment
      */
     EnrollmentManager.prototype.getEnrollmentStatistics = function (studentId) {
         return __awaiter(this, void 0, void 0, function () {
@@ -212,7 +212,7 @@ var EnrollmentManager = /** @class */ (function () {
                         if (!studentId) {
                             throw new Error('Student ID is required');
                         }
-                        return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("\n                SELECT \n                    COUNT(*) as total_enrollments,\n                    COUNT(CASE WHEN e.status = 'completed' THEN 1 END) as completed_courses,\n                    COUNT(CASE WHEN e.status = 'registered' THEN 1 END) as current_enrollments,\n                    COUNT(CASE WHEN e.status = 'dropped' THEN 1 END) as dropped_courses,\n                    COALESCE(SUM(CASE WHEN e.status = 'completed' THEN e.credits END), 0) as total_credits_earned,\n                    COALESCE(SUM(CASE WHEN e.status = 'registered' THEN e.credits END), 0) as current_credits,\n                    COALESCE(AVG(CASE WHEN e.status = 'completed' AND e.total_grade IS NOT NULL THEN e.total_grade END), 0) as gpa\n                FROM enrollments e\n                WHERE e.student_id = (SELECT id FROM students WHERE student_id = $1)\n            ", [studentId])];
+                        return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("\n                SELECT \n                    COUNT(*) as total_enrollments,\n                    COUNT(CASE WHEN e.is_enrolled = true AND e.total_grade IS NOT NULL THEN 1 END) as completed_courses,\n                    COUNT(CASE WHEN e.is_enrolled = true AND e.total_grade IS NULL THEN 1 END) as current_enrollments,\n                    COUNT(CASE WHEN e.is_enrolled = false THEN 1 END) as dropped_courses,\n                    COALESCE(SUM(CASE WHEN e.is_enrolled = true AND e.total_grade IS NOT NULL THEN e.credits END), 0) as total_credits_earned,\n                    COALESCE(SUM(CASE WHEN e.is_enrolled = true AND e.total_grade IS NULL THEN e.credits END), 0) as current_credits,\n                    COALESCE(AVG(CASE WHEN e.is_enrolled = true AND e.total_grade IS NOT NULL THEN e.total_grade END), 0) as gpa\n                FROM enrollments e\n                WHERE e.student_id = (SELECT id FROM students WHERE student_id = $1)\n            ", [studentId])];
                     case 1:
                         stats = _a.sent();
                         return [2 /*return*/, {

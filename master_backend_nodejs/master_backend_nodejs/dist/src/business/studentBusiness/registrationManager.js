@@ -152,12 +152,12 @@ var RegistrationManager = /** @class */ (function () {
                         student = _a.sent();
                         if (!student) {
                             throw new Error('Student not found');
-                        }
+                        } // Create enrollment record
                         return [4 /*yield*/, databaseService_1.DatabaseService.insert('enrollments', {
                                 student_id: student.id,
                                 course_id: parseInt(courseId),
                                 enrollment_date: new Date(),
-                                status: 'registered'
+                                is_enrolled: true // Boolean approach: true = enrolled
                             })];
                     case 5:
                         enrollment = _a.sent();
@@ -226,13 +226,13 @@ var RegistrationManager = /** @class */ (function () {
                                     errors: ['Student or course not found'],
                                     warnings: []
                                 }];
-                        }
+                        } // 3. Create enrollment record
                         return [4 /*yield*/, databaseService_1.DatabaseService.insert('enrollments', {
                                 student_id: student.student_id,
                                 course_id: parseInt(courseId),
                                 course_name: course.subject_name,
                                 semester: semester,
-                                status: 'registered',
+                                is_enrolled: true, // Boolean approach: true = enrolled
                                 credits: course.credits
                             })];
                     case 4:
@@ -276,7 +276,7 @@ var RegistrationManager = /** @class */ (function () {
                 switch (_a.label) {
                     case 0:
                         _a.trys.push([0, 2, , 3]);
-                        query = "\n                SELECT \n                    e.id as enrollment_id,\n                    e.course_id,\n                    e.course_name,\n                    e.semester,\n                    e.status,\n                    e.credits,\n                    e.midterm_grade,\n                    e.final_grade,\n                    e.total_grade,\n                    e.letter_grade,\n                    oc.subject_code,\n                    oc.lecturer,\n                    oc.schedule,\n                    oc.room,\n                    s.type,\n                    s.description\n                FROM enrollments e\n                JOIN open_courses oc ON e.course_id = oc.id\n                JOIN subjects s ON oc.subject_code = s.subject_code\n                WHERE e.student_id = $1\n            ";
+                        query = "                SELECT \n                    e.id as enrollment_id,\n                    e.course_id,\n                    e.course_name,\n                    e.semester,\n                    e.is_enrolled, -- Updated to boolean field\n                    e.credits,\n                    e.midterm_grade,\n                    e.final_grade,\n                    e.total_grade,\n                    e.letter_grade,\n                    oc.subject_code,\n                    oc.lecturer,\n                    oc.schedule,\n                    oc.room,\n                    s.type,\n                    s.description\n                FROM enrollments e\n                JOIN open_courses oc ON e.course_id = oc.id\n                JOIN subjects s ON oc.subject_code = s.subject_code\n                WHERE e.student_id = $1\n            ";
                         params = [studentId];
                         if (semester) {
                             query += ' AND e.semester = $2';
@@ -315,19 +315,16 @@ var RegistrationManager = /** @class */ (function () {
                                     errors: ['Enrollment not found'],
                                     warnings: []
                                 }];
-                        }
-                        // 2. Check if drop is allowed
-                        if (enrollment.status === 'completed') {
+                        } // 2. Check if drop is allowed
+                        if (!enrollment.is_enrolled) {
                             return [2 /*return*/, {
                                     success: false,
-                                    errors: ['Cannot drop completed course'],
+                                    errors: ['Cannot drop already dropped course'],
                                     warnings: []
                                 }];
-                        }
-                        // 3. Update enrollment status
-                        return [4 /*yield*/, databaseService_1.DatabaseService.update('enrollments', { status: 'dropped' }, { id: enrollmentId })];
+                        } // 3. Update enrollment to dropped (boolean false)
+                        return [4 /*yield*/, databaseService_1.DatabaseService.update('enrollments', { is_enrolled: false, drop_date: new Date() }, { id: enrollmentId })];
                     case 2:
-                        // 3. Update enrollment status
                         _a.sent();
                         // 4. Update course current students count
                         return [4 /*yield*/, databaseService_1.DatabaseService.query("\n                UPDATE open_courses \n                SET current_students = GREATEST(current_students - 1, 0) \n                WHERE id = $1\n            ", [enrollment.course_id])];
@@ -362,7 +359,7 @@ var RegistrationManager = /** @class */ (function () {
                 switch (_a.label) {
                     case 0:
                         _a.trys.push([0, 2, , 3]);
-                        return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("\n                SELECT \n                    s.student_id,\n                    s.name,\n                    s.major,\n                    s.enrollment_year,\n                    s.completed_credits,\n                    s.current_credits,\n                    s.required_credits,\n                    COUNT(e.id) as total_enrollments,\n                    COUNT(CASE WHEN e.status = 'completed' THEN 1 END) as completed_courses,\n                    COUNT(CASE WHEN e.status = 'registered' THEN 1 END) as current_enrollments,\n                    COALESCE(AVG(e.total_grade), 0) as gpa\n                FROM students s\n                LEFT JOIN enrollments e ON s.student_id = e.student_id\n                WHERE s.student_id = $1\n                GROUP BY s.student_id, s.name, s.major, s.enrollment_year, \n                         s.completed_credits, s.current_credits, s.required_credits\n            ", [studentId])];
+                        return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("\n                SELECT \n                    s.student_id,\n                    s.name,\n                    s.major,\n                    s.enrollment_year,                    s.completed_credits,\n                    s.current_credits,\n                    s.required_credits,\n                    COUNT(e.id) as total_enrollments,\n                    COUNT(CASE WHEN e.is_enrolled = true AND e.total_grade IS NOT NULL THEN 1 END) as completed_courses,\n                    COUNT(CASE WHEN e.is_enrolled = true AND e.total_grade IS NULL THEN 1 END) as current_enrollments,\n                    COALESCE(AVG(CASE WHEN e.is_enrolled = true AND e.total_grade IS NOT NULL THEN e.total_grade END), 0) as gpa\n                FROM students s\n                LEFT JOIN enrollments e ON s.student_id = e.student_id\n                WHERE s.student_id = $1\n                GROUP BY s.student_id, s.name, s.major, s.enrollment_year, \n                         s.completed_credits, s.current_credits, s.required_credits\n            ", [studentId])];
                     case 1:
                         summary = _a.sent();
                         return [2 /*return*/, summary];

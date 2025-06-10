@@ -40,10 +40,10 @@ exports.validatePayment = void 0;
 var express_validator_1 = require("express-validator");
 var paymentValidationRules = function () {
     return [
-        (0, express_validator_1.body)('tuitionRecordId')
+        (0, express_validator_1.body)('studentId')
             .isString()
             .notEmpty()
-            .withMessage('Tuition record ID is required'),
+            .withMessage('Student ID is required'),
         (0, express_validator_1.body)('amount')
             .isNumeric()
             .notEmpty()
@@ -53,9 +53,22 @@ var paymentValidationRules = function () {
         (0, express_validator_1.body)('paymentMethod')
             .isString()
             .notEmpty()
-            .withMessage('Payment method is required')
-            .isIn(['BANK_TRANSFER', 'CASH', 'CREDIT_CARD'])
-            .withMessage('Invalid payment method')
+            .withMessage('Payment method is required'),
+        (0, express_validator_1.body)('semester')
+            .isString()
+            .notEmpty()
+            .withMessage('Semester is required'),
+        (0, express_validator_1.body)('status')
+            .isString()
+            .isIn(['PENDING', 'COMPLETED', 'FAILED', 'REFUNDED'])
+            .withMessage('Invalid payment status'),
+        (0, express_validator_1.body)('paymentDate')
+            .isISO8601()
+            .withMessage('Invalid payment date format'),
+        (0, express_validator_1.body)('notes')
+            .optional()
+            .isString()
+            .withMessage('Notes must be a string')
     ];
 };
 var validate = function (req, res, next) {

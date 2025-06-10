@@ -93,26 +93,42 @@ var AdminController = /** @class */ (function () {
     };
     AdminController.prototype.getUserManagement = function (req, res, next) {
         return __awaiter(this, void 0, void 0, function () {
-            var _a, search, role, page, size, users, error_3;
-            return __generator(this, function (_b) {
-                switch (_b.label) {
+            var _a, search, role_1, page, size, _b, userList, total, currentPage, totalPages, users, searchLower_1, pageNum, pageSize, start, pagedUsers, error_3;
+            return __generator(this, function (_c) {
+                switch (_c.label) {
                     case 0:
-                        _b.trys.push([0, 2, , 3]);
-                        _a = req.query, search = _a.search, role = _a.role, page = _a.page, size = _a.size;
+                        _c.trys.push([0, 2, , 3]);
+                        _a = req.query, search = _a.search, role_1 = _a.role, page = _a.page, size = _a.size;
                         return [4 /*yield*/, userManager_1.userManager.getAllUsers()];
                     case 1:
-                        users = _b.sent();
-                        // TODO: Implement filtering and pagination logic
+                        _b = _c.sent(), userList = _b.users, total = _b.total, currentPage = _b.page, totalPages = _b.totalPages;
+                        users = userList;
+                        // Filter by role
+                        if (role_1 && typeof role_1 === 'string') {
+                            users = users.filter(function (user) { return user.role === role_1; });
+                        }
+                        // Filter by search (name or email)
+                        if (search && typeof search === 'string') {
+                            searchLower_1 = search.toLowerCase();
+                            users = users.filter(function (user) {
+                                return user.name.toLowerCase().includes(searchLower_1) ||
+                                    user.email.toLowerCase().includes(searchLower_1);
+                            });
+                        }
+                        pageNum = page ? parseInt(page) : 1;
+                        pageSize = size ? parseInt(size) : 10;
+                        start = (pageNum - 1) * pageSize;
+                        pagedUsers = users.slice(start, start + pageSize);
                         res.status(200).json({
                             success: true,
-                            data: users,
-                            total: users.length,
-                            page: page ? parseInt(page) : 1,
-                            size: size ? parseInt(size) : 10
+                            data: pagedUsers,
+                            total: total,
+                            page: pageNum,
+                            size: pageSize
                         });
                         return [3 /*break*/, 3];
                     case 2:
-                        error_3 = _b.sent();
+                        error_3 = _c.sent();
                         next(error_3);
                         return [3 /*break*/, 3];
                     case 3: return [2 /*return*/];

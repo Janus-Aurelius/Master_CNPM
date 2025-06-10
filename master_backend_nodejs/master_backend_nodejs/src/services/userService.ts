@@ -1,4 +1,4 @@
-// User Service for final_cnpm database
+// User Service for master_cnpm database
 import { DatabaseService } from './database/databaseService';
 import bcrypt from 'bcrypt';
 
@@ -13,55 +13,38 @@ const tokenBlacklist = new Set<string>();
  * Map database roles to application roles
  */
 const roleMapping: Record<string, string> = {
-    'N1': 'admin',        // Admin
-    'N2': 'academic',     // Giảng viên
-    'N3': 'student',      // Sinh viên
-    'N4': 'financial'     // Kế toán
+    'admin': 'admin',
+    'academic': 'academic',
+    'student': 'student',
+    'financial': 'financial'
 };
 
 /**
- * Get user by username (tendangnhap) from final_cnpm database
+ * Get user by email from master_cnpm database
  */
 export const getUserByEmail = async (email: string) => {
     try {
-        // Query nguoidung table with role information
+        // Query users table with role information
         const dbUser = await DatabaseService.queryOne(`
             SELECT 
-                nd.tendangnhap,
-                nd.userid,
-                nd.matkhau,
-                nd.manhom,
-                nd.masosinhvien,
-                nnd.tennhom
-            FROM nguoidung nd
-            LEFT JOIN nhomnguoidung nnd ON nd.manhom = nnd.manhom
-            WHERE nd.tendangnhap = $1
+                u.id,
+                u.email,
+                u.name,
+                u.password,
+                u.role,
+                u.status
+            FROM users u
+            WHERE u.email = $1
         `, [email]);
 
         if (dbUser) {
-            // Get additional info if user is a student
-            let additionalInfo = null;
-            if (dbUser.masosinhvien) {
-                additionalInfo = await DatabaseService.queryOne(`
-                    SELECT 
-                        sv.hoten,
-                        sv.ngaysinh,
-                        sv.gioitinh,
-                        sv.manganh
-                    FROM sinhvien sv
-                    WHERE sv.masosinhvien = $1
-                `, [dbUser.masosinhvien]);
-            }
-
             return {
-                id: dbUser.userid || dbUser.tendangnhap,
-                email: dbUser.tendangnhap, // Using tendangnhap as email
-                name: additionalInfo?.hoten || dbUser.tennhom || 'User',
-                role: roleMapping[dbUser.manhom] || 'user',
-                passwordHash: dbUser.matkhau,
-                studentId: dbUser.masosinhvien,
-                groupId: dbUser.manhom,
-                groupName: dbUser.tennhom
+                id: dbUser.id,
+                email: dbUser.email,
+                name: dbUser.name,
+                role: dbUser.role,
+                passwordHash: dbUser.password,
+                status: dbUser.status
             };
         }
 
@@ -73,46 +56,30 @@ export const getUserByEmail = async (email: string) => {
 };
 
 /**
- * Get user by ID from final_cnpm database
+ * Get user by ID from master_cnpm database
  */
 export const getUserById = async (id: string) => {
     try {
         const dbUser = await DatabaseService.queryOne(`
             SELECT 
-                nd.tendangnhap,
-                nd.userid,
-                nd.matkhau,
-                nd.manhom,
-                nd.masosinhvien,
-                nnd.tennhom
-            FROM nguoidung nd
-            LEFT JOIN nhomnguoidung nnd ON nd.manhom = nnd.manhom
-            WHERE nd.userid = $1 OR nd.tendangnhap = $1
+                u.id,
+                u.email,
+                u.name,
+                u.password,
+                u.role,
+                u.status
+            FROM users u
+            WHERE u.id = $1
         `, [id]);
 
         if (dbUser) {
-            let additionalInfo = null;
-            if (dbUser.masosinhvien) {
-                additionalInfo = await DatabaseService.queryOne(`
-                    SELECT 
-                        sv.hoten,
-                        sv.ngaysinh,
-                        sv.gioitinh,
-                        sv.manganh
-                    FROM sinhvien sv
-                    WHERE sv.masosinhvien = $1
-                `, [dbUser.masosinhvien]);
-            }
-
             return {
-                id: dbUser.userid || dbUser.tendangnhap,
-                email: dbUser.tendangnhap,
-                name: additionalInfo?.hoten || dbUser.tennhom || 'User',
-                role: roleMapping[dbUser.manhom] || 'user',
-                passwordHash: dbUser.matkhau,
-                studentId: dbUser.masosinhvien,
-                groupId: dbUser.manhom,
-                groupName: dbUser.tennhom
+                id: dbUser.id,
+                email: dbUser.email,
+                name: dbUser.name,
+                role: dbUser.role,
+                passwordHash: dbUser.password,
+                status: dbUser.status
             };
         }
 

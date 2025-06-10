@@ -1,23 +1,18 @@
 // src/services/database/databaseService.ts
 import { Database } from '../../config/database';
+import { PoolClient } from 'pg';
 
 export interface QueryResult<T = any> {
     rows: T[];
     rowCount: number;
 }
 
-export class DatabaseService {    /**
+export class DatabaseService {
+    /**
      * Execute a query with parameters
      */
     static async query<T = any>(sql: string, params?: any[]): Promise<T[]> {
-        try {
-            const result = await Database.query(sql, params);
-            return result;
-        } catch (error) {
-            console.error('Database query error:', error);
-            const errorMessage = error instanceof Error ? error.message : 'Unknown database error';
-            throw new Error(`Database query failed: ${errorMessage}`);
-        }
+        return Database.query<T>(sql, params);
     }
 
     /**
@@ -32,16 +27,23 @@ export class DatabaseService {    /**
      * Execute multiple queries in a transaction
      */
     static async transaction(queries: Array<{ sql: string; params?: any[] }>): Promise<any[]> {
-        // Note: This is a simplified transaction implementation
-        // In production, you should use proper PostgreSQL transactions
-        const results = [];
-        
-        for (const query of queries) {
-            const result = await this.query(query.sql, query.params);
-            results.push(result);
-        }
-        
-        return results;
+        return Database.withClient(async (client: PoolClient) => {
+            try {
+                await client.query('BEGIN');
+                const results = [];
+                
+                for (const query of queries) {
+                    const result = await client.query(query.sql, query.params);
+                    results.push(result.rows);
+                }
+                
+                await client.query('COMMIT');
+                return results;
+            } catch (error) {
+                await client.query('ROLLBACK');
+                throw error;
+            }
+        });
     }
 
     /**
@@ -130,21 +132,23 @@ export class DatabaseService {    /**
         page = 1, 
         limit = 10
     ): Promise<{ data: T[]; total: number; page: number; limit: number }> {
-        // Get total count
-        const countSql = `SELECT COUNT(*) as count FROM (${sql}) as count_query`;
-        const countResult = await this.query<{ count: string }>(countSql, params);
-        const total = parseInt(countResult[0].count);
-        
-        // Get paginated data
-        const offset = (page - 1) * limit;
-        const paginatedSql = `${sql} LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
-        const data = await this.query<T>(paginatedSql, [...params, limit, offset]);
-        
-        return {
-            data,
-            total,
-            page,
-            limit
-        };
+        return Database.withClient(async (client: PoolClient) => {
+            // Get total count
+            const countSql = `SELECT COUNT(*) as count FROM (${sql}) as count_query`;
+            const countResult = await client.query(countSql, params);
+            const total = parseInt(countResult.rows[0].count);
+            
+            // Get paginated data
+            const offset = (page - 1) * limit;
+            const paginatedSql = `${sql} LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
+            const dataResult = await client.query(paginatedSql, [...params, limit, offset]);
+            
+            return {
+                data: dataResult.rows,
+                total,
+                page,
+                limit
+            };
+        });
     }
 }

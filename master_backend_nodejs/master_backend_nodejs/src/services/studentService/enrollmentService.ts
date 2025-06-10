@@ -300,3 +300,6 @@ export const enrollmentService = {
         }
     }
 };
+
+export const enrollments: IEnrollment[] = [];
+export const enrolledSubjects: IEnrolledSubject[] = [];

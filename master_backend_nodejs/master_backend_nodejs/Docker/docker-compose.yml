@@ -6,3 +6,26 @@ services:
     container_name: school-db
     ports:
       - "5432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=secret
+      - POSTGRES_DB=mydb
+    volumes:
+      - ./schema.sql:/docker-entrypoint-initdb.d/01_schema.sql
+      - ./create_data.sql:/docker-entrypoint-initdb.d/02_data.sql
+
+  backend:
+    build: 
+      context: ..
+      dockerfile: Docker/backend.Dockerfile
+    container_name: school-backend
+    ports:
+      - "3000:3000"
+    environment:
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_USER=postgres
+      - DB_PASSWORD=secret
+      - DB_NAME=mydb
+    depends_on:
+      - db

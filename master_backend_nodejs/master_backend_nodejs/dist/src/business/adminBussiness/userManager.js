@@ -1,15 +1,4 @@
 "use strict";
-var __assign = (this && this.__assign) || function () {
-    __assign = Object.assign || function(t) {
-        for (var s, i = 1, n = arguments.length; i < n; i++) {
-            s = arguments[i];
-            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
-                t[p] = s[p];
-        }
-        return t;
-    };
-    return __assign.apply(this, arguments);
-};
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
     var desc = Object.getOwnPropertyDescriptor(m, k);
@@ -79,12 +68,17 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
+var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
+    if (pack || arguments.length === 2) for (var i = 0, l = from.length, ar; i < l; i++) {
+        if (ar || !(i in from)) {
+            if (!ar) ar = Array.prototype.slice.call(from, 0, i);
+            ar[i] = from[i];
+        }
+    }
+    return to.concat(ar || Array.prototype.slice.call(from));
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.userManager = void 0;
-var UserService_1 = __importDefault(require("../../services/adminService/UserService"));
 var errorHandler_1 = require("../../middleware/errorHandler");
 var DashboardService = __importStar(require("../../services/adminService/dashboardService"));
 var databaseService_1 = require("../../services/database/databaseService");
@@ -92,68 +86,205 @@ var UserManager = /** @class */ (function () {
     function UserManager() {
     }
     UserManager.prototype.getAllUsers = function () {
-        return __awaiter(this, void 0, void 0, function () {
+        return __awaiter(this, arguments, void 0, function (page, limit, filters) {
+            var offset, whereConditions, queryParams, paramIndex, whereClause, totalCount, users, error_1;
+            if (page === void 0) { page = 1; }
+            if (limit === void 0) { limit = 10; }
             return __generator(this, function (_a) {
-                return [2 /*return*/, UserService_1.default.getAllUsers()];
+                switch (_a.label) {
+                    case 0:
+                        _a.trys.push([0, 3, , 4]);
+                        offset = (page - 1) * limit;
+                        whereConditions = [];
+                        queryParams = [];
+                        paramIndex = 1;
+                        if (filters === null || filters === void 0 ? void 0 : filters.role) {
+                            whereConditions.push("role = $".concat(paramIndex));
+                            queryParams.push(filters.role);
+                            paramIndex++;
+                        }
+                        if ((filters === null || filters === void 0 ? void 0 : filters.status) !== undefined) {
+                            whereConditions.push("status = $".concat(paramIndex));
+                            queryParams.push(filters.status);
+                            paramIndex++;
+                        }
+                        if (filters === null || filters === void 0 ? void 0 : filters.search) {
+                            whereConditions.push("(name ILIKE $".concat(paramIndex, " OR email ILIKE $").concat(paramIndex, ")"));
+                            queryParams.push("%".concat(filters.search, "%"));
+                            paramIndex++;
+                        }
+                        whereClause = whereConditions.length > 0
+                            ? "WHERE ".concat(whereConditions.join(' AND '))
+                            : '';
+                        return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("\n                SELECT COUNT(*) as total\n                FROM users\n                ".concat(whereClause, "\n            "), queryParams)];
+                    case 1:
+                        totalCount = _a.sent();
+                        return [4 /*yield*/, databaseService_1.DatabaseService.query("\n                SELECT *\n                FROM users\n                ".concat(whereClause, "\n                ORDER BY created_at DESC\n                LIMIT $").concat(paramIndex, " OFFSET $").concat(paramIndex + 1, "\n            "), __spreadArray(__spreadArray([], queryParams, true), [limit, offset], false))];
+                    case 2:
+                        users = _a.sent();
+                        return [2 /*return*/, {
+                                users: users,
+                                total: parseInt((totalCount === null || totalCount === void 0 ? void 0 : totalCount.total) || '0'),
+                                page: page,
+                                totalPages: Math.ceil(parseInt((totalCount === null || totalCount === void 0 ? void 0 : totalCount.total) || '0') / limit)
+                            }];
+                    case 3:
+                        error_1 = _a.sent();
+                        console.error('Error getting users:', error_1);
+                        throw new errorHandler_1.AppError(500, 'Error retrieving users');
+                    case 4: return [2 /*return*/];
+                }
             });
         });
     };
     UserManager.prototype.getUserById = function (id) {
         return __awaiter(this, void 0, void 0, function () {
+            var user, error_2;
             return __generator(this, function (_a) {
-                return [2 /*return*/, UserService_1.default.getUserById(id)];
+                switch (_a.label) {
+                    case 0:
+                        _a.trys.push([0, 2, , 3]);
+                        return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("\n                SELECT * FROM users WHERE id = $1\n            ", [id])];
+                    case 1:
+                        user = _a.sent();
+                        return [2 /*return*/, user || null];
+                    case 2:
+                        error_2 = _a.sent();
+                        console.error('Error getting user:', error_2);
+                        throw new errorHandler_1.AppError(500, 'Error retrieving user');
+                    case 3: return [2 /*return*/];
+                }
             });
         });
     };
     UserManager.prototype.createUser = function (userData) {
         return __awaiter(this, void 0, void 0, function () {
-            var existingUsers;
+            var existingUser, result, error_3;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, UserService_1.default.getAllUsers()];
+                    case 0:
+                        _a.trys.push([0, 3, , 4]);
+                        return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("\n                SELECT * FROM users WHERE email = $1\n            ", [userData.email])];
                     case 1:
-                        existingUsers = _a.sent();
-                        if (existingUsers.some(function (user) { return user.email === userData.email; })) {
+                        existingUser = _a.sent();
+                        if (existingUser) {
                             throw new errorHandler_1.AppError(400, 'Email already exists');
                         }
-                        return [2 /*return*/, UserService_1.default.createUser(__assign(__assign({}, userData), { createdAt: new Date(), updatedAt: new Date() }))];
+                        return [4 /*yield*/, databaseService_1.DatabaseService.query("\n                INSERT INTO users (name, email, role, status, created_at, updated_at)\n                VALUES ($1, $2, $3, $4, NOW(), NOW())\n                RETURNING *\n            ", [userData.name, userData.email, userData.role, userData.status])];
+                    case 2:
+                        result = _a.sent();
+                        return [2 /*return*/, result[0]];
+                    case 3:
+                        error_3 = _a.sent();
+                        if (error_3 instanceof errorHandler_1.AppError)
+                            throw error_3;
+                        console.error('Error creating user:', error_3);
+                        throw new errorHandler_1.AppError(500, 'Error creating user');
+                    case 4: return [2 /*return*/];
                 }
             });
         });
     };
     UserManager.prototype.updateUser = function (id, userData) {
         return __awaiter(this, void 0, void 0, function () {
-            var existingUsers;
+            var existingUser, result, error_4;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, UserService_1.default.getAllUsers()];
+                    case 0:
+                        _a.trys.push([0, 4, , 5]);
+                        if (!userData.email) return [3 /*break*/, 2];
+                        return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("\n                    SELECT * FROM users WHERE email = $1 AND id != $2\n                ", [userData.email, id])];
                     case 1:
-                        existingUsers = _a.sent();
-                        if (userData.email && existingUsers.some(function (user) { return user.email === userData.email && user.id !== id; })) {
+                        existingUser = _a.sent();
+                        if (existingUser) {
                             throw new errorHandler_1.AppError(400, 'Email already exists');
                         }
-                        return [2 /*return*/, UserService_1.default.updateUser(id, userData)];
+                        _a.label = 2;
+                    case 2: return [4 /*yield*/, databaseService_1.DatabaseService.query("\n                UPDATE users \n                SET \n                    name = COALESCE($1, name),\n                    email = COALESCE($2, email),\n                    role = COALESCE($3, role),\n                    status = COALESCE($4, status),\n                    updated_at = NOW()\n                WHERE id = $5\n                RETURNING *\n            ", [userData.name, userData.email, userData.role, userData.status, id])];
+                    case 3:
+                        result = _a.sent();
+                        return [2 /*return*/, result[0] || null];
+                    case 4:
+                        error_4 = _a.sent();
+                        if (error_4 instanceof errorHandler_1.AppError)
+                            throw error_4;
+                        console.error('Error updating user:', error_4);
+                        throw new errorHandler_1.AppError(500, 'Error updating user');
+                    case 5: return [2 /*return*/];
                 }
             });
         });
     };
     UserManager.prototype.deleteUser = function (id) {
         return __awaiter(this, void 0, void 0, function () {
+            var result, error_5, error_6;
             return __generator(this, function (_a) {
-                return [2 /*return*/, UserService_1.default.deleteUser(id)];
+                switch (_a.label) {
+                    case 0:
+                        _a.trys.push([0, 9, , 10]);
+                        // Start transaction
+                        return [4 /*yield*/, databaseService_1.DatabaseService.query('BEGIN')];
+                    case 1:
+                        // Start transaction
+                        _a.sent();
+                        _a.label = 2;
+                    case 2:
+                        _a.trys.push([2, 6, , 8]);
+                        // Delete related records first
+                        return [4 /*yield*/, databaseService_1.DatabaseService.query("\n                    DELETE FROM user_sessions WHERE user_id = $1;\n                    DELETE FROM audit_logs WHERE user_id = $1;\n                    DELETE FROM academic_requests WHERE student_id = (SELECT student_id FROM students WHERE user_id = $1);\n                    DELETE FROM enrollments WHERE student_id = (SELECT student_id FROM students WHERE user_id = $1);\n                    DELETE FROM tuition_records WHERE student_id = (SELECT student_id FROM students WHERE user_id = $1);\n                    DELETE FROM payment_receipts WHERE student_id = (SELECT student_id FROM students WHERE user_id = $1);\n                    DELETE FROM students WHERE user_id = $1;\n                ", [id])];
+                    case 3:
+                        // Delete related records first
+                        _a.sent();
+                        return [4 /*yield*/, databaseService_1.DatabaseService.query("\n                    DELETE FROM users WHERE id = $1 RETURNING *\n                ", [id])];
+                    case 4:
+                        result = _a.sent();
+                        // Commit transaction
+                        return [4 /*yield*/, databaseService_1.DatabaseService.query('COMMIT')];
+                    case 5:
+                        // Commit transaction
+                        _a.sent();
+                        return [2 /*return*/, result.length > 0];
+                    case 6:
+                        error_5 = _a.sent();
+                        // Rollback on error
+                        return [4 /*yield*/, databaseService_1.DatabaseService.query('ROLLBACK')];
+                    case 7:
+                        // Rollback on error
+                        _a.sent();
+                        throw error_5;
+                    case 8: return [3 /*break*/, 10];
+                    case 9:
+                        error_6 = _a.sent();
+                        console.error('Error deleting user:', error_6);
+                        throw new errorHandler_1.AppError(500, 'Error deleting user and related data');
+                    case 10: return [2 /*return*/];
+                }
             });
         });
     };
     UserManager.prototype.changeUserStatus = function (id, status) {
         return __awaiter(this, void 0, void 0, function () {
+            var result, error_7;
             return __generator(this, function (_a) {
-                return [2 /*return*/, UserService_1.default.updateUser(id, { status: status })];
+                switch (_a.label) {
+                    case 0:
+                        _a.trys.push([0, 2, , 3]);
+                        return [4 /*yield*/, databaseService_1.DatabaseService.query("\n                UPDATE users \n                SET \n                    status = $1\n                WHERE id = $2\n                RETURNING *\n            ", [status, id])];
+                    case 1:
+                        result = _a.sent();
+                        return [2 /*return*/, result[0] || null];
+                    case 2:
+                        error_7 = _a.sent();
+                        console.error('Error changing user status:', error_7);
+                        throw new errorHandler_1.AppError(500, 'Error changing user status');
+                    case 3: return [2 /*return*/];
+                }
             });
         });
     };
     UserManager.prototype.getDashboardStats = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var userStats, systemStats, recentActivity, error_1;
+            var userStats, systemStats, recentActivity, error_8;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -191,8 +322,8 @@ var UserManager = /** @class */ (function () {
                                 }
                             }];
                     case 4:
-                        error_1 = _a.sent();
-                        console.error('Error fetching dashboard stats:', error_1);
+                        error_8 = _a.sent();
+                        console.error('Error fetching dashboard stats:', error_8);
                         return [4 /*yield*/, DashboardService.getDashboardStats()];
                     case 5: 
                     // Fallback to service call
@@ -204,7 +335,7 @@ var UserManager = /** @class */ (function () {
     };
     UserManager.prototype.getSystemConfig = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var configs, configMap_1, error_2;
+            var configs, configMap_1, error_9;
             var _a, _b;
             return __generator(this, function (_c) {
                 switch (_c.label) {
@@ -240,8 +371,8 @@ var UserManager = /** @class */ (function () {
                                 backupFrequency: configMap_1.backup_frequency || 'daily'
                             }];
                     case 2:
-                        error_2 = _c.sent();
-                        console.error('Error fetching system config:', error_2);
+                        error_9 = _c.sent();
+                        console.error('Error fetching system config:', error_9);
                         // Fallback to default config
                         return [2 /*return*/, {
                                 maxUsers: 1000,
@@ -261,7 +392,7 @@ var UserManager = /** @class */ (function () {
     };
     UserManager.prototype.updateSystemConfig = function (configKey, configValue) {
         return __awaiter(this, void 0, void 0, function () {
-            var settingType, settingValue, error_3;
+            var settingType, settingValue, error_10;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -285,8 +416,8 @@ var UserManager = /** @class */ (function () {
                         _a.sent();
                         return [2 /*return*/, { success: true, message: 'System configuration updated successfully' }];
                     case 2:
-                        error_3 = _a.sent();
-                        console.error('Error updating system config:', error_3);
+                        error_10 = _a.sent();
+                        console.error('Error updating system config:', error_10);
                         throw new errorHandler_1.AppError(500, 'Error updating system configuration');
                     case 3: return [2 /*return*/];
                 }
@@ -295,7 +426,7 @@ var UserManager = /** @class */ (function () {
     };
     UserManager.prototype.getAuditLogs = function () {
         return __awaiter(this, arguments, void 0, function (limit) {
-            var auditLogs, error_4;
+            var auditLogs, error_11;
             if (limit === void 0) { limit = 50; }
             return __generator(this, function (_a) {
                 switch (_a.label) {
@@ -306,8 +437,8 @@ var UserManager = /** @class */ (function () {
                         auditLogs = _a.sent();
                         return [2 /*return*/, auditLogs || []];
                     case 2:
-                        error_4 = _a.sent();
-                        console.error('Error fetching audit logs:', error_4);
+                        error_11 = _a.sent();
+                        console.error('Error fetching audit logs:', error_11);
                         return [2 /*return*/, []];
                     case 3: return [2 /*return*/];
                 }
@@ -316,7 +447,7 @@ var UserManager = /** @class */ (function () {
     };
     UserManager.prototype.createAuditLog = function (userId, action, resource, details, ipAddress) {
         return __awaiter(this, void 0, void 0, function () {
-            var error_5;
+            var error_12;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -326,8 +457,8 @@ var UserManager = /** @class */ (function () {
                         _a.sent();
                         return [3 /*break*/, 3];
                     case 2:
-                        error_5 = _a.sent();
-                        console.error('Error creating audit log:', error_5);
+                        error_12 = _a.sent();
+                        console.error('Error creating audit log:', error_12);
                         return [3 /*break*/, 3];
                     case 3: return [2 /*return*/];
                 }

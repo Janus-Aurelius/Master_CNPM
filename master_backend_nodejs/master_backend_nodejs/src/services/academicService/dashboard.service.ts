@@ -30,12 +30,22 @@ interface CourseStatistics {
     averageEnrollmentRate: number;
 }
 
+interface StudentRequest {
+    id: number;
+    studentId: string;
+    studentName: string;
+    course: string;
+    requestType: 'register' | 'drop';
+    submittedDateTime: string;
+    status: 'pending' | 'approved' | 'rejected';
+}
+
 export const academicDashboardService = {
     async getDashboardStats(): Promise<AcademicDashboardStats> {
         try {
             const totalSubjects = await DatabaseService.queryOne(`SELECT COUNT(*) as count FROM subjects`);
             const totalOpenCourses = await DatabaseService.queryOne(`SELECT COUNT(*) as count FROM open_courses WHERE status = 'open'`);
-            const totalPrograms = await DatabaseService.queryOne(`SELECT COUNT(*) as count FROM programs`);
+            const totalPrograms = await DatabaseService.queryOne(`SELECT COUNT(*) as count FROM chuongtrinhdaotao`);
             const pendingRequests = await DatabaseService.queryOne(`SELECT COUNT(*) as count FROM student_subject_requests WHERE status = 'pending'`);
             const recentActivities = await this.getRecentActivities(5);
             return {
@@ -118,6 +128,29 @@ export const academicDashboardService = {
         } catch (error) {
             console.error('Error fetching pending requests count:', error);
             return 0;
+        }
+    },
+
+    async getStudentRequests(): Promise<StudentRequest[]> {
+        try {
+            const requests = await DatabaseService.query(`
+                SELECT 
+                    r.id,
+                    r.student_id as "studentId",
+                    s.hoten as "studentName",
+                    c.tenmonhoc as course,
+                    r.request_type as "requestType",
+                    r.submitted_at as "submittedDateTime",
+                    r.status
+                FROM student_subject_requests r
+                JOIN sinhvien s ON r.student_id = s.masosinhvien
+                JOIN monhoc c ON r.subject_id = c.mamonhoc
+                ORDER BY r.submitted_at DESC
+            `);
+            return requests;
+        } catch (error) {
+            console.error('Error fetching student requests:', error);
+            return [];
         }
     }
 };

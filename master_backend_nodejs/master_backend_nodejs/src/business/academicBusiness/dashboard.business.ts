@@ -42,4 +42,12 @@ export class AcademicDashboardBusiness {
             throw new Error('Error fetching recent activities');
         }
     }
+
+    static async getStudentRequests() {
+        try {
+            return await academicDashboardService.getStudentRequests();
+        } catch (error) {
+            throw new Error('Error fetching student requests');
+        }
+    }
 }

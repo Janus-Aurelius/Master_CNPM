@@ -42,4 +42,17 @@ export class AcademicDashboardController {
             });
         }
     }
+
+    static async getStudentRequests(req: Request, res: Response) {
+        try {
+            const requests = await AcademicDashboardBusiness.getStudentRequests();
+            res.status(200).json({ success: true, data: requests });
+        } catch (error) {
+            res.status(500).json({ 
+                success: false, 
+                message: 'Error fetching student requests', 
+                error: error instanceof Error ? error.message : 'Unknown error' 
+            });
+        }
+    }
 }

@@ -35,77 +35,10 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
-    if (pack || arguments.length === 2) for (var i = 0, l = from.length, ar; i < l; i++) {
-        if (ar || !(i in from)) {
-            if (!ar) ar = Array.prototype.slice.call(from, 0, i);
-            ar[i] = from[i];
-        }
-    }
-    return to.concat(ar || Array.prototype.slice.call(from));
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.academicDashboardService = void 0;
 // src/services/academicService/dashboard.service.ts
 var databaseService_1 = require("../database/databaseService");
-// Mock data
-var mockStats = {
-    totalSubjects: 245,
-    totalOpenCourses: 89,
-    totalPrograms: 12,
-    pendingRequests: 15,
-    recentActivities: [
-        {
-            id: '1',
-            type: 'subject_created',
-            description: 'Môn học "Trí tuệ nhân tạo nâng cao" đã được tạo',
-            timestamp: '2025-06-05T10:30:00Z',
-            user: 'TS. Nguyễn Văn A'
-        },
-        {
-            id: '2',
-            type: 'course_opened',
-            description: 'Lớp học phần IT001 đã được mở cho HK1 2025-2026',
-            timestamp: '2025-06-05T09:15:00Z',
-            user: 'PGS. Trần Thị B'
-        },
-        {
-            id: '3',
-            type: 'request_submitted',
-            description: 'Yêu cầu thêm môn học từ sinh viên SV001',
-            timestamp: '2025-06-05T08:45:00Z',
-            user: 'Nguyễn Minh C'
-        }
-    ]
-};
-var mockSubjectStats = {
-    byDepartment: [
-        { department: 'Khoa học máy tính', count: 98 },
-        { department: 'Công nghệ thông tin', count: 87 },
-        { department: 'Toán học', count: 45 },
-        { department: 'Vật lý', count: 15 }
-    ],
-    byCredits: [
-        { credits: 2, count: 45 },
-        { credits: 3, count: 125 },
-        { credits: 4, count: 65 },
-        { credits: 5, count: 10 }
-    ],
-    totalCreditsOffered: 735
-};
-var mockCourseStats = {
-    bySemester: [
-        { semester: 'HK1 2024-2025', count: 45 },
-        { semester: 'HK2 2024-2025', count: 44 }
-    ],
-    byStatus: [
-        { status: 'open', count: 67 },
-        { status: 'closed', count: 15 },
-        { status: 'cancelled', count: 7 }
-    ],
-    totalEnrollments: 2456,
-    averageEnrollmentRate: 78.5
-};
 exports.academicDashboardService = {
     getDashboardStats: function () {
         return __awaiter(this, void 0, void 0, function () {
@@ -114,16 +47,16 @@ exports.academicDashboardService = {
                 switch (_a.label) {
                     case 0:
                         _a.trys.push([0, 6, , 7]);
-                        return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("\n                SELECT COUNT(*) as count FROM subjects\n            ")];
+                        return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("SELECT COUNT(*) as count FROM subjects")];
                     case 1:
                         totalSubjects = _a.sent();
-                        return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("\n                SELECT COUNT(*) as count FROM open_courses \n                WHERE status = 'open'\n            ")];
+                        return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("SELECT COUNT(*) as count FROM open_courses WHERE status = 'open'")];
                     case 2:
                         totalOpenCourses = _a.sent();
-                        return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("\n                SELECT COUNT(*) as count FROM programs\n            ")];
+                        return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("SELECT COUNT(*) as count FROM chuongtrinhdaotao")];
                     case 3:
                         totalPrograms = _a.sent();
-                        return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("\n                SELECT COUNT(*) as count FROM student_subject_requests \n                WHERE status = 'pending'\n            ")];
+                        return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("SELECT COUNT(*) as count FROM student_subject_requests WHERE status = 'pending'")];
                     case 4:
                         pendingRequests = _a.sent();
                         return [4 /*yield*/, this.getRecentActivities(5)];
@@ -139,8 +72,7 @@ exports.academicDashboardService = {
                     case 6:
                         error_1 = _a.sent();
                         console.error('Error fetching dashboard stats:', error_1);
-                        // Fallback to mock data
-                        return [2 /*return*/, mockStats];
+                        throw error_1;
                     case 7: return [2 /*return*/];
                 }
             });
@@ -153,13 +85,13 @@ exports.academicDashboardService = {
                 switch (_a.label) {
                     case 0:
                         _a.trys.push([0, 4, , 5]);
-                        return [4 /*yield*/, databaseService_1.DatabaseService.query("\n                SELECT \n                    COALESCE(department, 'General') as department,\n                    COUNT(*) as count\n                FROM subjects \n                GROUP BY department\n                ORDER BY count DESC\n            ")];
+                        return [4 /*yield*/, databaseService_1.DatabaseService.query("\n                SELECT COALESCE(department, 'General') as department, COUNT(*) as count\n                FROM subjects GROUP BY department ORDER BY count DESC\n            ")];
                     case 1:
                         byDepartment = _a.sent();
-                        return [4 /*yield*/, databaseService_1.DatabaseService.query("\n                SELECT \n                    credits,\n                    COUNT(*) as count\n                FROM subjects \n                GROUP BY credits\n                ORDER BY credits\n            ")];
+                        return [4 /*yield*/, databaseService_1.DatabaseService.query("\n                SELECT credits, COUNT(*) as count FROM subjects GROUP BY credits ORDER BY credits\n            ")];
                     case 2:
                         byCredits = _a.sent();
-                        return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("\n                SELECT SUM(credits) as total FROM subjects\n            ")];
+                        return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("SELECT SUM(credits) as total FROM subjects")];
                     case 3:
                         totalCreditsResult = _a.sent();
                         return [2 /*return*/, {
@@ -170,7 +102,7 @@ exports.academicDashboardService = {
                     case 4:
                         error_2 = _a.sent();
                         console.error('Error fetching subject statistics:', error_2);
-                        return [2 /*return*/, mockSubjectStats];
+                        throw error_2;
                     case 5: return [2 /*return*/];
                 }
             });
@@ -178,33 +110,33 @@ exports.academicDashboardService = {
     },
     getCourseStatistics: function () {
         return __awaiter(this, void 0, void 0, function () {
-            var bySemester, byStatus, totalEnrollmentsResult, enrollmentRate, error_3;
+            var bySemester, byStatus, totalEnrollmentsResult, avgEnrollmentRateResult, error_3;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         _a.trys.push([0, 5, , 6]);
-                        return [4 /*yield*/, databaseService_1.DatabaseService.query("\n                SELECT \n                    semester,\n                    COUNT(*) as count\n                FROM open_courses \n                GROUP BY semester\n                ORDER BY semester DESC\n                LIMIT 10\n            ")];
+                        return [4 /*yield*/, databaseService_1.DatabaseService.query("\n                SELECT semester, COUNT(*) as count FROM open_courses GROUP BY semester ORDER BY semester DESC\n            ")];
                     case 1:
                         bySemester = _a.sent();
-                        return [4 /*yield*/, databaseService_1.DatabaseService.query("\n                SELECT \n                    status,\n                    COUNT(*) as count\n                FROM open_courses \n                GROUP BY status\n            ")];
+                        return [4 /*yield*/, databaseService_1.DatabaseService.query("\n                SELECT status, COUNT(*) as count FROM open_courses GROUP BY status\n            ")];
                     case 2:
                         byStatus = _a.sent();
-                        return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("\n                SELECT COUNT(*) as total FROM enrollments\n            ")];
+                        return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("SELECT COUNT(*) as total FROM enrollments")];
                     case 3:
                         totalEnrollmentsResult = _a.sent();
-                        return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("\n                SELECT \n                    AVG(CASE \n                        WHEN oc.max_students > 0 \n                        THEN (oc.current_students::float / oc.max_students * 100)\n                        ELSE 0 \n                    END) as rate\n                FROM open_courses oc\n                WHERE oc.max_students > 0\n            ")];
+                        return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("SELECT AVG(enrollment_rate) as avg FROM open_courses")];
                     case 4:
-                        enrollmentRate = _a.sent();
+                        avgEnrollmentRateResult = _a.sent();
                         return [2 /*return*/, {
                                 bySemester: bySemester || [],
                                 byStatus: byStatus || [],
                                 totalEnrollments: (totalEnrollmentsResult === null || totalEnrollmentsResult === void 0 ? void 0 : totalEnrollmentsResult.total) || 0,
-                                averageEnrollmentRate: Math.round((enrollmentRate === null || enrollmentRate === void 0 ? void 0 : enrollmentRate.rate) || 0)
+                                averageEnrollmentRate: (avgEnrollmentRateResult === null || avgEnrollmentRateResult === void 0 ? void 0 : avgEnrollmentRateResult.avg) || 0
                             }];
                     case 5:
                         error_3 = _a.sent();
                         console.error('Error fetching course statistics:', error_3);
-                        return [2 /*return*/, mockCourseStats];
+                        throw error_3;
                     case 6: return [2 /*return*/];
                 }
             });
@@ -212,37 +144,21 @@ exports.academicDashboardService = {
     },
     getRecentActivities: function () {
         return __awaiter(this, arguments, void 0, function (limit) {
-            var activities, recentSubjects, recentCourses, recentRequests, error_4;
-            if (limit === void 0) { limit = 10; }
+            var activities, error_4;
+            if (limit === void 0) { limit = 5; }
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        _a.trys.push([0, 4, , 5]);
-                        activities = [];
-                        return [4 /*yield*/, databaseService_1.DatabaseService.query("\n                SELECT \n                    'subject_created' as type,\n                    'M\u00F4n h\u1ECDc \"' || subject_name || '\" \u0111\u00E3 \u0111\u01B0\u1EE3c t\u1EA1o' as description,\n                    created_at as timestamp,\n                    'System' as user\n                FROM subjects \n                WHERE created_at >= NOW() - INTERVAL '7 days'\n                ORDER BY created_at DESC\n                LIMIT 3\n            ")];
+                        _a.trys.push([0, 2, , 3]);
+                        return [4 /*yield*/, databaseService_1.DatabaseService.query("\n                SELECT id, type, description, timestamp, user\n                FROM recent_activities\n                ORDER BY timestamp DESC\n                LIMIT $1\n            ", [limit])];
                     case 1:
-                        recentSubjects = _a.sent();
-                        return [4 /*yield*/, databaseService_1.DatabaseService.query("\n                SELECT \n                    'course_opened' as type,\n                    'L\u1EDBp h\u1ECDc ph\u1EA7n ' || subject_code || ' \u0111\u00E3 \u0111\u01B0\u1EE3c m\u1EDF cho ' || semester as description,\n                    created_at as timestamp,\n                    COALESCE(lecturer, 'System') as user\n                FROM open_courses \n                WHERE created_at >= NOW() - INTERVAL '7 days'\n                ORDER BY created_at DESC\n                LIMIT 3\n            ")];
+                        activities = _a.sent();
+                        return [2 /*return*/, activities];
                     case 2:
-                        recentCourses = _a.sent();
-                        return [4 /*yield*/, databaseService_1.DatabaseService.query("\n                SELECT \n                    'request_submitted' as type,\n                    'Y\u00EAu c\u1EA7u ' || request_type || ' t\u1EEB sinh vi\u00EAn ' || student_id as description,\n                    created_at as timestamp,\n                    student_id as user\n                FROM student_subject_requests \n                WHERE created_at >= NOW() - INTERVAL '7 days'\n                ORDER BY created_at DESC\n                LIMIT 3\n            ")];
-                    case 3:
-                        recentRequests = _a.sent();
-                        // Combine and sort activities
-                        activities.push.apply(activities, __spreadArray(__spreadArray(__spreadArray([], recentSubjects, false), recentCourses, false), recentRequests, false));
-                        activities.sort(function (a, b) { return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(); });
-                        return [2 /*return*/, activities.slice(0, limit).map(function (activity, index) { return ({
-                                id: (index + 1).toString(),
-                                type: activity.type,
-                                description: activity.description,
-                                timestamp: new Date(activity.timestamp).toISOString(),
-                                user: activity.user
-                            }); })];
-                    case 4:
                         error_4 = _a.sent();
                         console.error('Error fetching recent activities:', error_4);
-                        return [2 /*return*/, mockStats.recentActivities.slice(0, limit)];
-                    case 5: return [2 /*return*/];
+                        return [2 /*return*/, []];
+                    case 3: return [2 /*return*/];
                 }
             });
         });
@@ -254,14 +170,34 @@ exports.academicDashboardService = {
                 switch (_a.label) {
                     case 0:
                         _a.trys.push([0, 2, , 3]);
-                        return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("\n                SELECT COUNT(*) as count \n                FROM student_subject_requests \n                WHERE status = 'pending'\n            ")];
+                        return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("\n                SELECT COUNT(*) as count FROM student_subject_requests WHERE status = 'pending'\n            ")];
                     case 1:
                         result = _a.sent();
                         return [2 /*return*/, (result === null || result === void 0 ? void 0 : result.count) || 0];
                     case 2:
                         error_5 = _a.sent();
                         console.error('Error fetching pending requests count:', error_5);
-                        return [2 /*return*/, mockStats.pendingRequests];
+                        return [2 /*return*/, 0];
+                    case 3: return [2 /*return*/];
+                }
+            });
+        });
+    },
+    getStudentRequests: function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var requests, error_6;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        _a.trys.push([0, 2, , 3]);
+                        return [4 /*yield*/, databaseService_1.DatabaseService.query("\n                SELECT \n                    r.id,\n                    r.student_id as \"studentId\",\n                    s.hoten as \"studentName\",\n                    c.tenmonhoc as course,\n                    r.request_type as \"requestType\",\n                    r.submitted_at as \"submittedDateTime\",\n                    r.status\n                FROM student_subject_requests r\n                JOIN sinhvien s ON r.student_id = s.masosinhvien\n                JOIN monhoc c ON r.subject_id = c.mamonhoc\n                ORDER BY r.submitted_at DESC\n            ")];
+                    case 1:
+                        requests = _a.sent();
+                        return [2 /*return*/, requests];
+                    case 2:
+                        error_6 = _a.sent();
+                        console.error('Error fetching student requests:', error_6);
+                        return [2 /*return*/, []];
                     case 3: return [2 /*return*/];
                 }
             });

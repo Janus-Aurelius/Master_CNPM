@@ -274,10 +274,12 @@ export const subjectRegistrationService = {
             await DatabaseService.query(`
                 UPDATE subjects SET current_students = current_students + 1 WHERE id = $1
             `, [subjectId]);
-            return true;
+        return true;
         } catch (error) {
             console.error('Error registering subject:', error);
             throw error;
         }
     }
 };
+
+export const subjects: ISubject[] = [];

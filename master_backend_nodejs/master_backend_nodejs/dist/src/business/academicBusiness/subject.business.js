@@ -75,10 +75,10 @@ var SubjectBusiness = /** @class */ (function () {
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        query = "\n            INSERT INTO subjects (\n                subject_code, name, credits, description, \n                prerequisite_subjects, type, department, \n                lecturer, schedule\n            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)\n            RETURNING *\n        ";
+                        query = "\n            INSERT INTO subjects (\n                subject_code, subjectName, credits, description, \n                prerequisite_subjects, type, department, \n                lecturer, schedule\n            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)\n            RETURNING *\n        ";
                         return [4 /*yield*/, database_1.Database.query(query, [
                                 subjectData.subjectCode,
-                                subjectData.name,
+                                subjectData.subjectName,
                                 subjectData.credits,
                                 subjectData.description,
                                 JSON.stringify(subjectData.prerequisiteSubjects),
@@ -100,10 +100,10 @@ var SubjectBusiness = /** @class */ (function () {
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        query = "\n            UPDATE subjects \n            SET subject_code = $1, name = $2, credits = $3, \n                description = $4, prerequisite_subjects = $5, \n                type = $6, department = $7\n            WHERE id = $8\n            RETURNING *\n        ";
+                        query = "\n            UPDATE subjects \n            SET subject_code = $1, subjectName = $2, credits = $3, \n                description = $4, prerequisite_subjects = $5, \n                type = $6, department = $7\n            WHERE id = $8\n            RETURNING *\n        ";
                         return [4 /*yield*/, database_1.Database.query(query, [
                                 subjectData.subjectCode,
-                                subjectData.name,
+                                subjectData.subjectName,
                                 subjectData.credits,
                                 subjectData.description,
                                 JSON.stringify(subjectData.prerequisiteSubjects),
@@ -138,7 +138,7 @@ var SubjectBusiness = /** @class */ (function () {
         var errors = [];
         if (!subjectData.subjectCode)
             errors.push('Subject code is required');
-        if (!subjectData.name)
+        if (!subjectData.subjectName)
             errors.push('Subject name is required');
         if (!subjectData.credits)
             errors.push('Credits is required');

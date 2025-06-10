@@ -111,11 +111,16 @@ var ProgramController = /** @class */ (function () {
                         return [4 /*yield*/, program_business_1.ProgramBusiness.getAllPrograms()];
                     case 1:
                         programs = _a.sent();
-                        res.status(200).json({ success: true, data: programs });
+                        console.log('Programs from database:', programs);
+                        res.json(programs);
                         return [3 /*break*/, 3];
                     case 2:
                         error_1 = _a.sent();
-                        res.status(500).json({ success: false, message: 'Error fetching programs', error: error_1 });
+                        console.error('Error in getAllPrograms:', error_1);
+                        res.status(500).json({
+                            success: false,
+                            message: 'Internal server error'
+                        });
                         return [3 /*break*/, 3];
                     case 3: return [2 /*return*/];
                 }
@@ -130,17 +135,25 @@ var ProgramController = /** @class */ (function () {
                     case 0:
                         _a.trys.push([0, 2, , 3]);
                         id = req.params.id;
-                        return [4 /*yield*/, program_business_1.ProgramBusiness.getProgramById(id)];
+                        return [4 /*yield*/, program_business_1.ProgramBusiness.getProgramById(Number(id))];
                     case 1:
                         program = _a.sent();
                         if (!program) {
-                            return [2 /*return*/, res.status(404).json({ success: false, message: 'Program not found' })];
+                            res.status(404).json({
+                                success: false,
+                                message: 'Program not found'
+                            });
+                            return [2 /*return*/];
                         }
-                        res.status(200).json({ success: true, data: program });
+                        res.json(program);
                         return [3 /*break*/, 3];
                     case 2:
                         error_2 = _a.sent();
-                        res.status(500).json({ success: false, message: 'Error fetching program', error: error_2 });
+                        console.error('Error in getProgramById:', error_2);
+                        res.status(500).json({
+                            success: false,
+                            message: 'Internal server error'
+                        });
                         return [3 /*break*/, 3];
                     case 3: return [2 /*return*/];
                 }
@@ -149,20 +162,23 @@ var ProgramController = /** @class */ (function () {
     };
     ProgramController.createProgram = function (req, res) {
         return __awaiter(this, void 0, void 0, function () {
-            var programData, newProgram, error_3;
+            var program, error_3;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         _a.trys.push([0, 2, , 3]);
-                        programData = req.body;
-                        return [4 /*yield*/, program_business_1.ProgramBusiness.createProgram(programData)];
+                        return [4 /*yield*/, program_business_1.ProgramBusiness.createProgram(req.body)];
                     case 1:
-                        newProgram = _a.sent();
-                        res.status(201).json({ success: true, data: newProgram });
+                        program = _a.sent();
+                        res.status(201).json(program);
                         return [3 /*break*/, 3];
                     case 2:
                         error_3 = _a.sent();
-                        res.status(500).json({ success: false, message: 'Error creating program', error: error_3 });
+                        console.error('Error in createProgram:', error_3);
+                        res.status(500).json({
+                            success: false,
+                            message: 'Internal server error'
+                        });
                         return [3 /*break*/, 3];
                     case 3: return [2 /*return*/];
                 }
@@ -171,43 +187,63 @@ var ProgramController = /** @class */ (function () {
     };
     ProgramController.updateProgram = function (req, res) {
         return __awaiter(this, void 0, void 0, function () {
-            var id, programData, updatedProgram, error_4;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
+            var _a, maNganh, maMonHoc, maHocKy, programData, updated, error_4;
+            return __generator(this, function (_b) {
+                switch (_b.label) {
                     case 0:
-                        _a.trys.push([0, 2, , 3]);
-                        id = req.params.id;
+                        _a = req.params, maNganh = _a.maNganh, maMonHoc = _a.maMonHoc, maHocKy = _a.maHocKy;
                         programData = req.body;
-                        return [4 /*yield*/, program_business_1.ProgramBusiness.updateProgram(id, programData)];
+                        _b.label = 1;
                     case 1:
-                        updatedProgram = _a.sent();
-                        res.status(200).json({ success: true, data: updatedProgram });
-                        return [3 /*break*/, 3];
+                        _b.trys.push([1, 3, , 4]);
+                        return [4 /*yield*/, program_business_1.ProgramBusiness.updateProgram(maNganh, maMonHoc, maHocKy, programData)];
                     case 2:
-                        error_4 = _a.sent();
-                        res.status(500).json({ success: false, message: 'Error updating program', error: error_4 });
-                        return [3 /*break*/, 3];
-                    case 3: return [2 /*return*/];
+                        updated = _b.sent();
+                        if (!updated) {
+                            res.status(404).json({ message: 'Program not found' });
+                            return [2 /*return*/];
+                        }
+                        res.json(updated);
+                        return [3 /*break*/, 4];
+                    case 3:
+                        error_4 = _b.sent();
+                        res.status(500).json({ message: 'Failed to update program' });
+                        return [3 /*break*/, 4];
+                    case 4: return [2 /*return*/];
                 }
             });
         });
     };
     ProgramController.deleteProgram = function (req, res) {
         return __awaiter(this, void 0, void 0, function () {
-            var id, error_5;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
+            var _a, maNganh, maMonHoc, maHocKy, error_5;
+            return __generator(this, function (_b) {
+                switch (_b.label) {
                     case 0:
-                        _a.trys.push([0, 2, , 3]);
-                        id = req.params.id;
-                        return [4 /*yield*/, program_business_1.ProgramBusiness.deleteProgram(id)];
+                        _b.trys.push([0, 2, , 3]);
+                        _a = req.params, maNganh = _a.maNganh, maMonHoc = _a.maMonHoc, maHocKy = _a.maHocKy;
+                        return [4 /*yield*/, program_business_1.ProgramBusiness.deleteProgram(maNganh, maMonHoc, maHocKy)];
                     case 1:
-                        _a.sent();
-                        res.status(200).json({ success: true, message: 'Program deleted successfully' });
+                        _b.sent();
+                        res.json({
+                            success: true,
+                            message: 'Program deleted successfully'
+                        });
                         return [3 /*break*/, 3];
                     case 2:
-                        error_5 = _a.sent();
-                        res.status(500).json({ success: false, message: 'Error deleting program', error: error_5 });
+                        error_5 = _b.sent();
+                        console.error('Error in deleteProgram:', error_5);
+                        if (error_5 instanceof Error && error_5.message === 'Program not found') {
+                            res.status(404).json({
+                                success: false,
+                                message: 'Program not found'
+                            });
+                            return [2 /*return*/];
+                        }
+                        res.status(500).json({
+                            success: false,
+                            message: 'Internal server error'
+                        });
                         return [3 /*break*/, 3];
                     case 3: return [2 /*return*/];
                 }
@@ -250,6 +286,58 @@ var ProgramController = /** @class */ (function () {
                     });
                 }); });
                 return [2 /*return*/];
+            });
+        });
+    };
+    ProgramController.getProgramsByNganh = function (req, res) {
+        return __awaiter(this, void 0, void 0, function () {
+            var maNganh, programs, error_7;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        _a.trys.push([0, 2, , 3]);
+                        maNganh = req.params.maNganh;
+                        return [4 /*yield*/, program_business_1.ProgramBusiness.getProgramsByNganh(maNganh)];
+                    case 1:
+                        programs = _a.sent();
+                        res.json(programs);
+                        return [3 /*break*/, 3];
+                    case 2:
+                        error_7 = _a.sent();
+                        console.error('Error in getProgramsByNganh:', error_7);
+                        res.status(500).json({
+                            success: false,
+                            message: 'Internal server error'
+                        });
+                        return [3 /*break*/, 3];
+                    case 3: return [2 /*return*/];
+                }
+            });
+        });
+    };
+    ProgramController.getProgramsByHocKy = function (req, res) {
+        return __awaiter(this, void 0, void 0, function () {
+            var maHocKy, programs, error_8;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        _a.trys.push([0, 2, , 3]);
+                        maHocKy = req.params.maHocKy;
+                        return [4 /*yield*/, program_business_1.ProgramBusiness.getProgramsByHocKy(maHocKy)];
+                    case 1:
+                        programs = _a.sent();
+                        res.json(programs);
+                        return [3 /*break*/, 3];
+                    case 2:
+                        error_8 = _a.sent();
+                        console.error('Error in getProgramsByHocKy:', error_8);
+                        res.status(500).json({
+                            success: false,
+                            message: 'Internal server error'
+                        });
+                        return [3 /*break*/, 3];
+                    case 3: return [2 /*return*/];
+                }
             });
         });
     };

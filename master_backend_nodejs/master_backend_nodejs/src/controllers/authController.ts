@@ -1,91 +1,145 @@
-// Auth Controller for final_cnpm database
+// Auth Controller for master_cnpm database
 import { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import { getUserByEmail, getUserById, verifyPassword, blacklistToken, isTokenBlacklisted } from '../services/userService';
+import bcrypt from 'bcrypt';
+import { Database } from '../config/database';
+import { config } from '../config';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
+const JWT_SECRET = config.jwtSecret;
 const JWT_EXPIRES = '24h';
+
+// Map database group codes to roles
+const GROUP_TO_ROLE: Record<string, string> = {
+  'N1': 'admin',
+  'N2': 'academic',
+  'N3': 'student',
+  'N4': 'financial'
+};
 
 export const login = async (req: Request, res: Response) => {
   try {
-    const { email, password } = req.body;
+    console.log('=== Login Request ===');
+    console.log('Request body:', req.body);
+    const { username, password } = req.body;
 
-    // Validate input
-    if (!email || !password) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Tên đăng nhập và mật khẩu không được để trống' 
+    if (!username || !password) {
+      console.log('Missing username or password');
+      return res.status(400).json({
+        success: false,
+        message: 'Vui lòng nhập đầy đủ tên đăng nhập và mật khẩu'
       });
     }
 
-    // Get user from database
-    const user = await getUserByEmail(email);
+    console.log('Attempting database connection...');
+    // Query user from database
+    const result = await Database.query(
+      'SELECT * FROM NGUOIDUNG WHERE TenDangNhap = $1',
+      [username]
+    );
+
+    console.log('Database query result:', result);
+
+    const user = result[0];
+
     if (!user) {
-      return res.status(401).json({ 
-        success: false, 
-        message: 'Thông tin đăng nhập không đúng' 
+      console.log('User not found:', username);
+      return res.status(401).json({
+        success: false,
+        message: 'Tên đăng nhập không tồn tại'
       });
     }
 
-    // Verify password (handles both plain text and hashed passwords)
-    const isPasswordValid = await verifyPassword(password, user.passwordHash);
+    // Check password
+    const isPasswordValid = password === user.matkhau;
+    console.log('Password validation:', { 
+      isPasswordValid, 
+      providedPassword: password, 
+      storedPassword: user.matkhau 
+    });
+
     if (!isPasswordValid) {
-      return res.status(401).json({ 
-        success: false, 
-        message: 'Thông tin đăng nhập không đúng' 
+      console.log('Invalid password for user:', username);
+      return res.status(401).json({
+        success: false,
+        message: 'Mật khẩu không đúng'
       });
     }
 
-    // Define redirect URLs based on role
-    const redirectMap: Record<string, string> = {
-      'student': '/student',
-      'financial': '/financial',
-      'academic': '/academic',
-      'admin': '/admin'
-    };
-    
-    const redirectUrl = redirectMap[user.role] || '/';
+    // Map group code to role
+    const role = GROUP_TO_ROLE[user.manhom] || 'unknown';
+    console.log('Mapped role:', { groupCode: user.manhom, role });
 
-    // Create JWT tokens
+    console.log('Generating JWT tokens...');
+    // Generate JWT token
     const token = jwt.sign(
       { 
-        id: user.id, 
-        email: user.email, 
-        role: user.role,
-        studentId: user.studentId 
+        id: user.userid,
+        username: user.tendangnhap,
+        role: role
       },
       JWT_SECRET,
       { expiresIn: JWT_EXPIRES }
     );
 
+    // Generate refresh token
     const refreshToken = jwt.sign(
-      { id: user.id },
-      JWT_SECRET,
+      { 
+        id: user.userid,
+        username: user.tendangnhap,
+        role: role
+      },
+      JWT_SECRET + '_refresh',
       { expiresIn: '7d' }
     );
 
-    console.log(`✅ User logged in: ${user.email} (${user.role})`);
+    // Determine redirect URL based on role
+    let redirectUrl = '/';
+    switch (role) {
+      case 'admin':
+        redirectUrl = '/admin';
+        break;
+      case 'academic':
+        redirectUrl = '/academic';
+        break;
+      case 'student':
+        redirectUrl = '/student';
+        break;
+      case 'financial':
+        redirectUrl = '/financial';
+        break;
+    }
+
+    console.log('Login successful:', { 
+      username, 
+      role,
+      redirectUrl 
+    });
 
     res.json({
       success: true,
-      user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        role: user.role,
-        studentId: user.studentId,
-        groupName: user.groupName
-      },
-      token,
-      refreshToken,
-      redirectUrl
+      message: 'Đăng nhập thành công',
+      data: {
+        user: {
+          id: user.userid,
+          username: user.tendangnhap,
+          role: role,
+          studentId: user.masosinhvien
+        },
+        token,
+        refreshToken,
+        redirectUrl
+      }
     });
 
   } catch (error) {
-    console.error('Login error:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Lỗi server nội bộ' 
+    console.error('=== Login Error ===');
+    console.error('Error details:', error);
+    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+    res.status(500).json({
+      success: false,
+      message: 'Đã có lỗi xảy ra khi đăng nhập',
+      error: error instanceof Error ? error.message : 'Unknown error'
     });
   }
 };
@@ -122,7 +176,7 @@ export const refreshToken = async (req: Request, res: Response) => {
       });
     }
 
-    const decoded = jwt.verify(refreshToken, JWT_SECRET) as any;
+    const decoded = jwt.verify(refreshToken, JWT_SECRET + '_refresh') as any;
     const user = await getUserById(decoded.id);
 
     if (!user) {
@@ -136,8 +190,7 @@ export const refreshToken = async (req: Request, res: Response) => {
       { 
         id: user.id, 
         email: user.email, 
-        role: user.role,
-        studentId: user.studentId 
+        role: user.role
       },
       JWT_SECRET,
       { expiresIn: JWT_EXPIRES }
@@ -175,8 +228,7 @@ export const me = async (req: Request, res: Response) => {
         email: user.email,
         name: user.name,
         role: user.role,
-        studentId: user.studentId,
-        groupName: user.groupName
+        status: user.status
       }
     });
 

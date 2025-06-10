@@ -37,176 +37,156 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.dashboardService = void 0;
-var subjectRegistrationService_1 = require("./subjectRegistrationService");
-// Mock data for students
-var students = [
-    {
-        studentId: 'SV001',
-        name: 'Nguyễn Văn A',
-        email: 'nguyenvana@example.com',
-        phone: '0901234567',
-        address: 'Quận 1, TP.HCM',
-        dateOfBirth: new Date('2003-01-15'),
-        enrollmentYear: 2022,
-        major: 'Công nghệ thông tin',
-        faculty: 'Khoa học và Kỹ thuật Máy tính',
-        program: 'Cử nhân',
-        status: 'active',
-        avatarUrl: 'https://example.com/avatar1.jpg',
-        credits: {
-            completed: 64,
-            current: 8,
-            required: 145
-        }
-    },
-    {
-        studentId: 'SV002',
-        name: 'Trần Thị B',
-        email: 'tranthib@example.com',
-        phone: '0912345678',
-        address: 'Quận 2, TP.HCM',
-        dateOfBirth: new Date('2002-05-22'),
-        enrollmentYear: 2021,
-        major: 'Khoa học máy tính',
-        faculty: 'Khoa học và Kỹ thuật Máy tính',
-        program: 'Cử nhân',
-        status: 'active',
-        avatarUrl: 'https://example.com/avatar2.jpg',
-        credits: {
-            completed: 79,
-            current: 12,
-            required: 145
-        }
-    }
-];
-// Mock class data from subjects
-var classes = subjectRegistrationService_1.subjects.map(function (subject) { return ({
-    id: "C".concat(subject.id),
-    subjectId: subject.id,
-    subjectName: subject.name,
-    lecturer: subject.lecturer,
-    day: subject.schedule[0].day,
-    time: "".concat(subject.schedule[0].session === '1' ? '7:30-9:30' :
-        subject.schedule[0].session === '2' ? '9:30-11:30' :
-            subject.schedule[0].session === '3' ? '13:30-15:30' : '15:30-17:30'),
-    room: subject.schedule[0].room
-}); });
-// Mock data for student schedules
-var schedules = [
-    {
-        student: students[0],
-        semester: '2025-1',
-        subjects: [
-            {
-                id: 'IT001',
-                name: 'Nhập môn lập trình',
-                credit: 4,
-                schedule: [
-                    { day: 'Thứ 2', time: '7:30-9:30', room: 'E3.1' },
-                    { day: 'Thứ 4', time: '9:30-11:30', room: 'E3.1' }
-                ],
-                lecturer: 'TS. Nguyễn Văn A'
-            },
-            {
-                id: 'IT002',
-                name: 'Lập trình hướng đối tượng',
-                credit: 4,
-                schedule: [
-                    { day: 'Thứ 3', time: '9:30-11:30', room: 'E2.5' },
-                    { day: 'Thứ 5', time: '13:30-15:30', room: 'E2.5' }
-                ],
-                lecturer: 'PGS. TS. Trần Thị B'
-            }
-        ]
-    },
-    {
-        student: students[1],
-        semester: '2025-1',
-        subjects: [
-            {
-                id: 'IT003',
-                name: 'Cấu trúc dữ liệu và giải thuật',
-                credit: 4,
-                schedule: [
-                    { day: 'Thứ 4', time: '13:30-15:30', room: 'E4.2' },
-                    { day: 'Thứ 6', time: '15:30-17:30', room: 'E4.2' }
-                ],
-                lecturer: 'TS. Lê Văn C'
-            }
-        ]
-    }
-];
-// Mock data for student overviews
-var overviews = [
-    {
-        student: students[0],
-        enrolledSubjects: 2,
-        totalCredits: 8,
-        gpa: 3.5,
-        upcomingClasses: [
-            classes[0],
-            classes[1]
-        ], recentPayments: [
-            {
-                id: 1001,
-                studentId: 'SV001',
-                courseId: 1,
-                amount: 8000000,
-                date: '2025-02-15',
-                status: 'paid',
-                paymentMethod: 'bank_transfer',
-                transactionId: 'TXN-1001'
-            }
-        ]
-    },
-    {
-        student: students[1],
-        enrolledSubjects: 3,
-        totalCredits: 10,
-        gpa: 3.7,
-        upcomingClasses: [
-            classes[2]
-        ], recentPayments: [
-            {
-                id: 1002,
-                studentId: 'SV002',
-                courseId: 2,
-                amount: 10000000,
-                date: '2025-02-10',
-                status: 'paid',
-                paymentMethod: 'credit_card',
-                transactionId: 'TXN-1002'
-            }
-        ]
-    }
-];
+var databaseService_1 = require("../database/databaseService");
 exports.dashboardService = {
     getStudentOverview: function (studentId) {
         return __awaiter(this, void 0, void 0, function () {
+            var student, enrollmentStats, gpa, upcomingClasses, recentPayments, error_1;
             return __generator(this, function (_a) {
-                return [2 /*return*/, overviews.find(function (overview) { return overview.student.studentId === studentId; }) || null];
+                switch (_a.label) {
+                    case 0:
+                        _a.trys.push([0, 6, , 7]);
+                        return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("\n                SELECT \n                    student_id as \"studentId\",\n                    name,\n                    email,\n                    phone,\n                    address,\n                    date_of_birth as \"dateOfBirth\",\n                    enrollment_year as \"enrollmentYear\",\n                    major,\n                    faculty,\n                    program,\n                    status,\n                    avatar_url as \"avatarUrl\",\n                    completed_credits as \"completedCredits\",\n                    current_credits as \"currentCredits\",\n                    required_credits as \"requiredCredits\"\n                FROM students \n                WHERE student_id = $1\n            ", [studentId])];
+                    case 1:
+                        student = _a.sent();
+                        if (!student)
+                            return [2 /*return*/, null];
+                        return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("\n                SELECT \n                    COUNT(*) as enrolled_count,\n                    SUM(s.credits) as total_credits\n                FROM enrollments e\n                JOIN subjects s ON e.course_id = s.id\n                WHERE e.student_id = $1 AND e.is_enrolled = true\n            ", [studentId])];
+                    case 2:
+                        enrollmentStats = _a.sent();
+                        return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("\n                SELECT COALESCE(AVG(total_grade), 0) as gpa\n                FROM grades\n                WHERE student_id = $1\n            ", [studentId])];
+                    case 3:
+                        gpa = _a.sent();
+                        return [4 /*yield*/, databaseService_1.DatabaseService.query("\n                SELECT \n                    c.id,\n                    s.id as subject_id,\n                    s.name as subject_name,\n                    s.lecturer,\n                    c.day,\n                    CASE \n                        WHEN c.session = '1' THEN '7:30-9:30'\n                        WHEN c.session = '2' THEN '9:30-11:30'\n                        WHEN c.session = '3' THEN '13:30-15:30'\n                        ELSE '15:30-17:30'\n                    END as time,\n                    c.room\n                FROM classes c\n                JOIN subjects s ON c.subject_id = s.id\n                JOIN enrollments e ON s.id = e.course_id\n                WHERE e.student_id = $1 \n                AND e.is_enrolled = true\n                AND c.day >= CURRENT_DATE\n                ORDER BY c.day, c.session\n                LIMIT 5\n            ", [studentId])];
+                    case 4:
+                        upcomingClasses = _a.sent();
+                        return [4 /*yield*/, databaseService_1.DatabaseService.query("\n                SELECT \n                    id,\n                    student_id as \"studentId\",\n                    amount,\n                    payment_date as \"paymentDate\",\n                    status,\n                    payment_method as \"paymentMethod\"\n                FROM payments\n                WHERE student_id = $1\n                ORDER BY payment_date DESC\n                LIMIT 5\n            ", [studentId])];
+                    case 5:
+                        recentPayments = _a.sent();
+                        return [2 /*return*/, {
+                                student: {
+                                    studentId: student.studentId,
+                                    name: student.name,
+                                    email: student.email,
+                                    phone: student.phone,
+                                    address: student.address,
+                                    dateOfBirth: student.dateOfBirth,
+                                    enrollmentYear: student.enrollmentYear,
+                                    major: student.major,
+                                    faculty: student.faculty,
+                                    program: student.program,
+                                    status: student.status,
+                                    avatarUrl: student.avatarUrl,
+                                    credits: {
+                                        completed: student.completedCredits,
+                                        current: student.currentCredits,
+                                        required: student.requiredCredits
+                                    }
+                                },
+                                enrolledSubjects: (enrollmentStats === null || enrollmentStats === void 0 ? void 0 : enrollmentStats.enrolled_count) || 0,
+                                totalCredits: (enrollmentStats === null || enrollmentStats === void 0 ? void 0 : enrollmentStats.total_credits) || 0,
+                                gpa: (gpa === null || gpa === void 0 ? void 0 : gpa.gpa) || 0,
+                                upcomingClasses: upcomingClasses,
+                                recentPayments: recentPayments
+                            }];
+                    case 6:
+                        error_1 = _a.sent();
+                        console.error('Error getting student overview:', error_1);
+                        throw error_1;
+                    case 7: return [2 /*return*/];
+                }
             });
         });
     },
     getStudentSchedule: function (studentId) {
         return __awaiter(this, void 0, void 0, function () {
+            var student, currentSemester, subjects, error_2;
             return __generator(this, function (_a) {
-                return [2 /*return*/, schedules.find(function (schedule) { return schedule.student.studentId === studentId; }) || null];
+                switch (_a.label) {
+                    case 0:
+                        _a.trys.push([0, 4, , 5]);
+                        return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("\n                SELECT \n                    student_id as \"studentId\",\n                    name,\n                    email,\n                    phone,\n                    address,\n                    date_of_birth as \"dateOfBirth\",\n                    enrollment_year as \"enrollmentYear\",\n                    major,\n                    faculty,\n                    program,\n                    status,\n                    avatar_url as \"avatarUrl\",\n                    completed_credits as \"completedCredits\",\n                    current_credits as \"currentCredits\",\n                    required_credits as \"requiredCredits\"\n                FROM students \n                WHERE student_id = $1\n            ", [studentId])];
+                    case 1:
+                        student = _a.sent();
+                        if (!student)
+                            return [2 /*return*/, null];
+                        return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("\n                SELECT semester \n                FROM enrollments \n                WHERE student_id = $1 \n                AND is_enrolled = true\n                ORDER BY semester DESC\n                LIMIT 1\n            ", [studentId])];
+                    case 2:
+                        currentSemester = _a.sent();
+                        if (!currentSemester)
+                            return [2 /*return*/, null];
+                        return [4 /*yield*/, databaseService_1.DatabaseService.query("\n                SELECT \n                    s.id,\n                    s.name,\n                    s.credits,\n                    s.lecturer,\n                    json_agg(\n                        json_build_object(\n                            'day', c.day,\n                            'time', CASE \n                                WHEN c.session = '1' THEN '7:30-9:30'\n                                WHEN c.session = '2' THEN '9:30-11:30'\n                                WHEN c.session = '3' THEN '13:30-15:30'\n                                ELSE '15:30-17:30'\n                            END,\n                            'room', c.room\n                        )\n                    ) as schedule\n                FROM subjects s\n                JOIN enrollments e ON s.id = e.course_id\n                JOIN classes c ON s.id = c.subject_id\n                WHERE e.student_id = $1 \n                AND e.semester = $2\n                AND e.is_enrolled = true\n                GROUP BY s.id, s.name, s.credits, s.lecturer\n            ", [studentId, currentSemester.semester])];
+                    case 3:
+                        subjects = _a.sent();
+                        return [2 /*return*/, {
+                                student: {
+                                    studentId: student.studentId,
+                                    name: student.name,
+                                    email: student.email,
+                                    phone: student.phone,
+                                    address: student.address,
+                                    dateOfBirth: student.dateOfBirth,
+                                    enrollmentYear: student.enrollmentYear,
+                                    major: student.major,
+                                    faculty: student.faculty,
+                                    program: student.program,
+                                    status: student.status,
+                                    avatarUrl: student.avatarUrl,
+                                    credits: {
+                                        completed: student.completedCredits,
+                                        current: student.currentCredits,
+                                        required: student.requiredCredits
+                                    }
+                                },
+                                semester: currentSemester.semester,
+                                subjects: subjects.map(function (s) { return ({
+                                    id: s.id,
+                                    name: s.name,
+                                    credit: s.credits,
+                                    schedule: s.schedule,
+                                    lecturer: s.lecturer
+                                }); })
+                            }];
+                    case 4:
+                        error_2 = _a.sent();
+                        console.error('Error getting student schedule:', error_2);
+                        throw error_2;
+                    case 5: return [2 /*return*/];
+                }
             });
         });
     },
     updateStudentOverview: function (overview) {
         return __awaiter(this, void 0, void 0, function () {
-            var index;
+            var updatedOverview, error_3;
             return __generator(this, function (_a) {
-                index = overviews.findIndex(function (o) { return o.student.studentId === overview.student.studentId; });
-                if (index !== -1) {
-                    overviews[index] = overview;
+                switch (_a.label) {
+                    case 0:
+                        _a.trys.push([0, 3, , 4]);
+                        // Update student info
+                        return [4 /*yield*/, databaseService_1.DatabaseService.query("\n                UPDATE students \n                SET \n                    name = $1,\n                    email = $2,\n                    phone = $3,\n                    address = $4,\n                    updated_at = NOW()\n                WHERE student_id = $5\n            ", [
+                                overview.student.name,
+                                overview.student.email,
+                                overview.student.phone,
+                                overview.student.address,
+                                overview.student.studentId
+                            ])];
+                    case 1:
+                        // Update student info
+                        _a.sent();
+                        return [4 /*yield*/, this.getStudentOverview(overview.student.studentId)];
+                    case 2:
+                        updatedOverview = _a.sent();
+                        if (!updatedOverview) {
+                            throw new Error('Failed to get updated overview');
+                        }
+                        return [2 /*return*/, updatedOverview];
+                    case 3:
+                        error_3 = _a.sent();
+                        console.error('Error updating student overview:', error_3);
+                        throw error_3;
+                    case 4: return [2 /*return*/];
                 }
-                else {
-                    overviews.push(overview);
-                }
-                return [2 /*return*/, overview];
             });
         });
     }

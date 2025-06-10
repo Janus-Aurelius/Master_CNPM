@@ -10,39 +10,6 @@ var __assign = (this && this.__assign) || function () {
     };
     return __assign.apply(this, arguments);
 };
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || (function () {
-    var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function (o) {
-            var ar = [];
-            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
-            return ar;
-        };
-        return ownKeys(o);
-    };
-    return function (mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
-        __setModuleDefault(result, mod);
-        return result;
-    };
-})();
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -96,76 +63,34 @@ jest.mock('xlsx', function () { return ({
         sheet_to_json: jest.fn().mockReturnValue([])
     }
 }); });
-// Now import XLSX after mocking
-var XLSX = __importStar(require("xlsx"));
 // Mock the Database class
 jest.mock('../config/database');
 describe('ProgramBusiness', function () {
-    // Sample Course objects for testing
-    var sampleCourses = [
-        {
-            id: 1,
-            name: 'Lập trình cơ bản',
-            lecturer: 'Nguyễn Văn A',
-            day: 'Monday',
-            session: '1-3',
-            fromTo: '07:00-09:30',
-            credits: 3,
-            location: 'A1-101'
-        },
-        {
-            id: 2,
-            name: 'Cấu trúc dữ liệu',
-            lecturer: 'Trần Thị B',
-            day: 'Tuesday',
-            session: '4-6',
-            fromTo: '13:00-15:30',
-            credits: 3,
-            location: 'A1-102'
-        },
-        {
-            id: 3,
-            name: 'Thuật toán',
-            lecturer: 'Lê Văn C',
-            day: 'Wednesday',
-            session: '1-3',
-            fromTo: '07:00-09:30',
-            credits: 3,
-            location: 'A1-103'
-        }
-    ];
-    // Mock data
-    var mockPrograms = [
-        {
-            id: '1',
-            name_year: 'Kỹ thuật phần mềm 2023',
-            department: 'Công nghệ phần mềm',
-            major: 'Kỹ thuật phần mềm',
-            courseList: [sampleCourses[0], sampleCourses[1], sampleCourses[2]],
-            totalCredit: 145,
-            status: 'active'
-        },
-        {
-            id: '2',
-            name_year: 'Khoa học máy tính 2023',
-            department: 'Khoa học máy tính',
-            major: 'Khoa học máy tính',
-            courseList: [sampleCourses[0], sampleCourses[1], sampleCourses[2]],
-            totalCredit: 140,
-            status: 'active'
-        }
-    ];
-    var newProgramData = {
-        name_year: 'An toàn thông tin 2023',
-        department: 'An toàn thông tin',
-        major: 'An toàn thông tin',
-        courseList: [sampleCourses[0], sampleCourses[1]],
-        totalCredit: 135,
-        status: 'active'
-    };
     beforeEach(function () {
         jest.clearAllMocks();
     });
+    var mockPrograms = [
+        {
+            id: 1,
+            maNganh: 'CNTT',
+            maMonHoc: 'CS101',
+            maHocKy: 'HK1',
+            ghiChu: 'Môn học bắt buộc'
+        },
+        {
+            id: 2,
+            maNganh: 'CNTT',
+            maMonHoc: 'CS102',
+            maHocKy: 'HK1',
+            ghiChu: 'Môn học tự chọn'
+        }
+    ];
+    var newProgramData = {
+        maNganh: 'CNTT',
+        maMonHoc: 'CS103',
+        maHocKy: 'HK1',
+        ghiChu: 'Môn học mới'
+    };
     describe('getAllPrograms', function () {
         it('should return all programs', function () { return __awaiter(void 0, void 0, void 0, function () {
             var result;
@@ -177,12 +102,12 @@ describe('ProgramBusiness', function () {
                     case 1:
                         result = _a.sent();
                         expect(result).toEqual(mockPrograms);
-                        expect(database_1.Database.query).toHaveBeenCalledWith('SELECT * FROM programs ORDER BY id');
+                        expect(database_1.Database.query).toHaveBeenCalledWith(expect.stringContaining('SELECT'));
                         return [2 /*return*/];
                 }
             });
         }); });
-        it('should handle database error', function () { return __awaiter(void 0, void 0, void 0, function () {
+        it('should throw error when database fails', function () { return __awaiter(void 0, void 0, void 0, function () {
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -202,11 +127,11 @@ describe('ProgramBusiness', function () {
                 switch (_a.label) {
                     case 0:
                         database_1.Database.query.mockResolvedValue([mockPrograms[0]]);
-                        return [4 /*yield*/, program_business_1.ProgramBusiness.getProgramById('1')];
+                        return [4 /*yield*/, program_business_1.ProgramBusiness.getProgramById(1)];
                     case 1:
                         result = _a.sent();
                         expect(result).toEqual(mockPrograms[0]);
-                        expect(database_1.Database.query).toHaveBeenCalledWith('SELECT * FROM programs WHERE id = $1', ['1']);
+                        expect(database_1.Database.query).toHaveBeenCalledWith(expect.stringContaining('SELECT'), [1]);
                         return [2 /*return*/];
                 }
             });
@@ -217,7 +142,7 @@ describe('ProgramBusiness', function () {
                 switch (_a.label) {
                     case 0:
                         database_1.Database.query.mockResolvedValue([]);
-                        return [4 /*yield*/, program_business_1.ProgramBusiness.getProgramById('999')];
+                        return [4 /*yield*/, program_business_1.ProgramBusiness.getProgramById(999)];
                     case 1:
                         result = _a.sent();
                         expect(result).toBeNull();
@@ -232,36 +157,31 @@ describe('ProgramBusiness', function () {
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        expectedProgram = __assign({ id: '3' }, newProgramData);
+                        expectedProgram = __assign({ id: 3 }, newProgramData);
                         database_1.Database.query.mockResolvedValue([expectedProgram]);
                         return [4 /*yield*/, program_business_1.ProgramBusiness.createProgram(newProgramData)];
                     case 1:
                         result = _a.sent();
                         expect(result).toEqual(expectedProgram);
-                        expect(database_1.Database.query).toHaveBeenCalledWith(expect.stringContaining('INSERT INTO programs'), expect.arrayContaining([
-                            newProgramData.name_year,
-                            newProgramData.department,
-                            newProgramData.major,
-                            JSON.stringify(newProgramData.courseList),
-                            newProgramData.totalCredit,
-                            newProgramData.status
-                        ]));
+                        expect(database_1.Database.query).toHaveBeenCalledWith(expect.stringContaining('INSERT INTO chuongtrinhhoc'), [
+                            newProgramData.maNganh,
+                            newProgramData.maMonHoc,
+                            newProgramData.maHocKy,
+                            newProgramData.ghiChu
+                        ]);
                         return [2 /*return*/];
                 }
             });
         }); });
-        it('should validate required fields', function () { return __awaiter(void 0, void 0, void 0, function () {
+        it('should throw validation error for invalid data', function () { return __awaiter(void 0, void 0, void 0, function () {
             var invalidData;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         invalidData = {
-                            name_year: '',
-                            department: 'Test',
-                            major: '',
-                            courseList: [],
-                            totalCredit: 0,
-                            status: 'invalid'
+                            maNganh: '',
+                            maMonHoc: '',
+                            maHocKy: ''
                         };
                         return [4 /*yield*/, expect(program_business_1.ProgramBusiness.createProgram(invalidData)).rejects.toThrow(validation_error_1.ValidationError)];
                     case 1:
@@ -273,12 +193,9 @@ describe('ProgramBusiness', function () {
     });
     describe('updateProgram', function () {
         var updateData = {
-            totalCredit: 150,
-            status: 'inactive'
+            maNganh: 'CNTT',
+            ghiChu: 'Cập nhật ghi chú'
         };
-        beforeEach(function () {
-            jest.clearAllMocks();
-        });
         it('should update an existing program', function () { return __awaiter(void 0, void 0, void 0, function () {
             var result;
             return __generator(this, function (_a) {
@@ -287,11 +204,10 @@ describe('ProgramBusiness', function () {
                         database_1.Database.query
                             .mockResolvedValueOnce([mockPrograms[0]]) // for getProgramById
                             .mockResolvedValueOnce([__assign(__assign({}, mockPrograms[0]), updateData)]); // for update
-                        return [4 /*yield*/, program_business_1.ProgramBusiness.updateProgram('1', updateData)];
+                        return [4 /*yield*/, program_business_1.ProgramBusiness.updateProgram(1, updateData)];
                     case 1:
                         result = _a.sent();
-                        expect(result.totalCredit).toBe(150);
-                        expect(result.status).toBe('inactive');
+                        expect(result).toEqual(__assign(__assign({}, mockPrograms[0]), updateData));
                         expect(database_1.Database.query).toHaveBeenCalledTimes(2);
                         return [2 /*return*/];
                 }
@@ -301,13 +217,10 @@ describe('ProgramBusiness', function () {
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        // Mock getProgramById to return empty array (program not found)
-                        database_1.Database.query.mockResolvedValueOnce([]);
-                        // This will cause ValidationError in the business logic
-                        return [4 /*yield*/, expect(program_business_1.ProgramBusiness.updateProgram('999', updateData))
+                        database_1.Database.query.mockResolvedValue([]); // for getProgramById
+                        return [4 /*yield*/, expect(program_business_1.ProgramBusiness.updateProgram(999, updateData))
                                 .rejects.toThrow('Program not found')];
                     case 1:
-                        // This will cause ValidationError in the business logic
                         _a.sent();
                         return [2 /*return*/];
                 }
@@ -319,21 +232,21 @@ describe('ProgramBusiness', function () {
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        database_1.Database.query.mockResolvedValue({ rowCount: 1 });
-                        return [4 /*yield*/, expect(program_business_1.ProgramBusiness.deleteProgram('1')).resolves.not.toThrow()];
+                        database_1.Database.query.mockResolvedValue([{ maNganh: 'CNTT', maMonHoc: 'CS101', maHocKy: 'HK1' }]);
+                        return [4 /*yield*/, expect(program_business_1.ProgramBusiness.deleteProgram('CNTT', 'CS101', 'HK1')).resolves.not.toThrow()];
                     case 1:
                         _a.sent();
-                        expect(database_1.Database.query).toHaveBeenCalledWith('DELETE FROM programs WHERE id = $1', ['1']);
+                        expect(database_1.Database.query).toHaveBeenCalledWith(expect.stringContaining('DELETE FROM chuongtrinhhoc'), ['CNTT', 'CS101', 'HK1']);
                         return [2 /*return*/];
                 }
             });
         }); });
-        it('should handle database error during deletion', function () { return __awaiter(void 0, void 0, void 0, function () {
+        it('should throw error when database fails', function () { return __awaiter(void 0, void 0, void 0, function () {
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         database_1.Database.query.mockRejectedValue(new Error('Database error'));
-                        return [4 /*yield*/, expect(program_business_1.ProgramBusiness.deleteProgram('1')).rejects.toThrow(database_error_1.DatabaseError)];
+                        return [4 /*yield*/, expect(program_business_1.ProgramBusiness.deleteProgram('CNTT', 'CS101', 'HK1')).rejects.toThrow(database_error_1.DatabaseError)];
                     case 1:
                         _a.sent();
                         return [2 /*return*/];
@@ -343,45 +256,31 @@ describe('ProgramBusiness', function () {
     });
     describe('processExcelData', function () {
         var mockFile = {
-            buffer: Buffer.from('dummy excel data'),
-            originalname: 'test.xlsx',
-            mimetype: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-            fieldname: 'file',
-            encoding: '7bit',
-            size: 100,
-            destination: 'uploads/',
-            filename: 'test.xlsx',
-            path: 'uploads/test.xlsx'
+            buffer: Buffer.from('mock data'),
+            originalname: 'test.xlsx'
         };
-        var mockExcelData = [
-            {
-                'Program Name and Year': 'Trí tuệ nhân tạo 2023',
-                'Department': 'Khoa học máy tính',
-                'Major': 'Trí tuệ nhân tạo',
-                'Course List': 'AI1234,AI2345,AI3456',
-                'Total Credits': '135',
-                'Status': 'Active'
-            }
-        ];
-        var expectedProgram = {
-            id: '4',
-            name_year: 'Trí tuệ nhân tạo 2023',
-            department: 'Khoa học máy tính',
-            major: 'Trí tuệ nhân tạo',
-            courseList: [sampleCourses[0], sampleCourses[1], sampleCourses[2]],
-            totalCredit: 135,
-            status: 'active'
-        };
-        beforeEach(function () {
-            // Update the mock values for each test
-            XLSX.utils.sheet_to_json.mockReturnValue(mockExcelData);
-            jest.spyOn(program_business_1.ProgramBusiness, 'createProgram').mockResolvedValue(expectedProgram);
-        });
         it('should process valid Excel data', function () { return __awaiter(void 0, void 0, void 0, function () {
-            var result;
+            var mockExcelData, expectedProgram, result;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, program_business_1.ProgramBusiness.processExcelData(mockFile)];
+                    case 0:
+                        mockExcelData = [
+                            {
+                                'Mã ngành': 'CNTT',
+                                'Mã môn học': 'CS101',
+                                'Mã học kỳ': 'HK1',
+                                'Ghi chú': 'Môn học bắt buộc'
+                            }
+                        ];
+                        expectedProgram = {
+                            id: 1,
+                            maNganh: 'CNTT',
+                            maMonHoc: 'CS101',
+                            maHocKy: 'HK1',
+                            ghiChu: 'Môn học bắt buộc'
+                        };
+                        jest.spyOn(program_business_1.ProgramBusiness, 'createProgram').mockResolvedValue(expectedProgram);
+                        return [4 /*yield*/, program_business_1.ProgramBusiness.processExcelData(mockFile)];
                     case 1:
                         result = _a.sent();
                         expect(result).toHaveLength(1);
@@ -390,23 +289,19 @@ describe('ProgramBusiness', function () {
                 }
             });
         }); });
-        it('should handle invalid Excel data', function () { return __awaiter(void 0, void 0, void 0, function () {
-            var invalidExcelData;
+        it('should throw validation error for invalid Excel data', function () { return __awaiter(void 0, void 0, void 0, function () {
+            var mockExcelData;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        invalidExcelData = [{
-                                'Program Name and Year': '',
-                                'Department': '',
-                                'Major': '',
-                                'Course List': '',
-                                'Total Credits': 'invalid',
-                                'Status': 'invalid'
-                            }];
-                        // Override the mock for this test
-                        XLSX.utils.sheet_to_json.mockReturnValue(invalidExcelData);
-                        // Mock validateProgramData to return errors
-                        jest.spyOn(program_business_1.ProgramBusiness, 'validateProgramData').mockReturnValue(['Program name and year is required', 'Department is required']);
+                        mockExcelData = [
+                            {
+                                'Mã ngành': '',
+                                'Mã môn học': '',
+                                'Mã học kỳ': ''
+                            }
+                        ];
+                        jest.spyOn(program_business_1.ProgramBusiness, 'validateProgramData').mockReturnValue(['Mã ngành là bắt buộc', 'Mã môn học là bắt buộc', 'Mã học kỳ là bắt buộc']);
                         return [4 /*yield*/, expect(program_business_1.ProgramBusiness.processExcelData(mockFile))
                                 .rejects.toThrow(validation_error_1.ValidationError)];
                     case 1:

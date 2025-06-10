@@ -1,115 +1,92 @@
-import Program from '../../models/academic_related/program';
+import { ProgramService, Program } from '../../services/courseService/program.service';
 import { Database } from '../../config/database';
 import { DatabaseError } from '../../utils/errors/database.error';
 import { ValidationError } from '../../utils/errors/validation.error';
 import * as XLSX from 'xlsx';
 
 export class ProgramBusiness {
-    static async getAllPrograms(): Promise<Program[]> {
+    static async getAllPrograms() {
         try {
-            const query = 'SELECT * FROM programs ORDER BY id';
-            return await Database.query(query);
+            return await ProgramService.getAllPrograms();
         } catch (error) {
-            throw new DatabaseError('Error fetching programs');
+            console.error('Error in ProgramBusiness.getAllPrograms:', error);
+            throw error;
         }
     }
 
-    static async getProgramById(id: string): Promise<Program | null> {
+    static async getProgramById(id: number) {
         try {
-            const query = 'SELECT * FROM programs WHERE id = $1';
-            const result = await Database.query(query, [id]);
-            return result[0] || null;
+            return await ProgramService.getProgramById(id);
         } catch (error) {
-            throw new DatabaseError('Error fetching program by ID');
+            console.error('Error in ProgramBusiness.getProgramById:', error);
+            throw error;
         }
     }
 
-    static async createProgram(programData: Omit<Program, 'id'>): Promise<Program> {
-        const errors = this.validateProgramData(programData);
-        if (errors.length > 0) {
-            throw new ValidationError(errors.join(', '));
-        }
-
+    static async createProgram(programData: Omit<Program, 'id'>) {
         try {
-            const query = `
-                INSERT INTO programs (
-                    name_year, department, major, 
-                    course_list, total_credit, status
-                ) VALUES ($1, $2, $3, $4, $5, $6)
-                RETURNING *
-            `;
-            const result = await Database.query(query, [
-                programData.name_year,
-                programData.department,
-                programData.major,
-                JSON.stringify(programData.courseList),
-                programData.totalCredit,
-                programData.status
-            ]);
-            return result[0];
+            const errors = this.validateProgramData(programData);
+            if (errors.length > 0) {
+                throw new ValidationError(`Invalid program data: ${errors.join(', ')}`);
+            }
+            return await ProgramService.createProgram(programData);
         } catch (error) {
-            throw new DatabaseError('Error creating program');
+            console.error('Error in ProgramBusiness.createProgram:', error);
+            throw error;
         }
     }
 
-    static async updateProgram(id: string, programData: Partial<Program>): Promise<Program> {
-        const existingProgram = await this.getProgramById(id);
-        if (!existingProgram) {
-            throw new ValidationError('Program not found');
-        }
-
-        const errors = this.validateProgramData({ ...existingProgram, ...programData });
-        if (errors.length > 0) {
-            throw new ValidationError(errors.join(', '));
-        }
-
+    static async updateProgram(maNganh: string, maMonHoc: string, maHocKy: string, programData: Partial<Program>) {
         try {
-            const query = `
-                UPDATE programs 
-                SET name_year = $1, department = $2, major = $3,
-                    course_list = $4, total_credit = $5, status = $6
-                WHERE id = $7
-                RETURNING *
-            `;
-            const result = await Database.query(query, [
-                programData.name_year || existingProgram.name_year,
-                programData.department || existingProgram.department,
-                programData.major || existingProgram.major,
-                JSON.stringify(programData.courseList || existingProgram.courseList),
-                programData.totalCredit || existingProgram.totalCredit,
-                programData.status || existingProgram.status,
-                id
-            ]);
-            return result[0];
+            const errors = this.validateProgramData({ ...programData, maNganh, maMonHoc, maHocKy });
+            if (errors.length > 0) {
+                throw new ValidationError(`Invalid program data: ${errors.join(', ')}`);
+            }
+            return await ProgramService.updateProgram(
+                maNganh,
+                maMonHoc,
+                maHocKy,
+                programData
+            );
         } catch (error) {
-            throw new DatabaseError('Error updating program');
+            console.error('Error in ProgramBusiness.updateProgram:', error);
+            throw error;
         }
     }
 
-    static async deleteProgram(id: string): Promise<void> {
+    static async deleteProgram(maNganh: string, maMonHoc: string, maHocKy: string): Promise<void> {
         try {
-            const query = 'DELETE FROM programs WHERE id = $1';
-            await Database.query(query, [id]);
+            await ProgramService.deleteProgram(maNganh, maMonHoc, maHocKy);
         } catch (error) {
-            throw new DatabaseError('Error deleting program');
+            console.error('Error in ProgramBusiness.deleteProgram:', error);
+            throw error;
+        }
+    }
+
+    static async getProgramsByNganh(maNganh: string) {
+        try {
+            return await ProgramService.getProgramsByNganh(maNganh);
+        } catch (error) {
+            console.error('Error in ProgramBusiness.getProgramsByNganh:', error);
+            throw error;
+        }
+    }
+
+    static async getProgramsByHocKy(maHocKy: string) {
+        try {
+            return await ProgramService.getProgramsByHocKy(maHocKy);
+        } catch (error) {
+            console.error('Error in ProgramBusiness.getProgramsByHocKy:', error);
+            throw error;
         }
     }
 
     static validateProgramData(programData: Partial<Program>): string[] {
         const errors: string[] = [];
         
-        if (!programData.name_year) errors.push('Program name and year is required');
-        if (!programData.department) errors.push('Department is required');
-        if (!programData.major) errors.push('Major is required');
-        if (!programData.courseList || !Array.isArray(programData.courseList)) {
-            errors.push('Course list must be an array');
-        }
-        if (typeof programData.totalCredit !== 'number' || programData.totalCredit <= 0) {
-            errors.push('Total credit must be a positive number');
-        }
-        if (!programData.status || !['active', 'inactive'].includes(programData.status)) {
-            errors.push('Status must be either active or inactive');
-        }
+        if (!programData.maNganh) errors.push('Mã ngành là bắt buộc');
+        if (!programData.maMonHoc) errors.push('Mã môn học là bắt buộc');
+        if (!programData.maHocKy) errors.push('Mã học kỳ là bắt buộc');
 
         return errors;
     }
@@ -141,12 +118,10 @@ export class ProgramBusiness {
 
     private static mapExcelRowToProgram(row: any): Omit<Program, 'id'> {
         return {
-            name_year: row['Program Name and Year'],
-            department: row['Department'],
-            major: row['Major'],
-            courseList: row['Course List'].split(',').map((course: string) => course.trim()),
-            totalCredit: parseInt(row['Total Credits']),
-            status: row['Status'].toLowerCase()
+            maNganh: row['Mã ngành'],
+            maMonHoc: row['Mã môn học'],
+            maHocKy: row['Mã học kỳ'],
+            ghiChu: row['Ghi chú'] || ''
         };
     }
 } 

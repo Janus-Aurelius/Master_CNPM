@@ -82,10 +82,45 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.deleteCourse = exports.updateCourse = exports.createCourse = exports.getCourseById = exports.listCourses = exports.validateAndAddCourse = void 0;
 var courseService = __importStar(require("../../services/courseService/courseService"));
+var validation_error_1 = require("../../utils/errors/validation.error");
+var validateCreditValue = function (credits) {
+    return Number.isInteger(credits) && credits > 0 && credits <= 6;
+};
+var validateTimeFormat = function (time) {
+    var timeRegex = /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/;
+    return timeRegex.test(time);
+};
+var validateSchedule = function (schedule) {
+    if (!schedule)
+        return false;
+    var day = schedule.day, session = schedule.session, fromTo = schedule.fromTo, room = schedule.room;
+    if (!day || !session || !fromTo || !room)
+        return false;
+    var validDays = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'];
+    if (!validDays.includes(day))
+        return false;
+    var _a = fromTo.split('-').map(function (t) { return t.trim(); }), startTime = _a[0], endTime = _a[1];
+    if (!validateTimeFormat(startTime) || !validateTimeFormat(endTime))
+        return false;
+    // Check if end time is after start time
+    var start = new Date("2000-01-01T".concat(startTime));
+    var end = new Date("2000-01-01T".concat(endTime));
+    if (end <= start)
+        return false;
+    return true;
+};
 var validateAndAddCourse = function (course) { return __awaiter(void 0, void 0, void 0, function () {
+    var errors;
     return __generator(this, function (_a) {
-        if (course.credits <= 0) {
-            throw new Error("Course credits must be positive");
+        errors = [];
+        if (!validateCreditValue(course.credits)) {
+            errors.push('Course credits must be between 1 and 6');
+        }
+        if (!validateSchedule(course.schedule)) {
+            errors.push('Invalid schedule format');
+        }
+        if (errors.length > 0) {
+            throw new validation_error_1.ValidationError(errors.join(', '));
         }
         return [2 /*return*/, courseService.addCourse(course)];
     });

@@ -8,7 +8,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 // Khai báo lại type cho payload của token (dựa trên cấu trúc đã dùng)
 type UserPayload = {
   id: string;
-  email: string;
+  username: string;
   role: string;
   [key: string]: any;
 };
@@ -39,7 +39,7 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
     // Xác thực token
     const decoded = jwt.verify(token, JWT_SECRET) as UserPayload;
     // Validate payload
-    if (!decoded.id || !decoded.role || !decoded.email) {
+    if (!decoded.id || !decoded.role || !decoded.username) {
       res.status(403).json({ 
           success: false,
           message: 'Token không hợp lệ' 

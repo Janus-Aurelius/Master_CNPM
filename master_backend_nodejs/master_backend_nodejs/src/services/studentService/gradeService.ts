@@ -104,3 +104,5 @@ export const gradeService = {
         }
     }
 };
+
+export const grades: IGrade[] = [];

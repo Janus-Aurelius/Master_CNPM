@@ -1,123 +1,148 @@
-import Program from '../../models/academic_related/program';
-import { Database } from '../../config/database';
+import { DatabaseService } from '../database/databaseService';
 import { DatabaseError } from '../../utils/errors/database.error';
+
+export interface Program {
+    id: number;
+    maNganh: string;
+    maMonHoc: string;
+    maHocKy: string;
+    ghiChu?: string;
+}
 
 export class ProgramService {
     static async getAllPrograms(): Promise<Program[]> {
         try {
-            const query = 'SELECT * FROM programs ORDER BY id';
-            return await Database.query(query);
+            const result = await DatabaseService.query(
+                `SELECT * FROM chuongtrinhhoc ORDER BY maNganh, maHocKy`
+            );
+            return result;
         } catch (error) {
-            throw new DatabaseError('Error fetching programs');
+            console.error('Error in getAllPrograms:', error);
+            throw new DatabaseError('Failed to fetch programs');
         }
     }
 
-    static async getProgramById(id: string): Promise<Program | null> {
+    static async getProgramById(id: number): Promise<Program | null> {
         try {
-            const query = 'SELECT * FROM programs WHERE id = $1';
-            const result = await Database.query(query, [id]);
+            const result = await DatabaseService.query(
+                `SELECT * FROM chuongtrinhhoc WHERE id = $1`,
+                [id]
+            );
             return result[0] || null;
         } catch (error) {
-            throw new DatabaseError('Error fetching program by ID');
+            console.error('Error in getProgramById:', error);
+            throw new DatabaseError('Failed to fetch program');
         }
     }
 
-    static async createProgram(programData: Omit<Program, 'id'>): Promise<Program> {
+    static async createProgram(program: Omit<Program, 'id'>): Promise<Program> {
         try {
-            const query = `
-                INSERT INTO programs (
-                    name_year, department, major, 
-                    course_list, total_credit, status
-                ) VALUES ($1, $2, $3, $4, $5, $6)
-                RETURNING *
-            `;
-            const result = await Database.query(query, [
-                programData.name_year,
-                programData.department,
-                programData.major,
-                JSON.stringify(programData.courseList),
-                programData.totalCredit,
-                programData.status
-            ]);
+            const result = await DatabaseService.query(
+                `INSERT INTO chuongtrinhhoc (maNganh, maMonHoc, maHocKy, ghiChu)
+                 VALUES ($1, $2, $3, $4)
+                 RETURNING *`,
+                [program.maNganh, program.maMonHoc, program.maHocKy, program.ghiChu]
+            );
             return result[0];
         } catch (error) {
-            throw new DatabaseError('Error creating program');
+            console.error('Error in createProgram:', error);
+            throw new DatabaseError('Failed to create program');
         }
-    }    static async updateProgram(id: string, programData: Partial<Program>): Promise<Program> {
+    }
+
+    static async updateProgram(
+        maNganh: string,
+        maMonHoc: string,
+        maHocKy: string,
+        program: Partial<Program>
+    ): Promise<Program | null> {
         try {
-            const query = `
-                UPDATE programs 
-                SET name_year = COALESCE($1, name_year), 
-                    department = COALESCE($2, department), 
-                    major = COALESCE($3, major),
-                    course_list = COALESCE($4, course_list), 
-                    total_credit = COALESCE($5, total_credit), 
-                    status = COALESCE($6, status)
-                WHERE id = $7
-                RETURNING *
-            `;
-            const result = await Database.query(query, [
-                programData.name_year,
-                programData.department,
-                programData.major,
-                programData.courseList ? JSON.stringify(programData.courseList) : null,
-                programData.totalCredit,
-                programData.status,
-                id
-            ]);
-            if (!result[0]) {
-                throw new Error('Program not found');
+            // Build dynamic SET clause
+            const fields = [];
+            const values = [];
+            let idx = 1;
+
+            if (program.ghiChu !== undefined) {
+                fields.push(`ghiChu = $${idx++}`);
+                values.push(program.ghiChu);
             }
-            return result[0];
-        } catch (error) {
-            throw new DatabaseError('Error updating program');
-        }
-    }
+            if (program.maNganh !== undefined) {
+                fields.push(`maNganh = $${idx++}`);
+                values.push(program.maNganh);
+            }
+            if (program.maMonHoc !== undefined) {
+                fields.push(`maMonHoc = $${idx++}`);
+                values.push(program.maMonHoc);
+            }
+            if (program.maHocKy !== undefined) {
+                fields.push(`maHocKy = $${idx++}`);
+                values.push(program.maHocKy);
+            }
+            // Add more fields if needed
 
-    static async deleteProgram(id: string): Promise<void> {
-        try {
-            const query = 'DELETE FROM programs WHERE id = $1 RETURNING id';
-            const result = await Database.query(query, [id]);
-            if (!result[0]) {
-                throw new Error('Program not found');
-            }        } catch (error) {
-            throw new DatabaseError('Error deleting program');
-        }
-    }
+            if (fields.length === 0) {
+                throw new Error('No fields to update');
+            }
 
-    static async getProgramsByDepartment(department: string): Promise<Program[]> {
-        try {
-            const query = 'SELECT * FROM programs WHERE department = $1 ORDER BY name_year';
-            return await Database.query(query, [department]);
-        } catch (error) {
-            throw new DatabaseError('Error fetching programs by department');
-        }
-    }
+            // Add composite key to values
+            values.push(maNganh, maMonHoc, maHocKy);
 
-    static async getProgramsByStatus(status: string): Promise<Program[]> {
-        try {
-            const query = 'SELECT * FROM programs WHERE status = $1 ORDER BY name_year';
-            return await Database.query(query, [status]);
-        } catch (error) {
-            throw new DatabaseError('Error fetching programs by status');
-        }
-    }
-
-    static async updateProgramStatus(id: string, status: string): Promise<Program> {
-        try {
-            const query = `
-                UPDATE programs 
-                SET status = $1
-                WHERE id = $2
+            const sql = `
+                UPDATE chuongtrinhhoc
+                SET ${fields.join(', ')}
+                WHERE maNganh = $${idx++} AND maMonHoc = $${idx++} AND maHocKy = $${idx}
                 RETURNING *
             `;
-            const result = await Database.query(query, [status, id]);
-            if (!result[0]) {
-                throw new Error('Program not found');
-            }
-            return result[0];
+
+            const result = await DatabaseService.query(sql, values);
+            return result[0] || null;
         } catch (error) {
-            throw new DatabaseError('Error updating program status');
+            console.error('Error in updateProgram:', error);
+            throw new DatabaseError('Failed to update program');
+        }
+    }
+
+    static async deleteProgram(maNganh: string, maMonHoc: string, maHocKy: string): Promise<void> {
+        try {
+            const query = `
+                DELETE FROM chuongtrinhhoc 
+                WHERE manganh = $1 AND mamonhoc = $2 AND mahocky = $3
+                RETURNING *
+            `;
+            const result = await DatabaseService.query(query, [maNganh, maMonHoc, maHocKy]);
+            
+            if (result.length === 0) {
+                throw new DatabaseError('Program not found');
+            }
+        } catch (error) {
+            console.error('Error in deleteProgram:', error);
+            throw new DatabaseError('Failed to delete program');
+        }
+    }
+
+    static async getProgramsByNganh(maNganh: string): Promise<Program[]> {
+        try {
+            const result = await DatabaseService.query(
+                `SELECT * FROM chuongtrinhhoc WHERE maNganh = $1 ORDER BY maHocKy`,
+                [maNganh]
+            );
+            return result;
+        } catch (error) {
+            console.error('Error in getProgramsByNganh:', error);
+            throw new DatabaseError('Failed to fetch programs by nganh');
+        }
+    }
+
+    static async getProgramsByHocKy(maHocKy: string): Promise<Program[]> {
+        try {
+            const result = await DatabaseService.query(
+                `SELECT * FROM chuongtrinhhoc WHERE maHocKy = $1 ORDER BY maNganh`,
+                [maHocKy]
+            );
+            return result;
+        } catch (error) {
+            console.error('Error in getProgramsByHocKy:', error);
+            throw new DatabaseError('Failed to fetch programs by hoc ky');
         }
     }
 }

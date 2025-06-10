@@ -4,52 +4,47 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 var express_1 = __importDefault(require("express"));
-var path_1 = __importDefault(require("path"));
-var cookie_parser_1 = __importDefault(require("cookie-parser"));
-var morgan_1 = __importDefault(require("morgan"));
 var cors_1 = __importDefault(require("cors"));
-// Route imports
+var dotenv_1 = __importDefault(require("dotenv"));
+var http_1 = require("http");
+var socket_io_1 = require("socket.io");
 var auth_routes_1 = __importDefault(require("./src/routes/auth.routes"));
-var course_routes_1 = __importDefault(require("./src/routes/academic/course.routes"));
-var protected_routes_1 = __importDefault(require("./src/routes/protected.routes"));
+var admin_routes_1 = __importDefault(require("./src/routes/admin/admin.routes"));
 var academic_routes_1 = __importDefault(require("./src/routes/academic/academic.routes"));
 var financial_routes_1 = __importDefault(require("./src/routes/financial/financial.routes"));
-var admin_routes_1 = __importDefault(require("./src/routes/admin/admin.routes"));
 var student_routes_1 = __importDefault(require("./src/routes/student/student.routes"));
-// Middleware imports
-var auth_1 = require("./src/middleware/auth");
+var socketHandler_1 = require("./src/socket/socketHandler");
 var errorHandler_1 = require("./src/middleware/errorHandler");
+var maintenance_1 = require("./src/middleware/maintenance");
+// Load environment variables
+dotenv_1.default.config();
 var app = (0, express_1.default)();
-var PORT = process.env.PORT || 3000;
-// CORS Configuration
+var httpServer = (0, http_1.createServer)(app);
+var io = new socket_io_1.Server(httpServer, {
+    cors: {
+        origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+        methods: ['GET', 'POST'],
+        credentials: true
+    }
+});
+// Middleware
 app.use((0, cors_1.default)({
-    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
     credentials: true
 }));
-// Basic Middleware
-app.use((0, morgan_1.default)('dev'));
 app.use(express_1.default.json());
-app.use(express_1.default.urlencoded({ extended: false }));
-app.use((0, cookie_parser_1.default)());
-app.use(express_1.default.static(path_1.default.join(__dirname, 'public')));
-// Public Auth Routes
-app.use('/auth', auth_routes_1.default);
-// Course Routes (RESTful)
-app.use('/api/courses', course_routes_1.default);
-// Student Routes (protected)
-app.use('/api/student', auth_1.authenticateToken, (0, auth_1.authorizeRoles)(['student']), student_routes_1.default);
-// Protected Routes
-app.use('/api/dashboard', protected_routes_1.default);
-app.use('/api/academic', auth_1.authenticateToken, (0, auth_1.authorizeRoles)(['academic']), academic_routes_1.default);
-app.use('/api/financial', auth_1.authenticateToken, (0, auth_1.authorizeRoles)(['financial']), financial_routes_1.default);
-app.use('/api/admin', auth_1.authenticateToken, (0, auth_1.authorizeRoles)(['admin']), admin_routes_1.default);
-// Root Route
-app.get('/', function (req, res) {
-    res.send('API is running. Try /api/courses to access courses.');
-});
-// Error Handling
+// Routes
+app.use('/api/auth', maintenance_1.maintenanceMode, auth_routes_1.default);
+app.use('/api/admin', maintenance_1.maintenanceMode, admin_routes_1.default);
+app.use('/api/academic', maintenance_1.maintenanceMode, academic_routes_1.default);
+app.use('/api/financial', maintenance_1.maintenanceMode, financial_routes_1.default);
+app.use('/api/student', maintenance_1.maintenanceMode, student_routes_1.default);
+// Error handling
 app.use(errorHandler_1.errorHandler);
-// Start Server
-app.listen(PORT, function () {
-    console.log("Server running on http://localhost:".concat(PORT));
+// Socket.io setup
+(0, socketHandler_1.setupSocketHandlers)(io);
+// Start server
+var PORT = process.env.PORT || 3000;
+httpServer.listen(PORT, function () {
+    console.log("Server is running on port ".concat(PORT));
 });

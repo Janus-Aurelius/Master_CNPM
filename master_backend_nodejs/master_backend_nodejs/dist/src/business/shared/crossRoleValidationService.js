@@ -94,8 +94,8 @@ var CrossRoleValidationService = /** @class */ (function () {
                         }
                         else if (now > regEnd) {
                             errors.push('Registration period has ended');
-                        }
-                        return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("\n                SELECT id FROM enrollments \n                WHERE student_id = (SELECT id FROM students WHERE student_id = $1) \n                AND course_id = $2 \n                AND status IN ('registered', 'enrolled')\n            ", [studentId, parseInt(courseId)])];
+                        } // 6. Check if student already enrolled
+                        return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("\n                SELECT id FROM enrollments \n                WHERE student_id = (SELECT id FROM students WHERE student_id = $1) \n                AND course_id = $2 \n                AND is_enrolled = true\n            ", [studentId, parseInt(courseId)])];
                     case 3:
                         existingEnrollment = _a.sent();
                         if (existingEnrollment) {

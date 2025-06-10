@@ -63,7 +63,7 @@ var initialMockSubjects = [
     {
         id: 1,
         subjectCode: 'SE101',
-        name: 'Introduction to Software Engineering',
+        subjectName: 'Introduction to Software Engineering',
         credits: 3,
         description: 'Basic concepts of software engineering',
         prerequisiteSubjects: [],
@@ -82,7 +82,7 @@ var initialMockSubjects = [
     {
         id: 2,
         subjectCode: 'SE102',
-        name: 'Object-Oriented Programming',
+        subjectName: 'Object-Oriented Programming',
         credits: 4,
         description: 'Advanced OOP concepts',
         prerequisiteSubjects: ['SE101'],
@@ -119,7 +119,7 @@ globals_1.jest.mock('../config/database', function () {
             var newSubject = {
                 id: mockSubjects.length + 1,
                 subjectCode: params === null || params === void 0 ? void 0 : params[0],
-                name: params === null || params === void 0 ? void 0 : params[1],
+                subjectName: params === null || params === void 0 ? void 0 : params[1],
                 credits: params === null || params === void 0 ? void 0 : params[2],
                 description: params === null || params === void 0 ? void 0 : params[3],
                 prerequisiteSubjects: JSON.parse((params === null || params === void 0 ? void 0 : params[4]) || '[]'),
@@ -139,7 +139,7 @@ globals_1.jest.mock('../config/database', function () {
             var index = mockSubjects.findIndex(function (s) { return s.id === id_2; });
             if (index !== -1) {
                 // Only update the fields that are provided
-                mockSubjects[index] = __assign(__assign({}, mockSubjects[index]), { subjectCode: (params === null || params === void 0 ? void 0 : params[0]) || mockSubjects[index].subjectCode, name: (params === null || params === void 0 ? void 0 : params[1]) || mockSubjects[index].name, credits: (params === null || params === void 0 ? void 0 : params[2]) || mockSubjects[index].credits, description: (params === null || params === void 0 ? void 0 : params[3]) || mockSubjects[index].description, prerequisiteSubjects: (params === null || params === void 0 ? void 0 : params[4]) ? JSON.parse(params[4]) : mockSubjects[index].prerequisiteSubjects, type: (params === null || params === void 0 ? void 0 : params[5]) || mockSubjects[index].type, department: (params === null || params === void 0 ? void 0 : params[6]) || mockSubjects[index].department, updatedAt: new Date() });
+                mockSubjects[index] = __assign(__assign({}, mockSubjects[index]), { subjectCode: (params === null || params === void 0 ? void 0 : params[0]) || mockSubjects[index].subjectCode, subjectName: (params === null || params === void 0 ? void 0 : params[1]) || mockSubjects[index].subjectName, credits: (params === null || params === void 0 ? void 0 : params[2]) || mockSubjects[index].credits, description: (params === null || params === void 0 ? void 0 : params[3]) || mockSubjects[index].description, prerequisiteSubjects: (params === null || params === void 0 ? void 0 : params[4]) ? JSON.parse(params[4]) : mockSubjects[index].prerequisiteSubjects, type: (params === null || params === void 0 ? void 0 : params[5]) || mockSubjects[index].type, department: (params === null || params === void 0 ? void 0 : params[6]) || mockSubjects[index].department, updatedAt: new Date() });
                 return Promise.resolve([mockSubjects[index]]);
             }
             return Promise.resolve([]);
@@ -202,7 +202,7 @@ globals_1.jest.mock('../config/database', function () {
                 case 1:
                     subject = _a.sent();
                     (0, globals_1.expect)(subject).toBeDefined();
-                    (0, globals_1.expect)(subject === null || subject === void 0 ? void 0 : subject.name).toBe('Introduction to Software Engineering');
+                    (0, globals_1.expect)(subject === null || subject === void 0 ? void 0 : subject.subjectName).toBe('Introduction to Software Engineering');
                     return [2 /*return*/];
             }
         });
@@ -214,7 +214,7 @@ globals_1.jest.mock('../config/database', function () {
                 case 0:
                     newSubject = {
                         subjectCode: 'SE103',
-                        name: 'Database Systems',
+                        subjectName: 'Database Systems',
                         credits: 3,
                         description: 'Introduction to databases',
                         prerequisiteSubjects: ['SE101'],
@@ -243,13 +243,13 @@ globals_1.jest.mock('../config/database', function () {
             switch (_a.label) {
                 case 0:
                     updateData = {
-                        name: 'Updated SE101',
+                        subjectName: 'Updated SE101',
                         credits: 4
                     };
                     return [4 /*yield*/, subject_business_1.SubjectBusiness.updateSubject(1, updateData)];
                 case 1:
                     updated = _a.sent();
-                    (0, globals_1.expect)(updated.name).toBe('Updated SE101');
+                    (0, globals_1.expect)(updated.subjectName).toBe('Updated SE101');
                     (0, globals_1.expect)(updated.credits).toBe(4);
                     return [2 /*return*/];
             }
@@ -270,7 +270,7 @@ globals_1.jest.mock('../config/database', function () {
     (0, globals_1.test)('Validate subject data', function () {
         var invalidData = {
             subjectCode: '',
-            name: 'Test Subject'
+            subjectName: 'Test Subject'
         };
         var errors = subject_business_1.SubjectBusiness.validateSubjectData(invalidData);
         (0, globals_1.expect)(errors).toContain('Subject code is required');

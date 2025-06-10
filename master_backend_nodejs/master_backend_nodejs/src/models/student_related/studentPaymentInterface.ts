@@ -176,4 +176,6 @@ export interface ITuitionCalculation {
     discountsTotal: number;
     totalAmount: number;
     finalAmount: number;
+    adjustments: { description: string; amount: number }[];
+    dueDate: string;
 }

@@ -32,13 +32,10 @@ var __importStar = (this && this.__importStar) || (function () {
         return result;
     };
 })();
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.activityLogService = exports.dashboardService = exports.UserService = void 0;
-var UserService_1 = __importDefault(require("./UserService"));
-exports.UserService = UserService_1.default;
+exports.activityLogService = exports.dashboardService = exports.userService = void 0;
+var userService = __importStar(require("../userService"));
+exports.userService = userService;
 var dashboardService = __importStar(require("./dashboardService"));
 exports.dashboardService = dashboardService;
 var activityLogService = __importStar(require("./activitylogService"));

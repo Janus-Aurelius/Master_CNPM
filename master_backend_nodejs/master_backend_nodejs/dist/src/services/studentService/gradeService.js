@@ -36,50 +36,102 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.gradeService = exports.grades = void 0;
-// TODO: Replace with actual database implementation
-var grades = [];
-exports.grades = grades;
+exports.grades = exports.gradeService = void 0;
+var databaseService_1 = require("../database/databaseService");
 exports.gradeService = {
     getStudentGrades: function (studentId) {
         return __awaiter(this, void 0, void 0, function () {
+            var grades_1, error_1;
             return __generator(this, function (_a) {
-                // TODO: Implement database query
-                return [2 /*return*/, grades.filter(function (grade) { return grade.studentId === studentId; })];
+                switch (_a.label) {
+                    case 0:
+                        _a.trys.push([0, 2, , 3]);
+                        return [4 /*yield*/, databaseService_1.DatabaseService.query("\n                SELECT \n                    student_id as \"studentId\",\n                    subject_id as \"subjectId\",\n                    midterm_grade as \"midtermGrade\",\n                    final_grade as \"finalGrade\",\n                    total_grade as \"totalGrade\",\n                    letter_grade as \"letterGrade\"\n                FROM grades\n                WHERE student_id = $1\n                ORDER BY subject_id\n            ", [studentId])];
+                    case 1:
+                        grades_1 = _a.sent();
+                        return [2 /*return*/, grades_1];
+                    case 2:
+                        error_1 = _a.sent();
+                        console.error('Error getting student grades:', error_1);
+                        throw error_1;
+                    case 3: return [2 /*return*/];
+                }
             });
         });
     },
     getSubjectDetails: function (studentId, subjectId) {
         return __awaiter(this, void 0, void 0, function () {
-            var grade;
+            var grade, error_2;
             return __generator(this, function (_a) {
-                grade = grades.find(function (grade) {
-                    return grade.studentId === studentId &&
-                        grade.subjectId === subjectId;
-                }) || null;
-                if (!grade)
-                    return [2 /*return*/, null];
-                // Đảm bảo trả về object có subjectId và grade (cho test)
-                return [2 /*return*/, grade];
+                switch (_a.label) {
+                    case 0:
+                        _a.trys.push([0, 2, , 3]);
+                        return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("\n                SELECT \n                    student_id as \"studentId\",\n                    subject_id as \"subjectId\",\n                    midterm_grade as \"midtermGrade\",\n                    final_grade as \"finalGrade\",\n                    total_grade as \"totalGrade\",\n                    letter_grade as \"letterGrade\"\n                FROM grades\n                WHERE student_id = $1 AND subject_id = $2\n            ", [studentId, subjectId])];
+                    case 1:
+                        grade = _a.sent();
+                        return [2 /*return*/, grade || null];
+                    case 2:
+                        error_2 = _a.sent();
+                        console.error('Error getting subject details:', error_2);
+                        throw error_2;
+                    case 3: return [2 /*return*/];
+                }
             });
         });
     },
     updateGrade: function (gradeData) {
         return __awaiter(this, void 0, void 0, function () {
-            var index;
+            var existingGrade, updatedGrade, error_3;
             return __generator(this, function (_a) {
-                index = grades.findIndex(function (g) {
-                    return g.studentId === gradeData.studentId &&
-                        g.subjectId === gradeData.subjectId;
-                });
-                if (index !== -1) {
-                    grades[index] = gradeData;
+                switch (_a.label) {
+                    case 0:
+                        _a.trys.push([0, 7, , 8]);
+                        return [4 /*yield*/, this.getSubjectDetails(gradeData.studentId, gradeData.subjectId)];
+                    case 1:
+                        existingGrade = _a.sent();
+                        if (!existingGrade) return [3 /*break*/, 3];
+                        // Update existing grade
+                        return [4 /*yield*/, databaseService_1.DatabaseService.query("\n                    UPDATE grades \n                    SET \n                        midterm_grade = $1,\n                        final_grade = $2,\n                        total_grade = $3,\n                        letter_grade = $4,\n                        updated_at = NOW()\n                    WHERE student_id = $5 AND subject_id = $6\n                ", [
+                                gradeData.midtermGrade,
+                                gradeData.finalGrade,
+                                gradeData.totalGrade,
+                                gradeData.letterGrade,
+                                gradeData.studentId,
+                                gradeData.subjectId
+                            ])];
+                    case 2:
+                        // Update existing grade
+                        _a.sent();
+                        return [3 /*break*/, 5];
+                    case 3: 
+                    // Insert new grade
+                    return [4 /*yield*/, databaseService_1.DatabaseService.query("\n                    INSERT INTO grades (\n                        student_id,\n                        subject_id,\n                        midterm_grade,\n                        final_grade,\n                        total_grade,\n                        letter_grade,\n                        created_at,\n                        updated_at\n                    ) VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())\n                ", [
+                            gradeData.studentId,
+                            gradeData.subjectId,
+                            gradeData.midtermGrade,
+                            gradeData.finalGrade,
+                            gradeData.totalGrade,
+                            gradeData.letterGrade
+                        ])];
+                    case 4:
+                        // Insert new grade
+                        _a.sent();
+                        _a.label = 5;
+                    case 5: return [4 /*yield*/, this.getSubjectDetails(gradeData.studentId, gradeData.subjectId)];
+                    case 6:
+                        updatedGrade = _a.sent();
+                        if (!updatedGrade) {
+                            throw new Error('Failed to get updated grade');
+                        }
+                        return [2 /*return*/, updatedGrade];
+                    case 7:
+                        error_3 = _a.sent();
+                        console.error('Error updating grade:', error_3);
+                        throw error_3;
+                    case 8: return [2 /*return*/];
                 }
-                else {
-                    grades.push(gradeData);
-                }
-                return [2 /*return*/, gradeData];
             });
         });
     }
 };
+exports.grades = [];

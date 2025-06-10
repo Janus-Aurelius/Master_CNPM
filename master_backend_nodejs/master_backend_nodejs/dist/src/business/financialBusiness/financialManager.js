@@ -56,7 +56,7 @@ var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
     return to.concat(ar || Array.prototype.slice.call(from));
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.generateFinancialReport = exports.updateTuitionSettings = exports.getTuitionSettings = exports.updatePaymentStatus = exports.getStudentPaymentStatus = exports.getAllPaymentStatus = exports.getFinancialAnalytics = exports.getDashboardData = void 0;
+exports.createReceipt = exports.getReceiptById = exports.getAllReceipts = exports.deleteTuitionSetting = exports.FinancialManager = exports.validatePaymentConditions = exports.validateTuitionSetting = exports.calculateTuition = exports.getPaymentAuditTrail = exports.validatePayment = exports.generateFinancialReport = exports.updateTuitionSettings = exports.getTuitionSettings = exports.updatePaymentStatus = exports.getStudentPaymentStatus = exports.getAllPaymentStatus = exports.getFinancialAnalytics = exports.getDashboardData = void 0;
 // src/business/financialBusiness/financialManager.ts
 var financialService_1 = require("../../services/financialService/financialService");
 var databaseService_1 = require("../../services/database/databaseService");
@@ -303,16 +303,16 @@ var getStudentPaymentStatus = function (studentId) { return __awaiter(void 0, vo
 }); };
 exports.getStudentPaymentStatus = getStudentPaymentStatus;
 var updatePaymentStatus = function (studentId, paymentData) { return __awaiter(void 0, void 0, void 0, function () {
-    var currentRecord, record, newPaidAmount, newOutstandingAmount, receiptNumber, error_5, fallbackError_4;
+    var currentRecord, record, newPaidAmount, newOutstandingAmount, receiptNumber, error_5, error_6;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
-                _a.trys.push([0, 6, , 11]);
+                _a.trys.push([0, 12, , 13]);
                 // Validate input data
-                if (!paymentData.paymentStatus || !paymentData.semester) {
+                if (!paymentData.studentId || !paymentData.semester) {
                     throw new errorHandler_1.AppError(400, 'Missing required payment data');
                 }
-                if (!['PAID', 'PARTIAL', 'UNPAID'].includes(paymentData.paymentStatus)) {
+                if (!['PENDING', 'COMPLETED', 'FAILED', 'REFUNDED'].includes(paymentData.status)) {
                     throw new errorHandler_1.AppError(400, 'Invalid payment status');
                 }
                 return [4 /*yield*/, databaseService_1.DatabaseService.query("\n            SELECT * FROM tuition_records \n            WHERE student_id = $1 AND semester = $2\n        ", [studentId, paymentData.semester])];
@@ -322,69 +322,108 @@ var updatePaymentStatus = function (studentId, paymentData) { return __awaiter(v
                     throw new errorHandler_1.AppError(404, 'Tuition record not found');
                 }
                 record = currentRecord[0];
-                newPaidAmount = parseFloat(record.paid_amount) + paymentData.amountPaid;
+                newPaidAmount = parseFloat(record.paid_amount) + paymentData.amount;
                 newOutstandingAmount = parseFloat(record.total_amount) - newPaidAmount;
+                // Validate payment amount
+                if (paymentData.amount < 0) {
+                    throw new errorHandler_1.AppError(400, 'Payment amount cannot be negative');
+                }
+                if (paymentData.amount > newOutstandingAmount) {
+                    throw new errorHandler_1.AppError(400, 'Payment amount exceeds outstanding amount');
+                }
+                // Start transaction
+                return [4 /*yield*/, databaseService_1.DatabaseService.query('BEGIN')];
+            case 2:
+                // Start transaction
+                _a.sent();
+                _a.label = 3;
+            case 3:
+                _a.trys.push([3, 9, , 11]);
                 // Update tuition record
-                return [4 /*yield*/, databaseService_1.DatabaseService.query("\n            UPDATE tuition_records \n            SET \n                paid_amount = $1,\n                outstanding_amount = $2,\n                payment_status = $3,\n                updated_at = NOW()\n            WHERE student_id = $4 AND semester = $5\n        ", [
+                return [4 /*yield*/, databaseService_1.DatabaseService.query("\n                UPDATE tuition_records \n                SET \n                    paid_amount = $1,\n                    outstanding_amount = $2,\n                    payment_status = $3,\n                    updated_at = NOW()\n                WHERE student_id = $4 AND semester = $5\n            ", [
                         newPaidAmount,
                         Math.max(0, newOutstandingAmount),
-                        paymentData.paymentStatus,
+                        paymentData.status,
                         studentId,
                         paymentData.semester
                     ])];
-            case 2:
+            case 4:
                 // Update tuition record
                 _a.sent();
-                if (!(paymentData.amountPaid > 0)) return [3 /*break*/, 4];
+                receiptNumber = paymentData.receiptNumber;
+                if (!(paymentData.amount > 0 && !receiptNumber)) return [3 /*break*/, 6];
                 receiptNumber = "RCP-".concat(Date.now(), "-").concat(studentId);
-                return [4 /*yield*/, databaseService_1.DatabaseService.query("\n                INSERT INTO payment_receipts (\n                    tuition_record_id,\n                    student_id,\n                    amount,\n                    payment_method,\n                    receipt_number,\n                    payment_date,\n                    notes,\n                    created_at\n                ) VALUES ($1, $2, $3, $4, $5, NOW(), $6, NOW())\n            ", [
+                return [4 /*yield*/, databaseService_1.DatabaseService.query("\n                    INSERT INTO payment_receipts (\n                        tuition_record_id,\n                        student_id,\n                        amount,\n                        payment_method,\n                        receipt_number,\n                        payment_date,\n                        notes,\n                        created_at\n                    ) VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())\n                ", [
                         record.id,
                         studentId,
-                        paymentData.amountPaid,
-                        paymentData.paymentMethod || 'CASH',
+                        paymentData.amount,
+                        paymentData.paymentMethod,
                         receiptNumber,
+                        paymentData.paymentDate,
                         paymentData.notes || ''
                     ])];
-            case 3:
+            case 5:
                 _a.sent();
-                _a.label = 4;
-            case 4: 
-            // Log the payment update
-            return [4 /*yield*/, databaseService_1.DatabaseService.query("\n            INSERT INTO audit_logs (\n                action_type,\n                details,\n                user_id,\n                created_at\n            ) VALUES ($1, $2, $3, NOW())\n        ", [
+                _a.label = 6;
+            case 6: 
+            // Create detailed audit log
+            return [4 /*yield*/, databaseService_1.DatabaseService.query("\n                INSERT INTO payment_audit_logs (\n                    tuition_record_id,\n                    student_id,\n                    action,\n                    amount,\n                    previous_amount,\n                    previous_status,\n                    new_status,\n                    payment_method,\n                    receipt_number,\n                    notes,\n                    performed_by,\n                    created_at\n                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW())\n            ", [
+                    record.id,
+                    studentId,
                     'PAYMENT_UPDATED',
-                    "Payment status updated for student ".concat(studentId, ": ").concat(paymentData.paymentStatus, ", Amount: ").concat(paymentData.amountPaid),
+                    paymentData.amount,
+                    record.paid_amount,
+                    record.payment_status,
+                    paymentData.status,
+                    paymentData.paymentMethod,
+                    receiptNumber,
+                    paymentData.notes || '',
                     'financial-system'
                 ])];
-            case 5:
-                // Log the payment update
+            case 7:
+                // Create detailed audit log
+                _a.sent();
+                // Commit transaction
+                return [4 /*yield*/, databaseService_1.DatabaseService.query('COMMIT')];
+            case 8:
+                // Commit transaction
                 _a.sent();
                 return [2 /*return*/, {
                         success: true,
                         message: 'Payment status updated successfully',
-                        receiptNumber: paymentData.amountPaid > 0 ? "RCP-".concat(Date.now(), "-").concat(studentId) : null
+                        receiptNumber: receiptNumber,
+                        audit: {
+                            action: 'PAYMENT_UPDATED',
+                            amount: paymentData.amount,
+                            previousAmount: record.paid_amount,
+                            previousStatus: record.payment_status,
+                            newStatus: paymentData.status,
+                            timestamp: new Date().toISOString()
+                        }
                     }];
-            case 6:
-                error_5 = _a.sent();
-                if (error_5 instanceof errorHandler_1.AppError)
-                    throw error_5;
-                console.error('Error updating payment status:', error_5);
-                _a.label = 7;
-            case 7:
-                _a.trys.push([7, 9, , 10]);
-                return [4 /*yield*/, financialService_1.financialService.updateStudentPayment(studentId, paymentData)];
-            case 8: return [2 /*return*/, _a.sent()];
             case 9:
-                fallbackError_4 = _a.sent();
+                error_5 = _a.sent();
+                // Rollback on error
+                return [4 /*yield*/, databaseService_1.DatabaseService.query('ROLLBACK')];
+            case 10:
+                // Rollback on error
+                _a.sent();
+                throw error_5;
+            case 11: return [3 /*break*/, 13];
+            case 12:
+                error_6 = _a.sent();
+                if (error_6 instanceof errorHandler_1.AppError)
+                    throw error_6;
+                console.error('Error updating payment status:', error_6);
                 throw new errorHandler_1.AppError(500, 'Error updating payment status');
-            case 10: return [3 /*break*/, 11];
-            case 11: return [2 /*return*/];
+            case 13: return [2 /*return*/];
         }
     });
 }); };
 exports.updatePaymentStatus = updatePaymentStatus;
 // Tuition Management Functions
 var getTuitionSettings = function (semester) { return __awaiter(void 0, void 0, void 0, function () {
-    var settings, baseSetting, fees, error_6, fallbackError_5;
+    var settings, baseSetting, fees, error_7, fallbackError_4;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -428,17 +467,17 @@ var getTuitionSettings = function (semester) { return __awaiter(void 0, void 0, 
                         }
                     }];
             case 2:
-                error_6 = _a.sent();
-                if (error_6 instanceof errorHandler_1.AppError)
-                    throw error_6;
-                console.error('Error getting tuition settings:', error_6);
+                error_7 = _a.sent();
+                if (error_7 instanceof errorHandler_1.AppError)
+                    throw error_7;
+                console.error('Error getting tuition settings:', error_7);
                 _a.label = 3;
             case 3:
                 _a.trys.push([3, 5, , 6]);
                 return [4 /*yield*/, financialService_1.financialService.getTuitionSettings(semester)];
             case 4: return [2 /*return*/, _a.sent()];
             case 5:
-                fallbackError_5 = _a.sent();
+                fallbackError_4 = _a.sent();
                 throw new errorHandler_1.AppError(500, 'Error retrieving tuition settings');
             case 6: return [3 /*break*/, 7];
             case 7: return [2 /*return*/];
@@ -447,7 +486,7 @@ var getTuitionSettings = function (semester) { return __awaiter(void 0, void 0, 
 }); };
 exports.getTuitionSettings = getTuitionSettings;
 var updateTuitionSettings = function (semester, settings) { return __awaiter(void 0, void 0, void 0, function () {
-    var existingSettings, settingId, newSetting, _i, _a, fee, error_7, fallbackError_6;
+    var existingSettings, settingId, newSetting, _i, _a, fee, error_8, fallbackError_5;
     return __generator(this, function (_b) {
         switch (_b.label) {
             case 0:
@@ -524,17 +563,17 @@ var updateTuitionSettings = function (semester, settings) { return __awaiter(voi
                         message: 'Tuition settings updated successfully'
                     }];
             case 12:
-                error_7 = _b.sent();
-                if (error_7 instanceof errorHandler_1.AppError)
-                    throw error_7;
-                console.error('Error updating tuition settings:', error_7);
+                error_8 = _b.sent();
+                if (error_8 instanceof errorHandler_1.AppError)
+                    throw error_8;
+                console.error('Error updating tuition settings:', error_8);
                 _b.label = 13;
             case 13:
                 _b.trys.push([13, 15, , 16]);
                 return [4 /*yield*/, financialService_1.financialService.updateTuitionSettings(semester, settings)];
             case 14: return [2 /*return*/, _b.sent()];
             case 15:
-                fallbackError_6 = _b.sent();
+                fallbackError_5 = _b.sent();
                 throw new errorHandler_1.AppError(500, 'Error updating tuition settings');
             case 16: return [3 /*break*/, 17];
             case 17: return [2 /*return*/];
@@ -544,7 +583,7 @@ var updateTuitionSettings = function (semester, settings) { return __awaiter(voi
 exports.updateTuitionSettings = updateTuitionSettings;
 // Financial Reports
 var generateFinancialReport = function (reportType, filters) { return __awaiter(void 0, void 0, void 0, function () {
-    var semester, _a, error_8;
+    var semester, _a, error_9;
     return __generator(this, function (_b) {
         switch (_b.label) {
             case 0:
@@ -566,10 +605,10 @@ var generateFinancialReport = function (reportType, filters) { return __awaiter(
             case 7: throw new errorHandler_1.AppError(400, 'Invalid report type');
             case 8: return [3 /*break*/, 10];
             case 9:
-                error_8 = _b.sent();
-                if (error_8 instanceof errorHandler_1.AppError)
-                    throw error_8;
-                console.error('Error generating financial report:', error_8);
+                error_9 = _b.sent();
+                if (error_9 instanceof errorHandler_1.AppError)
+                    throw error_9;
+                console.error('Error generating financial report:', error_9);
                 throw new errorHandler_1.AppError(500, 'Error generating financial report');
             case 10: return [2 /*return*/];
         }
@@ -644,3 +683,400 @@ var generateOverdueReport = function (semester, filters) { return __awaiter(void
         }
     });
 }); };
+var validatePayment = function (studentId, amount, semester) { return __awaiter(void 0, void 0, void 0, function () {
+    var record, errors, warnings, expectedAmount, difference, error_10;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                _a.trys.push([0, 2, , 3]);
+                return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("\n            SELECT * FROM tuition_records \n            WHERE student_id = $1 AND semester = $2\n        ", [studentId, semester])];
+            case 1:
+                record = _a.sent();
+                if (!record) {
+                    return [2 /*return*/, {
+                            isValid: false,
+                            errors: ['Tuition record not found'],
+                            warnings: [],
+                            details: {
+                                amount: amount,
+                                expectedAmount: 0,
+                                difference: amount,
+                                status: 'INVALID'
+                            }
+                        }];
+                }
+                errors = [];
+                warnings = [];
+                expectedAmount = parseFloat(record.outstanding_amount);
+                difference = expectedAmount - amount;
+                if (amount < 0) {
+                    errors.push('Payment amount cannot be negative');
+                }
+                if (amount > expectedAmount) {
+                    errors.push('Payment amount exceeds outstanding amount');
+                }
+                if (difference > 0 && difference < 100000) { // Less than 100k VND difference
+                    warnings.push("Payment amount is less than outstanding amount by ".concat(difference.toLocaleString(), " VND"));
+                }
+                return [2 /*return*/, {
+                        isValid: errors.length === 0,
+                        errors: errors,
+                        warnings: warnings,
+                        details: {
+                            amount: amount,
+                            expectedAmount: expectedAmount,
+                            difference: difference,
+                            status: errors.length > 0 ? 'INVALID' : warnings.length > 0 ? 'WARNING' : 'VALID'
+                        }
+                    }];
+            case 2:
+                error_10 = _a.sent();
+                console.error('Error validating payment:', error_10);
+                return [2 /*return*/, {
+                        isValid: false,
+                        errors: ['Error validating payment'],
+                        warnings: [],
+                        details: {
+                            amount: amount,
+                            expectedAmount: 0,
+                            difference: amount,
+                            status: 'INVALID'
+                        }
+                    }];
+            case 3: return [2 /*return*/];
+        }
+    });
+}); };
+exports.validatePayment = validatePayment;
+var getPaymentAuditTrail = function (studentId, semester) { return __awaiter(void 0, void 0, void 0, function () {
+    var auditLogs, error_11;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                _a.trys.push([0, 2, , 3]);
+                return [4 /*yield*/, databaseService_1.DatabaseService.query("\n            SELECT \n                id,\n                tuition_record_id,\n                student_id,\n                action,\n                amount,\n                previous_amount,\n                previous_status,\n                new_status,\n                payment_method,\n                receipt_number,\n                notes,\n                performed_by,\n                created_at as timestamp\n            FROM payment_audit_logs\n            WHERE student_id = $1 \n            AND tuition_record_id IN (\n                SELECT id FROM tuition_records \n                WHERE student_id = $1 AND semester = $2\n            )\n            ORDER BY created_at DESC\n        ", [studentId, semester])];
+            case 1:
+                auditLogs = _a.sent();
+                return [2 /*return*/, auditLogs.map(function (log) { return ({
+                        id: log.id,
+                        tuitionRecordId: log.tuition_record_id,
+                        studentId: log.student_id,
+                        action: log.action,
+                        amount: parseFloat(log.amount),
+                        previousAmount: log.previous_amount ? parseFloat(log.previous_amount) : undefined,
+                        previousStatus: log.previous_status,
+                        newStatus: log.new_status,
+                        paymentMethod: log.payment_method,
+                        receiptNumber: log.receipt_number,
+                        notes: log.notes,
+                        performedBy: log.performed_by,
+                        timestamp: log.timestamp
+                    }); })];
+            case 2:
+                error_11 = _a.sent();
+                console.error('Error getting payment audit trail:', error_11);
+                throw new errorHandler_1.AppError(500, 'Error retrieving payment audit trail');
+            case 3: return [2 /*return*/];
+        }
+    });
+}); };
+exports.getPaymentAuditTrail = getPaymentAuditTrail;
+var calculateTuition = function (studentId, semester, courses) { return __awaiter(void 0, void 0, void 0, function () {
+    var settings_1, baseAmount_1, feeItems, studentInfo_1, applicableDiscounts, discounts, feesTotal, discountsTotal, totalAmount, finalAmount, error_12;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                _a.trys.push([0, 3, , 4]);
+                return [4 /*yield*/, (0, exports.getTuitionSettings)(semester)];
+            case 1:
+                settings_1 = _a.sent();
+                baseAmount_1 = courses.reduce(function (total, course) { return total + (course.credits * settings_1.baseTuitionPerCredit); }, 0);
+                feeItems = settings_1.fees.map(function (fee) { return ({
+                    type: fee.type,
+                    amount: fee.amount,
+                    description: fee.description,
+                    isMandatory: fee.mandatory
+                }); });
+                return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("\n            SELECT \n                sv.masosinhvien,\n                sv.vungxa,\n                sv.dienchinhsach,\n                sv.xeploaihocbong\n            FROM sinhvien sv\n            WHERE sv.masosinhvien = $1\n        ", [studentId])];
+            case 2:
+                studentInfo_1 = _a.sent();
+                applicableDiscounts = settings_1.discounts
+                    .filter(function (discount) {
+                    // Check if student meets discount conditions
+                    if (discount.conditions) {
+                        return discount.conditions.every(function (condition) {
+                            switch (condition.type) {
+                                case 'remote_area':
+                                    return (studentInfo_1 === null || studentInfo_1 === void 0 ? void 0 : studentInfo_1.vungxa) === condition.value;
+                                case 'poor_family':
+                                    return (studentInfo_1 === null || studentInfo_1 === void 0 ? void 0 : studentInfo_1.dienchinhsach) === condition.value;
+                                case 'excellent_student':
+                                    return (studentInfo_1 === null || studentInfo_1 === void 0 ? void 0 : studentInfo_1.xeploaihocbong) === condition.value;
+                                default:
+                                    return false;
+                            }
+                        });
+                    }
+                    return true;
+                })
+                    .sort(function (a, b) { return b.percentage - a.percentage; }) // Sort by highest percentage first
+                    .slice(0, settings_1.settings.maxTotalDiscount);
+                discounts = applicableDiscounts.map(function (discount) { return ({
+                    type: discount.type,
+                    percentage: discount.percentage,
+                    amount: (baseAmount_1 * discount.percentage) / 100,
+                    description: discount.description,
+                    isPriority: discount.priority
+                }); });
+                feesTotal = feeItems.reduce(function (total, fee) { return total + fee.amount; }, 0);
+                discountsTotal = discounts.reduce(function (total, discount) { return total + discount.amount; }, 0);
+                totalAmount = baseAmount_1 + feesTotal;
+                finalAmount = Math.max(0, totalAmount - discountsTotal);
+                return [2 /*return*/, {
+                        baseAmount: baseAmount_1,
+                        fees: feeItems,
+                        discounts: discounts,
+                        feesTotal: feesTotal,
+                        discountsTotal: discountsTotal,
+                        totalAmount: totalAmount,
+                        finalAmount: finalAmount,
+                        adjustments: [],
+                        dueDate: new Date().toISOString()
+                    }];
+            case 3:
+                error_12 = _a.sent();
+                console.error('Error calculating tuition:', error_12);
+                throw new Error('Failed to calculate tuition');
+            case 4: return [2 /*return*/];
+        }
+    });
+}); };
+exports.calculateTuition = calculateTuition;
+// Tuition Settings Management
+var validateTuitionSetting = function (setting) { return __awaiter(void 0, void 0, void 0, function () {
+    var errors, overlappingSettings;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                errors = [];
+                // Validate required fields
+                if (!setting.faculty)
+                    errors.push('Faculty is required');
+                if (!setting.program)
+                    errors.push('Program is required');
+                if (!setting.semester)
+                    errors.push('Semester is required');
+                if (!setting.academicYear)
+                    errors.push('Academic year is required');
+                if (!setting.effectiveDate)
+                    errors.push('Effective date is required');
+                if (!setting.expiryDate)
+                    errors.push('Expiry date is required');
+                // Validate credit cost
+                if (typeof setting.creditCost !== 'number' || setting.creditCost <= 0) {
+                    errors.push('Credit cost must be a positive number');
+                }
+                // Validate dates
+                if (setting.effectiveDate >= setting.expiryDate) {
+                    errors.push('Effective date must be before expiry date');
+                }
+                // Validate semester format
+                if (!/^(Spring|Summer|Fall)\s\d{4}$/.test(setting.semester)) {
+                    errors.push('Invalid semester format. Expected format: Spring/Summer/Fall YYYY');
+                }
+                // Validate academic year format
+                if (!/^\d{4}-\d{4}$/.test(setting.academicYear)) {
+                    errors.push('Invalid academic year format. Expected format: YYYY-YYYY');
+                }
+                return [4 /*yield*/, databaseService_1.DatabaseService.query("\n        SELECT * FROM tuition_settings \n        WHERE faculty = $1 \n        AND program = $2 \n        AND semester = $3 \n        AND academic_year = $4\n        AND (\n            (effective_date <= $5 AND expiry_date >= $5)\n            OR (effective_date <= $6 AND expiry_date >= $6)\n            OR (effective_date >= $5 AND expiry_date <= $6)\n        )\n    ", [
+                        setting.faculty,
+                        setting.program,
+                        setting.semester,
+                        setting.academicYear,
+                        setting.effectiveDate,
+                        setting.expiryDate
+                    ])];
+            case 1:
+                overlappingSettings = _a.sent();
+                if (overlappingSettings.length > 0) {
+                    errors.push('Tuition setting overlaps with existing settings for the same faculty and program');
+                }
+                return [2 /*return*/, {
+                        isValid: errors.length === 0,
+                        errors: errors
+                    }];
+        }
+    });
+}); };
+exports.validateTuitionSetting = validateTuitionSetting;
+// Payment Conditions Validation
+var validatePaymentConditions = function (studentId, semester, amount) { return __awaiter(void 0, void 0, void 0, function () {
+    var errors, warnings, paymentHistory, tuitionRecord_1, outstandingAmount, latePayments, recentPayments, holds, error_13;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                errors = [];
+                warnings = [];
+                _a.label = 1;
+            case 1:
+                _a.trys.push([1, 5, , 6]);
+                return [4 /*yield*/, databaseService_1.DatabaseService.query("\n            SELECT * FROM payment_receipts \n            WHERE student_id = $1 \n            ORDER BY payment_date DESC\n        ", [studentId])];
+            case 2:
+                paymentHistory = _a.sent();
+                return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("\n            SELECT * FROM tuition_records \n            WHERE student_id = $1 AND semester = $2\n        ", [studentId, semester])];
+            case 3:
+                tuitionRecord_1 = _a.sent();
+                if (!tuitionRecord_1) {
+                    errors.push('No tuition record found for the specified semester');
+                    return [2 /*return*/, { isValid: false, errors: errors, warnings: warnings }];
+                }
+                outstandingAmount = parseFloat(tuitionRecord_1.outstanding_amount);
+                if (amount > outstandingAmount) {
+                    errors.push("Payment amount (".concat(amount, ") exceeds outstanding amount (").concat(outstandingAmount, ")"));
+                }
+                latePayments = paymentHistory.filter(function (payment) {
+                    var paymentDate = new Date(payment.payment_date);
+                    var dueDate = new Date(tuitionRecord_1.due_date);
+                    return paymentDate > dueDate;
+                });
+                if (latePayments.length > 0) {
+                    warnings.push('Student has history of late payments');
+                }
+                recentPayments = paymentHistory.filter(function (payment) {
+                    var paymentDate = new Date(payment.payment_date);
+                    var thirtyDaysAgo = new Date();
+                    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+                    return paymentDate >= thirtyDaysAgo;
+                });
+                if (recentPayments.length >= 3) {
+                    warnings.push('Student has made multiple payments in the last 30 days');
+                }
+                return [4 /*yield*/, databaseService_1.DatabaseService.query("\n            SELECT * FROM payment_holds \n            WHERE student_id = $1 AND is_active = true\n        ", [studentId])];
+            case 4:
+                holds = _a.sent();
+                if (holds.length > 0) {
+                    errors.push('Student has active payment holds');
+                }
+                return [2 /*return*/, {
+                        isValid: errors.length === 0,
+                        errors: errors,
+                        warnings: warnings
+                    }];
+            case 5:
+                error_13 = _a.sent();
+                console.error('Error validating payment conditions:', error_13);
+                errors.push('Error validating payment conditions');
+                return [2 /*return*/, { isValid: false, errors: errors, warnings: warnings }];
+            case 6: return [2 /*return*/];
+        }
+    });
+}); };
+exports.validatePaymentConditions = validatePaymentConditions;
+var FinancialManager = /** @class */ (function () {
+    function FinancialManager() {
+    }
+    return FinancialManager;
+}());
+exports.FinancialManager = FinancialManager;
+exports.default = new FinancialManager();
+// Tuition Settings Management
+var deleteTuitionSetting = function (id) { return __awaiter(void 0, void 0, void 0, function () {
+    var error_14;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                _a.trys.push([0, 2, , 3]);
+                return [4 /*yield*/, databaseService_1.DatabaseService.query("\n            DELETE FROM tuition_settings WHERE id = $1\n        ", [id])];
+            case 1:
+                _a.sent();
+                return [3 /*break*/, 3];
+            case 2:
+                error_14 = _a.sent();
+                console.error('Error deleting tuition setting:', error_14);
+                throw new errorHandler_1.AppError(500, 'Error deleting tuition setting');
+            case 3: return [2 /*return*/];
+        }
+    });
+}); };
+exports.deleteTuitionSetting = deleteTuitionSetting;
+// Payment Receipts Management
+var getAllReceipts = function (studentId, semester) { return __awaiter(void 0, void 0, void 0, function () {
+    var whereConditions, queryParams, paramIndex, whereClause, receipts, error_15;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                _a.trys.push([0, 2, , 3]);
+                whereConditions = [];
+                queryParams = [];
+                paramIndex = 1;
+                if (studentId) {
+                    whereConditions.push("student_id = $".concat(paramIndex));
+                    queryParams.push(studentId);
+                    paramIndex++;
+                }
+                if (semester) {
+                    whereConditions.push("semester = $".concat(paramIndex));
+                    queryParams.push(semester);
+                    paramIndex++;
+                }
+                whereClause = whereConditions.length > 0
+                    ? "WHERE ".concat(whereConditions.join(' AND '))
+                    : '';
+                return [4 /*yield*/, databaseService_1.DatabaseService.query("\n            SELECT * FROM payment_receipts\n            ".concat(whereClause, "\n            ORDER BY payment_date DESC\n        "), queryParams)];
+            case 1:
+                receipts = _a.sent();
+                return [2 /*return*/, receipts];
+            case 2:
+                error_15 = _a.sent();
+                console.error('Error getting receipts:', error_15);
+                throw new errorHandler_1.AppError(500, 'Error retrieving receipts');
+            case 3: return [2 /*return*/];
+        }
+    });
+}); };
+exports.getAllReceipts = getAllReceipts;
+var getReceiptById = function (id) { return __awaiter(void 0, void 0, void 0, function () {
+    var receipt, error_16;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                _a.trys.push([0, 2, , 3]);
+                return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("\n            SELECT * FROM payment_receipts WHERE id = $1\n        ", [id])];
+            case 1:
+                receipt = _a.sent();
+                return [2 /*return*/, receipt];
+            case 2:
+                error_16 = _a.sent();
+                console.error('Error getting receipt:', error_16);
+                throw new errorHandler_1.AppError(500, 'Error retrieving receipt');
+            case 3: return [2 /*return*/];
+        }
+    });
+}); };
+exports.getReceiptById = getReceiptById;
+var createReceipt = function (receiptData) { return __awaiter(void 0, void 0, void 0, function () {
+    var result, error_17;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                _a.trys.push([0, 2, , 3]);
+                return [4 /*yield*/, databaseService_1.DatabaseService.query("\n            INSERT INTO payment_receipts (\n                student_id,\n                amount,\n                payment_method,\n                receipt_number,\n                payment_date,\n                notes,\n                created_at\n            ) VALUES ($1, $2, $3, $4, $5, $6, NOW())\n            RETURNING *\n        ", [
+                        receiptData.studentId,
+                        receiptData.amount,
+                        receiptData.paymentMethod,
+                        receiptData.receiptNumber,
+                        receiptData.paymentDate,
+                        receiptData.notes
+                    ])];
+            case 1:
+                result = _a.sent();
+                return [2 /*return*/, result[0]];
+            case 2:
+                error_17 = _a.sent();
+                console.error('Error creating receipt:', error_17);
+                throw new errorHandler_1.AppError(500, 'Error creating receipt');
+            case 3: return [2 /*return*/];
+        }
+    });
+}); };
+exports.createReceipt = createReceipt;

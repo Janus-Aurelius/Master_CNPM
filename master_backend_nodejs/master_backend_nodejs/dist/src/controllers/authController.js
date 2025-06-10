@@ -42,79 +42,120 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.me = exports.refreshToken = exports.logout = exports.login = void 0;
 var jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 var userService_1 = require("../services/userService");
-var JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
+var database_1 = require("../config/database");
+var config_1 = require("../config");
+var JWT_SECRET = config_1.config.jwtSecret;
 var JWT_EXPIRES = '24h';
+// Map database group codes to roles
+var GROUP_TO_ROLE = {
+    'N1': 'admin',
+    'N2': 'academic',
+    'N3': 'student',
+    'N4': 'financial'
+};
 var login = function (req, res) { return __awaiter(void 0, void 0, void 0, function () {
-    var _a, email, password, user, isPasswordValid, redirectMap, redirectUrl, token, refreshToken_1, error_1;
+    var _a, username, password, result, user, isPasswordValid, role, token, refreshToken_1, redirectUrl, error_1;
     return __generator(this, function (_b) {
         switch (_b.label) {
             case 0:
-                _b.trys.push([0, 3, , 4]);
-                _a = req.body, email = _a.email, password = _a.password;
-                // Validate input
-                if (!email || !password) {
+                _b.trys.push([0, 2, , 3]);
+                console.log('=== Login Request ===');
+                console.log('Request body:', req.body);
+                _a = req.body, username = _a.username, password = _a.password;
+                if (!username || !password) {
+                    console.log('Missing username or password');
                     return [2 /*return*/, res.status(400).json({
                             success: false,
-                            message: 'Tên đăng nhập và mật khẩu không được để trống'
+                            message: 'Vui lòng nhập đầy đủ tên đăng nhập và mật khẩu'
                         })];
                 }
-                return [4 /*yield*/, (0, userService_1.getUserByEmail)(email)];
+                console.log('Attempting database connection...');
+                return [4 /*yield*/, database_1.Database.query('SELECT * FROM NGUOIDUNG WHERE TenDangNhap = $1', [username])];
             case 1:
-                user = _b.sent();
+                result = _b.sent();
+                console.log('Database query result:', result);
+                user = result[0];
                 if (!user) {
+                    console.log('User not found:', username);
                     return [2 /*return*/, res.status(401).json({
                             success: false,
-                            message: 'Thông tin đăng nhập không đúng'
+                            message: 'Tên đăng nhập không tồn tại'
                         })];
                 }
-                return [4 /*yield*/, (0, userService_1.verifyPassword)(password, user.passwordHash)];
-            case 2:
-                isPasswordValid = _b.sent();
+                isPasswordValid = password === user.matkhau;
+                console.log('Password validation:', {
+                    isPasswordValid: isPasswordValid,
+                    providedPassword: password,
+                    storedPassword: user.matkhau
+                });
                 if (!isPasswordValid) {
+                    console.log('Invalid password for user:', username);
                     return [2 /*return*/, res.status(401).json({
                             success: false,
-                            message: 'Thông tin đăng nhập không đúng'
+                            message: 'Mật khẩu không đúng'
                         })];
                 }
-                redirectMap = {
-                    'student': '/student',
-                    'financial': '/financial',
-                    'academic': '/academic',
-                    'admin': '/admin'
-                };
-                redirectUrl = redirectMap[user.role] || '/';
+                role = GROUP_TO_ROLE[user.manhom] || 'unknown';
+                console.log('Mapped role:', { groupCode: user.manhom, role: role });
+                console.log('Generating JWT tokens...');
                 token = jsonwebtoken_1.default.sign({
-                    id: user.id,
-                    email: user.email,
-                    role: user.role,
-                    studentId: user.studentId
+                    id: user.userid,
+                    username: user.tendangnhap,
+                    role: role
                 }, JWT_SECRET, { expiresIn: JWT_EXPIRES });
-                refreshToken_1 = jsonwebtoken_1.default.sign({ id: user.id }, JWT_SECRET, { expiresIn: '7d' });
-                console.log("\u2705 User logged in: ".concat(user.email, " (").concat(user.role, ")"));
-                res.json({
-                    success: true,
-                    user: {
-                        id: user.id,
-                        email: user.email,
-                        name: user.name,
-                        role: user.role,
-                        studentId: user.studentId,
-                        groupName: user.groupName
-                    },
-                    token: token,
-                    refreshToken: refreshToken_1,
+                refreshToken_1 = jsonwebtoken_1.default.sign({
+                    id: user.userid,
+                    username: user.tendangnhap,
+                    role: role
+                }, JWT_SECRET + '_refresh', { expiresIn: '7d' });
+                redirectUrl = '/';
+                switch (role) {
+                    case 'admin':
+                        redirectUrl = '/admin';
+                        break;
+                    case 'academic':
+                        redirectUrl = '/academic';
+                        break;
+                    case 'student':
+                        redirectUrl = '/student';
+                        break;
+                    case 'financial':
+                        redirectUrl = '/financial';
+                        break;
+                }
+                console.log('Login successful:', {
+                    username: username,
+                    role: role,
                     redirectUrl: redirectUrl
                 });
-                return [3 /*break*/, 4];
-            case 3:
+                res.json({
+                    success: true,
+                    message: 'Đăng nhập thành công',
+                    data: {
+                        user: {
+                            id: user.userid,
+                            username: user.tendangnhap,
+                            role: role,
+                            studentId: user.masosinhvien
+                        },
+                        token: token,
+                        refreshToken: refreshToken_1,
+                        redirectUrl: redirectUrl
+                    }
+                });
+                return [3 /*break*/, 3];
+            case 2:
                 error_1 = _b.sent();
-                console.error('Login error:', error_1);
+                console.error('=== Login Error ===');
+                console.error('Error details:', error_1);
+                console.error('Error stack:', error_1 instanceof Error ? error_1.stack : 'No stack trace');
                 res.status(500).json({
                     success: false,
-                    message: 'Lỗi server nội bộ'
+                    message: 'Đã có lỗi xảy ra khi đăng nhập',
+                    error: error_1 instanceof Error ? error_1.message : 'Unknown error'
                 });
-                return [3 /*break*/, 4];
-            case 4: return [2 /*return*/];
+                return [3 /*break*/, 3];
+            case 3: return [2 /*return*/];
         }
     });
 }); };
@@ -157,7 +198,7 @@ var refreshToken = function (req, res) { return __awaiter(void 0, void 0, void 0
                             message: 'Refresh token không được cung cấp'
                         })];
                 }
-                decoded = jsonwebtoken_1.default.verify(refreshToken_2, JWT_SECRET);
+                decoded = jsonwebtoken_1.default.verify(refreshToken_2, JWT_SECRET + '_refresh');
                 return [4 /*yield*/, (0, userService_1.getUserById)(decoded.id)];
             case 1:
                 user = _a.sent();
@@ -170,8 +211,7 @@ var refreshToken = function (req, res) { return __awaiter(void 0, void 0, void 0
                 newToken = jsonwebtoken_1.default.sign({
                     id: user.id,
                     email: user.email,
-                    role: user.role,
-                    studentId: user.studentId
+                    role: user.role
                 }, JWT_SECRET, { expiresIn: JWT_EXPIRES });
                 res.json({
                     success: true,
@@ -214,8 +254,7 @@ var me = function (req, res) { return __awaiter(void 0, void 0, void 0, function
                         email: user.email,
                         name: user.name,
                         role: user.role,
-                        studentId: user.studentId,
-                        groupName: user.groupName
+                        status: user.status
                     }
                 });
                 return [3 /*break*/, 3];

@@ -1,15 +1,4 @@
 "use strict";
-var __assign = (this && this.__assign) || function () {
-    __assign = Object.assign || function(t) {
-        for (var s, i = 1, n = arguments.length; i < n; i++) {
-            s = arguments[i];
-            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
-                t[p] = s[p];
-        }
-        return t;
-    };
-    return __assign.apply(this, arguments);
-};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -46,60 +35,228 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
+var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
+    if (pack || arguments.length === 2) for (var i = 0, l = from.length, ar; i < l; i++) {
+        if (ar || !(i in from)) {
+            if (!ar) ar = Array.prototype.slice.call(from, 0, i);
+            ar[i] = from[i];
+        }
+    }
+    return to.concat(ar || Array.prototype.slice.call(from));
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.studentService = void 0;
-// TODO: Replace with actual database implementation
-var students = [];
+var databaseService_1 = require("../database/databaseService");
 exports.studentService = {
     getStudentInfo: function (studentId) {
         return __awaiter(this, void 0, void 0, function () {
+            var student, error_1;
             return __generator(this, function (_a) {
-                // TODO: Implement database query
-                return [2 /*return*/, students.find(function (student) { return student.studentId === studentId; }) || null];
+                switch (_a.label) {
+                    case 0:
+                        _a.trys.push([0, 2, , 3]);
+                        return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("\n                SELECT \n                    student_id as \"studentId\",\n                    name,\n                    email,\n                    phone,\n                    address,\n                    date_of_birth as \"dateOfBirth\",\n                    enrollment_year as \"enrollmentYear\",\n                    major,\n                    faculty,\n                    program,\n                    status,\n                    avatar_url as \"avatarUrl\",\n                    completed_credits as \"completedCredits\",\n                    current_credits as \"currentCredits\",\n                    required_credits as \"requiredCredits\",\n                    gender,\n                    hometown_district as \"hometownDistrict\",\n                    hometown_province as \"hometownProvince\",\n                    is_remote_area as \"isRemoteArea\"\n                FROM students \n                WHERE student_id = $1\n            ", [studentId])];
+                    case 1:
+                        student = _a.sent();
+                        if (!student)
+                            return [2 /*return*/, null];
+                        return [2 /*return*/, {
+                                studentId: student.studentId,
+                                name: student.name,
+                                email: student.email,
+                                phone: student.phone,
+                                address: student.address,
+                                dateOfBirth: student.dateOfBirth,
+                                enrollmentYear: student.enrollmentYear,
+                                major: student.major,
+                                faculty: student.faculty,
+                                program: student.program,
+                                status: student.status,
+                                avatarUrl: student.avatarUrl,
+                                credits: {
+                                    completed: student.completedCredits,
+                                    current: student.currentCredits,
+                                    required: student.requiredCredits
+                                },
+                                gender: student.gender,
+                                hometown: student.hometownDistrict ? {
+                                    district: student.hometownDistrict,
+                                    province: student.hometownProvince,
+                                    isRemoteArea: student.isRemoteArea
+                                } : undefined
+                            }];
+                    case 2:
+                        error_1 = _a.sent();
+                        console.error('Error getting student info:', error_1);
+                        throw error_1;
+                    case 3: return [2 /*return*/];
+                }
             });
         });
     },
     updateStudentInfo: function (studentId, data) {
         return __awaiter(this, void 0, void 0, function () {
-            var student;
+            var existingStudent, updateData, error_2;
             return __generator(this, function (_a) {
-                student = students.find(function (s) { return s.studentId === studentId; });
-                if (student) {
-                    Object.assign(student, data);
-                    return [2 /*return*/, student];
+                switch (_a.label) {
+                    case 0:
+                        _a.trys.push([0, 3, , 4]);
+                        return [4 /*yield*/, this.getStudentInfo(studentId)];
+                    case 1:
+                        existingStudent = _a.sent();
+                        if (!existingStudent)
+                            return [2 /*return*/, null];
+                        updateData = {};
+                        if (data.name)
+                            updateData.name = data.name;
+                        if (data.email)
+                            updateData.email = data.email;
+                        if (data.phone)
+                            updateData.phone = data.phone;
+                        if (data.address)
+                            updateData.address = data.address;
+                        if (data.gender)
+                            updateData.gender = data.gender;
+                        if (data.hometown) {
+                            updateData.hometown_district = data.hometown.district;
+                            updateData.hometown_province = data.hometown.province;
+                            updateData.is_remote_area = data.hometown.isRemoteArea;
+                        }
+                        updateData.updated_at = new Date();
+                        // Update student
+                        return [4 /*yield*/, databaseService_1.DatabaseService.query("\n                UPDATE students \n                SET ".concat(Object.keys(updateData).map(function (key, index) { return "".concat(key, " = $").concat(index + 1); }).join(', '), "\n                WHERE student_id = $").concat(Object.keys(updateData).length + 1, "\n            "), __spreadArray(__spreadArray([], Object.values(updateData), true), [studentId], false))];
+                    case 2:
+                        // Update student
+                        _a.sent();
+                        // Return updated student
+                        return [2 /*return*/, this.getStudentInfo(studentId)];
+                    case 3:
+                        error_2 = _a.sent();
+                        console.error('Error updating student info:', error_2);
+                        throw error_2;
+                    case 4: return [2 /*return*/];
                 }
-                return [2 /*return*/, null];
             });
         });
     },
     createStudent: function (studentData) {
         return __awaiter(this, void 0, void 0, function () {
-            var newStudent;
-            return __generator(this, function (_a) {
-                newStudent = __assign(__assign({}, studentData), { studentId: Math.random().toString(36).substr(2, 9) });
-                students.push(newStudent);
-                return [2 /*return*/, newStudent];
+            var studentId, createdStudent, error_3;
+            var _a, _b, _c;
+            return __generator(this, function (_d) {
+                switch (_d.label) {
+                    case 0:
+                        _d.trys.push([0, 3, , 4]);
+                        studentId = "SV".concat(Date.now().toString().slice(-6));
+                        // Insert student
+                        return [4 /*yield*/, databaseService_1.DatabaseService.query("\n                INSERT INTO students (\n                    student_id,\n                    name,\n                    email,\n                    phone,\n                    address,\n                    date_of_birth,\n                    enrollment_year,\n                    major,\n                    faculty,\n                    program,\n                    status,\n                    avatar_url,\n                    completed_credits,\n                    current_credits,\n                    required_credits,\n                    gender,\n                    hometown_district,\n                    hometown_province,\n                    is_remote_area,\n                    created_at,\n                    updated_at\n                ) VALUES (\n                    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, NOW(), NOW()\n                )\n            ", [
+                                studentId,
+                                studentData.name,
+                                studentData.email,
+                                studentData.phone,
+                                studentData.address,
+                                studentData.dateOfBirth,
+                                studentData.enrollmentYear,
+                                studentData.major,
+                                studentData.faculty,
+                                studentData.program,
+                                studentData.status,
+                                studentData.avatarUrl,
+                                studentData.credits.completed,
+                                studentData.credits.current,
+                                studentData.credits.required,
+                                studentData.gender,
+                                (_a = studentData.hometown) === null || _a === void 0 ? void 0 : _a.district,
+                                (_b = studentData.hometown) === null || _b === void 0 ? void 0 : _b.province,
+                                (_c = studentData.hometown) === null || _c === void 0 ? void 0 : _c.isRemoteArea
+                            ])];
+                    case 1:
+                        // Insert student
+                        _d.sent();
+                        return [4 /*yield*/, this.getStudentInfo(studentId)];
+                    case 2:
+                        createdStudent = _d.sent();
+                        if (!createdStudent) {
+                            throw new Error('Failed to get created student');
+                        }
+                        return [2 /*return*/, createdStudent];
+                    case 3:
+                        error_3 = _d.sent();
+                        console.error('Error creating student:', error_3);
+                        throw error_3;
+                    case 4: return [2 /*return*/];
+                }
             });
         });
     },
     deleteStudent: function (studentId) {
         return __awaiter(this, void 0, void 0, function () {
-            var index;
+            var existingStudent, error_4;
             return __generator(this, function (_a) {
-                index = students.findIndex(function (s) { return s.studentId === studentId; });
-                if (index !== -1) {
-                    students.splice(index, 1);
-                    return [2 /*return*/, true];
+                switch (_a.label) {
+                    case 0:
+                        _a.trys.push([0, 3, , 4]);
+                        return [4 /*yield*/, this.getStudentInfo(studentId)];
+                    case 1:
+                        existingStudent = _a.sent();
+                        if (!existingStudent)
+                            return [2 /*return*/, false];
+                        // Delete student
+                        return [4 /*yield*/, databaseService_1.DatabaseService.query("\n                DELETE FROM students \n                WHERE student_id = $1\n            ", [studentId])];
+                    case 2:
+                        // Delete student
+                        _a.sent();
+                        return [2 /*return*/, true];
+                    case 3:
+                        error_4 = _a.sent();
+                        console.error('Error deleting student:', error_4);
+                        throw error_4;
+                    case 4: return [2 /*return*/];
                 }
-                return [2 /*return*/, false];
             });
         });
     },
     getAllStudents: function () {
         return __awaiter(this, void 0, void 0, function () {
+            var students, error_5;
             return __generator(this, function (_a) {
-                // TODO: Implement database query
-                return [2 /*return*/, students];
+                switch (_a.label) {
+                    case 0:
+                        _a.trys.push([0, 2, , 3]);
+                        return [4 /*yield*/, databaseService_1.DatabaseService.query("\n                SELECT \n                    student_id as \"studentId\",\n                    name,\n                    email,\n                    phone,\n                    address,\n                    date_of_birth as \"dateOfBirth\",\n                    enrollment_year as \"enrollmentYear\",\n                    major,\n                    faculty,\n                    program,\n                    status,\n                    avatar_url as \"avatarUrl\",\n                    completed_credits as \"completedCredits\",\n                    current_credits as \"currentCredits\",\n                    required_credits as \"requiredCredits\",\n                    gender,\n                    hometown_district as \"hometownDistrict\",\n                    hometown_province as \"hometownProvince\",\n                    is_remote_area as \"isRemoteArea\"\n                FROM students\n                ORDER BY student_id\n            ")];
+                    case 1:
+                        students = _a.sent();
+                        return [2 /*return*/, students.map(function (student) { return ({
+                                studentId: student.studentId,
+                                name: student.name,
+                                email: student.email,
+                                phone: student.phone,
+                                address: student.address,
+                                dateOfBirth: student.dateOfBirth,
+                                enrollmentYear: student.enrollmentYear,
+                                major: student.major,
+                                faculty: student.faculty,
+                                program: student.program,
+                                status: student.status,
+                                avatarUrl: student.avatarUrl,
+                                credits: {
+                                    completed: student.completedCredits,
+                                    current: student.currentCredits,
+                                    required: student.requiredCredits
+                                },
+                                gender: student.gender,
+                                hometown: student.hometownDistrict ? {
+                                    district: student.hometownDistrict,
+                                    province: student.hometownProvince,
+                                    isRemoteArea: student.isRemoteArea
+                                } : undefined
+                            }); })];
+                    case 2:
+                        error_5 = _a.sent();
+                        console.error('Error getting all students:', error_5);
+                        throw error_5;
+                    case 3: return [2 /*return*/];
+                }
             });
         });
     }

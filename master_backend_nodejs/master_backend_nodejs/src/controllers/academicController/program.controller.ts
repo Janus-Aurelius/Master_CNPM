@@ -27,56 +27,90 @@ const upload = multer({
 }).single('file');
 
 export class ProgramController {
-    static async getAllPrograms(req: Request, res: Response) {
+    static async getAllPrograms(req: Request, res: Response): Promise<void> {
         try {
             const programs = await ProgramBusiness.getAllPrograms();
-            res.status(200).json({ success: true, data: programs });
+            console.log('Programs from database:', programs);
+            res.json(programs);
         } catch (error) {
-            res.status(500).json({ success: false, message: 'Error fetching programs', error });
+            console.error('Error in getAllPrograms:', error);
+            res.status(500).json({ 
+                success: false, 
+                message: 'Internal server error' 
+            });
         }
     }
 
-    static async getProgramById(req: Request, res: Response) {
+    static async getProgramById(req: Request, res: Response): Promise<void> {
         try {
             const { id } = req.params;
-            const program = await ProgramBusiness.getProgramById(id);
+            const program = await ProgramBusiness.getProgramById(Number(id));
             if (!program) {
-                return res.status(404).json({ success: false, message: 'Program not found' });
+                res.status(404).json({ 
+                    success: false, 
+                    message: 'Program not found' 
+                });
+                return;
             }
-            res.status(200).json({ success: true, data: program });
+            res.json(program);
         } catch (error) {
-            res.status(500).json({ success: false, message: 'Error fetching program', error });
+            console.error('Error in getProgramById:', error);
+            res.status(500).json({ 
+                success: false, 
+                message: 'Internal server error' 
+            });
         }
     }
 
-    static async createProgram(req: Request, res: Response) {
+    static async createProgram(req: Request, res: Response): Promise<void> {
         try {
-            const programData = req.body;
-            const newProgram = await ProgramBusiness.createProgram(programData);
-            res.status(201).json({ success: true, data: newProgram });
+            const program = await ProgramBusiness.createProgram(req.body);
+            res.status(201).json(program);
         } catch (error) {
-            res.status(500).json({ success: false, message: 'Error creating program', error });
+            console.error('Error in createProgram:', error);
+            res.status(500).json({ 
+                success: false, 
+                message: 'Internal server error' 
+            });
         }
     }
 
-    static async updateProgram(req: Request, res: Response) {
+    static async updateProgram(req: Request, res: Response): Promise<void> {
+        const { maNganh, maMonHoc, maHocKy } = req.params;
+        const programData = req.body;
         try {
-            const { id } = req.params;
-            const programData = req.body;
-            const updatedProgram = await ProgramBusiness.updateProgram(id, programData);
-            res.status(200).json({ success: true, data: updatedProgram });
+            const updated = await ProgramBusiness.updateProgram(maNganh, maMonHoc, maHocKy, programData);
+            if (!updated) {
+                res.status(404).json({ message: 'Program not found' });
+                return;
+            }
+            res.json(updated);
         } catch (error) {
-            res.status(500).json({ success: false, message: 'Error updating program', error });
+            res.status(500).json({ message: 'Failed to update program' });
         }
     }
 
-    static async deleteProgram(req: Request, res: Response) {
+    static async deleteProgram(req: Request, res: Response): Promise<void> {
         try {
-            const { id } = req.params;
-            await ProgramBusiness.deleteProgram(id);
-            res.status(200).json({ success: true, message: 'Program deleted successfully' });
+            const { maNganh, maMonHoc, maHocKy } = req.params;
+            await ProgramBusiness.deleteProgram(maNganh, maMonHoc, maHocKy);
+            res.json({ 
+                success: true, 
+                message: 'Program deleted successfully' 
+            });
         } catch (error) {
-            res.status(500).json({ success: false, message: 'Error deleting program', error });
+            console.error('Error in deleteProgram:', error);
+            if (error instanceof Error && error.message === 'Program not found') {
+                res.status(404).json({ 
+                    success: false, 
+                    message: 'Program not found' 
+                });
+                return;
+            }
+            res.status(500).json({ 
+                success: false, 
+                message: 'Internal server error' 
+            });
         }
     }
 
@@ -103,5 +137,33 @@ export class ProgramController {
                 res.status(500).json({ success: false, message: 'Error processing Excel file', error });
             }
         });
+    }
+
+    static async getProgramsByNganh(req: Request, res: Response): Promise<void> {
+        try {
+            const { maNganh } = req.params;
+            const programs = await ProgramBusiness.getProgramsByNganh(maNganh);
+            res.json(programs);
+        } catch (error) {
+            console.error('Error in getProgramsByNganh:', error);
+            res.status(500).json({ 
+                success: false, 
+                message: 'Internal server error' 
+            });
+        }
+    }
+
+    static async getProgramsByHocKy(req: Request, res: Response): Promise<void> {
+        try {
+            const { maHocKy } = req.params;
+            const programs = await ProgramBusiness.getProgramsByHocKy(maHocKy);
+            res.json(programs);
+        } catch (error) {
+            console.error('Error in getProgramsByHocKy:', error);
+            res.status(500).json({ 
+                success: false, 
+                message: 'Internal server error' 
+            });
+        }
     }
 } 

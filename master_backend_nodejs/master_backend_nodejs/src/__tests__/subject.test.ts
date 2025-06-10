@@ -7,7 +7,7 @@ const initialMockSubjects: Subject[] = [
     {
         id: 1,
         subjectCode: 'SE101',
-        name: 'Introduction to Software Engineering',
+        subjectName: 'Introduction to Software Engineering',
         credits: 3,
         description: 'Basic concepts of software engineering',
         prerequisiteSubjects: [],
@@ -26,7 +26,7 @@ const initialMockSubjects: Subject[] = [
     {
         id: 2,
         subjectCode: 'SE102',
-        name: 'Object-Oriented Programming',
+        subjectName: 'Object-Oriented Programming',
         credits: 4,
         description: 'Advanced OOP concepts',
         prerequisiteSubjects: ['SE101'],
@@ -70,7 +70,7 @@ jest.mock('../config/database', () => {
             const newSubject: Subject = {
                 id: mockSubjects.length + 1,
                 subjectCode: params?.[0],
-                name: params?.[1],
+                subjectName: params?.[1],
                 credits: params?.[2],
                 description: params?.[3],
                 prerequisiteSubjects: JSON.parse(params?.[4] || '[]'),
@@ -94,7 +94,7 @@ jest.mock('../config/database', () => {
                 mockSubjects[index] = {
                     ...mockSubjects[index],
                     subjectCode: params?.[0] || mockSubjects[index].subjectCode,
-                    name: params?.[1] || mockSubjects[index].name,
+                    subjectName: params?.[1] || mockSubjects[index].subjectName,
                     credits: params?.[2] || mockSubjects[index].credits,
                     description: params?.[3] || mockSubjects[index].description,
                     prerequisiteSubjects: params?.[4] ? JSON.parse(params[4]) : mockSubjects[index].prerequisiteSubjects,
@@ -160,13 +160,13 @@ describe('Subject Management Tests', () => {
     test('Get subject by ID', async () => {
         const subject = await SubjectBusiness.getSubjectById(1);
         expect(subject).toBeDefined();
-        expect(subject?.name).toBe('Introduction to Software Engineering');
+        expect(subject?.subjectName).toBe('Introduction to Software Engineering');
     });
 
     test('Create new subject', async () => {
         const newSubject = {
             subjectCode: 'SE103',
-            name: 'Database Systems',
+            subjectName: 'Database Systems',
             credits: 3,
             description: 'Introduction to databases',
             prerequisiteSubjects: ['SE101'],
@@ -188,12 +188,12 @@ describe('Subject Management Tests', () => {
 
     test('Update subject', async () => {
         const updateData = {
-            name: 'Updated SE101',
+            subjectName: 'Updated SE101',
             credits: 4
         };
 
         const updated = await SubjectBusiness.updateSubject(1, updateData);
-        expect(updated.name).toBe('Updated SE101');
+        expect(updated.subjectName).toBe('Updated SE101');
         expect(updated.credits).toBe(4);
     });
 
@@ -206,7 +206,7 @@ describe('Subject Management Tests', () => {
     test('Validate subject data', () => {
         const invalidData = {
             subjectCode: '',
-            name: 'Test Subject'
+            subjectName: 'Test Subject'
         };
 
         const errors = SubjectBusiness.validateSubjectData(invalidData);

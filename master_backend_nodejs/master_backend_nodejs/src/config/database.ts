@@ -1,24 +1,50 @@
-import { Pool } from 'pg';
+import { Pool, PoolClient } from 'pg';
+import { config } from '../config';
 
 export class Database {
-    private static pool = new Pool({
-        host: process.env.DB_HOST || 'db',
-        port: Number(process.env.DB_PORT) || 5432,
-        user: process.env.DB_USER || 'postgres',
-        password: String(process.env.DB_PASSWORD || 'secret'),
-        database: process.env.DB_NAME || 'mydb',
-        max: 20, // maximum number of clients in the pool
-        idleTimeoutMillis: 30000, // how long a client is allowed to remain idle before being closed
-        connectionTimeoutMillis: 2000, // how long to wait for a connection
-    });
+    private static pool: Pool;
 
-    static async query(sql: string, params?: any[]): Promise<any> {
-        const client = await this.pool.connect();
+    static initialize() {
+        if (!this.pool) {
+            this.pool = new Pool(config.db);
+            
+            // Handle pool errors
+            this.pool.on('error', (err) => {
+                console.error('Unexpected error on idle client', err);
+                process.exit(-1);
+            });
+        }
+    }
+
+    static async getClient(): Promise<PoolClient> {
+        if (!this.pool) {
+            this.initialize();
+        }
+        return await this.pool.connect();
+    }
+
+    static async query<T = any>(sql: string, params?: any[]): Promise<T[]> {
+        const client = await this.getClient();
         try {
             const result = await client.query(sql, params);
             return result.rows;
         } finally {
             client.release();
+        }
+    }
+
+    static async withClient<T>(callback: (client: PoolClient) => Promise<T>): Promise<T> {
+        const client = await this.getClient();
+        try {
+            return await callback(client);
+        } finally {
+            client.release();
+        }
+    }
+
+    static async end() {
+        if (this.pool) {
+            await this.pool.end();
         }
     }
 } 

@@ -1,15 +1,4 @@
 "use strict";
-var __assign = (this && this.__assign) || function () {
-    __assign = Object.assign || function(t) {
-        for (var s, i = 1, n = arguments.length; i < n; i++) {
-            s = arguments[i];
-            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
-                t[p] = s[p];
-        }
-        return t;
-    };
-    return __assign.apply(this, arguments);
-};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -48,58 +37,151 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.searchCourses = exports.deleteCourse = exports.updateCourse = exports.addCourse = exports.getCourseById = exports.getCourses = void 0;
-var courses = [
-    { id: 1, name: "Programming 101", credits: 3, day: "Monday", session: "1", fromTo: "26/2/2024-6/6/2024", lecturer: "John Doe", location: "Room 101" },
-    { id: 2, name: "Data Structures", credits: 4, day: "Tuesday", session: "2", fromTo: "26/2/2024-6/6/2024", lecturer: "Jane Smith", location: "Room 102" },
-];
+// src/services/courseService.ts
+var databaseService_1 = require("../database/databaseService");
 var getCourses = function () { return __awaiter(void 0, void 0, void 0, function () {
+    var courses, error_1;
     return __generator(this, function (_a) {
-        // Simulated data fetch; replace with real DB logic later.
-        return [2 /*return*/, courses];
+        switch (_a.label) {
+            case 0:
+                _a.trys.push([0, 2, , 3]);
+                return [4 /*yield*/, databaseService_1.DatabaseService.query("\n            SELECT \n                c.id,\n                c.subject_name as \"subjectName\",\n                c.credits,\n                c.schedule,\n                c.lecturer,\n                c.subject_code as \"subjectCode\",\n                c.type,\n                c.department,\n                c.prerequisite_subjects as \"prerequisite_subjects\",\n                c.status\n            FROM courses c\n            WHERE c.status = 'active'\n            ORDER BY c.subject_code\n        ")];
+            case 1:
+                courses = _a.sent();
+                return [2 /*return*/, courses];
+            case 2:
+                error_1 = _a.sent();
+                console.error('Error fetching courses:', error_1);
+                throw error_1;
+            case 3: return [2 /*return*/];
+        }
     });
 }); };
 exports.getCourses = getCourses;
 var getCourseById = function (id) { return __awaiter(void 0, void 0, void 0, function () {
+    var course, error_2;
     return __generator(this, function (_a) {
-        return [2 /*return*/, courses.find(function (course) { return course.id === id; }) || null];
+        switch (_a.label) {
+            case 0:
+                _a.trys.push([0, 2, , 3]);
+                return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("\n            SELECT \n                c.id,\n                c.subject_name as \"subjectName\",\n                c.credits,\n                c.schedule,\n                c.lecturer,\n                c.subject_code as \"subjectCode\",\n                c.type,\n                c.department,\n                c.prerequisite_subjects as \"prerequisite_subjects\",\n                c.status\n            FROM courses c\n            WHERE c.id = $1\n        ", [id])];
+            case 1:
+                course = _a.sent();
+                return [2 /*return*/, course];
+            case 2:
+                error_2 = _a.sent();
+                console.error('Error fetching course by id:', error_2);
+                throw error_2;
+            case 3: return [2 /*return*/];
+        }
     });
 }); };
 exports.getCourseById = getCourseById;
 var addCourse = function (course) { return __awaiter(void 0, void 0, void 0, function () {
+    var newCourse, error_3;
     return __generator(this, function (_a) {
-        courses.push(course);
-        return [2 /*return*/, course];
+        switch (_a.label) {
+            case 0:
+                _a.trys.push([0, 2, , 3]);
+                return [4 /*yield*/, databaseService_1.DatabaseService.insert('courses', {
+                        subject_name: course.subjectName,
+                        credits: course.credits,
+                        schedule: course.schedule,
+                        lecturer: course.lecturer,
+                        subject_code: course.subjectCode,
+                        type: course.type,
+                        department: course.department,
+                        prerequisite_subjects: course.prerequisite_subjects,
+                        status: course.status || 'active',
+                        created_at: new Date(),
+                        updated_at: new Date()
+                    })];
+            case 1:
+                newCourse = _a.sent();
+                return [2 /*return*/, newCourse];
+            case 2:
+                error_3 = _a.sent();
+                console.error('Error adding course:', error_3);
+                throw error_3;
+            case 3: return [2 /*return*/];
+        }
     });
 }); };
 exports.addCourse = addCourse;
 var updateCourse = function (id, courseData) { return __awaiter(void 0, void 0, void 0, function () {
-    var index;
+    var updateData, updatedCourse, error_4;
     return __generator(this, function (_a) {
-        index = courses.findIndex(function (course) { return course.id === id; });
-        if (index === -1)
-            return [2 /*return*/, null];
-        courses[index] = __assign(__assign({}, courses[index]), courseData);
-        return [2 /*return*/, courses[index]];
+        switch (_a.label) {
+            case 0:
+                _a.trys.push([0, 2, , 3]);
+                updateData = {};
+                if (courseData.subjectName)
+                    updateData.subject_name = courseData.subjectName;
+                if (courseData.credits)
+                    updateData.credits = courseData.credits;
+                if (courseData.schedule)
+                    updateData.schedule = courseData.schedule;
+                if (courseData.lecturer)
+                    updateData.lecturer = courseData.lecturer;
+                if (courseData.subjectCode)
+                    updateData.subject_code = courseData.subjectCode;
+                if (courseData.type)
+                    updateData.type = courseData.type;
+                if (courseData.department)
+                    updateData.department = courseData.department;
+                if (courseData.prerequisite_subjects)
+                    updateData.prerequisite_subjects = courseData.prerequisite_subjects;
+                if (courseData.status)
+                    updateData.status = courseData.status;
+                updateData.updated_at = new Date();
+                return [4 /*yield*/, databaseService_1.DatabaseService.update('courses', updateData, { id: id })];
+            case 1:
+                updatedCourse = _a.sent();
+                return [2 /*return*/, updatedCourse];
+            case 2:
+                error_4 = _a.sent();
+                console.error('Error updating course:', error_4);
+                throw error_4;
+            case 3: return [2 /*return*/];
+        }
     });
 }); };
 exports.updateCourse = updateCourse;
 var deleteCourse = function (id) { return __awaiter(void 0, void 0, void 0, function () {
-    var index;
+    var result, error_5;
     return __generator(this, function (_a) {
-        index = courses.findIndex(function (course) { return course.id === id; });
-        if (index === -1)
-            return [2 /*return*/, false];
-        courses.splice(index, 1);
-        return [2 /*return*/, true];
+        switch (_a.label) {
+            case 0:
+                _a.trys.push([0, 2, , 3]);
+                return [4 /*yield*/, databaseService_1.DatabaseService.delete('courses', { id: id })];
+            case 1:
+                result = _a.sent();
+                return [2 /*return*/, result > 0];
+            case 2:
+                error_5 = _a.sent();
+                console.error('Error deleting course:', error_5);
+                throw error_5;
+            case 3: return [2 /*return*/];
+        }
     });
 }); };
 exports.deleteCourse = deleteCourse;
 var searchCourses = function (query) { return __awaiter(void 0, void 0, void 0, function () {
+    var courses, error_6;
     return __generator(this, function (_a) {
-        return [2 /*return*/, courses.filter(function (course) {
-                return course.name.toLowerCase().includes(query.toLowerCase()) ||
-                    course.lecturer.toLowerCase().includes(query.toLowerCase());
-            })];
+        switch (_a.label) {
+            case 0:
+                _a.trys.push([0, 2, , 3]);
+                return [4 /*yield*/, databaseService_1.DatabaseService.query("\n            SELECT \n                c.id,\n                c.subject_name as \"subjectName\",\n                c.credits,\n                c.schedule,\n                c.lecturer,\n                c.subject_code as \"subjectCode\",\n                c.type,\n                c.department,\n                c.prerequisite_subjects as \"prerequisite_subjects\",\n                c.status\n            FROM courses c\n            WHERE \n                c.status = 'active' AND\n                (\n                    LOWER(c.subject_name) LIKE LOWER($1) OR\n                    LOWER(c.lecturer) LIKE LOWER($1) OR\n                    LOWER(c.subject_code) LIKE LOWER($1)\n                )\n            ORDER BY c.subject_code\n        ", ["%".concat(query, "%")])];
+            case 1:
+                courses = _a.sent();
+                return [2 /*return*/, courses];
+            case 2:
+                error_6 = _a.sent();
+                console.error('Error searching courses:', error_6);
+                throw error_6;
+            case 3: return [2 /*return*/];
+        }
     });
 }); };
 exports.searchCourses = searchCourses;

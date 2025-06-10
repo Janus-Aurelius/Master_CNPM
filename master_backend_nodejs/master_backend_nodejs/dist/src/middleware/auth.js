@@ -11,10 +11,9 @@ var JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 var authenticateToken = function (req, res, next) {
     var _a;
     try {
-        // Lấy token từ header Authorization hoặc cookie (hỗ trợ cả hai)
         var authHeader = req.headers['authorization'];
-        var token = (authHeader && authHeader.split(' ')[1]) || // Bearer TOKEN
-            ((_a = req.cookies) === null || _a === void 0 ? void 0 : _a.auth_token); // Hỗ trợ cookie
+        var token = (authHeader && authHeader.split(' ')[1]) ||
+            ((_a = req.cookies) === null || _a === void 0 ? void 0 : _a.auth_token);
         if (!token) {
             res.status(401).json({
                 success: false,
@@ -24,6 +23,14 @@ var authenticateToken = function (req, res, next) {
         }
         // Xác thực token
         var decoded = jsonwebtoken_1.default.verify(token, JWT_SECRET);
+        // Validate payload
+        if (!decoded.id || !decoded.role || !decoded.username) {
+            res.status(403).json({
+                success: false,
+                message: 'Token không hợp lệ'
+            });
+            return;
+        }
         req.user = decoded;
         next();
     }

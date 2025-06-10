@@ -37,24 +37,26 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ProgramService = void 0;
-var database_1 = require("../../config/database");
+var databaseService_1 = require("../database/databaseService");
 var database_error_1 = require("../../utils/errors/database.error");
 var ProgramService = /** @class */ (function () {
     function ProgramService() {
     }
     ProgramService.getAllPrograms = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var query, error_1;
+            var result, error_1;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         _a.trys.push([0, 2, , 3]);
-                        query = 'SELECT * FROM programs ORDER BY id';
-                        return [4 /*yield*/, database_1.Database.query(query)];
-                    case 1: return [2 /*return*/, _a.sent()];
+                        return [4 /*yield*/, databaseService_1.DatabaseService.query("SELECT * FROM chuongtrinhhoc ORDER BY maNganh, maHocKy")];
+                    case 1:
+                        result = _a.sent();
+                        return [2 /*return*/, result];
                     case 2:
                         error_1 = _a.sent();
-                        throw new database_error_1.DatabaseError('Error fetching programs');
+                        console.error('Error in getAllPrograms:', error_1);
+                        throw new database_error_1.DatabaseError('Failed to fetch programs');
                     case 3: return [2 /*return*/];
                 }
             });
@@ -62,159 +64,149 @@ var ProgramService = /** @class */ (function () {
     };
     ProgramService.getProgramById = function (id) {
         return __awaiter(this, void 0, void 0, function () {
-            var query, result, error_2;
+            var result, error_2;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         _a.trys.push([0, 2, , 3]);
-                        query = 'SELECT * FROM programs WHERE id = $1';
-                        return [4 /*yield*/, database_1.Database.query(query, [id])];
+                        return [4 /*yield*/, databaseService_1.DatabaseService.query("SELECT * FROM chuongtrinhhoc WHERE id = $1", [id])];
                     case 1:
                         result = _a.sent();
                         return [2 /*return*/, result[0] || null];
                     case 2:
                         error_2 = _a.sent();
-                        throw new database_error_1.DatabaseError('Error fetching program by ID');
+                        console.error('Error in getProgramById:', error_2);
+                        throw new database_error_1.DatabaseError('Failed to fetch program');
                     case 3: return [2 /*return*/];
                 }
             });
         });
     };
-    ProgramService.createProgram = function (programData) {
+    ProgramService.createProgram = function (program) {
         return __awaiter(this, void 0, void 0, function () {
-            var query, result, error_3;
+            var result, error_3;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         _a.trys.push([0, 2, , 3]);
-                        query = "\n                INSERT INTO programs (\n                    name_year, department, major, \n                    course_list, total_credit, status\n                ) VALUES ($1, $2, $3, $4, $5, $6)\n                RETURNING *\n            ";
-                        return [4 /*yield*/, database_1.Database.query(query, [
-                                programData.name_year,
-                                programData.department,
-                                programData.major,
-                                JSON.stringify(programData.courseList),
-                                programData.totalCredit,
-                                programData.status
-                            ])];
+                        return [4 /*yield*/, databaseService_1.DatabaseService.query("INSERT INTO chuongtrinhhoc (maNganh, maMonHoc, maHocKy, ghiChu)\n                 VALUES ($1, $2, $3, $4)\n                 RETURNING *", [program.maNganh, program.maMonHoc, program.maHocKy, program.ghiChu])];
                     case 1:
                         result = _a.sent();
                         return [2 /*return*/, result[0]];
                     case 2:
                         error_3 = _a.sent();
-                        throw new database_error_1.DatabaseError('Error creating program');
+                        console.error('Error in createProgram:', error_3);
+                        throw new database_error_1.DatabaseError('Failed to create program');
                     case 3: return [2 /*return*/];
                 }
             });
         });
     };
-    ProgramService.updateProgram = function (id, programData) {
+    ProgramService.updateProgram = function (maNganh, maMonHoc, maHocKy, program) {
         return __awaiter(this, void 0, void 0, function () {
-            var query, result, error_4;
+            var fields, values, idx, sql, result, error_4;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         _a.trys.push([0, 2, , 3]);
-                        query = "\n                UPDATE programs \n                SET name_year = COALESCE($1, name_year), \n                    department = COALESCE($2, department), \n                    major = COALESCE($3, major),\n                    course_list = COALESCE($4, course_list), \n                    total_credit = COALESCE($5, total_credit), \n                    status = COALESCE($6, status)\n                WHERE id = $7\n                RETURNING *\n            ";
-                        return [4 /*yield*/, database_1.Database.query(query, [
-                                programData.name_year,
-                                programData.department,
-                                programData.major,
-                                programData.courseList ? JSON.stringify(programData.courseList) : null,
-                                programData.totalCredit,
-                                programData.status,
-                                id
-                            ])];
+                        fields = [];
+                        values = [];
+                        idx = 1;
+                        if (program.ghiChu !== undefined) {
+                            fields.push("ghiChu = $".concat(idx++));
+                            values.push(program.ghiChu);
+                        }
+                        if (program.maNganh !== undefined) {
+                            fields.push("maNganh = $".concat(idx++));
+                            values.push(program.maNganh);
+                        }
+                        if (program.maMonHoc !== undefined) {
+                            fields.push("maMonHoc = $".concat(idx++));
+                            values.push(program.maMonHoc);
+                        }
+                        if (program.maHocKy !== undefined) {
+                            fields.push("maHocKy = $".concat(idx++));
+                            values.push(program.maHocKy);
+                        }
+                        // Add more fields if needed
+                        if (fields.length === 0) {
+                            throw new Error('No fields to update');
+                        }
+                        // Add composite key to values
+                        values.push(maNganh, maMonHoc, maHocKy);
+                        sql = "\n                UPDATE chuongtrinhhoc\n                SET ".concat(fields.join(', '), "\n                WHERE maNganh = $").concat(idx++, " AND maMonHoc = $").concat(idx++, " AND maHocKy = $").concat(idx, "\n                RETURNING *\n            ");
+                        return [4 /*yield*/, databaseService_1.DatabaseService.query(sql, values)];
                     case 1:
                         result = _a.sent();
-                        if (!result[0]) {
-                            throw new Error('Program not found');
-                        }
-                        return [2 /*return*/, result[0]];
+                        return [2 /*return*/, result[0] || null];
                     case 2:
                         error_4 = _a.sent();
-                        throw new database_error_1.DatabaseError('Error updating program');
+                        console.error('Error in updateProgram:', error_4);
+                        throw new database_error_1.DatabaseError('Failed to update program');
                     case 3: return [2 /*return*/];
                 }
             });
         });
     };
-    ProgramService.deleteProgram = function (id) {
+    ProgramService.deleteProgram = function (maNganh, maMonHoc, maHocKy) {
         return __awaiter(this, void 0, void 0, function () {
             var query, result, error_5;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         _a.trys.push([0, 2, , 3]);
-                        query = 'DELETE FROM programs WHERE id = $1 RETURNING id';
-                        return [4 /*yield*/, database_1.Database.query(query, [id])];
+                        query = "\n                DELETE FROM chuongtrinhhoc \n                WHERE manganh = $1 AND mamonhoc = $2 AND mahocky = $3\n                RETURNING *\n            ";
+                        return [4 /*yield*/, databaseService_1.DatabaseService.query(query, [maNganh, maMonHoc, maHocKy])];
                     case 1:
                         result = _a.sent();
-                        if (!result[0]) {
-                            throw new Error('Program not found');
+                        if (result.length === 0) {
+                            throw new database_error_1.DatabaseError('Program not found');
                         }
                         return [3 /*break*/, 3];
                     case 2:
                         error_5 = _a.sent();
-                        throw new database_error_1.DatabaseError('Error deleting program');
+                        console.error('Error in deleteProgram:', error_5);
+                        throw new database_error_1.DatabaseError('Failed to delete program');
                     case 3: return [2 /*return*/];
                 }
             });
         });
     };
-    ProgramService.getProgramsByDepartment = function (department) {
+    ProgramService.getProgramsByNganh = function (maNganh) {
         return __awaiter(this, void 0, void 0, function () {
-            var query, error_6;
+            var result, error_6;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         _a.trys.push([0, 2, , 3]);
-                        query = 'SELECT * FROM programs WHERE department = $1 ORDER BY name_year';
-                        return [4 /*yield*/, database_1.Database.query(query, [department])];
-                    case 1: return [2 /*return*/, _a.sent()];
-                    case 2:
-                        error_6 = _a.sent();
-                        throw new database_error_1.DatabaseError('Error fetching programs by department');
-                    case 3: return [2 /*return*/];
-                }
-            });
-        });
-    };
-    ProgramService.getProgramsByStatus = function (status) {
-        return __awaiter(this, void 0, void 0, function () {
-            var query, error_7;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        _a.trys.push([0, 2, , 3]);
-                        query = 'SELECT * FROM programs WHERE status = $1 ORDER BY name_year';
-                        return [4 /*yield*/, database_1.Database.query(query, [status])];
-                    case 1: return [2 /*return*/, _a.sent()];
-                    case 2:
-                        error_7 = _a.sent();
-                        throw new database_error_1.DatabaseError('Error fetching programs by status');
-                    case 3: return [2 /*return*/];
-                }
-            });
-        });
-    };
-    ProgramService.updateProgramStatus = function (id, status) {
-        return __awaiter(this, void 0, void 0, function () {
-            var query, result, error_8;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        _a.trys.push([0, 2, , 3]);
-                        query = "\n                UPDATE programs \n                SET status = $1\n                WHERE id = $2\n                RETURNING *\n            ";
-                        return [4 /*yield*/, database_1.Database.query(query, [status, id])];
+                        return [4 /*yield*/, databaseService_1.DatabaseService.query("SELECT * FROM chuongtrinhhoc WHERE maNganh = $1 ORDER BY maHocKy", [maNganh])];
                     case 1:
                         result = _a.sent();
-                        if (!result[0]) {
-                            throw new Error('Program not found');
-                        }
-                        return [2 /*return*/, result[0]];
+                        return [2 /*return*/, result];
                     case 2:
-                        error_8 = _a.sent();
-                        throw new database_error_1.DatabaseError('Error updating program status');
+                        error_6 = _a.sent();
+                        console.error('Error in getProgramsByNganh:', error_6);
+                        throw new database_error_1.DatabaseError('Failed to fetch programs by nganh');
+                    case 3: return [2 /*return*/];
+                }
+            });
+        });
+    };
+    ProgramService.getProgramsByHocKy = function (maHocKy) {
+        return __awaiter(this, void 0, void 0, function () {
+            var result, error_7;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        _a.trys.push([0, 2, , 3]);
+                        return [4 /*yield*/, databaseService_1.DatabaseService.query("SELECT * FROM chuongtrinhhoc WHERE maHocKy = $1 ORDER BY maNganh", [maHocKy])];
+                    case 1:
+                        result = _a.sent();
+                        return [2 /*return*/, result];
+                    case 2:
+                        error_7 = _a.sent();
+                        console.error('Error in getProgramsByHocKy:', error_7);
+                        throw new database_error_1.DatabaseError('Failed to fetch programs by hoc ky');
                     case 3: return [2 /*return*/];
                 }
             });

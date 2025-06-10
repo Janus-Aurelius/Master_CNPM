@@ -36,9 +36,11 @@ export class FinancialIntegrationService {
             // Create course item
             const courseItem: TuitionCourseItem = {
                 courseId,
-                courseName: subject.name,
+                courseName: subject.subjectName,
                 credits: subject.credits || 3,
-                amount: 0 // Will be calculated below
+                amount: 0, // Will be calculated below
+                semester,
+                academicYear: '2023-2024' // Assuming a default academic year
             };
 
             // Calculate tuition
@@ -75,11 +77,11 @@ export class FinancialIntegrationService {
                 courseId,
                 semester,
                 amount: tuitionCalculation.totalAmount,
-                breakdown: tuitionCalculation.adjustments.map(adj => ({
+                breakdown: tuitionCalculation.adjustments.map((adj: { description: string; amount: number }) => ({
                     description: adj.description,
                     amount: adj.amount
                 })),
-                dueDate: tuitionCalculation.dueDate,
+                dueDate: new Date(tuitionCalculation.dueDate),
                 status: 'PENDING'
             });
 

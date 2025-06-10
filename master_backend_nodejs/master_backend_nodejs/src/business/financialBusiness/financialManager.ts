@@ -1020,7 +1020,9 @@ export const calculateTuition = async (
             feesTotal,
             discountsTotal,
             totalAmount,
-            finalAmount
+            finalAmount,
+            adjustments: [],
+            dueDate: new Date().toISOString()
         };
     } catch (error) {
         console.error('Error calculating tuition:', error);

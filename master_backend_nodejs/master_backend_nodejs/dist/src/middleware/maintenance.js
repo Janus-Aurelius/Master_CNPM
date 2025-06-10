@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.checkMaintenance = void 0;
+exports.maintenanceMode = exports.checkMaintenance = void 0;
 var adminBussiness_1 = require("../business/adminBussiness");
 var checkMaintenance = function (req, res, next) {
     if (adminBussiness_1.maintenanceManager.isInMaintenanceMode()) {
@@ -21,3 +21,15 @@ var checkMaintenance = function (req, res, next) {
     next();
 };
 exports.checkMaintenance = checkMaintenance;
+var maintenanceMode = function (req, res, next) {
+    var isMaintenance = process.env.MAINTENANCE_MODE === 'true';
+    if (isMaintenance) {
+        res.status(503).json({
+            success: false,
+            message: 'Hệ thống đang trong quá trình bảo trì. Vui lòng thử lại sau.'
+        });
+        return;
+    }
+    next();
+};
+exports.maintenanceMode = maintenanceMode;

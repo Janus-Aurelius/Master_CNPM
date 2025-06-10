@@ -1,7 +1,7 @@
 export interface Subject {
     id: number;
     subjectCode: string;        // Mã môn học
-    name: string;               // Tên môn học
+    subjectName: string;               // Tên môn học
     credits: number;            // Số tín chỉ
     description?: string;       // Mô tả môn học
     prerequisiteSubjects?: string[]; // Các môn học tiên quyết

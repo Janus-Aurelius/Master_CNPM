@@ -38,15 +38,40 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Database = void 0;
 var pg_1 = require("pg");
+var config_1 = require("../config");
 var Database = /** @class */ (function () {
     function Database() {
     }
+    Database.initialize = function () {
+        if (!this.pool) {
+            this.pool = new pg_1.Pool(config_1.config.db);
+            // Handle pool errors
+            this.pool.on('error', function (err) {
+                console.error('Unexpected error on idle client', err);
+                process.exit(-1);
+            });
+        }
+    };
+    Database.getClient = function () {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        if (!this.pool) {
+                            this.initialize();
+                        }
+                        return [4 /*yield*/, this.pool.connect()];
+                    case 1: return [2 /*return*/, _a.sent()];
+                }
+            });
+        });
+    };
     Database.query = function (sql, params) {
         return __awaiter(this, void 0, void 0, function () {
             var client, result;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.pool.connect()];
+                    case 0: return [4 /*yield*/, this.getClient()];
                     case 1:
                         client = _a.sent();
                         _a.label = 2;
@@ -64,16 +89,42 @@ var Database = /** @class */ (function () {
             });
         });
     };
-    Database.pool = new pg_1.Pool({
-        host: process.env.DB_HOST || 'localhost',
-        port: Number(process.env.DB_PORT) || 5432,
-        user: process.env.DB_USER || 'postgres',
-        password: process.env.DB_PASSWORD || '',
-        database: process.env.DB_NAME || 'master_cnpm',
-        max: 20, // maximum number of clients in the pool
-        idleTimeoutMillis: 30000, // how long a client is allowed to remain idle before being closed
-        connectionTimeoutMillis: 2000, // how long to wait for a connection
-    });
+    Database.withClient = function (callback) {
+        return __awaiter(this, void 0, void 0, function () {
+            var client;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this.getClient()];
+                    case 1:
+                        client = _a.sent();
+                        _a.label = 2;
+                    case 2:
+                        _a.trys.push([2, , 4, 5]);
+                        return [4 /*yield*/, callback(client)];
+                    case 3: return [2 /*return*/, _a.sent()];
+                    case 4:
+                        client.release();
+                        return [7 /*endfinally*/];
+                    case 5: return [2 /*return*/];
+                }
+            });
+        });
+    };
+    Database.end = function () {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        if (!this.pool) return [3 /*break*/, 2];
+                        return [4 /*yield*/, this.pool.end()];
+                    case 1:
+                        _a.sent();
+                        _a.label = 2;
+                    case 2: return [2 /*return*/];
+                }
+            });
+        });
+    };
     return Database;
 }());
 exports.Database = Database;

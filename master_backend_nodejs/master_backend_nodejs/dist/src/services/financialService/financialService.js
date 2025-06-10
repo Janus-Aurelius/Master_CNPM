@@ -1,15 +1,4 @@
 "use strict";
-var __assign = (this && this.__assign) || function () {
-    __assign = Object.assign || function(t) {
-        for (var s, i = 1, n = arguments.length; i < n; i++) {
-            s = arguments[i];
-            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
-                t[p] = s[p];
-        }
-        return t;
-    };
-    return __assign.apply(this, arguments);
-};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -46,147 +35,155 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
-    if (pack || arguments.length === 2) for (var i = 0, l = from.length, ar; i < l; i++) {
-        if (ar || !(i in from)) {
-            if (!ar) ar = Array.prototype.slice.call(from, 0, i);
-            ar[i] = from[i];
-        }
-    }
-    return to.concat(ar || Array.prototype.slice.call(from));
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.financialService = void 0;
 var databaseService_1 = require("../database/databaseService");
-// Mock data cho financial department
-var mockStudentPayments = [
-    {
-        studentId: "23524325",
-        fullName: "Nguyễn Văn A",
-        faculty: "Công nghệ thông tin",
-        major: "Khoa học máy tính",
-        course: "K18",
-        paymentStatus: "PAID",
-        semester: "HK1 2024-2025",
-        totalAmount: 2100000,
-        paidAmount: 2100000
-    },
-    {
-        studentId: "22524234",
-        fullName: "Trần Thị B",
-        faculty: "Công nghệ thông tin",
-        major: "Kỹ thuật phần mềm",
-        course: "K17",
-        paymentStatus: "PARTIAL",
-        semester: "HK1 2024-2025",
-        totalAmount: 2100000,
-        paidAmount: 1000000
-    },
-    {
-        studentId: "23524324",
-        fullName: "Lê Văn C",
-        faculty: "Cơ điện tử",
-        major: "Cơ điện tử",
-        course: "K17",
-        paymentStatus: "UNPAID",
-        semester: "HK1 2024-2025",
-        totalAmount: 2100000,
-        paidAmount: 0
-    }
-];
-var mockTuitionSettings = {
-    "HK1 2024-2025": {
-        pricePerCredit: 150000,
-        baseFee: 500000,
-        laboratoryFee: 200000,
-        libraryFee: 100000
-    }
-};
 exports.financialService = {
-    // Dashboard functions
     countTotalStudents: function () {
         return __awaiter(this, void 0, void 0, function () {
+            var result;
             return __generator(this, function (_a) {
-                return [2 /*return*/, mockStudentPayments.length];
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("SELECT COUNT(DISTINCT student_id) as count FROM tuition_records")];
+                    case 1:
+                        result = _a.sent();
+                        return [2 /*return*/, (result === null || result === void 0 ? void 0 : result.count) || 0];
+                }
             });
         });
     },
     countStudentsByPaymentStatus: function (status) {
         return __awaiter(this, void 0, void 0, function () {
+            var result;
             return __generator(this, function (_a) {
-                return [2 /*return*/, mockStudentPayments.filter(function (student) { return student.paymentStatus === status; }).length];
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("SELECT COUNT(*) as count FROM tuition_records WHERE status = $1", [status])];
+                    case 1:
+                        result = _a.sent();
+                        return [2 /*return*/, (result === null || result === void 0 ? void 0 : result.count) || 0];
+                }
             });
         });
     },
     getTotalRevenue: function () {
         return __awaiter(this, void 0, void 0, function () {
+            var result;
             return __generator(this, function (_a) {
-                return [2 /*return*/, mockStudentPayments.reduce(function (total, student) { return total + student.paidAmount; }, 0)];
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("SELECT SUM(paid_amount) as total FROM tuition_records")];
+                    case 1:
+                        result = _a.sent();
+                        return [2 /*return*/, (result === null || result === void 0 ? void 0 : result.total) || 0];
+                }
             });
         });
     },
     getOutstandingAmount: function () {
         return __awaiter(this, void 0, void 0, function () {
+            var result;
             return __generator(this, function (_a) {
-                return [2 /*return*/, mockStudentPayments.reduce(function (total, student) {
-                        return total + (student.totalAmount - student.paidAmount);
-                    }, 0)];
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("SELECT SUM(total_amount - paid_amount) as outstanding FROM tuition_records")];
+                    case 1:
+                        result = _a.sent();
+                        return [2 /*return*/, (result === null || result === void 0 ? void 0 : result.outstanding) || 0];
+                }
             });
         });
     },
-    // Payment Status Management
     getAllStudentPayments: function (filters) {
         return __awaiter(this, void 0, void 0, function () {
-            var filteredPayments;
+            var query, conditions, params;
             return __generator(this, function (_a) {
-                filteredPayments = __spreadArray([], mockStudentPayments, true);
-                if (filters.semester) {
-                    filteredPayments = filteredPayments.filter(function (p) { return p.semester === filters.semester; });
+                switch (_a.label) {
+                    case 0:
+                        query = "SELECT * FROM tuition_records";
+                        conditions = [];
+                        params = [];
+                        if (filters.semester) {
+                            conditions.push('semester = $' + (params.length + 1));
+                            params.push(filters.semester);
+                        }
+                        if (filters.faculty) {
+                            conditions.push('faculty = $' + (params.length + 1));
+                            params.push(filters.faculty);
+                        }
+                        if (filters.course) {
+                            conditions.push('course = $' + (params.length + 1));
+                            params.push(filters.course);
+                        }
+                        if (conditions.length > 0)
+                            query += ' WHERE ' + conditions.join(' AND ');
+                        return [4 /*yield*/, databaseService_1.DatabaseService.query(query, params)];
+                    case 1: return [2 /*return*/, _a.sent()];
                 }
-                if (filters.faculty) {
-                    filteredPayments = filteredPayments.filter(function (p) { return p.faculty === filters.faculty; });
-                }
-                if (filters.course) {
-                    filteredPayments = filteredPayments.filter(function (p) { return p.course === filters.course; });
-                }
-                return [2 /*return*/, filteredPayments];
             });
         });
     },
     getStudentPayment: function (studentId) {
         return __awaiter(this, void 0, void 0, function () {
+            var result;
             return __generator(this, function (_a) {
-                return [2 /*return*/, mockStudentPayments.find(function (student) { return student.studentId === studentId; }) || null];
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("SELECT * FROM tuition_records WHERE student_id = $1", [studentId])];
+                    case 1:
+                        result = _a.sent();
+                        return [2 /*return*/, result || null];
+                }
             });
         });
     },
     updateStudentPayment: function (studentId, paymentData) {
         return __awaiter(this, void 0, void 0, function () {
-            var studentIndex;
-            return __generator(this, function (_a) {
-                studentIndex = mockStudentPayments.findIndex(function (student) { return student.studentId === studentId; });
-                if (studentIndex === -1)
-                    return [2 /*return*/, false];
-                mockStudentPayments[studentIndex] = __assign(__assign({}, mockStudentPayments[studentIndex]), { paymentStatus: paymentData.paymentStatus, paidAmount: paymentData.amountPaid, semester: paymentData.semester });
-                return [2 /*return*/, true];
+            var _a;
+            return __generator(this, function (_b) {
+                switch (_b.label) {
+                    case 0:
+                        _b.trys.push([0, 2, , 3]);
+                        return [4 /*yield*/, databaseService_1.DatabaseService.query("UPDATE tuition_records SET status = $1, paid_amount = $2, semester = $3 WHERE student_id = $4", [paymentData.paymentStatus, paymentData.amountPaid, paymentData.semester, studentId])];
+                    case 1:
+                        _b.sent();
+                        return [2 /*return*/, true];
+                    case 2:
+                        _a = _b.sent();
+                        return [2 /*return*/, false];
+                    case 3: return [2 /*return*/];
+                }
             });
         });
-    }, // Tuition Settings Management
+    },
     getTuitionSettings: function (semester) {
         return __awaiter(this, void 0, void 0, function () {
+            var result;
             return __generator(this, function (_a) {
-                return [2 /*return*/, mockTuitionSettings[semester] || null];
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("SELECT * FROM tuition_settings WHERE semester = $1", [semester])];
+                    case 1:
+                        result = _a.sent();
+                        return [2 /*return*/, result || null];
+                }
             });
         });
     },
     updateTuitionSettings: function (semester, settings) {
         return __awaiter(this, void 0, void 0, function () {
-            return __generator(this, function (_a) {
-                mockTuitionSettings[semester] = settings;
-                return [2 /*return*/, true];
+            var _a;
+            return __generator(this, function (_b) {
+                switch (_b.label) {
+                    case 0:
+                        _b.trys.push([0, 2, , 3]);
+                        return [4 /*yield*/, databaseService_1.DatabaseService.query("UPDATE tuition_settings SET price_per_credit = $1, base_fee = $2, laboratory_fee = $3, library_fee = $4 WHERE semester = $5", [settings.pricePerCredit, settings.baseFee, settings.laboratoryFee, settings.libraryFee, semester])];
+                    case 1:
+                        _b.sent();
+                        return [2 /*return*/, true];
+                    case 2:
+                        _a = _b.sent();
+                        return [2 /*return*/, false];
+                    case 3: return [2 /*return*/];
+                }
             });
         });
-    }, // Create tuition record for course registration using database
+    },
     createTuitionRecord: function (tuitionData) {
         return __awaiter(this, void 0, void 0, function () {
             var tuitionRecord, course, error_1;
@@ -236,7 +233,6 @@ exports.financialService = {
             });
         });
     },
-    // Get unpaid tuition report using database
     getUnpaidTuitionReport: function (semester, year) {
         return __awaiter(this, void 0, void 0, function () {
             var semesterQuery, unpaidRecords, error_2;

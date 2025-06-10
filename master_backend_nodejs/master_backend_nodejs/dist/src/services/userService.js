@@ -40,7 +40,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.isTokenBlacklisted = exports.blacklistToken = exports.verifyPassword = exports.getUserById = exports.getUserByEmail = void 0;
-// User Service for final_cnpm database
+// User Service for master_cnpm database
 var databaseService_1 = require("./database/databaseService");
 var bcrypt_1 = __importDefault(require("bcrypt"));
 /**
@@ -52,85 +52,71 @@ var tokenBlacklist = new Set();
  * Map database roles to application roles
  */
 var roleMapping = {
-    'N1': 'admin', // Admin
-    'N2': 'academic', // Giảng viên
-    'N3': 'student', // Sinh viên
-    'N4': 'financial' // Kế toán
+    'admin': 'admin',
+    'academic': 'academic',
+    'student': 'student',
+    'financial': 'financial'
 };
 /**
- * Get user by username (tendangnhap) from final_cnpm database
+ * Get user by email from master_cnpm database
  */
 var getUserByEmail = function (email) { return __awaiter(void 0, void 0, void 0, function () {
-    var dbUser, additionalInfo, error_1;
+    var dbUser, error_1;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
-                _a.trys.push([0, 5, , 6]);
-                return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("\n            SELECT \n                nd.tendangnhap,\n                nd.userid,\n                nd.matkhau,\n                nd.manhom,\n                nd.masosinhvien,\n                nnd.tennhom\n            FROM nguoidung nd\n            LEFT JOIN nhomnguoidung nnd ON nd.manhom = nnd.manhom\n            WHERE nd.tendangnhap = $1\n        ", [email])];
+                _a.trys.push([0, 2, , 3]);
+                return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("\n            SELECT \n                u.id,\n                u.email,\n                u.name,\n                u.password,\n                u.role,\n                u.status\n            FROM users u\n            WHERE u.email = $1\n        ", [email])];
             case 1:
                 dbUser = _a.sent();
-                if (!dbUser) return [3 /*break*/, 4];
-                additionalInfo = null;
-                if (!dbUser.masosinhvien) return [3 /*break*/, 3];
-                return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("\n                    SELECT \n                        sv.hoten,\n                        sv.ngaysinh,\n                        sv.gioitinh,\n                        sv.manganh\n                    FROM sinhvien sv\n                    WHERE sv.masosinhvien = $1\n                ", [dbUser.masosinhvien])];
+                if (dbUser) {
+                    return [2 /*return*/, {
+                            id: dbUser.id,
+                            email: dbUser.email,
+                            name: dbUser.name,
+                            role: dbUser.role,
+                            passwordHash: dbUser.password,
+                            status: dbUser.status
+                        }];
+                }
+                return [2 /*return*/, null];
             case 2:
-                additionalInfo = _a.sent();
-                _a.label = 3;
-            case 3: return [2 /*return*/, {
-                    id: dbUser.userid || dbUser.tendangnhap,
-                    email: dbUser.tendangnhap, // Using tendangnhap as email
-                    name: (additionalInfo === null || additionalInfo === void 0 ? void 0 : additionalInfo.hoten) || dbUser.tennhom || 'User',
-                    role: roleMapping[dbUser.manhom] || 'user',
-                    passwordHash: dbUser.matkhau,
-                    studentId: dbUser.masosinhvien,
-                    groupId: dbUser.manhom,
-                    groupName: dbUser.tennhom
-                }];
-            case 4: return [2 /*return*/, null];
-            case 5:
                 error_1 = _a.sent();
                 console.error('Database error in getUserByEmail:', error_1);
                 return [2 /*return*/, null];
-            case 6: return [2 /*return*/];
+            case 3: return [2 /*return*/];
         }
     });
 }); };
 exports.getUserByEmail = getUserByEmail;
 /**
- * Get user by ID from final_cnpm database
+ * Get user by ID from master_cnpm database
  */
 var getUserById = function (id) { return __awaiter(void 0, void 0, void 0, function () {
-    var dbUser, additionalInfo, error_2;
+    var dbUser, error_2;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
-                _a.trys.push([0, 5, , 6]);
-                return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("\n            SELECT \n                nd.tendangnhap,\n                nd.userid,\n                nd.matkhau,\n                nd.manhom,\n                nd.masosinhvien,\n                nnd.tennhom\n            FROM nguoidung nd\n            LEFT JOIN nhomnguoidung nnd ON nd.manhom = nnd.manhom\n            WHERE nd.userid = $1 OR nd.tendangnhap = $1\n        ", [id])];
+                _a.trys.push([0, 2, , 3]);
+                return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("\n            SELECT \n                u.id,\n                u.email,\n                u.name,\n                u.password,\n                u.role,\n                u.status\n            FROM users u\n            WHERE u.id = $1\n        ", [id])];
             case 1:
                 dbUser = _a.sent();
-                if (!dbUser) return [3 /*break*/, 4];
-                additionalInfo = null;
-                if (!dbUser.masosinhvien) return [3 /*break*/, 3];
-                return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("\n                    SELECT \n                        sv.hoten,\n                        sv.ngaysinh,\n                        sv.gioitinh,\n                        sv.manganh\n                    FROM sinhvien sv\n                    WHERE sv.masosinhvien = $1\n                ", [dbUser.masosinhvien])];
+                if (dbUser) {
+                    return [2 /*return*/, {
+                            id: dbUser.id,
+                            email: dbUser.email,
+                            name: dbUser.name,
+                            role: dbUser.role,
+                            passwordHash: dbUser.password,
+                            status: dbUser.status
+                        }];
+                }
+                return [2 /*return*/, null];
             case 2:
-                additionalInfo = _a.sent();
-                _a.label = 3;
-            case 3: return [2 /*return*/, {
-                    id: dbUser.userid || dbUser.tendangnhap,
-                    email: dbUser.tendangnhap,
-                    name: (additionalInfo === null || additionalInfo === void 0 ? void 0 : additionalInfo.hoten) || dbUser.tennhom || 'User',
-                    role: roleMapping[dbUser.manhom] || 'user',
-                    passwordHash: dbUser.matkhau,
-                    studentId: dbUser.masosinhvien,
-                    groupId: dbUser.manhom,
-                    groupName: dbUser.tennhom
-                }];
-            case 4: return [2 /*return*/, null];
-            case 5:
                 error_2 = _a.sent();
                 console.error('Database error in getUserById:', error_2);
                 return [2 /*return*/, null];
-            case 6: return [2 /*return*/];
+            case 3: return [2 /*return*/];
         }
     });
 }); };

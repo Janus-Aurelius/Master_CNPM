@@ -1,15 +1,4 @@
 "use strict";
-var __assign = (this && this.__assign) || function () {
-    __assign = Object.assign || function(t) {
-        for (var s, i = 1, n = arguments.length; i < n; i++) {
-            s = arguments[i];
-            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
-                t[p] = s[p];
-        }
-        return t;
-    };
-    return __assign.apply(this, arguments);
-};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -47,143 +36,222 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.enrollmentService = exports.enrolledSubjects = exports.enrollments = void 0;
-var subjectRegistrationService_1 = require("./subjectRegistrationService");
-// Mock data for enrollments
-var enrollments = [
-    {
-        id: '1',
-        studentId: 'SV001',
-        courseId: 'IT001',
-        courseName: 'Nhập môn lập trình',
-        semester: '2025-1',
-        status: 'registered',
-        credits: 4
-    },
-    {
-        id: '2',
-        studentId: 'SV001',
-        courseId: 'IT002',
-        courseName: 'Lập trình hướng đối tượng',
-        semester: '2025-1',
-        status: 'registered',
-        credits: 4
-    },
-    {
-        id: '3',
-        studentId: 'SV002',
-        courseId: 'IT003',
-        courseName: 'Cấu trúc dữ liệu và giải thuật',
-        semester: '2025-1',
-        status: 'registered',
-        credits: 4
-    }
-];
-exports.enrollments = enrollments;
-// Mock data for enrolled subjects with additional details
-var enrolledSubjects = [
-    {
-        enrollment: enrollments[0],
-        subjectDetails: subjectRegistrationService_1.subjects[0],
-        grade: null,
-        attendanceRate: 0
-    },
-    {
-        enrollment: enrollments[1],
-        subjectDetails: subjectRegistrationService_1.subjects[1],
-        grade: null,
-        attendanceRate: 0
-    },
-    {
-        enrollment: enrollments[2],
-        subjectDetails: subjectRegistrationService_1.subjects[2],
-        grade: null,
-        attendanceRate: 0
-    }
-];
-exports.enrolledSubjects = enrolledSubjects;
+exports.enrolledSubjects = exports.enrollments = exports.enrollmentService = void 0;
+var databaseService_1 = require("../database/databaseService");
 exports.enrollmentService = {
     getEnrolledSubjects: function (studentId, semester) {
         return __awaiter(this, void 0, void 0, function () {
+            var enrolledSubjects_1, error_1;
             return __generator(this, function (_a) {
-                // Filter enrolled subjects by student ID and semester
-                return [2 /*return*/, enrolledSubjects.filter(function (subject) {
-                        return subject.enrollment.studentId === studentId &&
-                            subject.enrollment.semester === semester;
-                    })];
+                switch (_a.label) {
+                    case 0:
+                        _a.trys.push([0, 2, , 3]);
+                        return [4 /*yield*/, databaseService_1.DatabaseService.query("\n                SELECT \n                    e.id,\n                    e.student_id as \"studentId\",\n                    e.course_id as \"courseId\",\n                    e.course_name as \"courseName\",\n                    e.semester,\n                    e.is_enrolled as \"isEnrolled\",\n                    e.credits,\n                    s.name as \"subjectName\",\n                    s.lecturer,\n                    s.credits as \"subjectCredits\",\n                    s.max_students as \"maxStudents\",\n                    s.current_students as \"currentStudents\",\n                    json_agg(\n                        json_build_object(\n                            'day', c.day,\n                            'session', c.session,\n                            'room', c.room\n                        )\n                    ) as schedule,\n                    g.midterm_grade as \"midtermGrade\",\n                    g.final_grade as \"finalGrade\",\n                    g.total_grade as \"totalGrade\",\n                    g.letter_grade as \"letterGrade\",\n                    COALESCE(a.attendance_rate, 0) as \"attendanceRate\"\n                FROM enrollments e\n                JOIN subjects s ON e.course_id = s.id\n                LEFT JOIN classes c ON s.id = c.subject_id\n                LEFT JOIN grades g ON e.student_id = g.student_id AND e.course_id = g.subject_id\n                LEFT JOIN attendance a ON e.student_id = a.student_id AND e.course_id = a.subject_id\n                WHERE e.student_id = $1 AND e.semester = $2\n                GROUP BY \n                    e.id, e.student_id, e.course_id, e.course_name, e.semester, \n                    e.is_enrolled, e.credits, s.name, s.lecturer, s.credits,\n                    s.max_students, s.current_students, g.midterm_grade, g.final_grade,\n                    g.total_grade, g.letter_grade, a.attendance_rate\n            ", [studentId, semester])];
+                    case 1:
+                        enrolledSubjects_1 = _a.sent();
+                        return [2 /*return*/, enrolledSubjects_1.map(function (subject) { return ({
+                                enrollment: {
+                                    id: subject.id,
+                                    studentId: subject.studentId,
+                                    courseId: subject.courseId,
+                                    courseName: subject.courseName,
+                                    semester: subject.semester,
+                                    isEnrolled: subject.isEnrolled,
+                                    credits: subject.credits
+                                },
+                                subjectDetails: {
+                                    id: subject.courseId,
+                                    name: subject.subjectName,
+                                    lecturer: subject.lecturer,
+                                    credits: subject.subjectCredits,
+                                    maxStudents: subject.maxStudents,
+                                    currentStudents: subject.currentStudents,
+                                    schedule: subject.schedule
+                                },
+                                grade: subject.midtermGrade ? {
+                                    midterm: subject.midtermGrade,
+                                    final: subject.finalGrade,
+                                    total: subject.totalGrade,
+                                    letter: subject.letterGrade
+                                } : null,
+                                attendanceRate: subject.attendanceRate
+                            }); })];
+                    case 2:
+                        error_1 = _a.sent();
+                        console.error('Error getting enrolled subjects:', error_1);
+                        throw error_1;
+                    case 3: return [2 /*return*/];
+                }
             });
         });
     },
     getSubjectDetails: function (studentId, subjectId) {
         return __awaiter(this, void 0, void 0, function () {
+            var subject, error_2;
             return __generator(this, function (_a) {
-                // Find a specific enrolled subject for a student
-                return [2 /*return*/, enrolledSubjects.find(function (subject) {
-                        return subject.enrollment.studentId === studentId &&
-                            subject.enrollment.courseId === subjectId;
-                    }) || null];
+                switch (_a.label) {
+                    case 0:
+                        _a.trys.push([0, 2, , 3]);
+                        return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("\n                SELECT \n                    e.id,\n                    e.student_id as \"studentId\",\n                    e.course_id as \"courseId\",\n                    e.course_name as \"courseName\",\n                    e.semester,\n                    e.is_enrolled as \"isEnrolled\",\n                    e.credits,\n                    s.name as \"subjectName\",\n                    s.lecturer,\n                    s.credits as \"subjectCredits\",\n                    s.max_students as \"maxStudents\",\n                    s.current_students as \"currentStudents\",\n                    json_agg(\n                        json_build_object(\n                            'day', c.day,\n                            'session', c.session,\n                            'room', c.room\n                        )\n                    ) as schedule,\n                    g.midterm_grade as \"midtermGrade\",\n                    g.final_grade as \"finalGrade\",\n                    g.total_grade as \"totalGrade\",\n                    g.letter_grade as \"letterGrade\",\n                    COALESCE(a.attendance_rate, 0) as \"attendanceRate\"\n                FROM enrollments e\n                JOIN subjects s ON e.course_id = s.id\n                LEFT JOIN classes c ON s.id = c.subject_id\n                LEFT JOIN grades g ON e.student_id = g.student_id AND e.course_id = g.subject_id\n                LEFT JOIN attendance a ON e.student_id = a.student_id AND e.course_id = a.subject_id\n                WHERE e.student_id = $1 AND e.course_id = $2\n                GROUP BY \n                    e.id, e.student_id, e.course_id, e.course_name, e.semester, \n                    e.is_enrolled, e.credits, s.name, s.lecturer, s.credits,\n                    s.max_students, s.current_students, g.midterm_grade, g.final_grade,\n                    g.total_grade, g.letter_grade, a.attendance_rate\n            ", [studentId, subjectId])];
+                    case 1:
+                        subject = _a.sent();
+                        if (!subject)
+                            return [2 /*return*/, null];
+                        return [2 /*return*/, {
+                                enrollment: {
+                                    id: subject.id,
+                                    studentId: subject.studentId,
+                                    courseId: subject.courseId,
+                                    courseName: subject.courseName,
+                                    semester: subject.semester,
+                                    isEnrolled: subject.isEnrolled,
+                                    credits: subject.credits
+                                },
+                                subjectDetails: {
+                                    id: subject.courseId,
+                                    name: subject.subjectName,
+                                    lecturer: subject.lecturer,
+                                    credits: subject.subjectCredits,
+                                    maxStudents: subject.maxStudents,
+                                    currentStudents: subject.currentStudents,
+                                    schedule: subject.schedule
+                                },
+                                grade: subject.midtermGrade ? {
+                                    midterm: subject.midtermGrade,
+                                    final: subject.finalGrade,
+                                    total: subject.totalGrade,
+                                    letter: subject.letterGrade
+                                } : null,
+                                attendanceRate: subject.attendanceRate
+                            }];
+                    case 2:
+                        error_2 = _a.sent();
+                        console.error('Error getting subject details:', error_2);
+                        throw error_2;
+                    case 3: return [2 /*return*/];
+                }
             });
         });
     },
     enrollInSubject: function (enrollmentData) {
         return __awaiter(this, void 0, void 0, function () {
-            var newEnrollment, subjectDetails;
+            var subject, existingEnrollment, enrollment, error_3;
             return __generator(this, function (_a) {
-                newEnrollment = __assign(__assign({}, enrollmentData), { id: Math.random().toString(36).substr(2, 9), status: 'registered' });
-                // Add to enrollments array
-                enrollments.push(newEnrollment);
-                subjectDetails = subjectRegistrationService_1.subjects.find(function (s) { return s.id === enrollmentData.courseId; });
-                if (subjectDetails) {
-                    // Create a new enrolled subject entry
-                    enrolledSubjects.push({
-                        enrollment: newEnrollment,
-                        subjectDetails: subjectDetails,
-                        grade: null,
-                        attendanceRate: 0
-                    });
+                switch (_a.label) {
+                    case 0:
+                        _a.trys.push([0, 5, , 6]);
+                        return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("\n                SELECT \n                    id,\n                    name,\n                    credits,\n                    max_students,\n                    current_students\n                FROM subjects\n                WHERE id = $1\n            ", [enrollmentData.courseId])];
+                    case 1:
+                        subject = _a.sent();
+                        if (!subject) {
+                            throw new Error('Subject not found');
+                        }
+                        if (subject.current_students >= subject.max_students) {
+                            throw new Error('Subject is full');
+                        }
+                        return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("\n                SELECT id\n                FROM enrollments\n                WHERE student_id = $1 AND course_id = $2\n            ", [enrollmentData.studentId, enrollmentData.courseId])];
+                    case 2:
+                        existingEnrollment = _a.sent();
+                        if (existingEnrollment) {
+                            throw new Error('Student is already enrolled in this subject');
+                        }
+                        return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("\n                INSERT INTO enrollments (\n                    student_id,\n                    course_id,\n                    course_name,\n                    semester,\n                    is_enrolled,\n                    credits,\n                    created_at,\n                    updated_at\n                ) VALUES ($1, $2, $3, $4, true, $5, NOW(), NOW())\n                RETURNING \n                    id,\n                    student_id as \"studentId\",\n                    course_id as \"courseId\",\n                    course_name as \"courseName\",\n                    semester,\n                    is_enrolled as \"isEnrolled\",\n                    credits\n            ", [
+                                enrollmentData.studentId,
+                                enrollmentData.courseId,
+                                enrollmentData.courseName,
+                                enrollmentData.semester,
+                                enrollmentData.credits
+                            ])];
+                    case 3:
+                        enrollment = _a.sent();
+                        // Update subject current students count
+                        return [4 /*yield*/, databaseService_1.DatabaseService.query("\n                UPDATE subjects\n                SET current_students = current_students + 1\n                WHERE id = $1\n            ", [enrollmentData.courseId])];
+                    case 4:
+                        // Update subject current students count
+                        _a.sent();
+                        return [2 /*return*/, enrollment];
+                    case 5:
+                        error_3 = _a.sent();
+                        console.error('Error enrolling in subject:', error_3);
+                        throw error_3;
+                    case 6: return [2 /*return*/];
                 }
-                return [2 /*return*/, newEnrollment];
             });
         });
     },
     cancelEnrollment: function (studentId, subjectId) {
         return __awaiter(this, void 0, void 0, function () {
-            var enrollmentIndex, enrolledSubjectIndex;
+            var enrollment, error_4;
             return __generator(this, function (_a) {
-                enrollmentIndex = enrollments.findIndex(function (e) { return e.studentId === studentId && e.courseId === subjectId; });
-                if (enrollmentIndex === -1) {
-                    throw new Error('Enrollment not found');
+                switch (_a.label) {
+                    case 0:
+                        _a.trys.push([0, 4, , 5]);
+                        return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("\n                SELECT id\n                FROM enrollments\n                WHERE student_id = $1 AND course_id = $2\n            ", [studentId, subjectId])];
+                    case 1:
+                        enrollment = _a.sent();
+                        if (!enrollment) {
+                            throw new Error('Enrollment not found');
+                        }
+                        // Update enrollment status
+                        return [4 /*yield*/, databaseService_1.DatabaseService.query("\n                UPDATE enrollments\n                SET is_enrolled = false, updated_at = NOW()\n                WHERE id = $1\n            ", [enrollment.id])];
+                    case 2:
+                        // Update enrollment status
+                        _a.sent();
+                        // Update subject current students count
+                        return [4 /*yield*/, databaseService_1.DatabaseService.query("\n                UPDATE subjects\n                SET current_students = current_students - 1\n                WHERE id = $1\n            ", [subjectId])];
+                    case 3:
+                        // Update subject current students count
+                        _a.sent();
+                        return [2 /*return*/, true];
+                    case 4:
+                        error_4 = _a.sent();
+                        console.error('Error canceling enrollment:', error_4);
+                        throw error_4;
+                    case 5: return [2 /*return*/];
                 }
-                // Update status to dropped
-                enrollments[enrollmentIndex].status = 'dropped';
-                enrolledSubjectIndex = enrolledSubjects.findIndex(function (es) { return es.enrollment.studentId === studentId && es.enrollment.courseId === subjectId; });
-                if (enrolledSubjectIndex !== -1) {
-                    enrolledSubjects[enrolledSubjectIndex].enrollment.status = 'dropped';
-                }
-                return [2 /*return*/, true];
             });
         });
     },
     getEnrollmentHistory: function (studentId) {
         return __awaiter(this, void 0, void 0, function () {
+            var enrollments_1, error_5;
             return __generator(this, function (_a) {
-                // Get all enrollments for a student sorted by semester
-                return [2 /*return*/, enrollments
-                        .filter(function (e) { return e.studentId === studentId; })
-                        .sort(function (a, b) { return new Date(b.semester).getTime() - new Date(a.semester).getTime(); })];
+                switch (_a.label) {
+                    case 0:
+                        _a.trys.push([0, 2, , 3]);
+                        return [4 /*yield*/, databaseService_1.DatabaseService.query("\n                SELECT \n                    id,\n                    student_id as \"studentId\",\n                    course_id as \"courseId\",\n                    course_name as \"courseName\",\n                    semester,\n                    is_enrolled as \"isEnrolled\",\n                    credits\n                FROM enrollments\n                WHERE student_id = $1\n                ORDER BY semester DESC, created_at DESC\n            ", [studentId])];
+                    case 1:
+                        enrollments_1 = _a.sent();
+                        return [2 /*return*/, enrollments_1];
+                    case 2:
+                        error_5 = _a.sent();
+                        console.error('Error getting enrollment history:', error_5);
+                        throw error_5;
+                    case 3: return [2 /*return*/];
+                }
             });
         });
     },
     checkEnrollmentStatus: function (studentId, subjectId) {
         return __awaiter(this, void 0, void 0, function () {
-            var enrollment;
+            var enrollment, error_6;
             return __generator(this, function (_a) {
-                enrollment = enrollments.find(function (e) {
-                    return e.studentId === studentId &&
-                        e.courseId === subjectId;
-                });
-                return [2 /*return*/, (enrollment === null || enrollment === void 0 ? void 0 : enrollment.status) || 'not_enrolled'];
+                switch (_a.label) {
+                    case 0:
+                        _a.trys.push([0, 2, , 3]);
+                        return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("\n                SELECT is_enrolled\n                FROM enrollments\n                WHERE student_id = $1 AND course_id = $2\n            ", [studentId, subjectId])];
+                    case 1:
+                        enrollment = _a.sent();
+                        return [2 /*return*/, (enrollment === null || enrollment === void 0 ? void 0 : enrollment.is_enrolled) || false];
+                    case 2:
+                        error_6 = _a.sent();
+                        console.error('Error checking enrollment status:', error_6);
+                        throw error_6;
+                    case 3: return [2 /*return*/];
+                }
             });
         });
     }
 };
+exports.enrollments = [];
+exports.enrolledSubjects = [];

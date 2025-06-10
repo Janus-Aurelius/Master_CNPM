@@ -53,24 +53,11 @@ var DatabaseService = /** @class */ (function () {
     }
     /**
      * Execute a query with parameters
-     */ DatabaseService.query = function (sql, params) {
+     */
+    DatabaseService.query = function (sql, params) {
         return __awaiter(this, void 0, void 0, function () {
-            var result, error_1, errorMessage;
             return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        _a.trys.push([0, 2, , 3]);
-                        return [4 /*yield*/, database_1.Database.query(sql, params)];
-                    case 1:
-                        result = _a.sent();
-                        return [2 /*return*/, result];
-                    case 2:
-                        error_1 = _a.sent();
-                        console.error('Database query error:', error_1);
-                        errorMessage = error_1 instanceof Error ? error_1.message : 'Unknown database error';
-                        throw new Error("Database query failed: ".concat(errorMessage));
-                    case 3: return [2 /*return*/];
-                }
+                return [2 /*return*/, database_1.Database.query(sql, params)];
             });
         });
     };
@@ -95,26 +82,45 @@ var DatabaseService = /** @class */ (function () {
      */
     DatabaseService.transaction = function (queries) {
         return __awaiter(this, void 0, void 0, function () {
-            var results, _i, queries_1, query, result;
+            var _this = this;
             return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        results = [];
-                        _i = 0, queries_1 = queries;
-                        _a.label = 1;
-                    case 1:
-                        if (!(_i < queries_1.length)) return [3 /*break*/, 4];
-                        query = queries_1[_i];
-                        return [4 /*yield*/, this.query(query.sql, query.params)];
-                    case 2:
-                        result = _a.sent();
-                        results.push(result);
-                        _a.label = 3;
-                    case 3:
-                        _i++;
-                        return [3 /*break*/, 1];
-                    case 4: return [2 /*return*/, results];
-                }
+                return [2 /*return*/, database_1.Database.withClient(function (client) { return __awaiter(_this, void 0, void 0, function () {
+                        var results, _i, queries_1, query, result, error_1;
+                        return __generator(this, function (_a) {
+                            switch (_a.label) {
+                                case 0:
+                                    _a.trys.push([0, 7, , 9]);
+                                    return [4 /*yield*/, client.query('BEGIN')];
+                                case 1:
+                                    _a.sent();
+                                    results = [];
+                                    _i = 0, queries_1 = queries;
+                                    _a.label = 2;
+                                case 2:
+                                    if (!(_i < queries_1.length)) return [3 /*break*/, 5];
+                                    query = queries_1[_i];
+                                    return [4 /*yield*/, client.query(query.sql, query.params)];
+                                case 3:
+                                    result = _a.sent();
+                                    results.push(result.rows);
+                                    _a.label = 4;
+                                case 4:
+                                    _i++;
+                                    return [3 /*break*/, 2];
+                                case 5: return [4 /*yield*/, client.query('COMMIT')];
+                                case 6:
+                                    _a.sent();
+                                    return [2 /*return*/, results];
+                                case 7:
+                                    error_1 = _a.sent();
+                                    return [4 /*yield*/, client.query('ROLLBACK')];
+                                case 8:
+                                    _a.sent();
+                                    throw error_1;
+                                case 9: return [2 /*return*/];
+                            }
+                        });
+                    }); })];
             });
         });
     };
@@ -213,30 +219,35 @@ var DatabaseService = /** @class */ (function () {
      */
     DatabaseService.paginate = function (sql_1) {
         return __awaiter(this, arguments, void 0, function (sql, params, page, limit) {
-            var countSql, countResult, total, offset, paginatedSql, data;
+            var _this = this;
             if (params === void 0) { params = []; }
             if (page === void 0) { page = 1; }
             if (limit === void 0) { limit = 10; }
             return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        countSql = "SELECT COUNT(*) as count FROM (".concat(sql, ") as count_query");
-                        return [4 /*yield*/, this.query(countSql, params)];
-                    case 1:
-                        countResult = _a.sent();
-                        total = parseInt(countResult[0].count);
-                        offset = (page - 1) * limit;
-                        paginatedSql = "".concat(sql, " LIMIT $").concat(params.length + 1, " OFFSET $").concat(params.length + 2);
-                        return [4 /*yield*/, this.query(paginatedSql, __spreadArray(__spreadArray([], params, true), [limit, offset], false))];
-                    case 2:
-                        data = _a.sent();
-                        return [2 /*return*/, {
-                                data: data,
-                                total: total,
-                                page: page,
-                                limit: limit
-                            }];
-                }
+                return [2 /*return*/, database_1.Database.withClient(function (client) { return __awaiter(_this, void 0, void 0, function () {
+                        var countSql, countResult, total, offset, paginatedSql, dataResult;
+                        return __generator(this, function (_a) {
+                            switch (_a.label) {
+                                case 0:
+                                    countSql = "SELECT COUNT(*) as count FROM (".concat(sql, ") as count_query");
+                                    return [4 /*yield*/, client.query(countSql, params)];
+                                case 1:
+                                    countResult = _a.sent();
+                                    total = parseInt(countResult.rows[0].count);
+                                    offset = (page - 1) * limit;
+                                    paginatedSql = "".concat(sql, " LIMIT $").concat(params.length + 1, " OFFSET $").concat(params.length + 2);
+                                    return [4 /*yield*/, client.query(paginatedSql, __spreadArray(__spreadArray([], params, true), [limit, offset], false))];
+                                case 2:
+                                    dataResult = _a.sent();
+                                    return [2 /*return*/, {
+                                            data: dataResult.rows,
+                                            total: total,
+                                            page: page,
+                                            limit: limit
+                                        }];
+                            }
+                        });
+                    }); })];
             });
         });
     };

@@ -21,4 +21,18 @@ export const checkMaintenance = (req: Request, res: Response, next: NextFunction
         });
     }
     next();
+};
+
+export const maintenanceMode = (req: Request, res: Response, next: NextFunction): void => {
+    const isMaintenance = process.env.MAINTENANCE_MODE === 'true';
+
+    if (isMaintenance) {
+        res.status(503).json({
+            success: false,
+            message: 'Hệ thống đang trong quá trình bảo trì. Vui lòng thử lại sau.'
+        });
+        return;
+    }
+
+    next();
 }; 

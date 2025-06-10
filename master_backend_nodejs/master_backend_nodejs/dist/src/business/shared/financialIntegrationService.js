@@ -35,21 +35,13 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
-    if (pack || arguments.length === 2) for (var i = 0, l = from.length, ar; i < l; i++) {
-        if (ar || !(i in from)) {
-            if (!ar) ar = Array.prototype.slice.call(from, 0, i);
-            ar[i] = from[i];
-        }
-    }
-    return to.concat(ar || Array.prototype.slice.call(from));
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.FinancialIntegrationService = void 0;
 // src/business/shared/financialIntegrationService.ts
 var financialService_1 = require("../../services/financialService/financialService");
 var subject_business_1 = require("../academicBusiness/subject.business");
 var databaseService_1 = require("../../services/database/databaseService");
+var financialManager_1 = require("../financialBusiness/financialManager");
 var FinancialIntegrationService = /** @class */ (function () {
     function FinancialIntegrationService() {
     }
@@ -58,11 +50,11 @@ var FinancialIntegrationService = /** @class */ (function () {
      */
     FinancialIntegrationService.calculateCourseTuition = function (studentId, courseId, semester) {
         return __awaiter(this, void 0, void 0, function () {
-            var subjects, subject, creditHour, tuitionPerCredit, baseAmount, additionalFees, breakdown, error_1;
+            var subjects, subject, courseItem, error_1;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        _a.trys.push([0, 4, , 5]);
+                        _a.trys.push([0, 3, , 4]);
                         return [4 /*yield*/, subject_business_1.SubjectBusiness.getAllSubjects()];
                     case 1:
                         subjects = _a.sent();
@@ -70,36 +62,23 @@ var FinancialIntegrationService = /** @class */ (function () {
                         if (!subject) {
                             throw new Error("Subject ".concat(courseId, " not found"));
                         }
-                        creditHour = subject.credits || 3;
-                        return [4 /*yield*/, this.getTuitionPerCredit(studentId)];
-                    case 2:
-                        tuitionPerCredit = _a.sent();
-                        baseAmount = creditHour * tuitionPerCredit;
-                        return [4 /*yield*/, this.calculateAdditionalFees(courseId, semester)];
+                        courseItem = {
+                            courseId: courseId,
+                            courseName: subject.subjectName,
+                            credits: subject.credits || 3,
+                            amount: 0, // Will be calculated below
+                            semester: semester,
+                            academicYear: '2023-2024' // Assuming a default academic year
+                        };
+                        return [4 /*yield*/, (0, financialManager_1.calculateTuition)(studentId, semester, [courseItem])];
+                    case 2: 
+                    // Calculate tuition
+                    return [2 /*return*/, _a.sent()];
                     case 3:
-                        additionalFees = _a.sent();
-                        breakdown = __spreadArray([
-                            {
-                                description: "Tuition (".concat(creditHour, " credits \u00D7 ").concat(tuitionPerCredit.toLocaleString(), " VND)"),
-                                amount: baseAmount
-                            }
-                        ], additionalFees.breakdown, true);
-                        return [2 /*return*/, {
-                                baseAmount: baseAmount,
-                                additionalFees: additionalFees.total,
-                                totalAmount: baseAmount + additionalFees.total,
-                                breakdown: breakdown
-                            }];
-                    case 4:
                         error_1 = _a.sent();
                         console.error('Error calculating course tuition:', error_1);
-                        return [2 /*return*/, {
-                                baseAmount: 0,
-                                additionalFees: 0,
-                                totalAmount: 0,
-                                breakdown: [{ description: 'Error calculating tuition', amount: 0 }]
-                            }];
-                    case 5: return [2 /*return*/];
+                        throw error_1;
+                    case 4: return [2 /*return*/];
                 }
             });
         });
@@ -128,8 +107,11 @@ var FinancialIntegrationService = /** @class */ (function () {
                                 courseId: courseId,
                                 semester: semester,
                                 amount: tuitionCalculation.totalAmount,
-                                breakdown: tuitionCalculation.breakdown,
-                                dueDate: this.calculateDueDate(semester),
+                                breakdown: tuitionCalculation.adjustments.map(function (adj) { return ({
+                                    description: adj.description,
+                                    amount: adj.amount
+                                }); }),
+                                dueDate: new Date(tuitionCalculation.dueDate),
                                 status: 'PENDING'
                             })];
                     case 2:
