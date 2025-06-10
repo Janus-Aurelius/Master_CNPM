@@ -15,10 +15,11 @@ import IconButton from '@mui/material/IconButton';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import { User } from "../types";
-import { Box, Grid, MenuItem, Select, FormControl, InputLabel, Chip, InputAdornment } from '@mui/material';
+import { Box, Grid, MenuItem, Select, FormControl, InputLabel, Chip, InputAdornment, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
+import AddIcon from '@mui/icons-material/Add';
 import UserInfo from '../components/UserInfo';
 
 // Define the PaymentHistory type representing individual payment transactions.
@@ -105,13 +106,20 @@ const sampleInvoices: Invoice[] = [
 const statusOptions = ['Tất cả', 'Chưa nộp đủ', 'Đã nộp đủ', 'Quá hạn'];
 
 export default function PaymentStatusMgm({ user, onLogout }: FinancialPageProps) {
-    const [invoices] = useState<Invoice[]>(sampleInvoices);
+    const [invoices, setInvoices] = useState<Invoice[]>(sampleInvoices);
     const [searchQuery, setSearchQuery] = useState("");
     const [statusFilter, setStatusFilter] = useState('Tất cả');
     const [yearFilter, setYearFilter] = useState('Tất cả');
     const [semesterFilter, setSemesterFilter] = useState('Tất cả');
     const [facultyFilter, setFacultyFilter] = useState('Tất cả');
     const [expandedRows, setExpandedRows] = useState<{ [invoiceId: number]: boolean }>({});
+    const [openDialog, setOpenDialog] = useState(false);
+    const [selectedInvoiceId, setSelectedInvoiceId] = useState<number | null>(null);
+    const [newTransaction, setNewTransaction] = useState({
+        date: new Date().toISOString().split('T')[0],
+        amount: '',
+        method: 'Chuyển khoản'
+    });
 
     // Extract unique years, semesters and faculties
     const uniqueYears = Array.from(new Set(invoices.map(i => i.year)));
@@ -140,10 +148,50 @@ export default function PaymentStatusMgm({ user, onLogout }: FinancialPageProps)
             case 'Chưa nộp đủ': return { bg: '#ffebee', text: '#ef5350' };
             default: return { bg: '#e0e0e0', text: '#616161' };
         }
+    };    const toggleHistory = (invoiceId: number) => {
+        setExpandedRows(prev => ({ ...prev, [invoiceId]: !prev[invoiceId] }));
     };
 
-    const toggleHistory = (invoiceId: number) => {
-        setExpandedRows(prev => ({ ...prev, [invoiceId]: !prev[invoiceId] }));
+    const handleAddTransaction = () => {
+        if (selectedInvoiceId && newTransaction.amount) {
+            const amount = parseFloat(newTransaction.amount);
+            if (amount > 0) {
+                const newPayment: PaymentHistory = {
+                    id: Date.now(), // Simple ID generation
+                    date: newTransaction.date,
+                    amount: amount,
+                    method: newTransaction.method
+                };
+
+                setInvoices(prevInvoices => 
+                    prevInvoices.map(invoice => 
+                        invoice.id === selectedInvoiceId 
+                            ? { 
+                                ...invoice, 
+                                paymentHistory: [...invoice.paymentHistory, newPayment],
+                                status: (invoice.paymentHistory.reduce((sum, p) => sum + p.amount, 0) + amount) >= invoice.totalAmount 
+                                    ? 'Đã nộp đủ' as const
+                                    : invoice.status
+                              }
+                            : invoice
+                    )
+                );
+
+                // Reset form
+                setNewTransaction({
+                    date: new Date().toISOString().split('T')[0],
+                    amount: '',
+                    method: 'Chuyển khoản'
+                });
+                setOpenDialog(false);
+                setSelectedInvoiceId(null);
+            }
+        }
+    };
+
+    const openAddTransactionDialog = (invoiceId: number) => {
+        setSelectedInvoiceId(invoiceId);
+        setOpenDialog(true);
     };
 
     return (
@@ -408,9 +456,27 @@ export default function PaymentStatusMgm({ user, onLogout }: FinancialPageProps)
                                             </TableRow>                                            <TableRow>
                                                 <TableCell colSpan={8} style={{ paddingBottom: 0, paddingTop: 0, border: 0 }}>
                                                     <Collapse in={expandedRows[invoice.id]} timeout="auto" unmountOnExit>                                                        <Box sx={{ margin: 2, backgroundColor: '#fff', p: 3, borderRadius: 2, boxShadow: '0 2px 8px rgba(0,0,0,0.04)', border: 'none', minWidth: 400 }}>
-                                                            <Typography variant="subtitle1" gutterBottom fontWeight="bold" sx={{ mb: 1, color: '#2d3a4a', fontSize: 18, fontFamily: '"Varela Round", sans-serif' }}>
-                                                                Lịch sử thanh toán
-                                                            </Typography>
+                                                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                                                                <Typography variant="subtitle1" gutterBottom fontWeight="bold" sx={{ color: '#2d3a4a', fontSize: 18, fontFamily: '"Varela Round", sans-serif' }}>
+                                                                    Lịch sử thanh toán
+                                                                </Typography>
+                                                                <Button
+                                                                    variant="contained"
+                                                                    size="small"
+                                                                    startIcon={<AddIcon />}
+                                                                    onClick={() => openAddTransactionDialog(invoice.id)}
+                                                                    sx={{
+                                                                        backgroundColor: '#6ebab6',
+                                                                        '&:hover': { backgroundColor: '#5ba9a5' },
+                                                                        borderRadius: '8px',
+                                                                        fontFamily: '"Varela Round", sans-serif',
+                                                                        textTransform: 'none',
+                                                                        fontSize: '12px'
+                                                                    }}
+                                                                >
+                                                                    Thêm giao dịch
+                                                                </Button>
+                                                            </Box>
                                                             <Box sx={{ borderBottom: '1px solid #f0f0f0', mb: 2 }} />
                                                             {invoice.paymentHistory.length === 0 ? (
                                                                 <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic', fontSize: 15, fontFamily: '"Varela Round", sans-serif' }}>
@@ -452,8 +518,152 @@ export default function PaymentStatusMgm({ user, onLogout }: FinancialPageProps)
                                     </TableRow>
                                 )}</TableBody>
                             </Table>
-                        </Box>
-                    </TableContainer>
+                        </Box>                    </TableContainer>                    {/* Add Transaction Dialog */}
+                    <Dialog 
+                        open={openDialog} 
+                        onClose={() => setOpenDialog(false)} 
+                        maxWidth="md" 
+                        fullWidth
+                        sx={{
+                            '& .MuiPaper-root': {
+                                borderRadius: '20px',
+                                background: 'rgba(255,255,255,0.98)',
+                                boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.15)',
+                                padding: 0,
+                            },
+                        }}
+                    >
+                        <DialogTitle sx={{
+                            fontFamily: '"Monserrat", sans-serif',
+                            fontWeight: 700,
+                            fontSize: '2rem',
+                            color: '#4c4c4c',
+                            textAlign: 'center',
+                            pb: 0,
+                            pt: 3
+                        }}>
+                            Thêm giao dịch thanh toán
+                        </DialogTitle>
+                        <DialogContent dividers sx={{
+                            border: 'none',
+                            px: 4,
+                            pt: 2,
+                            pb: 0,
+                            background: 'transparent',
+                        }}>
+                            <Grid container spacing={2} sx={{ mt: 0.5 }}>
+                                <Grid item xs={12}>
+                                    <TextField
+                                        autoFocus
+                                        label="Ngày giao dịch"
+                                        type="date"
+                                        fullWidth
+                                        variant="outlined"
+                                        value={newTransaction.date}
+                                        onChange={(e) => setNewTransaction(prev => ({ ...prev, date: e.target.value }))}
+                                        InputLabelProps={{
+                                            shrink: true,
+                                        }}
+                                        sx={{
+                                            borderRadius: '12px',
+                                            background: '#f7faff',
+                                            '& .MuiOutlinedInput-root': { borderRadius: '12px' },
+                                            '& .MuiInputLabel-root': { fontWeight: 500 },
+                                            '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d8d8d8' },
+                                        }}
+                                    />
+                                </Grid>
+                                <Grid item xs={12}>
+                                    <TextField
+                                        label="Số tiền (VNĐ)"
+                                        type="number"
+                                        fullWidth
+                                        variant="outlined"
+                                        value={newTransaction.amount}
+                                        onChange={(e) => setNewTransaction(prev => ({ ...prev, amount: e.target.value }))}
+                                        sx={{
+                                            borderRadius: '12px',
+                                            background: '#f7faff',
+                                            '& .MuiOutlinedInput-root': { borderRadius: '12px' },
+                                            '& .MuiInputLabel-root': { fontWeight: 500 },
+                                            '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d8d8d8' },
+                                        }}
+                                    />
+                                </Grid>
+                                <Grid item xs={12}>
+                                    <FormControl 
+                                        fullWidth 
+                                        variant="outlined"
+                                        sx={{
+                                            borderRadius: '12px',
+                                            background: '#f7faff',
+                                            '& .MuiOutlinedInput-root': { borderRadius: '12px' },
+                                            '& .MuiInputLabel-root': { fontWeight: 500 },
+                                            '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d8d8d8' },
+                                        }}
+                                    >
+                                        <InputLabel>Phương thức thanh toán</InputLabel>                                        <Select
+                                            value={newTransaction.method}
+                                            label="Phương thức thanh toán"
+                                            onChange={(e) => setNewTransaction(prev => ({ ...prev, method: e.target.value }))}
+                                            sx={{ fontFamily: '"Varela Round", sans-serif' }}
+                                            MenuProps={{
+                                                PaperProps: {
+                                                    elevation: 4,
+                                                    sx: {
+                                                        borderRadius: 3,
+                                                        minWidth: 200,
+                                                        boxShadow: '0 4px 24px 0 rgba(0,0,0,0.10)',
+                                                        p: 1,
+                                                    },
+                                                },
+                                                MenuListProps: {
+                                                    sx: {
+                                                        display: 'flex',
+                                                        flexDirection: 'column',
+                                                        gap: 0.5,
+                                                        fontFamily: '"Varela Round", sans-serif',
+                                                        borderRadius: 3,
+                                                        p: 0,
+                                                    },
+                                                },
+                                            }}
+                                        >
+                                            <MenuItem value="Chuyển khoản" sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>Chuyển khoản</MenuItem>
+                                            <MenuItem value="Tiền mặt" sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>Tiền mặt</MenuItem>
+                                        </Select>
+                                    </FormControl>
+                                </Grid>
+                            </Grid>
+                        </DialogContent>
+                        <DialogActions sx={{
+                            px: 4,
+                            pb: 3,
+                            pt: 2,
+                            display: 'flex',
+                            justifyContent: 'flex-end',
+                            gap: 2,
+                            background: 'transparent',
+                        }}>
+                            <Button 
+                                onClick={() => setOpenDialog(false)}
+                                color="primary"
+                                sx={{ fontFamily: '"Varela Round", sans-serif' }}
+                            >
+                                Hủy
+                            </Button>
+                            <Button 
+                                onClick={handleAddTransaction}
+                                variant="contained"
+                                color="primary"
+                                sx={{ 
+                                    fontFamily: '"Varela Round", sans-serif'
+                                }}
+                            >
+                                Thêm giao dịch
+                            </Button>
+                        </DialogActions>
+                    </Dialog>
                 </Paper>
             </Box>
         </ThemeLayout>
