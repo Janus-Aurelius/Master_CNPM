@@ -1,6 +1,6 @@
 // src/services/studentService/subjectRegistrationService.ts
 import { IEnrollment } from '../../models/student_related/studentEnrollmentInterface';
-import { ISubject } from '../../models/student_related/subjectInterface';
+import { ISubject } from '../../models/academic_related/subject';
 import { DatabaseService } from '../database/databaseService';
 
 export const subjectRegistrationService = {
@@ -8,45 +8,22 @@ export const subjectRegistrationService = {
         try {
             const subjects = await DatabaseService.query(`
                 SELECT 
-                    s.id,
-                    s.name,
-                    s.lecturer,
-                    s.credits,
-                    s.max_students as "maxStudents",
-                    s.current_students as "currentStudents",
-                    s.prerequisites,
-                    s.description,
-                    s.semester,
-                    json_agg(
-                        json_build_object(
-                            'day', c.day,
-                            'session', c.session,
-                            'room', c.room
-                        )
-                    ) as schedule
-                FROM subjects s
-                LEFT JOIN classes c ON s.id = c.subject_id
-                WHERE s.semester = $1
-                GROUP BY 
-                    s.id, s.name, s.lecturer, s.credits,
-                    s.max_students, s.current_students,
-                    s.prerequisites, s.description, s.semester
+                    m.MaMonHoc as "subjectId",
+                    m.TenMonHoc as "subjectName",
+                    m.MaLoaiMon as "subjectTypeId",
+                    m.SoTiet as "totalHours",
+                    l.TenLoaiMon as "subjectTypeName",
+                    l.SoTietMotTC as "hoursPerCredit",
+                    l.SoTienMotTC as "costPerCredit"
+                FROM MONHOC m
+                JOIN LOAIMON l ON m.MaLoaiMon = l.MaLoaiMon
+                JOIN DANHSACHMONHOCMO d ON m.MaMonHoc = d.MaMonHoc
+                WHERE d.MaHocKy = $1
             `, [semester]);
 
-            return subjects.map(subject => ({
-                id: subject.id,
-                name: subject.name,
-                lecturer: subject.lecturer,
-                credits: subject.credits,
-                maxStudents: subject.maxStudents,
-                currentStudents: subject.currentStudents,
-                prerequisites: subject.prerequisites || [],
-                description: subject.description || '',
-                schedule: subject.schedule || [],
-                semester: subject.semester
-            }));
+            return subjects;
         } catch (error) {
-            console.error('Error getting available subjects:', error);
+            console.error('Error in getAvailableSubjects:', error);
             throw error;
         }
     },
@@ -55,45 +32,19 @@ export const subjectRegistrationService = {
         try {
             const subject = await DatabaseService.queryOne(`
                 SELECT 
-                    s.id,
-                    s.name,
-                    s.lecturer,
-                    s.credits,
-                    s.max_students as "maxStudents",
-                    s.current_students as "currentStudents",
-                    s.prerequisites,
-                    s.description,
-                    s.semester,
-                    json_agg(
-                        json_build_object(
-                            'day', c.day,
-                            'session', c.session,
-                            'room', c.room
-                        )
-                    ) as schedule
-                FROM subjects s
-                LEFT JOIN classes c ON s.id = c.subject_id
-                WHERE s.id = $1
-                GROUP BY 
-                    s.id, s.name, s.lecturer, s.credits,
-                    s.max_students, s.current_students,
-                    s.prerequisites, s.description, s.semester
+                    m.MaMonHoc as "subjectId",
+                    m.TenMonHoc as "subjectName",
+                    m.MaLoaiMon as "subjectTypeId",
+                    m.SoTiet as "totalHours",
+                    l.TenLoaiMon as "subjectTypeName",
+                    l.SoTietMotTC as "hoursPerCredit",
+                    l.SoTienMotTC as "costPerCredit"
+                FROM MONHOC m
+                JOIN LOAIMON l ON m.MaLoaiMon = l.MaLoaiMon
+                WHERE m.MaMonHoc = $1
             `, [subjectId]);
 
-            if (!subject) return null;
-
-            return {
-                id: subject.id,
-                name: subject.name,
-                lecturer: subject.lecturer,
-                credits: subject.credits,
-                maxStudents: subject.maxStudents,
-                currentStudents: subject.currentStudents,
-                prerequisites: subject.prerequisites || [],
-                description: subject.description || '',
-                schedule: subject.schedule || [],
-                semester: subject.semester
-            };
+            return subject;
         } catch (error) {
             console.error('Error getting subject by id:', error);
             throw error;
@@ -102,18 +53,23 @@ export const subjectRegistrationService = {
 
     async checkPrerequisites(studentId: string, subjectId: string): Promise<boolean> {
         try {
-            const subject = await this.getSubjectById(subjectId);
-            if (!subject || !subject.prerequisites.length) return true;
-
-            const prerequisites = subject.prerequisites;
+            // Check if student has completed all prerequisites
             const completedSubjects = await DatabaseService.query(`
-                SELECT subject_id
-                FROM grades
-                WHERE student_id = $1 AND letter_grade IN ('A', 'B', 'C', 'D')
+                SELECT MaMonHoc
+                FROM DIEM
+                WHERE MaSinhVien = $1 AND DiemChu IN ('A', 'B', 'C', 'D')
             `, [studentId]);
 
-            const completedSubjectIds = completedSubjects.map(s => s.subject_id);
-            return prerequisites.every((prereq: string) => completedSubjectIds.includes(prereq));
+            const completedSubjectIds = completedSubjects.map(s => s.MaMonHoc);
+            
+            // Get prerequisites for the subject
+            const prerequisites = await DatabaseService.query(`
+                SELECT MaMonHocTruoc
+                FROM MONHOC_TRUOC
+                WHERE MaMonHoc = $1
+            `, [subjectId]);
+
+            return prerequisites.every((prereq: any) => completedSubjectIds.includes(prereq.MaMonHocTruoc));
         } catch (error) {
             console.error('Error checking prerequisites:', error);
             throw error;
@@ -124,9 +80,9 @@ export const subjectRegistrationService = {
         try {
             // Get current semester
             const currentSemester = await DatabaseService.queryOne(`
-                SELECT semester
-                FROM enrollments
-                WHERE student_id = $1 AND is_enrolled = true
+                SELECT MaHocKy
+                FROM PHIEUDANGKY
+                WHERE MaSinhVien = $1 AND TrangThai = 'active'
                 LIMIT 1
             `, [studentId]);
 
@@ -134,26 +90,27 @@ export const subjectRegistrationService = {
 
             // Get enrolled subjects schedule
             const enrolledSchedules = await DatabaseService.query(`
-                SELECT c.day, c.session
-                FROM enrollments e
-                JOIN subjects s ON e.course_id = s.id
-                JOIN classes c ON s.id = c.subject_id
-                WHERE e.student_id = $1 
-                AND e.semester = $2
-                AND e.is_enrolled = true
-            `, [studentId, currentSemester.semester]);
+                SELECT l.Thu, l.Tiet
+                FROM CT_PHIEUDANGKY c
+                JOIN LICH l ON c.MaMonHoc = l.MaMonHoc
+                WHERE c.MaPhieuDangKy IN (
+                    SELECT MaPhieuDangKy 
+                    FROM PHIEUDANGKY 
+                    WHERE MaSinhVien = $1 AND MaHocKy = $2
+                )
+            `, [studentId, currentSemester.MaHocKy]);
 
             // Get new subject schedule
             const newSubjectSchedule = await DatabaseService.query(`
-                SELECT day, session
-                FROM classes
-                WHERE subject_id = $1
+                SELECT Thu, Tiet
+                FROM LICH
+                WHERE MaMonHoc = $1
             `, [subjectId]);
 
             // Check for conflicts
             for (const enrolled of enrolledSchedules) {
                 for (const newSchedule of newSubjectSchedule) {
-                    if (enrolled.day === newSchedule.day && enrolled.session === newSchedule.session) {
+                    if (enrolled.Thu === newSchedule.Thu && enrolled.Tiet === newSchedule.Tiet) {
                         return true; // Conflict found
                     }
                 }
@@ -170,29 +127,41 @@ export const subjectRegistrationService = {
         try {
             // Get current semester
             const currentSemester = await DatabaseService.queryOne(`
-                SELECT semester
-                FROM enrollments
-                WHERE student_id = $1 AND is_enrolled = true
+                SELECT MaHocKy
+                FROM PHIEUDANGKY
+                WHERE MaSinhVien = $1 AND TrangThai = 'active'
                 LIMIT 1
             `, [studentId]);
 
             if (!currentSemester) return true;
 
-            // Get current enrolled credits
+            // Calculate current credits
             const currentCredits = await DatabaseService.queryOne(`
-                SELECT COALESCE(SUM(credits), 0) as total_credits
-                FROM enrollments
-                WHERE student_id = $1 
-                AND semester = $2
-                AND is_enrolled = true
-            `, [studentId, currentSemester.semester]);
+                SELECT COALESCE(SUM(CEIL(m.SoTiet / l.SoTietMotTC)), 0) as total_credits
+                FROM CT_PHIEUDANGKY c
+                JOIN MONHOC m ON c.MaMonHoc = m.MaMonHoc
+                JOIN LOAIMON l ON m.MaLoaiMon = l.MaLoaiMon
+                WHERE c.MaPhieuDangKy IN (
+                    SELECT MaPhieuDangKy 
+                    FROM PHIEUDANGKY 
+                    WHERE MaSinhVien = $1 AND MaHocKy = $2
+                )
+            `, [studentId, currentSemester.MaHocKy]);
 
-            // Get new subject credits
+            // Calculate new subject credits
             const newSubject = await this.getSubjectById(subjectId);
             if (!newSubject) return false;
 
+            // Get hours per credit from LOAIMON
+            const subjectType = await DatabaseService.queryOne(`
+                SELECT SoTietMotTC
+                FROM LOAIMON
+                WHERE MaLoaiMon = $1
+            `, [newSubject.subjectTypeId]);
+
+            const subjectCredits = Math.ceil(newSubject.totalHours / subjectType.SoTietMotTC);
             const MAX_CREDITS_PER_SEMESTER = 24; // Example limit
-            return (currentCredits.total_credits + newSubject.credits) <= MAX_CREDITS_PER_SEMESTER;
+            return (currentCredits.total_credits + subjectCredits) <= MAX_CREDITS_PER_SEMESTER;
         } catch (error) {
             console.error('Error checking credit limit:', error);
             throw error;
@@ -203,80 +172,52 @@ export const subjectRegistrationService = {
         try {
             const subjects = await DatabaseService.query(`
                 SELECT 
-                    s.id,
-                    s.name,
-                    s.lecturer,
-                    s.credits,
-                    s.max_students as "maxStudents",
-                    s.current_students as "currentStudents",
-                    s.prerequisites,
-                    s.description,
-                    s.semester,
-                    json_agg(
-                        json_build_object(
-                            'day', c.day,
-                            'session', c.session,
-                            'room', c.room
-                        )
-                    ) as schedule
-                FROM subjects s
-                LEFT JOIN classes c ON s.id = c.subject_id
-                WHERE s.semester = $1 AND (LOWER(s.name) LIKE $2 OR LOWER(s.id) LIKE $2)
-                GROUP BY 
-                    s.id, s.name, s.lecturer, s.credits,
-                    s.max_students, s.current_students,
-                    s.prerequisites, s.description, s.semester
+                    m.MaMonHoc as "subjectId",
+                    m.TenMonHoc as "subjectName",
+                    m.MaLoaiMon as "subjectTypeId",
+                    m.SoTiet as "totalHours",
+                    l.TenLoaiMon as "subjectTypeName",
+                    l.SoTietMotTC as "hoursPerCredit",
+                    l.SoTienMotTC as "costPerCredit"
+                FROM MONHOC m
+                JOIN LOAIMON l ON m.MaLoaiMon = l.MaLoaiMon
+                JOIN DANHSACHMONHOCMO d ON m.MaMonHoc = d.MaMonHoc
+                WHERE d.MaHocKy = $1 AND (
+                    LOWER(m.TenMonHoc) LIKE LOWER($2) OR 
+                    LOWER(m.MaMonHoc) LIKE LOWER($2)
+                )
             `, [semester, `%${query.toLowerCase()}%`]);
 
-            return subjects.map(subject => ({
-                id: subject.id,
-                name: subject.name,
-                lecturer: subject.lecturer,
-                credits: subject.credits,
-                maxStudents: subject.maxStudents,
-                currentStudents: subject.currentStudents,
-                prerequisites: subject.prerequisites || [],
-                description: subject.description || '',
-                schedule: subject.schedule || [],
-                semester: subject.semester
-            }));
+            return subjects;
         } catch (error) {
             console.error('Error searching subjects:', error);
             throw error;
         }
     },
 
-    async registerSubject(studentId: string, subjectId: string, semester: string): Promise<boolean> {
+    async enrollInSubject(studentId: string, subjectId: string, semester: string): Promise<IEnrollment> {
         try {
-            // Check if subject exists and has available slots
-            const subject = await DatabaseService.queryOne(`
-                SELECT id, max_students, current_students FROM subjects WHERE id = $1 AND semester = $2
-            `, [subjectId, semester]);
-        if (!subject) {
-            throw new Error('Subject not found');
-        }
-            if (subject.current_students >= subject.max_students) {
-            throw new Error('Subject is full');
-        }
-            // Check if already enrolled
-            const existing = await DatabaseService.queryOne(`
-                SELECT id FROM enrollments WHERE student_id = $1 AND course_id = $2 AND semester = $3 AND is_enrolled = true
-            `, [studentId, subjectId, semester]);
-            if (existing) {
-                throw new Error('Already enrolled');
+            // Check if student is already enrolled
+            const existingEnrollment = await DatabaseService.query(
+                'SELECT * FROM CT_PHIEUDANGKY WHERE MaPhieuDangKy = $1 AND MaMonHoc = $2',
+                [studentId, subjectId]
+            );
+
+            if (existingEnrollment.length > 0) {
+                throw new Error('Student is already enrolled in this subject');
             }
-            // Register
-            await DatabaseService.query(`
-                INSERT INTO enrollments (student_id, course_id, course_name, semester, is_enrolled, credits, created_at, updated_at)
-                VALUES ($1, $2, (SELECT name FROM subjects WHERE id = $2), $3, true, (SELECT credits FROM subjects WHERE id = $2), NOW(), NOW())
-            `, [studentId, subjectId, semester]);
-            // Update subject current_students
-            await DatabaseService.query(`
-                UPDATE subjects SET current_students = current_students + 1 WHERE id = $1
-            `, [subjectId]);
-        return true;
+
+            // Create new enrollment
+            const enrollment = await DatabaseService.query(
+                `INSERT INTO CT_PHIEUDANGKY (MaPhieuDangKy, MaMonHoc)
+                VALUES ($1, $2)
+                RETURNING *`,
+                [studentId, subjectId]
+            );
+
+            return enrollment[0];
         } catch (error) {
-            console.error('Error registering subject:', error);
+            console.error('Error in enrollInSubject:', error);
             throw error;
         }
     }

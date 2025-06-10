@@ -1,24 +1,22 @@
 // src/services/courseService.ts
 import { DatabaseService } from '../database/databaseService';
-import Course from "../../models/academic_related/course";
+import ICourse from "../../models/academic_related/course";
 
-export const getCourses = async (): Promise<Course[]> => {
+export const getCourses = async (): Promise<ICourse[]> => {
     try {
         const courses = await DatabaseService.query(`
             SELECT 
-                c.id,
-                c.subject_name as "subjectName",
-                c.credits,
-                c.schedule,
-                c.lecturer,
-                c.subject_code as "subjectCode",
-                c.type,
-                c.department,
-                c.prerequisite_subjects as "prerequisite_subjects",
-                c.status
-            FROM courses c
-            WHERE c.status = 'active'
-            ORDER BY c.subject_code
+                c.MaMonHoc as "subjectId",
+                c.TenMonHoc as "subjectName",
+                c.MaLoaiMon as "subjectTypeId",
+                c.SoTiet as "totalHours",
+                l.TenLoaiMon as "subjectTypeName",
+                l.SoTietMotTC as "hoursPerCredit",
+                l.SoTienMotTC as "costPerCredit"
+            FROM MONHOC c
+            JOIN LOAIMON l ON c.MaLoaiMon = l.MaLoaiMon
+            WHERE c.TrangThai = 'active'
+            ORDER BY c.MaMonHoc
         `);
         return courses;
     } catch (error) {
@@ -27,22 +25,20 @@ export const getCourses = async (): Promise<Course[]> => {
     }
 };
 
-export const getCourseById = async (id: number): Promise<Course | null> => {
+export const getCourseById = async (id: string): Promise<ICourse | null> => {
     try {
         const course = await DatabaseService.queryOne(`
             SELECT 
-                c.id,
-                c.subject_name as "subjectName",
-                c.credits,
-                c.schedule,
-                c.lecturer,
-                c.subject_code as "subjectCode",
-                c.type,
-                c.department,
-                c.prerequisite_subjects as "prerequisite_subjects",
-                c.status
-            FROM courses c
-            WHERE c.id = $1
+                c.MaMonHoc as "subjectId",
+                c.TenMonHoc as "subjectName",
+                c.MaLoaiMon as "subjectTypeId",
+                c.SoTiet as "totalHours",
+                l.TenLoaiMon as "subjectTypeName",
+                l.SoTietMotTC as "hoursPerCredit",
+                l.SoTienMotTC as "costPerCredit"
+            FROM MONHOC c
+            JOIN LOAIMON l ON c.MaLoaiMon = l.MaLoaiMon
+            WHERE c.MaMonHoc = $1
         `, [id]);
         return course;
     } catch (error) {
@@ -51,20 +47,14 @@ export const getCourseById = async (id: number): Promise<Course | null> => {
     }
 };
 
-export const addCourse = async (course: Course): Promise<Course> => {
+export const addCourse = async (course: ICourse): Promise<ICourse> => {
     try {
-        const newCourse = await DatabaseService.insert('courses', {
-            subject_name: course.subjectName,
-            credits: course.credits,
-            schedule: course.schedule,
-            lecturer: course.lecturer,
-            subject_code: course.subjectCode,
-            type: course.type,
-            department: course.department,
-            prerequisite_subjects: course.prerequisite_subjects,
-            status: course.status || 'active',
-            created_at: new Date(),
-            updated_at: new Date()
+        const newCourse = await DatabaseService.insert('MONHOC', {
+            MaMonHoc: course.subjectId,
+            TenMonHoc: course.subjectName,
+            MaLoaiMon: course.subjectTypeId,
+            SoTiet: course.totalHours,
+            TrangThai: 'active'
         });
         return newCourse;
     } catch (error) {
@@ -73,21 +63,15 @@ export const addCourse = async (course: Course): Promise<Course> => {
     }
 };
 
-export const updateCourse = async (id: number, courseData: Partial<Course>): Promise<Course | null> => {
+export const updateCourse = async (id: string, courseData: Partial<ICourse>): Promise<ICourse | null> => {
     try {
         const updateData: Record<string, any> = {};
-        if (courseData.subjectName) updateData.subject_name = courseData.subjectName;
-        if (courseData.credits) updateData.credits = courseData.credits;
-        if (courseData.schedule) updateData.schedule = courseData.schedule;
-        if (courseData.lecturer) updateData.lecturer = courseData.lecturer;
-        if (courseData.subjectCode) updateData.subject_code = courseData.subjectCode;
-        if (courseData.type) updateData.type = courseData.type;
-        if (courseData.department) updateData.department = courseData.department;
-        if (courseData.prerequisite_subjects) updateData.prerequisite_subjects = courseData.prerequisite_subjects;
-        if (courseData.status) updateData.status = courseData.status;
-        updateData.updated_at = new Date();
+        if (courseData.subjectName) updateData.TenMonHoc = courseData.subjectName;
+        if (courseData.subjectTypeId) updateData.MaLoaiMon = courseData.subjectTypeId;
+        if (courseData.totalHours) updateData.SoTiet = courseData.totalHours;
+        if (courseData.status) updateData.TrangThai = courseData.status;
 
-        const updatedCourse = await DatabaseService.update('courses', updateData, { id });
+        const updatedCourse = await DatabaseService.update('MONHOC', updateData, { MaMonHoc: id });
         return updatedCourse;
     } catch (error) {
         console.error('Error updating course:', error);
@@ -95,9 +79,9 @@ export const updateCourse = async (id: number, courseData: Partial<Course>): Pro
     }
 };
 
-export const deleteCourse = async (id: number): Promise<boolean> => {
+export const deleteCourse = async (id: string): Promise<boolean> => {
     try {
-        const result = await DatabaseService.delete('courses', { id });
+        const result = await DatabaseService.delete('MONHOC', { MaMonHoc: id });
         return result > 0;
     } catch (error) {
         console.error('Error deleting course:', error);
@@ -105,29 +89,26 @@ export const deleteCourse = async (id: number): Promise<boolean> => {
     }
 };
 
-export const searchCourses = async (query: string): Promise<Course[]> => {
+export const searchCourses = async (query: string): Promise<ICourse[]> => {
     try {
         const courses = await DatabaseService.query(`
             SELECT 
-                c.id,
-                c.subject_name as "subjectName",
-                c.credits,
-                c.schedule,
-                c.lecturer,
-                c.subject_code as "subjectCode",
-                c.type,
-                c.department,
-                c.prerequisite_subjects as "prerequisite_subjects",
-                c.status
-            FROM courses c
+                c.MaMonHoc as "subjectId",
+                c.TenMonHoc as "subjectName",
+                c.MaLoaiMon as "subjectTypeId",
+                c.SoTiet as "totalHours",
+                l.TenLoaiMon as "subjectTypeName",
+                l.SoTietMotTC as "hoursPerCredit",
+                l.SoTienMotTC as "costPerCredit"
+            FROM MONHOC c
+            JOIN LOAIMON l ON c.MaLoaiMon = l.MaLoaiMon
             WHERE 
-                c.status = 'active' AND
+                c.TrangThai = 'active' AND
                 (
-                    LOWER(c.subject_name) LIKE LOWER($1) OR
-                    LOWER(c.lecturer) LIKE LOWER($1) OR
-                    LOWER(c.subject_code) LIKE LOWER($1)
+                    LOWER(c.TenMonHoc) LIKE LOWER($1) OR
+                    LOWER(c.MaMonHoc) LIKE LOWER($1)
                 )
-            ORDER BY c.subject_code
+            ORDER BY c.MaMonHoc
         `, [`%${query}%`]);
         return courses;
     } catch (error) {

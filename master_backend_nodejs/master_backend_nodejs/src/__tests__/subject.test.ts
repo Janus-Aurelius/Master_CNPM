@@ -1,51 +1,25 @@
 import { SubjectBusiness } from '../business/academicBusiness/subject.business';
-import { Subject } from '../models/academic_related/subject';
+import { ISubject } from '../models/academic_related/subject';
 import { describe, expect, test, jest, beforeEach } from '@jest/globals';
 
 // Define mock data first
-const initialMockSubjects: Subject[] = [
+const initialMockSubjects: ISubject[] = [
     {
-        id: 1,
-        subjectCode: 'SE101',
+        subjectId: 'SE101',
         subjectName: 'Introduction to Software Engineering',
-        credits: 3,
-        description: 'Basic concepts of software engineering',
-        prerequisiteSubjects: [],
-        type: 'Required',
-        department: 'Computer Science',
-        lecturer: 'Dr. Smith',
-        schedule: {
-            day: 'Monday',
-            session: 'Morning',
-            fromTo: '8:00-11:00',
-            room: 'A101'
-        },
-        createdAt: new Date(),
-        updatedAt: new Date()
+        subjectTypeId: 'LT',
+        totalHours: 45
     },
     {
-        id: 2,
-        subjectCode: 'SE102',
+        subjectId: 'SE102',
         subjectName: 'Object-Oriented Programming',
-        credits: 4,
-        description: 'Advanced OOP concepts',
-        prerequisiteSubjects: ['SE101'],
-        type: 'Required',
-        department: 'Computer Science',
-        lecturer: 'Dr. Johnson',
-        schedule: {
-            day: 'Tuesday',
-            session: 'Afternoon',
-            fromTo: '13:00-16:00',
-            room: 'B202'
-        },
-        createdAt: new Date(),
-        updatedAt: new Date()
+        subjectTypeId: 'TH',
+        totalHours: 60
     }
 ];
 
 // Create a mutable copy for tests
-let mockSubjects: Subject[] = [...initialMockSubjects];
+let mockSubjects: ISubject[] = [...initialMockSubjects];
 
 // Define mock query function type
 type MockQueryFunction = (query: string, params?: any[]) => Promise<any[]>;
@@ -54,177 +28,92 @@ type MockQueryFunction = (query: string, params?: any[]) => Promise<any[]>;
 jest.mock('../config/database', () => {
     const mockQuery: MockQueryFunction = (query: string, params?: any[]) => {
         // Get all subjects
-        if (query.includes('SELECT * FROM subjects ORDER BY subject_code')) {
+        if (query.includes('SELECT * FROM MONHOC')) {
             return Promise.resolve([...mockSubjects]);
         }
         
         // Get subject by ID
-        if (query.includes('SELECT * FROM subjects WHERE id =')) {
+        if (query.includes('WHERE MaMonHoc =')) {
             const id = params?.[0];
-            const subject = mockSubjects.find(s => s.id === id);
+            const subject = mockSubjects.find(s => s.subjectId === id);
             return Promise.resolve(subject ? [subject] : []);
         }
         
         // Create subject
-        if (query.includes('INSERT INTO subjects')) {
-            const newSubject: Subject = {
-                id: mockSubjects.length + 1,
-                subjectCode: params?.[0],
+        if (query.includes('INSERT INTO MONHOC')) {
+            const newSubject: ISubject = {
+                subjectId: params?.[0],
                 subjectName: params?.[1],
-                credits: params?.[2],
-                description: params?.[3],
-                prerequisiteSubjects: JSON.parse(params?.[4] || '[]'),
-                type: params?.[5],
-                department: params?.[6],
-                lecturer: params?.[7],
-                schedule: JSON.parse(params?.[8] || '{}'),
-                createdAt: new Date(),
-                updatedAt: new Date()
+                subjectTypeId: params?.[2],
+                totalHours: params?.[3]
             };
             mockSubjects.push(newSubject);
             return Promise.resolve([newSubject]);
         }
-        
-        // Update subject
-        if (query.includes('UPDATE subjects')) {
-            const id = params?.[7];
-            const index = mockSubjects.findIndex(s => s.id === id);
-            if (index !== -1) {
-                // Only update the fields that are provided
-                mockSubjects[index] = {
-                    ...mockSubjects[index],
-                    subjectCode: params?.[0] || mockSubjects[index].subjectCode,
-                    subjectName: params?.[1] || mockSubjects[index].subjectName,
-                    credits: params?.[2] || mockSubjects[index].credits,
-                    description: params?.[3] || mockSubjects[index].description,
-                    prerequisiteSubjects: params?.[4] ? JSON.parse(params[4]) : mockSubjects[index].prerequisiteSubjects,
-                    type: params?.[5] || mockSubjects[index].type,
-                    department: params?.[6] || mockSubjects[index].department,
-                    updatedAt: new Date()
-                };
-                return Promise.resolve([mockSubjects[index]]);
-            }
-            return Promise.resolve([]);
-        }
-        
-        // Delete subject
-        if (query.includes('DELETE FROM subjects WHERE id =')) {
-            const id = params?.[0];
-            const index = mockSubjects.findIndex(s => s.id === id);
-            if (index !== -1) {
-                mockSubjects.splice(index, 1);
-            }
-            return Promise.resolve([]);
-        }
-        
-        // Check schedule conflicts
-        if (query.includes("SELECT * FROM subjects") && 
-            query.includes("WHERE schedule->>'day' = $1") && 
-            query.includes("AND schedule->>'session' = $2") && 
-            query.includes("AND schedule->>'room' = $3")) {
-            const day = params?.[0];
-            const session = params?.[1];
-            const room = params?.[2];
-            
-            const matchingSubjects = mockSubjects.filter(s => 
-                s.schedule.day === day && 
-                s.schedule.session === session && 
-                s.schedule.room === room
-            );
-            
-            return Promise.resolve(matchingSubjects);
-        }
-        
+
         return Promise.resolve([]);
     };
 
     return {
-        Database: {
-            query: jest.fn(mockQuery)
-        }
+        query: mockQuery
     };
 });
 
-describe('Subject Management Tests', () => {
+describe('SubjectBusiness', () => {
     beforeEach(() => {
-        // Reset mock data before each test
         mockSubjects = [...initialMockSubjects];
     });
 
-    test('Get all subjects', async () => {
+    test('getAllSubjects should return all subjects', async () => {
         const subjects = await SubjectBusiness.getAllSubjects();
         expect(subjects).toHaveLength(2);
-        expect(subjects[0].subjectCode).toBe('SE101');
+        expect(subjects[0].subjectId).toBe('SE101');
     });
 
-    test('Get subject by ID', async () => {
-        const subject = await SubjectBusiness.getSubjectById(1);
+    test('getSubjectById should return correct subject', async () => {
+        const subject = await SubjectBusiness.getSubjectById('SE101');
         expect(subject).toBeDefined();
         expect(subject?.subjectName).toBe('Introduction to Software Engineering');
     });
 
-    test('Create new subject', async () => {
-        const newSubject = {
-            subjectCode: 'SE103',
+    test('createSubject should add new subject', async () => {
+        const newSubject: Partial<ISubject> = {
+            subjectId: 'SE103',
             subjectName: 'Database Systems',
-            credits: 3,
-            description: 'Introduction to databases',
-            prerequisiteSubjects: ['SE101'],
-            type: 'Required' as const,
-            department: 'Computer Science',
-            lecturer: 'Dr. Brown',
-            schedule: {
-                day: 'Wednesday',
-                session: 'Morning',
-                fromTo: '8:00-11:00',
-                room: 'C303'
-            }
+            subjectTypeId: 'LT',
+            totalHours: 45
         };
 
         const created = await SubjectBusiness.createSubject(newSubject);
-        expect(created.subjectCode).toBe('SE103');
+        expect(created.subjectId).toBe('SE103');
         expect(mockSubjects).toHaveLength(3);
     });
 
-    test('Update subject', async () => {
-        const updateData = {
-            subjectName: 'Updated SE101',
-            credits: 4
+    test('updateSubject should modify existing subject', async () => {
+        const updateData: Partial<ISubject> = {
+            subjectName: 'Updated Name',
+            totalHours: 60
         };
 
-        const updated = await SubjectBusiness.updateSubject(1, updateData);
-        expect(updated.subjectName).toBe('Updated SE101');
-        expect(updated.credits).toBe(4);
+        const updated = await SubjectBusiness.updateSubject('SE101', updateData);
+        expect(updated.subjectName).toBe('Updated Name');
+        expect(updated.totalHours).toBe(60);
     });
 
-    test('Delete subject', async () => {
-        await SubjectBusiness.deleteSubject(1);
+    test('deleteSubject should remove subject', async () => {
+        await SubjectBusiness.deleteSubject('SE101');
         expect(mockSubjects).toHaveLength(1);
-        expect(mockSubjects[0].id).toBe(2);
+        expect(mockSubjects[0].subjectId).toBe('SE102');
     });
 
-    test('Validate subject data', () => {
-        const invalidData = {
-            subjectCode: '',
+    test('validateSubjectData should return errors for invalid data', () => {
+        const invalidData: Partial<ISubject> = {
             subjectName: 'Test Subject'
         };
 
         const errors = SubjectBusiness.validateSubjectData(invalidData);
-        expect(errors).toContain('Subject code is required');
-    });
-
-    test('Check schedule conflicts', async () => {
-        const conflictingSubject = {
-            schedule: {
-                day: 'Monday',
-                session: 'Morning',
-                fromTo: '8:00-11:00',
-                room: 'A101'
-            }
-        };
-
-        const conflicts = await SubjectBusiness.checkScheduleConflicts(conflictingSubject);
-        expect(conflicts).toHaveLength(1);
-        expect(conflicts[0]).toContain('Schedule conflict');
+        expect(errors).toContain('Subject ID is required');
+        expect(errors).toContain('Subject type is required');
+        expect(errors).toContain('Total hours is required');
     });
 }); 

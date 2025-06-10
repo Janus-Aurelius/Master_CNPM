@@ -11,18 +11,21 @@ export interface PrerequisiteSubject {
     minimumGrade: number; // 0-10
 }
 
-export default interface Course {
-    id: number;
-    subjectCode: string;
-    subjectName: string;
-    credits: number;
-    type: string;
-    department: string;
-    lecturer: string;
-    schedule: CourseSchedule;
-    prerequisite_subjects: PrerequisiteSubject[];
+export default interface ICourse {
+    // Schema fields (mapped to Vietnamese database fields)
+    subjectId: string;         // maMonHoc
+    subjectName: string;       // tenMonHoc
+    subjectTypeId: string;     // maLoaiMon
+    totalHours: number;        // soTiet
+
+    // Additional UI fields
+    type?: string;
+    department?: string;
+    lecturer?: string;
+    schedule?: CourseSchedule;
+    prerequisite_subjects?: PrerequisiteSubject[];
     description?: string;
-    status: 'active' | 'inactive';
+    status?: 'active' | 'inactive';
     createdAt?: Date;
     updatedAt?: Date;
 }

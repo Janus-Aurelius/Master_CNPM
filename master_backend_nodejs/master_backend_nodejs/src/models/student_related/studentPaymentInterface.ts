@@ -1,6 +1,32 @@
 // Consolidated Student Payment Interface - All payment and tuition related interfaces
 
-// Legacy payment interfaces for backward compatibility
+// Schema-based interfaces
+export interface IRegistration {
+    registrationId: string;     // maPhieuDangKy
+    registrationDate: Date;     // ngayLap
+    studentId: string;          // maSoSinhVien
+    semesterId: string;         // maHocKy
+    registrationAmount: number; // soTienDangKy
+    requiredAmount: number;     // soTienPhaiDong
+    paidAmount: number;         // soTienDaDong
+    remainingAmount: number;    // soTienConLai
+    maxCredits: number;         // soTinChiToiDa
+}
+
+export interface ITuitionPayment {
+    paymentId: string;          // maPhieuThu
+    paymentDate: Date;          // ngayLap
+    registrationId: string;     // maPhieuDangKy
+    paymentAmount: number;      // soTienDong
+}
+
+export interface IOutstandingTuition {
+    semesterId: string;         // maHocKy
+    studentId: string;          // maSoSinhVien
+    registrationId: string;     // maPhieuDangKy
+}
+
+// Additional UI interfaces
 export type PaymentStatus = 
     | 'pending'
     | 'paid'

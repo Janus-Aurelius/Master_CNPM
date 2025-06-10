@@ -1,5 +1,22 @@
-// Simplified boolean enrollment status as per supervisor's feedback
-// Only two states: enrolled (true) or not enrolled (false)
+// Schema-based interfaces
+export interface IRegistration {
+    registrationId: string;     // maPhieuDangKy
+    registrationDate: Date;     // ngayLap
+    studentId: string;          // maSoSinhVien
+    semesterId: string;         // maHocKy
+    registrationAmount: number; // soTienDangKy
+    requiredAmount: number;     // soTienPhaiDong
+    paidAmount: number;         // soTienDaDong
+    remainingAmount: number;    // soTienConLai
+    maxCredits: number;         // soTinChiToiDa
+}
+
+export interface IRegistrationDetail {
+    registrationId: string;     // maPhieuDangKy
+    subjectId: string;          // maMonHoc
+}
+
+// Additional UI interfaces
 export interface IEnrollment {
     id: string;
     studentId: string;

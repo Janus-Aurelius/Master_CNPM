@@ -66,9 +66,10 @@ CREATE TABLE LOAIMON (
 );
 
 CREATE TABLE MONHOC (
-    MaMonHoc VARCHAR PRIMARY KEY,
-    TenMonHoc VARCHAR,
-    MaLoaiMon VARCHAR NOT NULL,
+    MaMonHoc    VARCHAR PRIMARY KEY,
+    TenMonHoc   VARCHAR,
+    MaLoaiMon   VARCHAR NOT NULL,
+    SoTiet      INT      NOT NULL,
     FOREIGN KEY (MaLoaiMon) REFERENCES LOAIMON(MaLoaiMon)
 );
 

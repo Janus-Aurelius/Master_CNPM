@@ -1,19 +1,30 @@
-export interface Subject {
-    id: number;
-    subjectCode: string;        // Mã môn học
-    subjectName: string;               // Tên môn học
-    credits: number;            // Số tín chỉ
-    description?: string;       // Mô tả môn học
-    prerequisiteSubjects?: string[]; // Các môn học tiên quyết
-    type: 'Required' | 'Elective'; // Loại môn học (bắt buộc/tự chọn)
-    department: string;         // Khoa phụ trách
-    createdAt: Date;
-    updatedAt: Date;
-    lecturer: string;           // Giảng viên
-    schedule: {
-        day: string;           // Ngày học
-        session: string;       // Ca học
-        fromTo: string;        // Thời gian
-        room: string;          // Phòng học
+export interface ISubject {
+    // Schema fields (mapped to Vietnamese database fields)
+    subjectId: string;         // maMonHoc
+    subjectName: string;       // tenMonHoc
+    subjectTypeId: string;     // maLoaiMon
+    totalHours: number;        // soTiet
+
+    // Additional UI fields
+    description?: string;
+    prerequisiteSubjects?: string[];
+    type?: 'Required' | 'Elective';
+    department?: string;
+    createdAt?: Date;
+    updatedAt?: Date;
+    lecturer?: string;
+    schedule?: {
+        day: string;
+        session: string;
+        fromTo: string;
+        room: string;
     };
+}
+
+export interface ISubjectType {
+    // Schema fields (mapped to Vietnamese database fields)
+    subjectTypeId: string;     // maLoaiMon
+    subjectTypeName: string;   // tenLoaiMon
+    hoursPerCredit: number;    // soTietMotTC
+    costPerCredit: number;     // soTienMotTC
 }

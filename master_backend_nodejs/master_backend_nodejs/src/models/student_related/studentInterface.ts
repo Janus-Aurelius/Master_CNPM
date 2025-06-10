@@ -1,27 +1,24 @@
 // Consolidated Student Interface - Main interface file for all student-related types
 export interface IStudent {
-    studentId: string;
-    name: string;
-    email: string;
-    phone: string;
-    address: string;
-    dateOfBirth: Date;
-    enrollmentYear: number;
-    major: string;
-    faculty: string;
-    program: string;
-    status: 'active' | 'inactive';
+    // Schema fields (mapped to Vietnamese database fields)
+    studentId: string;         // maSoSinhVien
+    fullName: string;          // hoTen
+    dateOfBirth: Date;         // ngaySinh
+    gender: string;            // gioiTinh
+    hometown: string;          // queQuan
+    districtId: string;        // maHuyen
+    priorityObjectId: string;  // maDoiTuongUT
+    majorId: string;           // maNganh
+
+    // Additional UI fields
+    email?: string;
+    phone?: string;
+    status?: 'active' | 'inactive';
     avatarUrl?: string;
-    credits: {
+    credits?: {
         completed: number;
         current: number;
         required: number;
-    };
-    gender?: 'male' | 'female' | 'other';
-    hometown?: {
-        district: string;
-        province: string;
-        isRemoteArea: boolean;
     };
 }
 
