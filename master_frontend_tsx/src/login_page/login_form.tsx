@@ -141,7 +141,7 @@ export default function LoginForm({ onLogin }: LoginFormProps) {
                         component="header"
                         sx={{ py: '1.875rem', display: 'flex', justifyContent: 'space-between' }}
                     >
-                        <Box sx={{ gap: '0.125rem', display: 'flex', alignItems: 'center', ml: '1rem' }}>
+                        <Box sx={{ gap: '0.125rem', display: 'flex', alignItems: 'center', ml: '2.5rem' }}>
                             <IconButton variant="soft" color="primary" size="sm" sx={{ backgroundColor: 'transparent' }}>
                                 <img
                                     src="https://upload.wikimedia.org/wikipedia/commons/0/00/Logo_UIT_updated.svg"
@@ -149,7 +149,7 @@ export default function LoginForm({ onLogin }: LoginFormProps) {
                                     style={{ width: '4.375rem', height: '4.375rem'}}
                                 />
                             </IconButton>
-                            <Typography level="title-lg" sx={{ fontWeight: 'bold', fontSize: '1.875rem' }}>  
+                            <Typography level="title-lg" sx={{ fontWeight: 'bold', fontSize: '1.875rem' , ml: '2rem'}}>  
                                 <span style={{ color: '#4299e1' }}>UIT</span> 
                                 <span style={{ color: '#b2f5ea' }}> - </span> 
                                 <span style={{ color: '#38b2ac' }}>ĐĂNG KÍ HỌC PHẦN</span>
