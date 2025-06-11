@@ -51,9 +51,9 @@ export default function App() {
         setIsAuthChecked(true);
     }, []);
 
-    // Save user to localStorage on login
-    const handleLogin = (userData: User) => {
-        setUser(userData);
+    const handleLogin = (userData: UserData) => {
+        const userWithIndex = userData as User;
+        setUser(userWithIndex);
         localStorage.setItem('user', JSON.stringify(userData));
     };
 
