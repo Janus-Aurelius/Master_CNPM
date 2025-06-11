@@ -27,24 +27,23 @@ export const getUserByEmail = async (email: string) => {
         // Query users table with role information
         const dbUser = await DatabaseService.queryOne(`
             SELECT 
-                u.id,
-                u.email,
-                u.name,
-                u.password,
-                u.role,
-                u.status
-            FROM users u
-            WHERE u.email = $1
+                u.UserID,
+                u.TenDangNhap,
+                u.MatKhau,
+                u.MaNhom,
+                u.MaSoSinhVien
+            FROM NGUOIDUNG u
+            WHERE u.TenDangNhap = $1
         `, [email]);
 
         if (dbUser) {
             return {
-                id: dbUser.id,
-                email: dbUser.email,
-                name: dbUser.name,
-                role: dbUser.role,
-                passwordHash: dbUser.password,
-                status: dbUser.status
+                id: dbUser.UserID,
+                email: dbUser.TenDangNhap,
+                name: dbUser.TenDangNhap,
+                role: dbUser.MaNhom,
+                passwordHash: dbUser.MatKhau,
+                status: dbUser.MaSoSinhVien
             };
         }
 
@@ -62,24 +61,23 @@ export const getUserById = async (id: string) => {
     try {
         const dbUser = await DatabaseService.queryOne(`
             SELECT 
-                u.id,
-                u.email,
-                u.name,
-                u.password,
-                u.role,
-                u.status
-            FROM users u
-            WHERE u.id = $1
+                u.UserID,
+                u.TenDangNhap,
+                u.MatKhau,
+                u.MaNhom,
+                u.MaSoSinhVien
+            FROM NGUOIDUNG u
+            WHERE u.UserID = $1
         `, [id]);
 
         if (dbUser) {
             return {
-                id: dbUser.id,
-                email: dbUser.email,
-                name: dbUser.name,
-                role: dbUser.role,
-                passwordHash: dbUser.password,
-                status: dbUser.status
+                id: dbUser.UserID,
+                email: dbUser.TenDangNhap,
+                name: dbUser.TenDangNhap,
+                role: dbUser.MaNhom,
+                passwordHash: dbUser.MatKhau,
+                status: dbUser.MaSoSinhVien
             };
         }
 

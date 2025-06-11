@@ -193,7 +193,23 @@ CREATE TABLE NGUOIDUNG (
     FOREIGN KEY (MaNhom) REFERENCES NHOMNGUOIDUNG(MaNhom),
     FOREIGN KEY (MaSoSinhVien) REFERENCES SINHVIEN(MaSoSinhVien)
 );
+-- ======================================================
+-- Audit & Activity Logs
+-- ======================================================
+CREATE TABLE AUDIT_LOGS (
+    id SERIAL PRIMARY KEY,
+    user_id VARCHAR(20) NOT NULL,
+    action_type VARCHAR(50) NOT NULL,
+    status VARCHAR(50) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    ip_address VARCHAR(45),
+    user_agent TEXT
+    -- FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
 
+-- Index for better query performance
+CREATE INDEX idx_audit_logs_user_id ON AUDIT_LOGS(user_id);
+CREATE INDEX idx_audit_logs_created_at ON AUDIT_LOGS(created_at);
 -- ======================================================
 -- all done
 -- ======================================================

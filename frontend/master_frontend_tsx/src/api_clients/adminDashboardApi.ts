@@ -1,6 +1,4 @@
-import axios from 'axios';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+import axiosInstance from './axios';
 
 export interface AdminDashboardSummary {
     totalStudents: number;
@@ -11,11 +9,12 @@ export interface AdminDashboardSummary {
 
 export interface AuditLog {
     id: number;
-    user: string;
-    action: string;
-    resource: string;
-    timestamp: string;
-    status: 'success' | 'warning' | 'error';
+    user_id: string;
+    action_type: string;
+    details: string;
+    created_at: string;
+    ip_address?: string;
+    user_agent?: string;
 }
 
 export interface RecentActivity {
@@ -27,15 +26,18 @@ export interface RecentActivity {
 
 export const adminDashboardApi = {
     getSummary: async (): Promise<AdminDashboardSummary> => {
-        const response = await axios.get(`${API_URL}/admin/dashboard/summary`);
-        return response.data as AdminDashboardSummary;
+        const response = await axiosInstance.get('/admin/dashboard/summary');
+        // Nếu backend trả về { success: true, data: {...} }
+        return response.data.data as AdminDashboardSummary;
     },
     getAuditLogs: async (): Promise<AuditLog[]> => {
-        const response = await axios.get(`${API_URL}/admin/dashboard/audit-logs`);
-        return response.data as AuditLog[];
+        const response = await axiosInstance.get('/admin/dashboard/audit-logs');
+        // Nếu backend trả về { success: true, data: [...] }
+        return response.data.data as AuditLog[];
     },
     getRecentActivities: async (): Promise<RecentActivity[]> => {
-        const response = await axios.get(`${API_URL}/admin/dashboard/recent-activities`);
-        return response.data as RecentActivity[];
-    }
-}; 
+        const response = await axiosInstance.get('/admin/dashboard/recent-activities');
+        // Nếu backend trả về { success: true, data: [...] }
+        return response.data.data as RecentActivity[];
+    },
+};

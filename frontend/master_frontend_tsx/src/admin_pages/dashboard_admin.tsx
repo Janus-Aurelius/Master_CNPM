@@ -266,7 +266,6 @@ export default function DashboardAdmin({ user, onLogout }: AdminPageProps) {
                                     <TableRow>
                                         <TableCell>Người dùng</TableCell>
                                         <TableCell>Hành động</TableCell>
-                                        <TableCell>Tài nguyên</TableCell>
                                         <TableCell>Thời gian</TableCell>
                                         <TableCell>Trạng thái</TableCell>
                                     </TableRow>
@@ -283,12 +282,12 @@ export default function DashboardAdmin({ user, onLogout }: AdminPageProps) {
                                             .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                                             .map((log) => (
                                                 <TableRow key={log.id}>
-                                                    <TableCell>{log.user}</TableCell>
-                                                    <TableCell>{log.action}</TableCell>
-                                                    <TableCell>{log.resource}</TableCell>
-                                                    <TableCell>{log.timestamp}</TableCell>
-                                                    <TableCell>{renderStatusChip(log.status)}</TableCell>
-                                                </TableRow>
+                                                <TableCell>{log.user_id}</TableCell>
+                                                <TableCell>{log.action_type}</TableCell>
+                                                <TableCell>{log.details}</TableCell>
+                                                <TableCell>{log.created_at}</TableCell>
+                                                <TableCell>{renderStatusChip(log.action_type)}</TableCell>
+                                            </TableRow>
                                             ))
                                     )}
                                 </TableBody>

@@ -1,10 +1,10 @@
 export interface IUser {
     // Schema fields (mapped to Vietnamese database fields)
-    username: string;           // tenDangNhap
-    userId: string;             // userID
-    password: string;           // matKhau
-    groupId: string;            // maNhom
-    studentId?: string;         // maSoSinhVien
+    username: string;           // TenDangNhap
+    userId: string;             // UserID
+    password: string;           // MatKhau
+    groupId: string;            // MaNhom
+    studentId?: string;         // MaSoSinhVien
 
     // Additional UI fields
     status?: boolean;

@@ -1,9 +1,9 @@
 import * as userService from '../userService';
 import * as dashboardService from './dashboardService';
-import * as activityLogService from './activitylogService';
+import * as auditlogService from './auditlogService';
 
 export {
     userService,
     dashboardService,
-    activityLogService
+    auditlogService
 };

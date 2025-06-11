@@ -2,7 +2,7 @@
 import express, { RequestHandler } from 'express';
 import { UserController } from '../../controllers/AdminController/userController';
 import maintenanceController from '../../controllers/AdminController/maintenanceController';
-import adminController from '../../controllers/AdminController/adminController';
+import { adminController } from '../../controllers/AdminController/adminController';
 import { authenticateToken, authorizeRoles } from '../../middleware/auth';
 import { checkMaintenance } from '../../middleware/maintenance';
 
@@ -24,11 +24,13 @@ router.use((req, res, next) => {
 
 // Admin dashboard routes
 router.get('/dashboard', (req, res, next) => adminController.getDashboard(req, res, next));
-router.get('/userManagement', (req, res, next) => adminController.getUserManagement(req, res, next));
 router.get('/config', (req, res, next) => adminController.getConfig(req, res, next));
-router.get('/activityLog', (req, res, next) => adminController.getActivityLog(req, res, next));
+router.get('/dashboard/audit-logs', (req, res, next) => adminController.getAuditLog(req, res, next));
+router.get('/dashboard/recent-activities', (req, res, next) => adminController.getRecentActivities(req, res, next));
+router.get('/dashboard/summary', (req, res, next) => adminController.getDashboard(req, res, next));
 
 // User management routes
+router.get('/userManagement', (req, res, next) => adminController.getUserManagement(req, res, next));
 router.get('/users', (req, res, next) => userController.getAllUsers(req, res, next));
 router.get('/users/:id', (req, res, next) => userController.getUserById(req, res, next));
 router.post('/users', (req, res, next) => userController.createUser(req, res, next));

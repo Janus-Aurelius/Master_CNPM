@@ -12,13 +12,12 @@ export interface BackupHistory {
 
 export interface AuditLog {
     id: number;
-    timestamp: string;
-    user: string;
-    action: string;
-    resource: string;
-    ipAddress: string;
-    status: 'success' | 'warning' | 'error';
+    user_id: string;  // Thay đổi từ user
+    action_type: string;  // Thay đổi từ action
     details: string;
+    created_at: string;  // Thay đổi từ timestamp
+    ip_address?: string;  // Thay đổi từ ipAddress
+    user_agent?: string;  // Thêm mới
 }
 
 export interface SystemSettings {

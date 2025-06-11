@@ -11,6 +11,8 @@ import studentRoutes from './src/routes/student/student.routes';
 import { setupSocketHandlers } from './src/socket/socketHandler';
 import { errorHandler } from './src/middleware/errorHandler';
 import { maintenanceMode } from './src/middleware/maintenance';
+import { auditLogger } from './src/middleware/auditLogger'; // Đường dẫn đúng tới file của bạn
+
 
 // Load environment variables
 dotenv.config();
@@ -32,6 +34,7 @@ app.use(cors({
 }));
 app.use(express.json());
 
+app.use(auditLogger);
 // Routes
 app.use('/api/auth', maintenanceMode, authRoutes);
 app.use('/api/admin', maintenanceMode, adminRoutes);

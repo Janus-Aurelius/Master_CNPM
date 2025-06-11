@@ -2,6 +2,7 @@ import { IUser } from '../../models/user';
 import { AppError } from '../../middleware/errorHandler';
 import * as DashboardService from '../../services/AdminService/dashboardService';
 import { DatabaseService } from '../../services/database/databaseService';
+import { DashboardSummary } from '../../models/adminDashboard';
 
 class UserManager {
     async getAllUsers(page: number = 1, limit: number = 10, filters?: {
@@ -40,14 +41,14 @@ class UserManager {
             // Get total count
             const totalCount = await DatabaseService.queryOne<{ total: string }>(`
                 SELECT COUNT(*) as total
-                FROM users
+                FROM NGUOIDUNG
                 ${whereClause}
             `, queryParams);
 
             // Get paginated users
             const users = await DatabaseService.query<IUser>(`
                 SELECT *
-                FROM users
+                FROM NGUOIDUNG
                 ${whereClause}
                 ORDER BY created_at DESC
                 LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
@@ -68,7 +69,7 @@ class UserManager {
     async getUserById(id: number): Promise<IUser | null> {
         try {
             const user = await DatabaseService.queryOne<IUser>(`
-                SELECT * FROM users WHERE id = $1
+                SELECT * FROM NGUOIDUNG WHERE id = $1
             `, [id]);
             return user || null;
         } catch (error) {
@@ -80,7 +81,7 @@ class UserManager {
     async createUser(userData: Omit<IUser, 'id' | 'createdAt' | 'updatedAt'>): Promise<IUser> {
         try {
             const existingUser = await DatabaseService.queryOne<IUser>(`
-                SELECT * FROM users WHERE email = $1
+                SELECT * FROM NGUOIDUNG WHERE email = $1
             `, [userData.email]);
 
             if (existingUser) {
@@ -88,7 +89,7 @@ class UserManager {
             }
 
             const result = await DatabaseService.query<IUser>(`
-                INSERT INTO users (name, email, role, status, created_at, updated_at)
+                INSERT INTO NGUOIDUNG (name, email, role, status, created_at, updated_at)
                 VALUES ($1, $2, $3, $4, NOW(), NOW())
                 RETURNING *
             `, [userData.name, userData.email, userData.role, userData.status]);
@@ -105,7 +106,7 @@ class UserManager {
         try {
             if (userData.email) {
                 const existingUser = await DatabaseService.queryOne<IUser>(`
-                    SELECT * FROM users WHERE email = $1 AND id != $2
+                    SELECT * FROM NGUOIDUNG WHERE email = $1 AND id != $2
                 `, [userData.email, id]);
 
                 if (existingUser) {
@@ -114,7 +115,7 @@ class UserManager {
             }
 
             const result = await DatabaseService.query<IUser>(`
-                UPDATE users 
+                UPDATE NGUOIDUNG 
                 SET 
                     name = COALESCE($1, name),
                     email = COALESCE($2, email),
@@ -152,7 +153,7 @@ class UserManager {
 
                 // Finally delete the user
                 const result = await DatabaseService.query<IUser>(`
-                    DELETE FROM users WHERE id = $1 RETURNING *
+                    DELETE FROM NGUOIDUNG WHERE id = $1 RETURNING *
                 `, [id]);
 
                 // Commit transaction
@@ -173,7 +174,7 @@ class UserManager {
     async changeUserStatus(id: number, status: boolean): Promise<IUser | null> {
         try {
             const result = await DatabaseService.query<IUser>(`
-                UPDATE users 
+                UPDATE NGUOIDUNG 
                 SET 
                     status = $1
                 WHERE id = $2
@@ -186,70 +187,33 @@ class UserManager {
         }
     }
 
-    async getDashboardStats() {
+    async getDashboardStats(): Promise<DashboardSummary> {
         try {
-            // Get comprehensive dashboard stats from database
-            const userStats = await DatabaseService.queryOne(`
+            const stats = await DatabaseService.queryOne(`
                 SELECT 
-                    COUNT(*) as total_users,
-                    COUNT(CASE WHEN status = true THEN 1 END) as active_users,
-                    COUNT(CASE WHEN status = false THEN 1 END) as inactive_users,
-                    COUNT(CASE WHEN role = 'admin' THEN 1 END) as admin_users,
-                    COUNT(CASE WHEN role = 'academic_staff' THEN 1 END) as academic_staff,
-                    COUNT(CASE WHEN role = 'financial_staff' THEN 1 END) as financial_staff,
-                    COUNT(CASE WHEN role = 'student' THEN 1 END) as students
-                FROM users
+                    (SELECT COUNT(*) FROM NGUOIDUNG WHERE MaNhom = 'N3') as "totalStudents",
+                    (SELECT COUNT(*) FROM PHIEUDANGKY WHERE SoTienConLai > 0) as "pendingPayments",
+                    (SELECT COUNT(*) FROM PHIEUDANGKY WHERE NgayLap >= CURRENT_DATE - INTERVAL '7 days') as "newRegistrations",
+                    (SELECT COUNT(*) FROM AUDIT_LOGS WHERE action_type = 'ERROR' AND created_at >= CURRENT_DATE - INTERVAL '7 days') as "systemAlerts"
             `);
-
-            const systemStats = await DatabaseService.queryOne(`
-                SELECT 
-                    COUNT(DISTINCT student_id) as total_students,
-                    COUNT(DISTINCT subject_code) as total_subjects,
-                    COUNT(*) as total_courses
-                FROM open_courses
-            `);
-
-            const recentActivity = await DatabaseService.query(`
-                SELECT 
-                    'user_created' as type,
-                    'New user: ' || name || ' (' || role || ')' as description,
-                    created_at as timestamp,
-                    'System' as user
-                FROM users 
-                WHERE created_at >= NOW() - INTERVAL '7 days'
-                ORDER BY created_at DESC
-                LIMIT 5
-            `);
-
-            return {
-                userStatistics: userStats || {
-                    total_users: 0,
-                    active_users: 0,
-                    inactive_users: 0,
-                    admin_users: 0,
-                    academic_staff: 0,
-                    financial_staff: 0,
-                    students: 0
-                },
-                systemStatistics: systemStats || {
-                    total_students: 0,
-                    total_subjects: 0,
-                    total_courses: 0
-                },
-                recentActivity: recentActivity || [],
-                systemHealth: {
-                    databaseStatus: 'healthy',
-                    serverUptime: process.uptime(),
-                    memoryUsage: process.memoryUsage(),
-                    lastBackup: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
-                }
-            };        } catch (error) {
+    
+            return stats || {
+                totalStudents: 0,
+                pendingPayments: 0,
+                newRegistrations: 0,
+                systemAlerts: 0
+            };
+        } catch (error) {
             console.error('Error fetching dashboard stats:', error);
-            // Fallback to service call
-            return await DashboardService.getDashboardStats();
+            // Fallback to service call with same interface
+            return {
+                totalStudents: 0,
+                pendingPayments: 0,
+                newRegistrations: 0,
+                systemAlerts: 0
+            };
         }
     }
-
     async getSystemConfig() {
         try {
             // Get system configuration from database
@@ -342,27 +306,28 @@ class UserManager {
                 SELECT 
                     id,
                     user_id,
-                    action,
-                    resource,
+                    action_type,
                     details,
                     ip_address,
+                    user_agent,
                     created_at
-                FROM audit_logs 
+                FROM AUDIT_LOGS 
                 ORDER BY created_at DESC 
                 LIMIT $1
-            `, [limit]);            return auditLogs || [];
+            `, [limit]);
+            return auditLogs || [];
         } catch (error) {
             console.error('Error fetching audit logs:', error);
             return [];
         }
     }
-
-    async createAuditLog(userId: number, action: string, resource: string, details: string, ipAddress?: string) {
+    
+    async createAuditLog(userId: string, actionType: string, details: string, ipAddress?: string) {
         try {
             await DatabaseService.query(`
-                INSERT INTO audit_logs (user_id, action, resource, details, ip_address, created_at)
-                VALUES ($1, $2, $3, $4, $5, NOW())
-            `, [userId, action, resource, details, ipAddress]);
+                INSERT INTO AUDIT_LOGS (user_id, action_type, details, ip_address, created_at)
+                VALUES ($1, $2, $3, $4, NOW())
+            `, [userId, actionType, details, ipAddress]);
         } catch (error) {
             console.error('Error creating audit log:', error);
         }

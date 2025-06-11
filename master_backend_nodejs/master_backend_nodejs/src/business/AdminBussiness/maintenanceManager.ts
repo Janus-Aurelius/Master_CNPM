@@ -240,11 +240,10 @@ class MaintenanceManager {
             };
         }
     }
-
     async logMaintenanceAction(action: string, details: string) {
         try {
             await DatabaseService.query(`
-                INSERT INTO audit_logs (
+                INSERT INTO AUDIT_LOGS (
                     action_type, 
                     details, 
                     created_at,
@@ -255,7 +254,6 @@ class MaintenanceManager {
             `, [action, details]);
         } catch (error) {
             console.error('Error logging maintenance action:', error);
-            // Don't throw error for logging failures
         }
     }
 

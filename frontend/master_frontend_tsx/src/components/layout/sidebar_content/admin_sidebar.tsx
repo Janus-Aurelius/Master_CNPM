@@ -16,9 +16,9 @@ import SettingsOutlined from '@mui/icons-material/SettingsOutlined';
 import ExitToAppOutlined from '@mui/icons-material/ExitToAppOutlined';
 
 interface StyledNavItemProps {
-    sx?: React.CSSProperties;
-    isLogout?: boolean;
-    selected?: boolean;
+    $sx?: React.CSSProperties;
+    $isLogout?: boolean;
+    $selected?: boolean;
 }
 
 const StyledNavItem = styled.div<StyledNavItemProps>`
@@ -29,11 +29,11 @@ const StyledNavItem = styled.div<StyledNavItemProps>`
     font-family: "Varela Round", sans-serif;
     font-weight: 600;
     font-style: normal;
-    background-color: ${(props) => (props.isLogout ? 'transparent' : 'transparent')};
+    background-color: ${(props) => (props.$isLogout ? 'transparent' : 'transparent')};
     color: ${(props) => 
-        props.selected 
+        props.$selected 
             ? '#2f6bff' 
-            : props.isLogout 
+            : props.$isLogout 
                 ? '#879db0' 
                 : '#879db0'};
     transition: all 0.25s ease; 
@@ -43,7 +43,7 @@ const StyledNavItem = styled.div<StyledNavItemProps>`
     overflow: hidden;
     width: 270px;
     margin-left: -40px;
-    ${(props) => props.selected && `
+    ${(props) => props.$selected && `
         color:rgb(39, 89, 217);
         background-color: rgb(209, 220, 255);
         font-weight: 600;
@@ -51,14 +51,14 @@ const StyledNavItem = styled.div<StyledNavItemProps>`
     svg {
         font-size: 30px;
         color: ${(props) => 
-            props.selected 
+            props.$selected 
                 ? '#879db0' 
-                : props.isLogout 
+                : props.$isLogout 
                     ? '#879db0' 
                     : '#879db0'} !important;
     }
     &:hover {
-        ${(props) => props.isLogout 
+        ${(props) => props.$isLogout 
             ? `
                 color: red;
                 background-color: transparent;
@@ -78,24 +78,24 @@ const StyledNavItem = styled.div<StyledNavItemProps>`
 `;
 
 interface NavItemProps {
-    to: string;
+    to?: string;
     children: React.ReactNode;
-    sx?: React.CSSProperties;
+    $sx?: any;
     onClick?: (e: React.MouseEvent) => void;
-    selected?: boolean;
-    icon: React.ReactElement;
-    isLogout?: boolean; 
+    $selected?: boolean;
+    icon?: React.ReactNode;
+    $isLogout?: boolean;
 }
 
-const NavItem = ({ to, children, sx, onClick, selected, icon, isLogout }: NavItemProps) => (
-    <Link to={to} style={{ textDecoration: 'none' }} onClick={onClick}>
-        <StyledNavItem sx={sx} selected={selected} isLogout={isLogout}>
-            {isLogout 
+const NavItem = ({ to, children, $sx, onClick, $selected, icon, $isLogout }: NavItemProps) => (
+    <Link to={to || '#'} style={{ textDecoration: 'none' }} onClick={onClick}>
+        <StyledNavItem $sx={$sx} $selected={$selected} $isLogout={$isLogout}>
+            {$isLogout 
                 ? <ExitToAppOutlined style={{ marginRight: '8px', color: 'darkgrey' }} />
                 : React.isValidElement(icon) 
-                    ? React.cloneElement(icon as React.ReactElement<any>, { style: { color: selected ? '#2f6bff' : '#5686ff' } }) 
+                    ? React.cloneElement(icon as React.ReactElement<any>, { style: { color: $selected ? '#2f6bff' : '#5686ff' } }) 
                     : null}
-            <span style={{ marginLeft: isLogout ? '0' : '8px' }}>{children}</span>
+            <span style={{ marginLeft: $isLogout ? '0' : '8px' }}>{children}</span>
         </StyledNavItem>
     </Link>
 );
@@ -156,13 +156,13 @@ export const AdminSidebarContent = ({ onLogout }: AdminSidebarContentProps) => {
                 </Typography>
                 <Divider sx={{ my: 2 }} />
                 <Stack spacing={1.5} sx={{ flex: 1 }}>
-                    <NavItem to="/admin" sx={{ color: '#0173d3' }} selected={selectedPath === "/admin"} icon={<HomeOutlined />}>
+                    <NavItem to="/admin" $sx={{ color: '#0173d3' }} $selected={selectedPath === "/admin"} icon={<HomeOutlined />}>
                         Trang chủ
                     </NavItem>
-                    <NavItem to="/admin/userManagement" sx={{ color: '#0173d3' }} selected={selectedPath === "/admin/userManagement"} icon={<PeopleAltOutlined />}>
+                    <NavItem to="/admin/userManagement" $sx={{ color: '#0173d3' }} $selected={selectedPath === "/admin/userManagement"} icon={<PeopleAltOutlined />}>
                         Quản lý người dùng
                     </NavItem>
-                    <NavItem to="/admin/config" sx={{ color: '#0173d3' }} selected={selectedPath === "/admin/config"} icon={<SettingsOutlined />}>
+                    <NavItem to="/admin/config" $sx={{ color: '#0173d3' }} $selected={selectedPath === "/admin/config"} icon={<SettingsOutlined />}>
                         Quản lý hệ thống
                     </NavItem>
                 </Stack>
@@ -171,10 +171,10 @@ export const AdminSidebarContent = ({ onLogout }: AdminSidebarContentProps) => {
             {/* Bottom section with logout button */}
             <div style={{ position: 'absolute', bottom: '20px', left: '45px' }}> {/* Move logout button to bottom-left corner */}
                 <NavItem 
-                    sx={{ color: 'darkgrey', padding: '0px 0px' }}
+                    $sx={{ color: 'darkgrey', padding: '0px 0px' }}
                     to="/login"
                     onClick={handleLogoutClick}
-                    isLogout
+                    $isLogout={true}
                     icon={<ExitToAppOutlined />}
                 >
                     Đăng xuất
