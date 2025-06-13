@@ -42,8 +42,6 @@ interface AcademicTerm {
     semester: string;
     startDate: string;
     endDate: string;
-    regStartDate: string;
-    regEndDate: string;
     status: string;
 }
 
@@ -54,8 +52,6 @@ export default function TermMgmAcademic({ user, onLogout }: AcademicPageProps) {
             semester: "HK1", 
             startDate: "2025-09-01", 
             endDate: "2026-01-15", 
-            regStartDate: "2025-08-15", 
-            regEndDate: "2025-08-25", 
             status: "Chưa diễn ra" 
         },
         { 
@@ -64,8 +60,6 @@ export default function TermMgmAcademic({ user, onLogout }: AcademicPageProps) {
             semester: "HK3", 
             startDate: "2025-06-01", 
             endDate: "2025-08-30", 
-            regStartDate: "2025-05-15", 
-            regEndDate: "2025-05-25", 
             status: "Chưa diễn ra" 
         },
         { 
@@ -74,8 +68,6 @@ export default function TermMgmAcademic({ user, onLogout }: AcademicPageProps) {
             semester: "HK2", 
             startDate: "2025-01-20", 
             endDate: "2025-05-30", 
-            regStartDate: "2025-01-05", 
-            regEndDate: "2025-01-15", 
             status: "Đang diễn ra" 
         },
         { 
@@ -84,8 +76,6 @@ export default function TermMgmAcademic({ user, onLogout }: AcademicPageProps) {
             semester: "HK1", 
             startDate: "2024-09-01", 
             endDate: "2025-01-15", 
-            regStartDate: "2024-08-15", 
-            regEndDate: "2024-08-25", 
             status: "Đã kết thúc" 
         },
         { 
@@ -94,8 +84,6 @@ export default function TermMgmAcademic({ user, onLogout }: AcademicPageProps) {
             semester: "HK3", 
             startDate: "2024-06-01", 
             endDate: "2024-08-30", 
-            regStartDate: "2024-05-15", 
-            regEndDate: "2024-05-25", 
             status: "Đã kết thúc" 
         },
         { 
@@ -104,8 +92,6 @@ export default function TermMgmAcademic({ user, onLogout }: AcademicPageProps) {
             semester: "HK2", 
             startDate: "2024-01-20", 
             endDate: "2024-05-30", 
-            regStartDate: "2024-01-05", 
-            regEndDate: "2024-01-15", 
             status: "Đã kết thúc" 
         },
         { 
@@ -114,8 +100,6 @@ export default function TermMgmAcademic({ user, onLogout }: AcademicPageProps) {
             semester: "HK1", 
             startDate: "2023-09-01", 
             endDate: "2024-01-15", 
-            regStartDate: "2023-08-15", 
-            regEndDate: "2023-08-25", 
             status: "Đã kết thúc" 
         },
         { 
@@ -124,8 +108,6 @@ export default function TermMgmAcademic({ user, onLogout }: AcademicPageProps) {
             semester: "HK3", 
             startDate: "2023-06-01", 
             endDate: "2023-08-30", 
-            regStartDate: "2023-05-15", 
-            regEndDate: "2023-05-25", 
             status: "Đã kết thúc" 
         },
         { 
@@ -134,8 +116,6 @@ export default function TermMgmAcademic({ user, onLogout }: AcademicPageProps) {
             semester: "HK2", 
             startDate: "2023-01-20", 
             endDate: "2023-05-30", 
-            regStartDate: "2023-01-05", 
-            regEndDate: "2023-01-15", 
             status: "Đã kết thúc" 
         },
         { 
@@ -144,8 +124,6 @@ export default function TermMgmAcademic({ user, onLogout }: AcademicPageProps) {
             semester: "HK1", 
             startDate: "2022-09-01", 
             endDate: "2023-01-15", 
-            regStartDate: "2022-08-15", 
-            regEndDate: "2022-08-25", 
             status: "Đã kết thúc" 
         },
         { 
@@ -154,8 +132,6 @@ export default function TermMgmAcademic({ user, onLogout }: AcademicPageProps) {
             semester: "HK3", 
             startDate: "2022-06-01", 
             endDate: "2022-08-30", 
-            regStartDate: "2022-05-15", 
-            regEndDate: "2022-05-25", 
             status: "Đã kết thúc" 
         },
         { 
@@ -164,8 +140,6 @@ export default function TermMgmAcademic({ user, onLogout }: AcademicPageProps) {
             semester: "HK2", 
             startDate: "2022-01-20", 
             endDate: "2022-05-30", 
-            regStartDate: "2022-01-05", 
-            regEndDate: "2022-01-15", 
             status: "Đã kết thúc" 
         },
         { 
@@ -174,8 +148,6 @@ export default function TermMgmAcademic({ user, onLogout }: AcademicPageProps) {
             semester: "HK1", 
             startDate: "2021-09-01", 
             endDate: "2022-01-15", 
-            regStartDate: "2021-08-15", 
-            regEndDate: "2021-08-25", 
             status: "Đã kết thúc" 
         },
         { 
@@ -184,8 +156,6 @@ export default function TermMgmAcademic({ user, onLogout }: AcademicPageProps) {
             semester: "HK3", 
             startDate: "2021-06-01", 
             endDate: "2021-08-30", 
-            regStartDate: "2021-05-15", 
-            regEndDate: "2021-05-25", 
             status: "Đã kết thúc" 
         },
         { 
@@ -194,8 +164,6 @@ export default function TermMgmAcademic({ user, onLogout }: AcademicPageProps) {
             semester: "HK2", 
             startDate: "2021-01-20", 
             endDate: "2021-05-30", 
-            regStartDate: "2021-01-05", 
-            regEndDate: "2021-01-15", 
             status: "Đã kết thúc" 
         },
         { 
@@ -204,8 +172,6 @@ export default function TermMgmAcademic({ user, onLogout }: AcademicPageProps) {
             semester: "HK1", 
             startDate: "2020-09-01", 
             endDate: "2021-01-15", 
-            regStartDate: "2020-08-15", 
-            regEndDate: "2020-08-25", 
             status: "Đã kết thúc" 
         },
         { 
@@ -214,8 +180,6 @@ export default function TermMgmAcademic({ user, onLogout }: AcademicPageProps) {
             semester: "HK3", 
             startDate: "2020-06-01", 
             endDate: "2020-08-30", 
-            regStartDate: "2020-05-15", 
-            regEndDate: "2020-05-25", 
             status: "Đã kết thúc" 
         },
         { 
@@ -224,8 +188,6 @@ export default function TermMgmAcademic({ user, onLogout }: AcademicPageProps) {
             semester: "HK2", 
             startDate: "2020-01-20", 
             endDate: "2020-05-30", 
-            regStartDate: "2020-01-05", 
-            regEndDate: "2020-01-15", 
             status: "Đã kết thúc" 
         }
     ].sort((a, b) => {
@@ -236,15 +198,12 @@ export default function TermMgmAcademic({ user, onLogout }: AcademicPageProps) {
         // Then by semester (HK3 > HK2 > HK1)
         const semesterOrder = { 'HK3': 3, 'HK2': 2, 'HK1': 1 };
         return semesterOrder[b.semester as keyof typeof semesterOrder] - semesterOrder[a.semester as keyof typeof semesterOrder];
-    }));const [openDialog, setOpenDialog] = useState(false);
-    const [currentTerm, setCurrentTerm] = useState<AcademicTerm>({
+    }));const [openDialog, setOpenDialog] = useState(false);    const [currentTerm, setCurrentTerm] = useState<AcademicTerm>({
         id: 0,
         year: "",
         semester: "",
         startDate: "",
         endDate: "",
-        regStartDate: "",
-        regEndDate: "",
         status: ""
     });
     const [isEditing, setIsEditing] = useState(false);
@@ -266,16 +225,13 @@ export default function TermMgmAcademic({ user, onLogout }: AcademicPageProps) {
     const handleOpenDialog = (edit: boolean = false, term?: AcademicTerm) => {
         setIsEditing(edit);
         if (edit && term) {
-            setCurrentTerm(term);
-        } else {
+            setCurrentTerm(term);        } else {
             setCurrentTerm({
                 id: terms.length + 1,
                 year: "",
                 semester: "",
                 startDate: "",
                 endDate: "",
-                regStartDate: "",
-                regEndDate: "",
                 status: "Đang diễn ra"
             });
         }
@@ -460,17 +416,14 @@ export default function TermMgmAcademic({ user, onLogout }: AcademicPageProps) {
                     </Box>
 
                     <TableContainer component={Paper} sx={{ mt: 2, borderRadius: '12px', boxShadow: '0 4px 10px rgba(0, 0, 0, 0.1)' }}>
-                        <Table size="medium" stickyHeader>
-                            <TableHead>
+                        <Table size="medium" stickyHeader>                            <TableHead>
                                 <TableRow>
-                                    <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '16px', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6' }}>Năm học</TableCell>
-                                    <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '16px', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6' }}>Học kỳ</TableCell>
-                                    <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '16px', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6' }}>Ngày bắt đầu</TableCell>
-                                    <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '16px', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6' }}>Ngày kết thúc</TableCell>
-                                    <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '16px', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6' }}>Bắt đầu đăng ký</TableCell>
-                                    <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '16px', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6' }}>Kết thúc đăng ký</TableCell>
-                                    <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '16px', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6' }}>Trạng thái</TableCell>
-                                    <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '16px', fontFamily: '"Varela Round", sans-serif', textAlign: 'center', backgroundColor: '#6ebab6' }}>Thao tác</TableCell>
+                                    <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '16px', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6', width: '20%' }}>Năm học</TableCell>
+                                    <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '16px', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6', width: '15%' }}>Học kỳ</TableCell>
+                                    <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '16px', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6', width: '20%' }}>Ngày bắt đầu</TableCell>
+                                    <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '16px', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6', width: '20%' }}>Ngày kết thúc</TableCell>
+                                    <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '16px', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6', width: '15%' }}>Trạng thái</TableCell>
+                                    <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '16px', fontFamily: '"Varela Round", sans-serif', textAlign: 'center', backgroundColor: '#6ebab6', width: '10%' }}>Thao tác</TableCell>
                                 </TableRow>
                             </TableHead>
                             <TableBody>
@@ -483,13 +436,10 @@ export default function TermMgmAcademic({ user, onLogout }: AcademicPageProps) {
                                             },
                                             '&:last-child td, &:last-child th': { borderBottom: 'none' }
                                         }}
-                                    >
-                                        <TableCell sx={{ fontSize: '16px', fontFamily: '"Varela Round", sans-serif', fontWeight: 600 }}>{term.year}</TableCell>
+                                    >                                        <TableCell sx={{ fontSize: '16px', fontFamily: '"Varela Round", sans-serif', fontWeight: 600 }}>{term.year}</TableCell>
                                         <TableCell sx={{ fontSize: '16px', fontFamily: '"Varela Round", sans-serif' }}>{term.semester}</TableCell>
                                         <TableCell sx={{ fontSize: '16px', fontFamily: '"Varela Round", sans-serif' }}>{formatDate(term.startDate)}</TableCell>
                                         <TableCell sx={{ fontSize: '16px', fontFamily: '"Varela Round", sans-serif' }}>{formatDate(term.endDate)}</TableCell>
-                                        <TableCell sx={{ fontSize: '16px', fontFamily: '"Varela Round", sans-serif' }}>{formatDate(term.regStartDate)}</TableCell>
-                                        <TableCell sx={{ fontSize: '16px', fontFamily: '"Varela Round", sans-serif' }}>{formatDate(term.regEndDate)}</TableCell>
                                         <TableCell sx={{ fontSize: '16px', fontFamily: '"Varela Round", sans-serif' }}>
                                             <Chip 
                                                 label={term.status} 
@@ -649,50 +599,7 @@ export default function TermMgmAcademic({ user, onLogout }: AcademicPageProps) {
                                     '& .MuiInputLabel-root': { fontWeight: 500 },
                                     '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d8d8d8' },
                                 }}
-                            />
-                        </Grid>
-                        <Grid item xs={12} md={6}>
-                            <TextField
-                                name="regStartDate"
-                                label="Ngày bắt đầu đăng ký học phần"
-                                type="date"
-                                fullWidth
-                                margin="normal"
-                                required
-                                variant="outlined"
-                                InputLabelProps={{ shrink: true }}
-                                value={currentTerm.regStartDate}
-                                onChange={handleInputChange}
-                                sx={{
-                                    borderRadius: '12px',
-                                    background: '#f7faff',
-                                    '& .MuiOutlinedInput-root': { borderRadius: '12px' },
-                                    '& .MuiInputLabel-root': { fontWeight: 500 },
-                                    '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d8d8d8' },
-                                }}
-                            />
-                        </Grid>
-                        <Grid item xs={12} md={6}>
-                            <TextField
-                                name="regEndDate"
-                                label="Ngày kết thúc đăng ký học phần"
-                                type="date"
-                                fullWidth
-                                margin="normal"
-                                required
-                                variant="outlined"
-                                InputLabelProps={{ shrink: true }}
-                                value={currentTerm.regEndDate}
-                                onChange={handleInputChange}
-                                sx={{
-                                    borderRadius: '12px',
-                                    background: '#f7faff',
-                                    '& .MuiOutlinedInput-root': { borderRadius: '12px' },
-                                    '& .MuiInputLabel-root': { fontWeight: 500 },
-                                    '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d8d8d8' },
-                                }}
-                            />
-                        </Grid>
+                            />                        </Grid>
                         <Grid item xs={12}>
                             <FormControl fullWidth margin="normal" sx={{ background: '#f7faff', borderRadius: '12px' }}>
                                 <InputLabel id="status-select-label" sx={{ fontWeight: 500 }}>Trạng thái</InputLabel>
