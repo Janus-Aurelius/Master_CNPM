@@ -13,14 +13,12 @@ import {
     Typography,
     DialogContent,
     Box,
-    Paper,
-    TableContainer,
+    Paper,    TableContainer,
     Table,
     TableHead,
     TableRow,
     TableCell,
     TableBody,
-    TablePagination,
     Chip,
     Divider
 } from "@mui/material";
@@ -58,20 +56,8 @@ export default function ProgramMgmAcademic({ user, onLogout }: AcademicPageProps
         department: "",
         totalCredits: 0,
         type:""
-    });
-    const [isEditing, setIsEditing] = useState(false);
-    const [page, setPage] = useState(0);
-    const [rowsPerPage, setRowsPerPage] = useState(5);
+    });    const [isEditing, setIsEditing] = useState(false);
     const [confirmDelete, setConfirmDelete] = useState<{ open: boolean; id: number | null }>({ open: false, id: null });
-
-    const handleChangePage = (_event: unknown, newPage: number) => {
-        setPage(newPage);
-    };
-
-    const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
-        setRowsPerPage(parseInt(event.target.value, 10));
-        setPage(0);
-    };
 
     const handleOpenDialog = (edit: boolean = false, program?: ProgramSchedule) => {
         setIsEditing(edit);
@@ -167,12 +153,11 @@ export default function ProgramMgmAcademic({ user, onLogout }: AcademicPageProps
                             backgroundColor: 'rgba(0,0,0,0.2)',
                             borderRadius: '6px'
                         },
-                        borderTopRightRadius: '16px',
-                        borderBottomRightRadius: '16px',
+                        borderTopRightRadius: '16px',                        borderBottomRightRadius: '16px',
                         marginTop: '3.5rem',
                         flexGrow: 1,
-                        minHeight: '25rem',
-                        maxHeight: 'calc(100vh - 9.375rem)',
+                        minHeight: '400px',
+                        maxHeight: 'calc(100vh - 150px)',
                         paddingLeft: '16px',
                         paddingRight: '16px',
                         marginLeft: '0px',
@@ -204,9 +189,8 @@ export default function ProgramMgmAcademic({ user, onLogout }: AcademicPageProps
                         >
                             Thêm chương trình
                         </Button>
-                    </Box>
-                    <TableContainer component={Paper} sx={{ mt: 2, borderRadius: '12px', boxShadow: '0 4px 10px rgba(0, 0, 0, 0.1)' }}>
-                        <Table size="medium">
+                    </Box>                    <TableContainer component={Paper} sx={{ mt: 2, borderRadius: '12px', boxShadow: '0 4px 10px rgba(0, 0, 0, 0.1)' }}>
+                        <Table size="medium" stickyHeader>
                             <TableHead>
                                 <TableRow>
                                     <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '20px', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6' }}>Tên chương trình</TableCell>
@@ -217,11 +201,8 @@ export default function ProgramMgmAcademic({ user, onLogout }: AcademicPageProps
                                     <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '20px', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6' }}>Tín chỉ</TableCell>
                                     <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '20px', fontFamily: '"Varela Round", sans-serif', textAlign: 'center', backgroundColor: '#6ebab6' }}>Thao tác</TableCell>
                                 </TableRow>
-                            </TableHead>
-                            <TableBody>
-                                {programs
-                                    .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                                    .map((program) => (
+                            </TableHead>                            <TableBody>
+                                {programs.map((program) => (
                                     <TableRow 
                                         key={program.id} 
                                         sx={{
@@ -255,18 +236,8 @@ export default function ProgramMgmAcademic({ user, onLogout }: AcademicPageProps
                                         </TableCell>
                                     </TableRow>
                                 ))}
-                            </TableBody>
-                        </Table>
+                            </TableBody>                        </Table>
                     </TableContainer>
-                    <TablePagination
-                        rowsPerPageOptions={[5, 10, 25]}
-                        component="div"
-                        count={programs.length}
-                        rowsPerPage={rowsPerPage}
-                        page={page}
-                        onPageChange={handleChangePage}
-                        onRowsPerPageChange={handleChangeRowsPerPage}
-                    />
                 </Paper>
             </Box>
             {/* Dialog for adding/editing programs */}
