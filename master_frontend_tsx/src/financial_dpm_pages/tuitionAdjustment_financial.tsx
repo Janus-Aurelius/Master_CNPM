@@ -7,16 +7,27 @@ import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
 import UserInfo from '../components/UserInfo';
+import SearchIcon from '@mui/icons-material/Search';
 
-const allProvinces = [
-    "An Giang", "Bà Rịa – Vũng Tàu", "Bạc Liêu", "Bắc Giang", "Bắc Kạn", "Bắc Ninh", "Bến Tre", "Bình Định", "Bình Dương", "Bình Phước", "Bình Thuận", "Cà Mau", "Cao Bằng", "Cần Thơ", "Đà Nẵng", "Đắk Lắk", "Đắk Nông", "Điện Biên", "Đồng Nai", "Đồng Tháp", "Gia Lai", "Hà Giang", "Hà Nam", "Hà Nội", "Hà Tĩnh", "Hải Dương", "Hải Phòng", "Hậu Giang", "Hòa Bình", "Hưng Yên", "Khánh Hòa", "Kiên Giang", "Kon Tum", "Lai Châu", "Lâm Đồng", "Lạng Sơn", "Lào Cai", "Long An", "Nam Định", "Nghệ An", "Ninh Bình", "Ninh Thuận", "Phú Thọ", "Phú Yên", "Quảng Bình", "Quảng Nam", "Quảng Ngãi", "Quảng Ninh", "Quảng Trị", "Sóc Trăng", "Sơn La", "Tây Ninh", "Thái Bình", "Thái Nguyên", "Thanh Hóa", "Thừa Thiên Huế", "Tiền Giang", "TP Hồ Chí Minh", "Trà Vinh", "Tuyên Quang", "Vĩnh Long", "Vĩnh Phúc", "Yên Bái"
+const priorityGroupTypes = [
+    "Người dân tộc thiểu số",
+    "Anh hùng Lực lượng vũ trang", 
+    "Thương binh",
+    "Con liệt sĩ",
+    "Con thương binh",
+    "Người nhiễm chất độc hóa học",
+    "Người khuyết tật",
+    "Hộ nghèo",
+    "Vùng đặc biệt khó khăn",
+    "Xã biên giới – hải đảo"
 ];
 
 interface PriorityGroup {
     id: number;
     name: string;
+    type: string;
     discount: number; // %
-    provinces: string[];
+    description: string;
 }
 
 interface FinancialPageProps {
@@ -28,21 +39,25 @@ export default function TuitionAdjustment({ user, onLogout }: FinancialPageProps
     const [perCreditFee, setPerCreditFee] = useState(350000);
     const [editFee, setEditFee] = useState(false);
     const [feeInput, setFeeInput] = useState(perCreditFee);
+    
     const [targetGroups, setTargetGroups] = useState<PriorityGroup[]>(
         [
-            { id: 1, name: "Khu vực 1", discount: 70, provinces: ["Lào Cai", "Điện Biên", "Cao Bằng", "Lâm Đồng"] },
-            { id: 2, name: "Khu vực 2", discount: 50, provinces: ["Bình Định", "Gia Lai", "Huế"] },
-            { id: 3, name: "Khu vực 2-NT", discount: 60, provinces: ["An Giang", "Cần Thơ"] },
-            { id: 4, name: "Khu vực 3", discount: 0, provinces: ["Hà Nội", "TP Hồ Chí Minh"] },
-            { id: 5, name: "Ưu tiên vùng cao", discount: 100, provinces: ["Hà Giang"] },
-            { id: 6, name: "Không", discount: 0, provinces: [] },
+            { id: 1, name: "Người dân tộc thiểu số", type: "Đối tượng dân tộc", discount: 70, description: "Giảm 70% học phí cho sinh viên người dân tộc thiểu số" },
+            { id: 2, name: "Anh hùng Lực lượng vũ trang", type: "Đối tượng chính sách", discount: 100, description: "Miễn 100% học phí cho anh hùng lực lượng vũ trang" },
+            { id: 3, name: "Thương binh", type: "Đối tượng chính sách", discount: 100, description: "Miễn 100% học phí cho thương binh" },
+            { id: 4, name: "Con liệt sĩ", type: "Đối tượng chính sách", discount: 100, description: "Miễn 100% học phí cho con liệt sĩ" },
+            { id: 5, name: "Con thương binh", type: "Đối tượng chính sách", discount: 50, description: "Giảm 50% học phí cho con thương binh" },
+            { id: 6, name: "Người khuyết tật", type: "Đối tượng xã hội", discount: 70, description: "Giảm 70% học phí cho người khuyết tật" },
+            { id: 7, name: "Hộ nghèo", type: "Đối tượng xã hội", discount: 70, description: "Giảm 70% học phí cho hộ nghèo" },
+            { id: 8, name: "Vùng đặc biệt khó khăn", type: "Đối tượng khu vực", discount: 70, description: "Giảm 70% học phí cho vùng đặc biệt khó khăn" },
         ]
     );
     const [openDialog, setOpenDialog] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
-    const [currentTargetGroup, setCurrentTargetGroup] = useState<PriorityGroup>({ id: 0, name: '', discount: 0, provinces: [] });
+    const [currentTargetGroup, setCurrentTargetGroup] = useState<PriorityGroup>({ id: 0, name: '', type: '', discount: 0, description: '' });
     const [snackbar, setSnackbar] = useState<{ open: boolean, message: string, severity: 'success'|'error' }>({ open: false, message: '', severity: 'success' });
     const [confirmDelete, setConfirmDelete] = useState<{ open: boolean, id: number | null }>({ open: false, id: null });
+    const [search, setSearch] = useState("");
 
     // Fee edit handlers
     const handleEditFee = () => { setEditFee(true); setFeeInput(perCreditFee); };
@@ -53,10 +68,10 @@ export default function TuitionAdjustment({ user, onLogout }: FinancialPageProps
         setSnackbar({ open: true, message: 'Cập nhật thành công!', severity: 'success' });
     };
 
-    // Target group handlers
+    // Target group handlers    
     const handleOpenAdd = () => {
         setIsEditing(false);
-        setCurrentTargetGroup({ id: 0, name: '', discount: 0, provinces: [] });
+        setCurrentTargetGroup({ id: 0, name: '', type: '', discount: 0, description: '' });
         setOpenDialog(true);
     };
     const handleOpenEdit = (group: PriorityGroup) => {
@@ -91,57 +106,56 @@ export default function TuitionAdjustment({ user, onLogout }: FinancialPageProps
     };
     const handleCancelDelete = () => setConfirmDelete({ open: false, id: null });
 
+    // Filtered groups for search
+    const filteredGroups = targetGroups.filter(g =>
+        g.name.toLowerCase().includes(search.toLowerCase()) ||
+        g.description.toLowerCase().includes(search.toLowerCase())
+    );
+
     return (
         <ThemeLayout role="financial" onLogout={onLogout}>
             <UserInfo user={user} />
-            <Box sx={{ display: 'flex', justifyContent: 'center', mt: '0.25rem' }}>
+            <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
                 <Paper
-                    elevation={3}
+                    elevation={2}
                     sx={{
                         textAlign: 'left',
-                        borderRadius: '16px',
-                        padding: '20px',
-                        fontSize: '18px',
-                        fontFamily: '"Varela Round", sans-serif',
+                        borderRadius: '14px',
+                        p: { xs: 2, sm: 3 },
+                        fontSize: '17px',
+                        fontFamily: 'Varela Round, sans-serif',
                         fontWeight: 450,
-                        backgroundColor: 'rgb(250, 250, 250)',
-                        boxShadow: '0 2px 5px rgba(0, 0, 0, 0.1)',
+                        backgroundColor: '#fafbfc',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.07)',
                         color: 'rgb(39, 89, 217)',
-                        transition: 'all 0.25s ease',
                         display: 'flex',
                         flexDirection: 'column',
                         position: 'relative',
                         overflow: 'auto',
-                        borderTopRightRadius: '16px',
-                        borderBottomRightRadius: '16px',
-                        marginTop: '3.5rem',
+                        marginTop: { xs: '2rem', sm: '2.5rem' },
                         flexGrow: 1,
-                        minHeight: '400px',
-                        maxHeight: 'calc(100vh - 150px)',
-                        paddingLeft: '16px',
-                        paddingRight: '16px',
-                        marginLeft: '0px',
-                        marginRight: '10px',
+                        minHeight: 420,
+                        maxHeight: 'calc(100vh - 120px)',
+                        mx: { xs: 0, sm: 2 },
                     }}
                 >
                     <Typography
                         component="h1"
                         sx={{
-                            fontWeight: "bold",
-                            fontFamily: "Montserrat, sans-serif",
-                            fontStyle: "normal",
-                            color: "rgba(33, 33, 33, 0.8)",
-                            marginBottom: '20px',
-                            marginTop: '0px',
-                            textAlign: "center",
-                            fontSize: "30px",
+                            fontWeight: 700,
+                            fontFamily: 'Montserrat, sans-serif',
+                            color: 'rgba(33,33,33,0.85)',
+                            mb: 2,
+                            mt: 0,
+                            textAlign: 'center',
+                            fontSize: { xs: '1.5rem', sm: '2rem' },
                         }}
                     >
                         Quản lý học phí
                     </Typography>
                     {/* Per-credit fee section */}
-                    <Box sx={{ mb: 4, display: 'flex', alignItems: 'center', gap: 2, fontFamily: 'Varela Round, sans-serif' }}>
-                        <Typography variant="h6" sx={{ fontWeight: 600, color: '#1976d2', fontFamily: 'Varela Round, sans-serif' }}>Học phí mỗi tín chỉ:</Typography>
+                    <Box sx={{ mb: 3, display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
+                        <Typography variant="h6" sx={{ fontWeight: 600, color: '#1976d2', fontFamily: 'Varela Round, sans-serif', minWidth: 170 }}>Học phí mỗi tín chỉ:</Typography>
                         {editFee ? (
                             <>
                                 <TextField
@@ -149,54 +163,61 @@ export default function TuitionAdjustment({ user, onLogout }: FinancialPageProps
                                     value={feeInput}
                                     onChange={e => setFeeInput(Number(e.target.value))}
                                     size="small"
-                                    sx={{ width: 140 }}
+                                    sx={{ width: 120 }}
                                     inputProps={{ min: 0, step: 1000 }}
                                 />
-                                <Button variant="contained" color="primary" onClick={handleSaveFee} sx={{ ml: 1 }}>Lưu</Button>
-                                <Button variant="outlined" onClick={handleCancelFee}>Hủy</Button>
+                                <Button variant="contained" color="primary" onClick={handleSaveFee} sx={{ ml: 1, minWidth: 70 }}>Lưu</Button>
+                                <Button variant="outlined" onClick={handleCancelFee} sx={{ minWidth: 70 }}>Hủy</Button>
                             </>
                         ) : (
                             <>
-                                <Typography variant="h6" sx={{ color: '#2e7d32', fontWeight: 700 }}>{perCreditFee.toLocaleString()} VNĐ</Typography>
-                                <Button variant="outlined" startIcon={<EditIcon />} onClick={handleEditFee} sx={{ fontFamily: 'Varela Round, sans-serif', borderRadius: '20px' }}>Chỉnh sửa</Button>
+                                <Typography variant="h6" sx={{ color: '#2e7d32', fontWeight: 700, minWidth: 120 }}>{perCreditFee.toLocaleString()} VNĐ</Typography>
+                                <Button variant="outlined" startIcon={<EditIcon />} onClick={handleEditFee} sx={{ fontFamily: 'Varela Round, sans-serif', borderRadius: '20px', minWidth: 120 }}>Chỉnh sửa</Button>
                             </>
                         )}
                     </Box>
                     {/* Priority group table */}
                     <Box>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                            <Typography variant="h6" sx={{ fontWeight: 600, color: '#1976d2' , fontFamily: 'Varela Round, sans-serif'}}>Đối tượng ưu tiên</Typography>
-                            <Button variant="contained" startIcon={<AddIcon />} onClick={handleOpenAdd} sx={{ borderRadius: '8px', fontFamily: 'Varela Round, sans-serif' }}>Thêm đối tượng</Button>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5, flexWrap: 'wrap', gap: 1 }}>
+                            <Typography variant="h6" sx={{ fontWeight: 600, color: '#1976d2', fontFamily: 'Varela Round, sans-serif', fontSize: { xs: '1.1rem', sm: '1.2rem' } }}>Đối tượng ưu tiên</Typography>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                <TextField
+                                    size="small"
+                                    placeholder="Tìm kiếm..."
+                                    value={search}
+                                    onChange={e => setSearch(e.target.value)}
+                                    InputProps={{
+                                        startAdornment: <SearchIcon sx={{ color: '#b0b0b0', mr: 1 }} fontSize="small" />,
+                                        sx: { borderRadius: '8px', background: '#f7faff', fontFamily: 'Varela Round, sans-serif', height: 36 }
+                                    }}
+                                    sx={{ width: { xs: 180, sm: 390 }, mr: 1 }}
+                                />
+                                <Button variant="contained" startIcon={<AddIcon />} onClick={handleOpenAdd} sx={{ borderRadius: '8px', fontFamily: 'Varela Round, sans-serif', minWidth: 120, fontWeight: 600 }}>Thêm đối tượng</Button>
+                            </Box>
                         </Box>
-                        <TableContainer component={Paper} sx={{ borderRadius: '8px', boxShadow: '0 4px 10px rgba(0,0,0,0.1)', minWidth: 700, fontFamily: 'Varela Round, sans-serif' }}>
+                        <TableContainer component={Paper} sx={{ borderRadius: '8px', boxShadow: '0 2px 6px rgba(0,0,0,0.06)', minWidth: 100, fontFamily: 'Varela Round, sans-serif', mt: 1 }}>
                             <Table size="medium" sx={{ fontFamily: 'Varela Round, sans-serif' }}>
                                 <TableHead>
                                     <TableRow>
-                                        <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '1.1rem', backgroundColor: '#6ebab6', width: 200, fontFamily: 'Varela Round, sans-serif' }}>Tên đối tượng</TableCell>
-                                        <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '1.1rem', backgroundColor: '#6ebab6', width: 120, fontFamily: 'Varela Round, sans-serif' }}>Mức giảm (%)</TableCell>
-                                        <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '1.1rem', backgroundColor: '#6ebab6', width: 260, fontFamily: 'Varela Round, sans-serif' }}>Tỉnh áp dụng</TableCell>
-                                        <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '1.1rem', backgroundColor: '#6ebab6', textAlign: 'center', width: 120, fontFamily: 'Varela Round, sans-serif' }}>Thao tác</TableCell>
+                                        <TableCell sx={{ fontWeight: 'bold', color: '#fff', fontSize: '1rem', backgroundColor: '#6ebab6', width: 180, fontFamily: 'Varela Round, sans-serif', borderTopLeftRadius: '8px' }}>Tên đối tượng</TableCell>
+                                        <TableCell sx={{ fontWeight: 'bold', color: '#fff', fontSize: '1rem', backgroundColor: '#6ebab6', width: 60, fontFamily: 'Varela Round, sans-serif' }}>Mức giảm (%)</TableCell>
+                                        <TableCell sx={{ fontWeight: 'bold', color: '#fff', fontSize: '1rem', backgroundColor: '#6ebab6', textAlign: 'center', width: 120, fontFamily: 'Varela Round, sans-serif', borderTopRightRadius: '8px' }}>Thao tác</TableCell>
                                     </TableRow>
                                 </TableHead>
                                 <TableBody sx={{ fontFamily: 'Varela Round, sans-serif' }}>
-                                    {targetGroups.map(group => (
+                                    {filteredGroups.map(group => (
                                         <TableRow key={group.id} sx={{ fontFamily: 'Varela Round, sans-serif', '&:last-child td, &:last-child th': { borderBottom: 'none' } }}>
-                                            <TableCell sx={{ fontWeight: 600, width: 200, fontFamily: 'Varela Round, sans-serif' }}>{group.name}</TableCell>
-                                            <TableCell sx={{ width: 120, fontFamily: 'Varela Round, sans-serif' }}>{group.discount}%</TableCell>
-                                            <TableCell sx={{ width: 260, fontFamily: 'Varela Round, sans-serif' }}>
-                                                {group.provinces.map(p => (
-                                                    <Chip key={p} label={p} size="small" sx={{ mr: 0.5, mb: 0.5, fontFamily: 'Varela Round, sans-serif' }} />
-                                                ))}
-                                            </TableCell>
+                                            <TableCell sx={{ fontWeight: 600, width: 180, fontFamily: 'Varela Round, sans-serif', fontSize: '1rem' }}>{group.name}</TableCell>
+                                            <TableCell sx={{ width: 60, fontFamily: 'Varela Round, sans-serif', fontSize: '1rem' }}>{group.discount}%</TableCell>
                                             <TableCell align="center" sx={{ width: 120, fontFamily: 'Varela Round, sans-serif' }}>
                                                 <IconButton onClick={() => handleOpenEdit(group)} sx={{ fontFamily: 'Varela Round, sans-serif' }}><EditIcon /></IconButton>
                                                 <IconButton color="error" onClick={() => { setConfirmDelete({ open: true, id: group.id }); }} sx={{ fontFamily: 'Varela Round, sans-serif' }}><DeleteIcon /></IconButton>
                                             </TableCell>
                                         </TableRow>
                                     ))}
-                                    {targetGroups.length === 0 && (
+                                    {filteredGroups.length === 0 && (
                                         <TableRow sx={{ '&:last-child td, &:last-child th': { borderBottom: 'none' } }}>
-                                            <TableCell colSpan={4} align="center" sx={{ fontFamily: 'Varela Round, sans-serif' }}>Chưa có đối tượng ưu tiên nào.</TableCell>
+                                            <TableCell colSpan={3} align="center" sx={{ fontFamily: 'Varela Round, sans-serif' }}>Không tìm thấy đối tượng phù hợp.</TableCell>
                                         </TableRow>
                                     )}
                                 </TableBody>
@@ -209,17 +230,17 @@ export default function TuitionAdjustment({ user, onLogout }: FinancialPageProps
             <Dialog open={openDialog} onClose={handleDialogClose} maxWidth="sm" fullWidth
                 sx={{
                     '& .MuiPaper-root': {
-                        borderRadius: '20px',
-                        background: 'rgba(255,255,255,0.98)',
-                        boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.15)',
-                        padding: 0,
+                        borderRadius: '18px',
+                        background: '#fff',
+                        boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.10)',
+                        p: 0,
                     },
                 }}
             >
                 <DialogTitle sx={{
                     fontFamily: 'Montserrat, sans-serif',
                     fontWeight: 700,
-                    fontSize: '2rem',
+                    fontSize: '1.5rem',
                     color: '#4c4c4c',
                     textAlign: 'center',
                     pb: 0,
@@ -233,17 +254,18 @@ export default function TuitionAdjustment({ user, onLogout }: FinancialPageProps
                     pt: 2,
                     pb: 0,
                     background: 'transparent',
-                    fontFamily: '"Varela Round", sans-serif'
+                    fontFamily: 'Varela Round, sans-serif'
                 }}>
-                    <Grid container spacing={2} sx={{ mt: 0.5, fontFamily: '"Varela Round", sans-serif' }}>
+                    <Grid container spacing={2} sx={{ mt: 0.5, fontFamily: 'Varela Round, sans-serif' }}>
                         <Grid item xs={12}>
                             <TextField
                                 label="Tên đối tượng"
                                 fullWidth
                                 value={currentTargetGroup.name}
                                 onChange={e => setCurrentTargetGroup({ ...currentTargetGroup, name: e.target.value })}
-                                sx={{ borderRadius: '12px', background: '#f7faff', '& .MuiOutlinedInput-root': { borderRadius: '12px', fontFamily: 'Varela Round, sans-serif' }, fontFamily: 'Varela Round, sans-serif' }}
+                                sx={{ borderRadius: '10px', background: '#f7faff', '& .MuiOutlinedInput-root': { borderRadius: '10px', fontFamily: 'Varela Round, sans-serif' }, fontFamily: 'Varela Round, sans-serif' }}
                                 InputLabelProps={{ sx: { fontFamily: 'Varela Round, sans-serif' } }}
+                                placeholder="Nhập tên đối tượng ưu tiên"
                             />
                         </Grid>
                         <Grid item xs={12} md={6}>
@@ -254,63 +276,21 @@ export default function TuitionAdjustment({ user, onLogout }: FinancialPageProps
                                 value={currentTargetGroup.discount}
                                 onChange={e => setCurrentTargetGroup({ ...currentTargetGroup, discount: Number(e.target.value) })}
                                 inputProps={{ min: 0, max: 100 }}
-                                sx={{ borderRadius: '12px', background: '#f7faff', '& .MuiOutlinedInput-root': { borderRadius: '12px', fontFamily: 'Varela Round, sans-serif' }, fontFamily: 'Varela Round, sans-serif' }}
+                                sx={{ borderRadius: '10px', background: '#f7faff', '& .MuiOutlinedInput-root': { borderRadius: '10px', fontFamily: 'Varela Round, sans-serif' }, fontFamily: 'Varela Round, sans-serif' }}
                                 InputLabelProps={{ sx: { fontFamily: 'Varela Round, sans-serif' } }}
                             />
                         </Grid>
-                        <Grid item xs={12} md={6}>
-                            <FormControl fullWidth sx={{ fontFamily: '"Varela Round", sans-serif' }}>
-                                <InputLabel sx={{ fontFamily: '"Varela Round", sans-serif' }}>Tỉnh áp dụng</InputLabel>
-                                <Select
-                                    multiple
-                                    value={currentTargetGroup.provinces}
-                                    onChange={e => setCurrentTargetGroup({ ...currentTargetGroup, provinces: typeof e.target.value === 'string' ? e.target.value.split(',') : e.target.value })}
-                                    input={<OutlinedInput label="Tỉnh áp dụng" sx={{ fontFamily: '"Varela Round", sans-serif' }} />}
-                                    renderValue={selected => (selected as string[]).join(', ')}
-                                    MenuProps={{
-                                        PaperProps: {
-                                            elevation: 4,
-                                            sx: {
-                                                borderRadius: 3,
-                                                minWidth: 200,
-                                                boxShadow: '0 4px 24px 0 rgba(0,0,0,0.10)',
-                                                p: 1,
-                                                fontFamily: '"Varela Round", sans-serif'
-                                            },
-                                        },
-                                        MenuListProps: {
-                                            sx: {
-                                                display: 'flex',
-                                                flexDirection: 'column',
-                                                gap: 0.5,
-                                                fontFamily: '"Varela Round", sans-serif',
-                                                borderRadius: 3,
-                                                p: 0,
-                                            },
-                                        },
-                                    }}
-                                >
-                                    {allProvinces.map(province => (
-                                        <MenuItem key={province} value={province} sx={{ borderRadius: '9px', fontFamily: '"Varela Round", sans-serif' }}>
-                                            <Checkbox
-                                                checked={currentTargetGroup.provinces.indexOf(province) > -1}
-                                                sx={{
-                                                    color: '#1976d2',
-                                                    '&.Mui-checked': {
-                                                        color: '#1976d2',
-                                                    },
-                                                    borderRadius: '6px',
-                                                    p: 0.5,
-                                                    fontFamily: '"Varela Round", sans-serif'
-                                                }}
-                                                icon={<span style={{ border: '2px solid #b0bec5', borderRadius: 6, width: 20, height: 20, display: 'block', background: '#fff', boxSizing: 'border-box' }} />}
-                                                checkedIcon={<span style={{ border: '2px solid #1976d2', background: '#1976d2', borderRadius: 6, width: 20, height: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', boxSizing: 'border-box' }}><svg width="16" height="16" viewBox="0 0 20 20" style={{ display: 'block' }}><polyline points="5,11 9,15 15,7" style={{ fill: 'none', stroke: 'white', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }} /></svg></span>}
-                                            />
-                                            <ListItemText primary={province} sx={{ fontFamily: '"Varela Round", sans-serif' }} />
-                                        </MenuItem>
-                                    ))}
-                                </Select>
-                            </FormControl>
+                        <Grid item xs={12}>
+                            <TextField
+                                label="Mô tả"
+                                fullWidth
+                                multiline
+                                rows={3}
+                                value={currentTargetGroup.description}
+                                onChange={e => setCurrentTargetGroup({ ...currentTargetGroup, description: e.target.value })}
+                                sx={{ borderRadius: '10px', background: '#f7faff', '& .MuiOutlinedInput-root': { borderRadius: '10px', fontFamily: 'Varela Round, sans-serif' }, fontFamily: 'Varela Round, sans-serif' }}
+                                InputLabelProps={{ sx: { fontFamily: 'Varela Round, sans-serif' } }}
+                            />
                         </Grid>
                     </Grid>
                 </DialogContent>
@@ -322,10 +302,10 @@ export default function TuitionAdjustment({ user, onLogout }: FinancialPageProps
                     justifyContent: 'flex-end',
                     gap: 2,
                     background: 'transparent',
-                    fontFamily: '"Varela Round", sans-serif'
+                    fontFamily: 'Varela Round, sans-serif'
                 }}>
-                    <Button onClick={handleDialogClose} sx={{ fontFamily: 'Varela Round, sans-serif' }}>Hủy</Button>
-                    <Button variant="contained" onClick={handleDialogSave} sx={{ fontFamily: 'Varela Round, sans-serif' }}>{isEditing ? 'Cập nhật' : 'Thêm mới'}</Button>
+                    <Button onClick={handleDialogClose} sx={{ fontFamily: 'Varela Round, sans-serif', minWidth: 80 }}>Hủy</Button>
+                    <Button variant="contained" onClick={handleDialogSave} sx={{ fontFamily: 'Varela Round, sans-serif', minWidth: 100 }}>{isEditing ? 'Cập nhật' : 'Thêm mới'}</Button>
                 </DialogActions>
             </Dialog>
             {/* Confirm delete dialog */}
@@ -336,33 +316,33 @@ export default function TuitionAdjustment({ user, onLogout }: FinancialPageProps
                 aria-describedby="delete-dialog-description"
                 sx={{
                     '& .MuiPaper-root': {
-                        borderRadius: '16px',
+                        borderRadius: '14px',
                     },
                 }}
             >
-                <DialogTitle id="delete-dialog-title" sx={{ fontFamily: 'Varela Round, sans-serif', fontWeight: 500 }}>
-                    Xác nhận xóa khu vực ưu tiên
+                <DialogTitle id="delete-dialog-title" sx={{ fontFamily: 'Varela Round, sans-serif', fontWeight: 500, fontSize: '1.1rem' }}>
+                    Xác nhận xóa đối tượng ưu tiên
                 </DialogTitle>
                 <DialogContent>
                     <Typography
                         id="delete-dialog-description"
                         component="div"
                         sx={{
-                            fontSize: '17px',
+                            fontSize: '1rem',
                             color: '#5c6c7c',
                             textAlign: 'center',
                             fontWeight: 400,
                             fontFamily: 'Varela Round, sans-serif'
                         }}
                     >
-                        Bạn có chắc chắn muốn xóa khu vực ưu tiên này không?
+                        Bạn có chắc chắn muốn xóa đối tượng ưu tiên này không?
                     </Typography>
                 </DialogContent>
-                <DialogActions sx={{ fontFamily: '"Varela Round", sans-serif' }}>
-                    <Button onClick={handleCancelDelete} color="primary" sx={{ fontFamily: 'Varela Round, sans-serif' }}>
+                <DialogActions sx={{ fontFamily: 'Varela Round, sans-serif' }}>
+                    <Button onClick={handleCancelDelete} color="primary" sx={{ fontFamily: 'Varela Round, sans-serif', minWidth: 80 }}>
                         Hủy
                     </Button>
-                    <Button onClick={handleConfirmDelete} color="error" variant="contained" sx={{ fontFamily: 'Varela Round, sans-serif' }}>
+                    <Button onClick={handleConfirmDelete} color="error" variant="contained" sx={{ fontFamily: 'Varela Round, sans-serif', minWidth: 80 }}>
                         Xóa
                     </Button>
                 </DialogActions>

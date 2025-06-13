@@ -61,15 +61,18 @@ interface Student {
     status: string;
     phone: string;
     dob: string;
-    address: string;
+    permanentAddress: {
+        province: string; // Tỉnh/Thành phố
+        district: string; // Quận/Huyện
+        ward: string; // Số nhà, đường, phường/xã
+    };
     avatar?: string;
     gender?: string;
     hometown?: string; // quê quán
     targetGroup?: string; // đối tượng
 }
 
-export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademicProps) {    const [students, setStudents] = useState<Student[]>([
-        { 
+export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademicProps) {    const [students, setStudents] = useState<Student[]>([        { 
             id: 1, 
             studentId: '21520001', 
             name: 'Nguyễn Văn An', 
@@ -80,12 +83,15 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
             status: 'Đang học', 
             phone: '0901234567', 
             dob: '2003-05-15', 
-            address: 'Số 17, Đường số 5, Khu dân cư An Phú, Quận 9, TP.HCM',
+            permanentAddress: {
+                province: 'TP.HCM',
+                district: 'Quận 9',
+                ward: 'Số 17, Đường số 5, Khu dân cư An Phú'
+            },
             gender: 'Nam',
             hometown: 'Bình Định',
-            targetGroup: 'Ưu tiên vùng cao'
-        },
-        { 
+            targetGroup: 'Người dân tộc thiểu số'
+        },{ 
             id: 2, 
             studentId: '21520002', 
             name: 'Trần Thị Bình', 
@@ -96,12 +102,15 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
             status: 'Đang học', 
             phone: '0909876543', 
             dob: '2003-03-20', 
-            address: '23/15 Đường Võ Văn Ngân, Phường Linh Chiểu, Thủ Đức, TP.HCM',
+            permanentAddress: {
+                province: 'TP.HCM',
+                district: 'Thủ Đức',
+                ward: '23/15 Đường Võ Văn Ngân, Phường Linh Chiểu'
+            },
             gender: 'Nữ',
             hometown: 'Tiền Giang',
-            targetGroup: 'Khu vực 1'
-        },
-        { 
+            targetGroup: 'Anh hùng Lực lượng vũ trang'
+        },{ 
             id: 3, 
             studentId: '21520003', 
             name: 'Lê Văn Cường', 
@@ -112,12 +121,15 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
             status: 'Đang học', 
             phone: '0905678901', 
             dob: '2003-07-10', 
-            address: '45 Đinh Tiên Hoàng, Phường 3, Bình Thạnh, TP.HCM',
+            permanentAddress: {
+                province: 'TP.HCM',
+                district: 'Bình Thạnh',
+                ward: '45 Đinh Tiên Hoàng, Phường 3'
+            },
             gender: 'Nam',
             hometown: 'Đà Nẵng',
-            targetGroup: 'Khu vực 2'
-        },
-        { 
+            targetGroup: 'Thương binh'
+        },        { 
             id: 4, 
             studentId: '21520004', 
             name: 'Phạm Thị Dung', 
@@ -125,15 +137,18 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
             faculty: 'Công nghệ thông tin', 
             program: 'Mạng máy tính', 
             enrollmentYear: '2021', 
-            status: 'Tạm nghỉ', 
+            status: 'Bảo lưu', 
             phone: '0908765432', 
             dob: '2003-09-25', 
-            address: '78 Lê Lợi, Phường Bến Nghé, Quận 1, TP.HCM',
+            permanentAddress: {
+                province: 'TP.HCM',
+                district: 'Quận 1',
+                ward: '78 Lê Lợi, Phường Bến Nghé'
+            },
             gender: 'Nữ',
             hometown: 'Cần Thơ',
-            targetGroup: 'Khu vực 2-NT'
-        },
-        { 
+            targetGroup: 'Con liệt sĩ'
+        },        { 
             id: 5, 
             studentId: '21520005', 
             name: 'Hoàng Văn Em', 
@@ -144,12 +159,15 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
             status: 'Đang học', 
             phone: '0904567890', 
             dob: '2003-02-18', 
-            address: '123 Nguyễn Văn Linh, Phường 5, Gò Vấp, TP.HCM',
+            permanentAddress: {
+                province: 'TP.HCM',
+                district: 'Gò Vấp',
+                ward: '123 Nguyễn Văn Linh, Phường 5'
+            },
             gender: 'Nam',
             hometown: 'Hà Nội',
-            targetGroup: 'Khu vực 3'
-        },
-        { 
+            targetGroup: 'Con thương binh'
+        },        { 
             id: 6, 
             studentId: '21520006', 
             name: 'Đỗ Thị Phương', 
@@ -160,12 +178,15 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
             status: 'Đang học', 
             phone: '0907654321', 
             dob: '2003-11-05', 
-            address: '56 Hoàng Hoa Thám, Phường 10, Phú Nhuận, TP.HCM',
+            permanentAddress: {
+                province: 'TP.HCM',
+                district: 'Phú Nhuận',
+                ward: '56 Hoàng Hoa Thám, Phường 10'
+            },
             gender: 'Nữ',
             hometown: 'Lâm Đồng',
-            targetGroup: 'Khu vực 1'
-        },
-        { 
+            targetGroup: 'Người nhiễm chất độc hóa học'
+        },        { 
             id: 7, 
             studentId: '21520007', 
             name: 'Vũ Văn Giang', 
@@ -176,12 +197,15 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
             status: 'Thôi học', 
             phone: '0903456789', 
             dob: '2003-08-12', 
-            address: '89 Trần Hưng Đạo, Phường 3, Quận 10, TP.HCM',
+            permanentAddress: {
+                province: 'TP.HCM',
+                district: 'Quận 10',
+                ward: '89 Trần Hưng Đạo, Phường 3'
+            },
             gender: 'Nam',
             hometown: 'Bắc Ninh',
-            targetGroup: 'Không'
-        },
-        { 
+            targetGroup: 'Người khuyết tật'
+        },        { 
             id: 8, 
             studentId: '21520008', 
             name: 'Lý Thị Hoa', 
@@ -192,10 +216,14 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
             status: 'Đang học', 
             phone: '0906543210', 
             dob: '2003-04-30', 
-            address: '34 Cách Mạng Tháng 8, Phường 6, Tân Bình, TP.HCM',
+            permanentAddress: {
+                province: 'TP.HCM',
+                district: 'Tân Bình',
+                ward: '34 Cách Mạng Tháng 8, Phường 6'
+            },
             gender: 'Nữ',
             hometown: 'Huế',
-            targetGroup: 'Khu vực 2'
+            targetGroup: 'Hộ nghèo'
         },
         { 
             id: 9, 
@@ -208,10 +236,13 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
             status: 'Đang học', 
             phone: '0902345678', 
             dob: '2003-06-22', 
-            address: '112 Lạc Long Quân, Phường 3, Bình Tân, TP.HCM',
+            permanentAddress: {
+                province: 'TP.HCM',
+                district: 'Bình Tân',
+                ward: '112 Lạc Long Quân, Phường 3'
+            },
             gender: 'Nam',
-            hometown: 'An Giang',
-            targetGroup: 'Khu vực 2-NT'
+            hometown: 'An Giang',            targetGroup: 'Vùng đặc biệt khó khăn'
         }
     ]);
     const [filteredStudents, setFilteredStudents] = useState<Student[]>(students);
@@ -256,8 +287,7 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
     const handleOpenDialog = (edit: boolean = false, student?: Student) => {
         setIsEditing(edit);
         if (edit && student) {
-            setCurrentStudent(student);
-        } else {            setCurrentStudent({
+            setCurrentStudent(student);        } else {            setCurrentStudent({
                 id: students.length + 1,
                 studentId: '',
                 name: '',
@@ -268,7 +298,11 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
                 status: 'Đang học',
                 phone: '',
                 dob: '',
-                address: '',
+                permanentAddress: {
+                    province: '',
+                    district: '',
+                    ward: ''
+                },
                 gender: '',
                 hometown: '',
                 targetGroup: ''
@@ -306,16 +340,27 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
 
     const handleCancelDelete = () => {
         setConfirmDelete({ open: false, id: null });
-    };
-
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    };    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (!currentStudent) return;
         
         const { name, value } = e.target;
-        setCurrentStudent({
-            ...currentStudent,
-            [name]: value
-        });
+        
+        // Handle nested permanentAddress fields
+        if (name.startsWith('permanentAddress.')) {
+            const addressField = name.split('.')[1];
+            setCurrentStudent({
+                ...currentStudent,
+                permanentAddress: {
+                    ...currentStudent.permanentAddress,
+                    [addressField]: value
+                }
+            });
+        } else {
+            setCurrentStudent({
+                ...currentStudent,
+                [name]: value
+            });
+        }
     };
 
     const handleSelectChange = (e: any) => {
@@ -334,17 +379,15 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
 
     const closeStudentDetails = () => {
         setDetailDialog({ open: false, student: null });
-    };
-
-    // Helper function for status chips
+    };    // Helper function for status chips
     const getStatusChipColor = (status: string) => {
         switch (status) {
             case 'Đang học': return 'success';
-            case 'Tạm nghỉ': return 'warning';
+            case 'Bảo lưu': return 'warning';
             case 'Thôi học': return 'error';
             default: return 'default';
         }
-    };    return (
+    };return (
         <ThemeLayout role="academic" onLogout={onLogout}>
             <UserInfo user={user} />
             <Box sx={{ display: 'flex', justifyContent: 'center', mt: '0.25rem' }}>
@@ -522,15 +565,12 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
                                 Thêm sinh viên
                             </Button>
                         </Grid>
-                    </Grid>
-
-                <TableContainer 
+                    </Grid>                <TableContainer 
                         component={Paper} 
                         sx={{ 
                             mt: 2,
                             borderRadius: '8px', 
                             boxShadow: '0 4px 10px rgba(0, 0, 0, 0.1)', 
-                            border: '1px solid #e0e0e0',
                             width: '100%', 
                             maxWidth: '100%', 
                             minWidth: 1100,
@@ -805,7 +845,7 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
                             <Grid item xs={12} md={6}>
                                 <TextField
                                     name="targetGroup"
-                                    label="Đối tượng"
+                                    label="Đối tượng ưu tiên"
                                     fullWidth
                                     margin="normal"
                                     variant="outlined"
@@ -906,22 +946,75 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
                                                     p: 0,
                                                 },
                                             },
-                                        }}
-                                    >
+                                        }}                                    >
                                         <MenuItem value="Đang học" sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>Đang học</MenuItem>
-                                        <MenuItem value="Tạm nghỉ" sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>Tạm nghỉ</MenuItem>
+                                        <MenuItem value="Bảo lưu" sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>Bảo lưu</MenuItem>
                                         <MenuItem value="Thôi học" sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>Thôi học</MenuItem>
                                     </Select>
-                                </FormControl>
-                            </Grid>
+                                </FormControl>                            </Grid>
+                            
+                            {/* Permanent Address Section */}
                             <Grid item xs={12}>
+                                <Divider sx={{ my: 2 }}>
+                                    <Typography variant="h6" sx={{ 
+                                        fontFamily: '"Montserrat", sans-serif',
+                                        fontWeight: 600,
+                                        color: '#555',
+                                        fontSize: '1.1rem',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: 1
+                                    }}>
+                                        <HomeIcon sx={{ fontSize: '1.2rem', color: '#6ebab6' }} />
+                                        Địa chỉ thường trú
+                                    </Typography>
+                                </Divider>
+                            </Grid>
+                            
+                            <Grid item xs={12} md={6}>
                                 <TextField
-                                    name="address"
-                                    label="Địa chỉ"
+                                    name="permanentAddress.province"
+                                    label="Tỉnh/Thành phố"
                                     fullWidth
                                     margin="normal"
                                     variant="outlined"
-                                    value={currentStudent.address}
+                                    value={currentStudent.permanentAddress.province}
+                                    onChange={handleInputChange}
+                                    sx={{
+                                        borderRadius: '12px',
+                                        background: '#f7faff',
+                                        '& .MuiOutlinedInput-root': { borderRadius: '12px' },
+                                        '& .MuiInputLabel-root': { fontWeight: 500 },
+                                        '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d8d8d8' },
+                                    }}
+                                />
+                            </Grid>
+                            <Grid item xs={12} md={6}>
+                                <TextField
+                                    name="permanentAddress.district"
+                                    label="Quận/Huyện"
+                                    fullWidth
+                                    margin="normal"
+                                    variant="outlined"
+                                    value={currentStudent.permanentAddress.district}
+                                    onChange={handleInputChange}
+                                    sx={{
+                                        borderRadius: '12px',
+                                        background: '#f7faff',
+                                        '& .MuiOutlinedInput-root': { borderRadius: '12px' },
+                                        '& .MuiInputLabel-root': { fontWeight: 500 },
+                                        '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d8d8d8' },
+                                    }}
+                                />
+                            </Grid>
+                            <Grid item xs={12}>
+                                <TextField
+                                    name="permanentAddress.ward"
+                                    label="Số nhà, đường, phường/xã"
+                                    fullWidth
+                                    margin="normal"
+                                    variant="outlined"
+                                    value={currentStudent.permanentAddress.ward}
                                     onChange={handleInputChange}
                                     sx={{
                                         borderRadius: '12px',
@@ -1095,7 +1188,7 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
                                                         <Typography variant="body1">{detailDialog.student.hometown || "Chưa cập nhật"}</Typography>
                                                     </Grid>
                                                     <Grid item xs={12}>
-                                                        <Typography variant="body2" color="text.secondary">Đối tượng</Typography>
+                                                        <Typography variant="body2" color="text.secondary">Đối tượng ưu tiên</Typography>
                                                         <Typography variant="body1">{detailDialog.student.targetGroup || "Chưa cập nhật"}</Typography>
                                                     </Grid>
                                                 </Grid>
@@ -1140,10 +1233,15 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
                                                     </Grid>
                                                     <Grid item xs={12}>
                                                         <Box sx={{ display: 'flex', alignItems: 'flex-start' }}>
-                                                            <HomeIcon sx={{ color: '#999', mr: 1, mt: 0.3, fontSize: '1.1rem' }} />
-                                                            <Box>
-                                                                <Typography variant="body2" color="text.secondary">Địa chỉ</Typography>
-                                                                <Typography variant="body1">{detailDialog.student.address}</Typography>
+                                                            <HomeIcon sx={{ color: '#999', mr: 1, mt: 0.3, fontSize: '1.1rem' }} />                                                            <Box>
+                                                                <Typography variant="body2" color="text.secondary">Địa chỉ thường trú</Typography>
+                                                                <Typography variant="body1">
+                                                                    {[
+                                                                        detailDialog.student.permanentAddress.ward,
+                                                                        detailDialog.student.permanentAddress.district,
+                                                                        detailDialog.student.permanentAddress.province
+                                                                    ].filter(Boolean).join(', ')}
+                                                                </Typography>
                                                             </Box>
                                                         </Box>
                                                     </Grid>
