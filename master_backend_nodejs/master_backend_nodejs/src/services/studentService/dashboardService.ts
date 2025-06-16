@@ -3,8 +3,7 @@ import { IStudentOverview, IClass } from '../../models/student_related/studentDa
 import { IStudent } from '../../models/student_related/studentInterface';
 import { DatabaseService } from '../database/databaseService';
 
-export const dashboardService = {
-    async getStudentOverview(studentId: string): Promise<IStudentOverview | null> {
+export const dashboardService = {    async getStudentOverview(studentId: string): Promise<IStudentOverview | null> {
         try {
             // Get student info
             const student = await DatabaseService.queryOne(`
@@ -19,11 +18,7 @@ export const dashboardService = {
                     major,
                     faculty,
                     program,
-                    status,
-                    avatar_url as "avatarUrl",
-                    completed_credits as "completedCredits",
-                    current_credits as "currentCredits",
-                    required_credits as "requiredCredits"
+                    status
                 FROM students 
                 WHERE student_id = $1
             `, [studentId]);
@@ -85,9 +80,7 @@ export const dashboardService = {
                 WHERE student_id = $1
                 ORDER BY payment_date DESC
                 LIMIT 5
-            `, [studentId]);
-
-            return {
+            `, [studentId]);            return {
                 student: {
                     studentId: student.studentId,
                     fullName: student.name,
@@ -99,13 +92,7 @@ export const dashboardService = {
                     majorId: student.major,
                     email: student.email,
                     phone: student.phone,
-                    status: student.status,
-                    avatarUrl: student.avatarUrl,
-                    credits: {
-                        completed: student.completedCredits,
-                        current: student.currentCredits,
-                        required: student.requiredCredits
-                    }
+                    status: student.status
                 },
                 enrolledSubjects: enrollmentStats?.enrolled_count || 0,
                 totalCredits: enrollmentStats?.total_credits || 0,
@@ -117,9 +104,7 @@ export const dashboardService = {
             console.error('Error getting student overview:', error);
             throw error;
         }
-    },
-
-    async getStudentSchedule(studentId: string): Promise<IStudentSchedule | null> {
+    },    async getStudentSchedule(studentId: string): Promise<IStudentSchedule | null> {
         try {
             // Get student info
             const student = await DatabaseService.queryOne(`
@@ -134,11 +119,7 @@ export const dashboardService = {
                     major,
                     faculty,
                     program,
-                    status,
-                    avatar_url as "avatarUrl",
-                    completed_credits as "completedCredits",
-                    current_credits as "currentCredits",
-                    required_credits as "requiredCredits"
+                    status
                 FROM students 
                 WHERE student_id = $1
             `, [studentId]);
@@ -183,9 +164,7 @@ export const dashboardService = {
                 AND e.semester = $2
                 AND e.is_enrolled = true
                 GROUP BY s.id, s.name, s.credits, s.lecturer
-            `, [studentId, currentSemester.semester]);
-
-            return {
+            `, [studentId, currentSemester.semester]);            return {
                 student: {
                     studentId: student.studentId,
                     fullName: student.name,
@@ -197,13 +176,7 @@ export const dashboardService = {
                     majorId: student.major,
                     email: student.email,
                     phone: student.phone,
-                    status: student.status,
-                    avatarUrl: student.avatarUrl,
-                    credits: {
-                        completed: student.completedCredits,
-                        current: student.currentCredits,
-                        required: student.requiredCredits
-                    }
+                    status: student.status
                 },
                 semester: currentSemester.semester,
                 subjects: subjects.map(s => ({

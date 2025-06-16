@@ -4,17 +4,10 @@ import { academicDashboardService } from '../../services/academicService/dashboa
 export class AcademicDashboardBusiness {
     static async getDashboardOverview() {
         try {
-            const [stats, subjectStats, courseStats] = await Promise.all([
-                academicDashboardService.getDashboardStats(),
-                academicDashboardService.getSubjectStatistics(),
-                academicDashboardService.getCourseStatistics()
-            ]);
-
+            const stats = await academicDashboardService.getDashboardStats();
             return {
-                overview: stats,
-                subjects: subjectStats,
-                courses: courseStats,
-                generatedAt: new Date().toISOString()
+                success: true,
+                data: stats
             };
         } catch (error) {
             throw new Error('Error fetching dashboard overview');
@@ -25,10 +18,8 @@ export class AcademicDashboardBusiness {
         try {
             const stats = await academicDashboardService.getDashboardStats();
             return {
-                totalSubjects: stats.totalSubjects,
-                totalOpenCourses: stats.totalOpenCourses,
-                totalPrograms: stats.totalPrograms,
-                pendingRequests: stats.pendingRequests
+                success: true,
+                data: stats
             };
         } catch (error) {
             throw new Error('Error fetching quick stats');
@@ -37,15 +28,23 @@ export class AcademicDashboardBusiness {
 
     static async getRecentActivities(limit: number = 5) {
         try {
-            return await academicDashboardService.getRecentActivities(limit);
+            const activities = await academicDashboardService.getRecentActivities(limit);
+            return {
+                success: true,
+                data: activities
+            };
         } catch (error) {
             throw new Error('Error fetching recent activities');
         }
     }
 
-    static async getStudentRequests() {
+    static async getStudentRequests(limit: number = 10) {
         try {
-            return await academicDashboardService.getStudentRequests();
+            const requests = await academicDashboardService.getStudentRequests(limit);
+            return {
+                success: true,
+                data: requests
+            };
         } catch (error) {
             throw new Error('Error fetching student requests');
         }

@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
-import { userManager } from '../../business/AdminBussiness/userManager';
-import { activitylogManager } from '../../business/AdminBussiness/activitylogManager';
+import { userManager } from '../../business/adminBussiness/userManager';
+import { activitylogManager } from '../../business/adminBussiness/activitylogManager';
 
 class AdminController {async getActivityLog(req: Request, res: Response, next: NextFunction) {
         try {

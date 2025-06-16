@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { userManager } from '../../business/AdminBussiness/userManager';
+import { userManager } from '../../business/adminBussiness/userManager';
 import { IUser } from '../../models/user';
 import { AppError } from '../../middleware/errorHandler';
 

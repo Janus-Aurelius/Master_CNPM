@@ -14,6 +14,7 @@ services:
       - postgres_data:/var/lib/postgresql/data
       - ./schema.sql:/docker-entrypoint-initdb.d/01_schema.sql
       - ./create_data.sql:/docker-entrypoint-initdb.d/02_data.sql
+    restart: unless-stopped
 
   backend:
     build: 
@@ -30,6 +31,7 @@ services:
       - DB_NAME=mydb
     depends_on:
       - db
+    restart: unless-stopped
 
 volumes:
   postgres_data:

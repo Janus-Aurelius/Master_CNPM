@@ -6,6 +6,10 @@ import * as courseController from '../../controllers/academicController/course.c
 import { authenticateToken, authorizeRoles } from '../../middleware/auth';
 import { validateSubjectData } from '../../middleware/subjectValidation';
 import { ProgramController } from '../../controllers/academicController/program.controller';
+import studentRoutes from './student.routes';
+import courseRoutes from './course.routes';
+import openCourseRoutes from './openCourse.routes';
+import studentSubjectReqRoutes from './studentSubjectReq.routes';
 
 const router = Router();
 
@@ -54,10 +58,7 @@ router.put('/programsMgm/:maNganh/:maMonHoc/:maHocKy', ProgramController.updateP
 router.delete('/programsMgm/:maNganh/:maMonHoc/:maHocKy', ProgramController.deleteProgram);
 router.get('/programsMgm/nganh/:maNganh', ProgramController.getProgramsByNganh);
 router.get('/programsMgm/hocky/:maHocKy', ProgramController.getProgramsByHocKy);
-
-router.get('/studentSubjectReq', (req: Request, res: Response): void => {
-    res.json({ data: 'Academic affairs deparment student subject request management' });
-});
+router.get('/programsMgm/validate-semester/:maHocKy', ProgramController.validateSemester);
 
 router.get('/openCourseMgm', (req: Request, res: Response): void => {
     res.json({ data: 'Academic affairs deparment open courses management' });
@@ -98,5 +99,17 @@ router.delete('/subjectMgm/:id', (req: Request, res: Response): void => {
         res.status(500).json({ success: false, message: 'Internal server error' });
     });
 });
+
+// Mount student routes at /api/students
+router.use('/students', studentRoutes);
+
+// Mount course routes at /api/academic/courses
+router.use('/courses', courseRoutes);
+
+// Mount open course routes at /api/academic/open-courses
+router.use('/open-courses', openCourseRoutes);
+
+// Mount student subject request routes at /api/academic/student-subject-requests
+router.use('/student-subject-requests', studentSubjectReqRoutes);
 
 export default router;

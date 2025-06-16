@@ -1,8 +1,7 @@
 import { IStudent } from '../../models/student_related/studentInterface';
 import { DatabaseService } from '../database/databaseService';
 
-export const studentService = {
-    async getStudentInfo(studentId: string): Promise<IStudent | null> {
+export const studentService = {    async getStudentInfo(studentId: string): Promise<IStudent | null> {
         try {
             const student = await DatabaseService.queryOne(`
                 SELECT 
@@ -16,11 +15,7 @@ export const studentService = {
                     major_id as "majorId",
                     email,
                     phone,
-                    status,
-                    avatar_url as "avatarUrl",
-                    completed_credits as "completedCredits",
-                    current_credits as "currentCredits",
-                    required_credits as "requiredCredits"
+                    status
                 FROM students 
                 WHERE student_id = $1
             `, [studentId]);
@@ -38,13 +33,7 @@ export const studentService = {
                 majorId: student.majorId,
                 email: student.email,
                 phone: student.phone,
-                status: student.status,
-                avatarUrl: student.avatarUrl,
-                credits: {
-                    completed: student.completedCredits,
-                    current: student.currentCredits,
-                    required: student.requiredCredits
-                }
+                status: student.status
             };
         } catch (error) {
             console.error('Error getting student info:', error);
@@ -83,9 +72,7 @@ export const studentService = {
             console.error('Error updating student info:', error);
             throw error;
         }
-    },
-
-    async createStudent(studentData: Omit<IStudent, 'studentId'>): Promise<IStudent> {
+    },    async createStudent(studentData: Omit<IStudent, 'studentId'>): Promise<IStudent> {
         try {
             // Generate student ID
             const studentId = `SV${Date.now().toString().slice(-6)}`;
@@ -104,14 +91,10 @@ export const studentService = {
                     email,
                     phone,
                     status,
-                    avatar_url,
-                    completed_credits,
-                    current_credits,
-                    required_credits,
                     created_at,
                     updated_at
                 ) VALUES (
-                    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, NOW(), NOW()
+                    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW(), NOW()
                 )
             `, [
                 studentId,
@@ -124,11 +107,7 @@ export const studentService = {
                 studentData.majorId,
                 studentData.email,
                 studentData.phone,
-                studentData.status,
-                studentData.avatarUrl,
-                studentData.credits?.completed,
-                studentData.credits?.current,
-                studentData.credits?.required
+                studentData.status
             ]);
 
             // Return created student
@@ -160,9 +139,7 @@ export const studentService = {
             console.error('Error deleting student:', error);
             throw error;
         }
-    },
-
-    async getAllStudents(): Promise<IStudent[]> {
+    },    async getAllStudents(): Promise<IStudent[]> {
         try {
             const students = await DatabaseService.query(`
                 SELECT 
@@ -176,11 +153,7 @@ export const studentService = {
                     major_id as "majorId",
                     email,
                     phone,
-                    status,
-                    avatar_url as "avatarUrl",
-                    completed_credits as "completedCredits",
-                    current_credits as "currentCredits",
-                    required_credits as "requiredCredits"
+                    status
                 FROM students
             `);
 
@@ -195,13 +168,7 @@ export const studentService = {
                 majorId: student.majorId,
                 email: student.email,
                 phone: student.phone,
-                status: student.status,
-                avatarUrl: student.avatarUrl,
-                credits: {
-                    completed: student.completedCredits,
-                    current: student.currentCredits,
-                    required: student.requiredCredits
-                }
+                status: student.status
             }));
         } catch (error) {
             console.error('Error getting all students:', error);

@@ -51,20 +51,13 @@ class DashboardManager {
                     studentId: student.student_id,
                     fullName: student.name,
                     dateOfBirth: student.date_of_birth || new Date(),
-                    gender: student.gender,
-                    hometown: student.hometown ? JSON.parse(student.hometown) : undefined,
+                    gender: student.gender,                    hometown: student.hometown ? JSON.parse(student.hometown) : undefined,
                     districtId: student.district_id,
                     priorityObjectId: student.priority_object_id,
                     majorId: student.major,
                     email: student.email,
                     phone: student.phone,
-                    status: student.status || 'active',
-                    avatarUrl: student.avatar_url,
-                    credits: {
-                        completed: parseInt(student.credits_earned) || 0,
-                        current: parseInt(student.current_credits) || 0,
-                        required: student.required_credits || 120
-                    }
+                    status: student.status || 'active'
                 },
                 enrolledSubjects: parseInt(student.current_enrollments) || 0,
                 totalCredits: parseInt(student.current_credits) || 0,

@@ -5,21 +5,16 @@ export interface IStudent {
     fullName: string;          // hoTen
     dateOfBirth: Date;         // ngaySinh
     gender: string;            // gioiTinh
-    hometown: string;          // queQuan
-    districtId: string;        // maHuyen
-    priorityObjectId: string;  // maDoiTuongUT
-    majorId: string;           // maNganh
+    hometown: string;          // queQuan (sẽ chứa tên tỉnh)
+    districtId: string;        // maHuyen (sẽ chứa tên huyện)
+    priorityObjectId: string;  // maDoiTuongUT (sẽ chứa tên đối tượng)
+    majorId: string;           // maNganh (sẽ chứa tên ngành)
 
     // Additional UI fields
     email?: string;
     phone?: string;
-    status?: 'active' | 'inactive';
-    avatarUrl?: string;
-    credits?: {
-        completed: number;
-        current: number;
-        required: number;
-    };
+    status?: 'active' | 'inactive' | 'đang học' | 'thôi học';
+    faculty?: string;          // Tên khoa
 }
 
 // Legacy simple student interface for backward compatibility

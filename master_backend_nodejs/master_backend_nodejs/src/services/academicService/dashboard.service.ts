@@ -6,12 +6,11 @@ interface AcademicDashboardStats {
     totalOpenCourses: number;
     totalPrograms: number;
     pendingRequests: number;
-    recentActivities: RecentActivity[];
 }
 
 interface RecentActivity {
     id: string;
-    type: 'subject_created' | 'course_opened' | 'request_submitted' | 'program_updated';
+    type: string;
     description: string;
     timestamp: string;
     user: string;
@@ -31,29 +30,29 @@ interface CourseStatistics {
 }
 
 interface StudentRequest {
-    id: number;
+    id: string;
     studentId: string;
     studentName: string;
     course: string;
-    requestType: 'register' | 'drop';
+    requestType: 'register' | 'cancel';
     submittedDateTime: string;
-    status: 'pending' | 'approved' | 'rejected';
 }
 
 export const academicDashboardService = {
-    async getDashboardStats(): Promise<AcademicDashboardStats> {
+    async getDashboardStats(): Promise<AcademicDashboardStats & { totalStudents: number; registeredStudents: number }> {
         try {
-            const totalSubjects = await DatabaseService.queryOne(`SELECT COUNT(*) as count FROM subjects`);
-            const totalOpenCourses = await DatabaseService.queryOne(`SELECT COUNT(*) as count FROM open_courses WHERE status = 'open'`);
-            const totalPrograms = await DatabaseService.queryOne(`SELECT COUNT(*) as count FROM chuongtrinhdaotao`);
-            const pendingRequests = await DatabaseService.queryOne(`SELECT COUNT(*) as count FROM student_subject_requests WHERE status = 'pending'`);
-            const recentActivities = await this.getRecentActivities(5);
+            const totalSubjects = await DatabaseService.queryOne(`SELECT COUNT(*) as count FROM MONHOC`);
+            const totalOpenCourses = await DatabaseService.queryOne(`SELECT COUNT(*) as count FROM DANHSACHMONHOCMO`);
+            const totalPrograms = await DatabaseService.queryOne(`SELECT COUNT(*) as count FROM CHUONGTRINHHOC`);
+            const totalStudents = await DatabaseService.queryOne(`SELECT COUNT(*) as count FROM SINHVIEN`);
+            const registeredStudents = await DatabaseService.queryOne(`SELECT COUNT(DISTINCT MaSoSinhVien) as count FROM PHIEUDANGKY`);
             return {
                 totalSubjects: totalSubjects?.count || 0,
                 totalOpenCourses: totalOpenCourses?.count || 0,
                 totalPrograms: totalPrograms?.count || 0,
-                pendingRequests: pendingRequests?.count || 0,
-                recentActivities
+                pendingRequests: 0,
+                totalStudents: totalStudents?.count || 0,
+                registeredStudents: registeredStudents?.count || 0
             };
         } catch (error) {
             console.error('Error fetching dashboard stats:', error);
@@ -106,48 +105,30 @@ export const academicDashboardService = {
 
     async getRecentActivities(limit: number = 5): Promise<RecentActivity[]> {
         try {
-            const activities = await DatabaseService.query(`
-                SELECT id, type, description, timestamp, user
-                FROM recent_activities
-                ORDER BY timestamp DESC
-                LIMIT $1
-            `, [limit]);
-            return activities;
+            // Tạm thời trả về mảng rỗng vì chưa có bảng recent_activities
+            return [];
         } catch (error) {
             console.error('Error fetching recent activities:', error);
             return [];
         }
     },
 
-    async getPendingRequestsCount(): Promise<number> {
+    async getStudentRequests(limit: number = 10): Promise<StudentRequest[]> {
         try {
-            const result = await DatabaseService.queryOne(`
-                SELECT COUNT(*) as count FROM student_subject_requests WHERE status = 'pending'
-            `);
-            return result?.count || 0;
-        } catch (error) {
-            console.error('Error fetching pending requests count:', error);
-            return 0;
-        }
-    },
-
-    async getStudentRequests(): Promise<StudentRequest[]> {
-        try {
-            const requests = await DatabaseService.query(`
+            // Nếu đã có bảng REGISTRATION_LOG thì dùng bảng này, nếu chưa có thì dùng CT_PHIEUDANGKY
+            const logs = await DatabaseService.query(`
                 SELECT 
-                    r.id,
-                    r.student_id as "studentId",
-                    s.hoten as "studentName",
-                    c.tenmonhoc as course,
-                    r.request_type as "requestType",
-                    r.submitted_at as "submittedDateTime",
-                    r.status
-                FROM student_subject_requests r
-                JOIN sinhvien s ON r.student_id = s.masosinhvien
-                JOIN monhoc c ON r.subject_id = c.mamonhoc
-                ORDER BY r.submitted_at DESC
-            `);
-            return requests;
+                    rl.id,
+                    rl.MaSoSinhVien as studentId,
+                    rl.TenSinhVien as studentName,
+                    rl.TenMonHoc as course,
+                    rl.LoaiYeuCau as requestType,
+                    rl.ThoiGianYeuCau as submittedDateTime
+                FROM REGISTRATION_LOG rl
+                ORDER BY rl.ThoiGianYeuCau DESC
+                LIMIT $1
+            `, [limit]);
+            return logs || [];
         } catch (error) {
             console.error('Error fetching student requests:', error);
             return [];

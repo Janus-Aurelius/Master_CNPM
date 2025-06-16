@@ -221,6 +221,20 @@ export const enrollmentService = {
                 WHERE id = $1
             `, [enrollmentData.courseId]);
 
+            // Lấy tên sinh viên và tên môn học
+            const student = await DatabaseService.queryOne(
+                `SELECT HoTen FROM SINHVIEN WHERE MaSoSinhVien = $1`, [enrollmentData.studentId]
+            );
+            const subjectName = await DatabaseService.queryOne(
+                `SELECT TenMonHoc FROM MONHOC WHERE MaMonHoc = $1`, [enrollmentData.courseId]
+            );
+
+            await DatabaseService.query(
+                `INSERT INTO REGISTRATION_LOG (MaSoSinhVien, TenSinhVien, MaMonHoc, TenMonHoc, LoaiYeuCau)
+                 VALUES ($1, $2, $3, $4, 'register')`,
+                [enrollmentData.studentId, student?.HoTen || '', enrollmentData.courseId, subjectName?.TenMonHoc || '']
+            );
+
             return enrollment;
         } catch (error) {
             console.error('Error enrolling in subject:', error);
@@ -254,6 +268,19 @@ export const enrollmentService = {
                 SET current_students = current_students - 1
                 WHERE id = $1
             `, [subjectId]);
+
+            const student = await DatabaseService.queryOne(
+                `SELECT HoTen FROM SINHVIEN WHERE MaSoSinhVien = $1`, [studentId]
+            );
+            const subject = await DatabaseService.queryOne(
+                `SELECT TenMonHoc FROM MONHOC WHERE MaMonHoc = $1`, [subjectId]
+            );
+
+            await DatabaseService.query(
+                `INSERT INTO REGISTRATION_LOG (MaSoSinhVien, TenSinhVien, MaMonHoc, TenMonHoc, LoaiYeuCau)
+                 VALUES ($1, $2, $3, $4, 'cancel')`,
+                [studentId, student?.HoTen || '', subjectId, subject?.TenMonHoc || '']
+            );
 
             return true;
         } catch (error) {

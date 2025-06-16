@@ -1,8 +1,8 @@
 // src/routes/admin.routes.ts
 import express, { RequestHandler } from 'express';
-import { UserController } from '../../controllers/AdminController/userController';
-import maintenanceController from '../../controllers/AdminController/maintenanceController';
-import adminController from '../../controllers/AdminController/adminController';
+import { UserController } from '../../controllers/adminController/userController';
+import maintenanceController from '../../controllers/adminController/maintenanceController';
+import adminController from '../../controllers/adminController/adminController';
 import { authenticateToken, authorizeRoles } from '../../middleware/auth';
 import { checkMaintenance } from '../../middleware/maintenance';
 

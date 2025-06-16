@@ -1,6 +1,6 @@
 import { IUser } from '../../models/user';
 import { AppError } from '../../middleware/errorHandler';
-import * as DashboardService from '../../services/AdminService/dashboardService';
+import * as DashboardService from '../../services/adminService/dashboardService';
 import { DatabaseService } from '../../services/database/databaseService';
 
 class UserManager {

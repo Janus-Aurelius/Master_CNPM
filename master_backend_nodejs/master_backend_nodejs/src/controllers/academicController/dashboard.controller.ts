@@ -45,7 +45,8 @@ export class AcademicDashboardController {
 
     static async getStudentRequests(req: Request, res: Response) {
         try {
-            const requests = await AcademicDashboardBusiness.getStudentRequests();
+            const limit = parseInt(req.query.limit as string) || 10;
+            const requests = await AcademicDashboardBusiness.getStudentRequests(limit);
             res.status(200).json({ success: true, data: requests });
         } catch (error) {
             res.status(500).json({ 

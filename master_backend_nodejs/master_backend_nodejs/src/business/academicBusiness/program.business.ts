@@ -25,10 +25,25 @@ export class ProgramBusiness {
 
     static async createProgram(programData: Omit<Program, 'id'>) {
         try {
+            // Validate format
             const errors = this.validateProgramData(programData);
             if (errors.length > 0) {
                 throw new ValidationError(`Invalid program data: ${errors.join(', ')}`);
             }
+
+            // Kiểm tra tồn tại của mã môn học và mã học kỳ
+            const [monHocExists, hocKyExists] = await Promise.all([
+                ProgramService.checkMonHocExists(programData.maMonHoc),
+                ProgramService.checkHocKyExists(programData.maHocKy)
+            ]);
+
+            if (!monHocExists) {
+                throw new ValidationError('Mã môn học không tồn tại trong hệ thống');
+            }
+            if (!hocKyExists) {
+                throw new ValidationError('Mã học kỳ không tồn tại trong hệ thống');
+            }
+
             return await ProgramService.createProgram(programData);
         } catch (error) {
             console.error('Error in ProgramBusiness.createProgram:', error);
@@ -38,16 +53,28 @@ export class ProgramBusiness {
 
     static async updateProgram(maNganh: string, maMonHoc: string, maHocKy: string, programData: Partial<Program>) {
         try {
-            const errors = this.validateProgramData({ ...programData, maNganh, maMonHoc, maHocKy });
+            // Validate format
+            const errors = this.validateProgramData(programData);
             if (errors.length > 0) {
                 throw new ValidationError(`Invalid program data: ${errors.join(', ')}`);
             }
-            return await ProgramService.updateProgram(
-                maNganh,
-                maMonHoc,
-                maHocKy,
-                programData
-            );
+
+            // Kiểm tra tồn tại của mã môn học và mã học kỳ mới (nếu có)
+            if (programData.maMonHoc) {
+                const monHocExists = await ProgramService.checkMonHocExists(programData.maMonHoc);
+                if (!monHocExists) {
+                    throw new ValidationError('Mã môn học mới không tồn tại trong hệ thống');
+                }
+            }
+
+            if (programData.maHocKy) {
+                const hocKyExists = await ProgramService.checkHocKyExists(programData.maHocKy);
+                if (!hocKyExists) {
+                    throw new ValidationError('Mã học kỳ mới không tồn tại trong hệ thống');
+                }
+            }
+
+            return await ProgramService.updateProgram(maNganh, maMonHoc, maHocKy, programData);
         } catch (error) {
             console.error('Error in ProgramBusiness.updateProgram:', error);
             throw error;
@@ -81,12 +108,32 @@ export class ProgramBusiness {
         }
     }
 
+    static async validateSemester(maHocKy: string): Promise<boolean> {
+        try {
+            return await ProgramService.checkHocKyExists(maHocKy);
+        } catch (error) {
+            console.error('Error in ProgramBusiness.validateSemester:', error);
+            throw error;
+        }
+    }
+
     static validateProgramData(programData: Partial<Program>): string[] {
         const errors: string[] = [];
         
         if (!programData.maNganh) errors.push('Mã ngành là bắt buộc');
         if (!programData.maMonHoc) errors.push('Mã môn học là bắt buộc');
         if (!programData.maHocKy) errors.push('Mã học kỳ là bắt buộc');
+
+        // Kiểm tra format
+        if (programData.maNganh && !/^[A-Z0-9]+$/.test(programData.maNganh)) {
+            errors.push('Mã ngành chỉ được chứa chữ hoa và số');
+        }
+        if (programData.maMonHoc && !/^[A-Z0-9]+$/.test(programData.maMonHoc)) {
+            errors.push('Mã môn học chỉ được chứa chữ hoa và số');
+        }
+        if (programData.maHocKy && !/^[A-Z0-9_]+$/.test(programData.maHocKy)) {
+            errors.push('Mã học kỳ chỉ được chứa chữ hoa, số và dấu gạch dưới');
+        }
 
         return errors;
     }

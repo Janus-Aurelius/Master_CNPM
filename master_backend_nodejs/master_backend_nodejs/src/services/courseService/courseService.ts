@@ -2,20 +2,18 @@
 import { DatabaseService } from '../database/databaseService';
 import ICourse from "../../models/academic_related/course";
 
-export const getCourses = async (): Promise<ICourse[]> => {
+export const getCourses = async (): Promise<any[]> => {
     try {
         const courses = await DatabaseService.query(`
             SELECT 
-                c.MaMonHoc as "subjectId",
-                c.TenMonHoc as "subjectName",
-                c.MaLoaiMon as "subjectTypeId",
-                c.SoTiet as "totalHours",
-                l.TenLoaiMon as "subjectTypeName",
-                l.SoTietMotTC as "hoursPerCredit",
-                l.SoTienMotTC as "costPerCredit"
+                c.MaMonHoc as "maMonHoc",
+                c.TenMonHoc as "tenMonHoc",
+                c.MaLoaiMon as "maLoaiMon",
+                c.SoTiet as "soTiet",
+                l.SoTietMotTC as "soTietMotTC",
+                ROUND(c.SoTiet::numeric / NULLIF(l.SoTietMotTC, 0), 2) as "credits"
             FROM MONHOC c
             JOIN LOAIMON l ON c.MaLoaiMon = l.MaLoaiMon
-            WHERE c.TrangThai = 'active'
             ORDER BY c.MaMonHoc
         `);
         return courses;
@@ -25,17 +23,16 @@ export const getCourses = async (): Promise<ICourse[]> => {
     }
 };
 
-export const getCourseById = async (id: string): Promise<ICourse | null> => {
+export const getCourseById = async (id: string): Promise<any | null> => {
     try {
         const course = await DatabaseService.queryOne(`
             SELECT 
-                c.MaMonHoc as "subjectId",
-                c.TenMonHoc as "subjectName",
-                c.MaLoaiMon as "subjectTypeId",
-                c.SoTiet as "totalHours",
-                l.TenLoaiMon as "subjectTypeName",
-                l.SoTietMotTC as "hoursPerCredit",
-                l.SoTienMotTC as "costPerCredit"
+                c.MaMonHoc as "maMonHoc",
+                c.TenMonHoc as "tenMonHoc",
+                c.MaLoaiMon as "maLoaiMon",
+                c.SoTiet as "soTiet",
+                l.SoTietMotTC as "soTietMotTC",
+                ROUND(c.SoTiet::numeric / NULLIF(l.SoTietMotTC, 0), 2) as "credits"
             FROM MONHOC c
             JOIN LOAIMON l ON c.MaLoaiMon = l.MaLoaiMon
             WHERE c.MaMonHoc = $1
@@ -47,14 +44,13 @@ export const getCourseById = async (id: string): Promise<ICourse | null> => {
     }
 };
 
-export const addCourse = async (course: ICourse): Promise<ICourse> => {
+export const addCourse = async (course: any): Promise<any> => {
     try {
         const newCourse = await DatabaseService.insert('MONHOC', {
-            MaMonHoc: course.subjectId,
-            TenMonHoc: course.subjectName,
-            MaLoaiMon: course.subjectTypeId,
-            SoTiet: course.totalHours,
-            TrangThai: 'active'
+            MaMonHoc: course.maMonHoc,
+            TenMonHoc: course.tenMonHoc,
+            MaLoaiMon: course.maLoaiMon,
+            SoTiet: course.soTiet
         });
         return newCourse;
     } catch (error) {
@@ -63,14 +59,12 @@ export const addCourse = async (course: ICourse): Promise<ICourse> => {
     }
 };
 
-export const updateCourse = async (id: string, courseData: Partial<ICourse>): Promise<ICourse | null> => {
+export const updateCourse = async (id: string, courseData: Partial<any>): Promise<any | null> => {
     try {
         const updateData: Record<string, any> = {};
-        if (courseData.subjectName) updateData.TenMonHoc = courseData.subjectName;
-        if (courseData.subjectTypeId) updateData.MaLoaiMon = courseData.subjectTypeId;
-        if (courseData.totalHours) updateData.SoTiet = courseData.totalHours;
-        if (courseData.status) updateData.TrangThai = courseData.status;
-
+        if (courseData.tenMonHoc) updateData.TenMonHoc = courseData.tenMonHoc;
+        if (courseData.maLoaiMon) updateData.MaLoaiMon = courseData.maLoaiMon;
+        if (courseData.soTiet) updateData.SoTiet = courseData.soTiet;
         const updatedCourse = await DatabaseService.update('MONHOC', updateData, { MaMonHoc: id });
         return updatedCourse;
     } catch (error) {
