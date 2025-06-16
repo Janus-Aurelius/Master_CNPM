@@ -12,18 +12,19 @@ import { EnrolledSubject } from "./student_pages/enrolled_subject";
 import TuitionCollecting  from "./student_pages/tuition_collecting";
 //Academic affair depmt
 import AcademicPage from "./academic_affair_pages/dashboard_academic";
-import ProgramMgmAcademic from "./academic_affair_pages/programMgm_academic.tsx";
-import CourseMgmAcademic from "./academic_affair_pages/courseMgm_academic.tsx";
-import OpenCourseMgmAcademic from "./academic_affair_pages/openCourseMgm_academic.tsx";
-import StudentMgmAcademic from "./academic_affair_pages/studentMgm_academic.tsx";
+import ProgramMgmAcademic from "./academic_affair_pages/programMgm_academic";
+import CourseMgmAcademic from "./academic_affair_pages/courseMgm_academic";
+import OpenCourseMgmAcademic from "./academic_affair_pages/openCourseMgm_academic";
+import StudentMgmAcademic from "./academic_affair_pages/studentMgm_academic";
+import TermMgmAcademic from "./academic_affair_pages/termMgm_academic";
 //Financial
-import FinancialPage from "./financial_dpm_pages/dashboard_financial.tsx";
-import PaymentStatusMgm from "./financial_dpm_pages/paymentStatusMgm_financial.tsx";
-import TuitionAdjustment from "./financial_dpm_pages/tuitionAdjustment_financial.tsx";
+import FinancialPage from "./financial_dpm_pages/dashboard_financial";
+import PaymentStatusMgm from "./financial_dpm_pages/paymentStatusMgm_financial";
+import TuitionAdjustment from "./financial_dpm_pages/tuitionAdjustment_financial";
 //Admin
-import AdminPage from "./admin_pages/dashboard_admin.tsx";
-import UserManagement from "./admin_pages/userManagement_admin.tsx";
-import SystemConfigAndMaintenance from "./admin_pages/systemConfigAndMaintenance_admin.tsx";
+import AdminPage from "./admin_pages/dashboard_admin";
+import UserManagement from "./admin_pages/userManagement_admin";
+import SystemConfigAndMaintenance from "./admin_pages/systemConfigAndMaintenance_admin";
 
 interface ProtectedRouteProps {
     children: React.ReactNode;
@@ -118,10 +119,10 @@ export default function App() {
                         <Routes>
                             <Route index element={<AcademicPage user={user} onLogout={handleLogout} />} />
                             <Route path="dashboard" element={<AcademicPage user={user} onLogout={handleLogout} />} />
-                            <Route path="programsMgm" element={<ProgramMgmAcademic user={user} onLogout={handleLogout} />} />
-                            <Route path="subjectMgm" element={<CourseMgmAcademic user={user} onLogout={handleLogout} />} />
+                            <Route path="programsMgm" element={<ProgramMgmAcademic user={user} onLogout={handleLogout} />} />                            <Route path="subjectMgm" element={<CourseMgmAcademic user={user} onLogout={handleLogout} />} />
                             <Route path="openCourseMgm" element={<OpenCourseMgmAcademic user={user} onLogout={handleLogout} />} />
                             <Route path="studentMgm" element={<StudentMgmAcademic user={user} onLogout={handleLogout} />} />
+                            <Route path="termMgm" element={<TermMgmAcademic user={user} onLogout={handleLogout} />} />
                         </Routes>
                     </ProtectedRoute>
                 } />

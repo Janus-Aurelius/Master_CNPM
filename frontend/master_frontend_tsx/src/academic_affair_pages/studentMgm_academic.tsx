@@ -44,59 +44,231 @@ import ContactMailIcon from '@mui/icons-material/ContactMail';
 import EmailIcon from '@mui/icons-material/Email';
 import PhoneIcon from '@mui/icons-material/Phone';
 import HomeIcon from '@mui/icons-material/Home';
-import { studentApi, Student } from "../api_clients/studentApi";
 
 interface StudentMgmAcademicProps {
     user: User | null;
     onLogout: () => void;
 }
 
-export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademicProps) {
-    const [students, setStudents] = useState<Student[]>([]);
-    const [filteredStudents, setFilteredStudents] = useState<Student[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+interface Student {
+    id: number;
+    studentId: string;
+    name: string;
+    email: string;
+    faculty: string;
+    program: string;
+    enrollmentYear: string;
+    status: string;
+    phone: string;
+    dob: string;
+    permanentAddress: {
+        province: string; // Tỉnh/Thành phố
+        district: string; // Quận/Huyện
+        ward: string; // Số nhà, đường, phường/xã
+    };
+    avatar?: string;
+    gender?: string;
+    hometown?: string; // quê quán
+    targetGroup?: string; // đối tượng
+}
+
+export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademicProps) {    const [students, setStudents] = useState<Student[]>([        { 
+            id: 1, 
+            studentId: '21520001', 
+            name: 'Nguyễn Văn An', 
+            email: 'an.nguyen@student.uit.edu.vn', 
+            faculty: 'Công nghệ thông tin', 
+            program: 'Kỹ thuật phần mềm', 
+            enrollmentYear: '2021', 
+            status: 'Đang học', 
+            phone: '0901234567', 
+            dob: '2003-05-15', 
+            permanentAddress: {
+                province: 'TP.HCM',
+                district: 'Quận 9',
+                ward: 'Số 17, Đường số 5, Khu dân cư An Phú'
+            },
+            gender: 'Nam',
+            hometown: 'Bình Định',
+            targetGroup: 'Người dân tộc thiểu số'
+        },{ 
+            id: 2, 
+            studentId: '21520002', 
+            name: 'Trần Thị Bình', 
+            email: 'binh.tran@student.uit.edu.vn', 
+            faculty: 'Công nghệ thông tin', 
+            program: 'Khoa học máy tính', 
+            enrollmentYear: '2021', 
+            status: 'Đang học', 
+            phone: '0909876543', 
+            dob: '2003-03-20', 
+            permanentAddress: {
+                province: 'TP.HCM',
+                district: 'Thủ Đức',
+                ward: '23/15 Đường Võ Văn Ngân, Phường Linh Chiểu'
+            },
+            gender: 'Nữ',
+            hometown: 'Tiền Giang',
+            targetGroup: 'Anh hùng Lực lượng vũ trang'
+        },{ 
+            id: 3, 
+            studentId: '21520003', 
+            name: 'Lê Văn Cường', 
+            email: 'cuong.le@student.uit.edu.vn', 
+            faculty: 'Công nghệ thông tin', 
+            program: 'Hệ thống thông tin', 
+            enrollmentYear: '2021', 
+            status: 'Đang học', 
+            phone: '0905678901', 
+            dob: '2003-07-10', 
+            permanentAddress: {
+                province: 'TP.HCM',
+                district: 'Bình Thạnh',
+                ward: '45 Đinh Tiên Hoàng, Phường 3'
+            },
+            gender: 'Nam',
+            hometown: 'Đà Nẵng',
+            targetGroup: 'Thương binh'
+        },        { 
+            id: 4, 
+            studentId: '21520004', 
+            name: 'Phạm Thị Dung', 
+            email: 'dung.pham@student.uit.edu.vn', 
+            faculty: 'Công nghệ thông tin', 
+            program: 'Mạng máy tính', 
+            enrollmentYear: '2021', 
+            status: 'Bảo lưu', 
+            phone: '0908765432', 
+            dob: '2003-09-25', 
+            permanentAddress: {
+                province: 'TP.HCM',
+                district: 'Quận 1',
+                ward: '78 Lê Lợi, Phường Bến Nghé'
+            },
+            gender: 'Nữ',
+            hometown: 'Cần Thơ',
+            targetGroup: 'Con liệt sĩ'
+        },        { 
+            id: 5, 
+            studentId: '21520005', 
+            name: 'Hoàng Văn Em', 
+            email: 'em.hoang@student.uit.edu.vn', 
+            faculty: 'Công nghệ thông tin', 
+            program: 'Kỹ thuật phần mềm', 
+            enrollmentYear: '2021', 
+            status: 'Đang học', 
+            phone: '0904567890', 
+            dob: '2003-02-18', 
+            permanentAddress: {
+                province: 'TP.HCM',
+                district: 'Gò Vấp',
+                ward: '123 Nguyễn Văn Linh, Phường 5'
+            },
+            gender: 'Nam',
+            hometown: 'Hà Nội',
+            targetGroup: 'Con thương binh'
+        },        { 
+            id: 6, 
+            studentId: '21520006', 
+            name: 'Đỗ Thị Phương', 
+            email: 'phuong.do@student.uit.edu.vn', 
+            faculty: 'Công nghệ thông tin', 
+            program: 'An toàn thông tin', 
+            enrollmentYear: '2021', 
+            status: 'Đang học', 
+            phone: '0907654321', 
+            dob: '2003-11-05', 
+            permanentAddress: {
+                province: 'TP.HCM',
+                district: 'Phú Nhuận',
+                ward: '56 Hoàng Hoa Thám, Phường 10'
+            },
+            gender: 'Nữ',
+            hometown: 'Lâm Đồng',
+            targetGroup: 'Người nhiễm chất độc hóa học'
+        },        { 
+            id: 7, 
+            studentId: '21520007', 
+            name: 'Vũ Văn Giang', 
+            email: 'giang.vu@student.uit.edu.vn', 
+            faculty: 'Công nghệ thông tin', 
+            program: 'Khoa học máy tính', 
+            enrollmentYear: '2021', 
+            status: 'Thôi học', 
+            phone: '0903456789', 
+            dob: '2003-08-12', 
+            permanentAddress: {
+                province: 'TP.HCM',
+                district: 'Quận 10',
+                ward: '89 Trần Hưng Đạo, Phường 3'
+            },
+            gender: 'Nam',
+            hometown: 'Bắc Ninh',
+            targetGroup: 'Người khuyết tật'
+        },        { 
+            id: 8, 
+            studentId: '21520008', 
+            name: 'Lý Thị Hoa', 
+            email: 'hoa.ly@student.uit.edu.vn', 
+            faculty: 'Công nghệ thông tin', 
+            program: 'Hệ thống thông tin', 
+            enrollmentYear: '2021', 
+            status: 'Đang học', 
+            phone: '0906543210', 
+            dob: '2003-04-30', 
+            permanentAddress: {
+                province: 'TP.HCM',
+                district: 'Tân Bình',
+                ward: '34 Cách Mạng Tháng 8, Phường 6'
+            },
+            gender: 'Nữ',
+            hometown: 'Huế',
+            targetGroup: 'Hộ nghèo'
+        },
+        { 
+            id: 9, 
+            studentId: '21520009', 
+            name: 'Trịnh Văn Khoa', 
+            email: 'khoa.trinh@student.uit.edu.vn', 
+            faculty: 'Khoa học máy tính', 
+            program: 'An toàn thông tin', 
+            enrollmentYear: '2021', 
+            status: 'Đang học', 
+            phone: '0902345678', 
+            dob: '2003-06-22', 
+            permanentAddress: {
+                province: 'TP.HCM',
+                district: 'Bình Tân',
+                ward: '112 Lạc Long Quân, Phường 3'
+            },
+            gender: 'Nam',
+            hometown: 'An Giang',            targetGroup: 'Vùng đặc biệt khó khăn'
+        }
+    ]);
+    const [filteredStudents, setFilteredStudents] = useState<Student[]>(students);
     const [searchQuery, setSearchQuery] = useState("");
     const [statusFilter, setStatusFilter] = useState("all");
     const [programFilter, setProgramFilter] = useState("all");
     const [openDialog, setOpenDialog] = useState(false);
-    const [currentStudent, setCurrentStudent] = useState<Student | null>(null);
-    const [isEditing, setIsEditing] = useState(false);
-    const [confirmDelete, setConfirmDelete] = useState<{ open: boolean; id: string | null }>({ open: false, id: null });
+    const [currentStudent, setCurrentStudent] = useState<Student | null>(null);    const [isEditing, setIsEditing] = useState(false);
+    // Không sử dụng phân trang nữa, hiển thị tất cả trong thanh cuộn
+    // const [page, setPage] = useState(0);
+    // const [rowsPerPage, setRowsPerPage] = useState(5);
+    const [confirmDelete, setConfirmDelete] = useState<{ open: boolean; id: number | null }>({ open: false, id: null });
     const [detailDialog, setDetailDialog] = useState<{ open: boolean; student: Student | null }>({ open: false, student: null });
-    const [errorDialog, setErrorDialog] = useState<{ open: boolean; message: string }>({ open: false, message: '' });
 
     // Extract unique programs and statuses for filters
-    const uniquePrograms = Array.from(new Set(students.map(s => s.majorId)));
-    const uniqueStatuses = Array.from(new Set(students.map(s => s.status || 'đang học')));
-
-    useEffect(() => {
-        const fetchStudents = async () => {
-            try {
-                setLoading(true);
-                const data = await studentApi.getStudents();
-                setStudents(data);
-                setFilteredStudents(data);
-            } catch (err) {
-                setError('Failed to fetch students');
-                console.error(err);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchStudents();
-    }, []);
+    const uniquePrograms = Array.from(new Set(students.map(s => s.program)));
+    const uniqueStatuses = Array.from(new Set(students.map(s => s.status)));
 
     useEffect(() => {
         applyFilters();
-    }, [searchQuery, statusFilter, programFilter, students]);
-
-    const applyFilters = () => {
+    }, [searchQuery, statusFilter, programFilter, students]);    const applyFilters = () => {
         let result = [...students];
 
         if (searchQuery) {
             result = result.filter(student => 
-                student.fullName.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                student.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
                 student.studentId.toLowerCase().includes(searchQuery.toLowerCase())
             );
         }
@@ -106,20 +278,89 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
         }
 
         if (programFilter !== "all") {
-            result = result.filter(student => student.majorId === programFilter);
+            result = result.filter(student => student.program === programFilter);
         }
 
         setFilteredStudents(result);
+    };    // Không cần các hàm xử lý phân trang nữa
+
+    const handleOpenDialog = (edit: boolean = false, student?: Student) => {
+        setIsEditing(edit);
+        if (edit && student) {
+            setCurrentStudent(student);        } else {            setCurrentStudent({
+                id: students.length + 1,
+                studentId: '',
+                name: '',
+                email: '',
+                faculty: '',
+                program: '',
+                enrollmentYear: '',
+                status: 'Đang học',
+                phone: '',
+                dob: '',
+                permanentAddress: {
+                    province: '',
+                    district: '',
+                    ward: ''
+                },
+                gender: '',
+                hometown: '',
+                targetGroup: ''
+            });
+        }
+        setOpenDialog(true);
     };
 
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleCloseDialog = () => {
+        setOpenDialog(false);
+        setCurrentStudent(null);
+    };
+
+    const handleSaveStudent = () => {
+        if (!currentStudent) return;
+        
+        if (isEditing) {
+            setStudents(students.map(s => s.id === currentStudent.id ? currentStudent : s));
+        } else {
+            setStudents([...students, currentStudent]);
+        }
+        handleCloseDialog();
+    };
+
+    const handleDeleteStudent = (id: number) => {
+        setConfirmDelete({ open: true, id });
+    };
+
+    const handleConfirmDelete = () => {
+        if (confirmDelete.id !== null) {
+            setStudents(students.filter(s => s.id !== confirmDelete.id));
+        }
+        setConfirmDelete({ open: false, id: null });
+    };
+
+    const handleCancelDelete = () => {
+        setConfirmDelete({ open: false, id: null });
+    };    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (!currentStudent) return;
         
         const { name, value } = e.target;
-        setCurrentStudent({
-            ...currentStudent,
-            [name]: value
-        });
+        
+        // Handle nested permanentAddress fields
+        if (name.startsWith('permanentAddress.')) {
+            const addressField = name.split('.')[1];
+            setCurrentStudent({
+                ...currentStudent,
+                permanentAddress: {
+                    ...currentStudent.permanentAddress,
+                    [addressField]: value
+                }
+            });
+        } else {
+            setCurrentStudent({
+                ...currentStudent,
+                [name]: value
+            });
+        }
     };
 
     const handleSelectChange = (e: any) => {
@@ -132,124 +373,21 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
         });
     };
 
-    const handleOpenDialog = (edit: boolean = false, student?: Student) => {
-        setIsEditing(edit);
-        
-        if (edit && student) {
-            setCurrentStudent({
-                ...student,
-                dateOfBirth: new Date(student.dateOfBirth)
-            });
-        } else {
-            setCurrentStudent({
-                studentId: '',
-                fullName: '',
-                dateOfBirth: new Date(),
-                gender: '',
-                hometown: '',
-                districtId: '',
-                priorityObjectId: '',
-                majorId: '',
-                email: '',
-                phone: '',
-                status: 'đang học',
-                faculty: ''
-            });
-        }
-        setOpenDialog(true);
-    };
-
-    const handleCloseDialog = () => {
-        setOpenDialog(false);
-        setCurrentStudent(null);
-    };
-
-    const handleSaveStudent = async () => {
-        if (!currentStudent) return;
-        
-        try {
-            // Convert dateOfBirth to string format for API
-            const studentData = {
-                ...currentStudent,
-                dateOfBirth: typeof currentStudent.dateOfBirth === 'string' 
-                    ? currentStudent.dateOfBirth 
-                    : currentStudent.dateOfBirth.toISOString().split('T')[0]
-            };
-            
-            if (isEditing) {
-                await studentApi.updateStudent(studentData.studentId, studentData);
-                setStudents(students.map(s => s.studentId === studentData.studentId ? studentData : s));
-            } else {
-                const newStudent = await studentApi.createStudent(studentData);
-                setStudents([...students, newStudent]);
-            }
-            handleCloseDialog();
-        } catch (err: any) {
-            console.error('Error saving student:', err);
-            const errorMessage = err?.response?.data?.message || err?.message || 'Không thể lưu thông tin sinh viên. Vui lòng kiểm tra lại dữ liệu và thử lại.';
-            setErrorDialog({ open: true, message: errorMessage });
-        }
-    };
-
-    const handleDeleteStudent = (studentId: string) => {
-        setConfirmDelete({ open: true, id: studentId });
-    };
-
-    const handleConfirmDelete = async () => {
-        if (confirmDelete.id !== null) {
-            try {
-                await studentApi.deleteStudent(confirmDelete.id);
-                setStudents(students.filter(s => s.studentId !== confirmDelete.id));
-            } catch (err: any) {
-                console.error('Error deleting student:', err);
-                const errorMessage = err?.response?.data?.message || err?.message || 'Không thể xóa sinh viên. Có thể sinh viên này đang có dữ liệu liên quan trong hệ thống.';
-                setErrorDialog({ open: true, message: errorMessage });
-            }
-        }
-        setConfirmDelete({ open: false, id: null });
-    };
-
-    const handleCancelDelete = () => {
-        setConfirmDelete({ open: false, id: null });
-    };
-
     const openStudentDetails = (student: Student) => {
         setDetailDialog({ open: true, student });
     };
 
     const closeStudentDetails = () => {
         setDetailDialog({ open: false, student: null });
-    };
-
+    };    // Helper function for status chips
     const getStatusChipColor = (status: string) => {
         switch (status) {
-            case 'active': 
-            case 'đang học': return 'success';
-            case 'inactive': 
-            case 'thôi học': return 'error';
+            case 'Đang học': return 'success';
+            case 'Bảo lưu': return 'warning';
+            case 'Thôi học': return 'error';
             default: return 'default';
         }
-    };
-
-    if (loading) {
-        return (
-            <ThemeLayout role="academic" onLogout={onLogout}>
-                <UserInfo user={user} />
-                <Typography sx={{ textAlign: 'center', mt: 4 }}>Loading...</Typography>
-            </ThemeLayout>
-        );
-    }
-
-    if (error) {
-        return (
-            <ThemeLayout role="academic" onLogout={onLogout}>
-                <UserInfo user={user} />
-                <Typography color="error" sx={{ textAlign: 'center', mt: 4 }}>{error}</Typography>
-            </ThemeLayout>
-        );
-    }
-
-    return (
+    };return (
         <ThemeLayout role="academic" onLogout={onLogout}>
             <UserInfo user={user} />
             <Box sx={{ display: 'flex', justifyContent: 'center', mt: '0.25rem' }}>
@@ -329,8 +467,7 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
                                 }}
                             />
                         </Grid>
-                        <Grid item xs={12} md={2.5}>
-                            <FormControl fullWidth size="small">
+                        <Grid item xs={12} md={2.5}>                                <FormControl fullWidth size="small">
                                 <InputLabel id="status-filter-label">Trạng thái</InputLabel>
                                 <Select
                                     labelId="status-filter-label"
@@ -372,8 +509,7 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
                                     ))}
                                 </Select>
                             </FormControl>
-                        </Grid>
-                        <Grid item xs={12} md={2.5}>
+                        </Grid>                        <Grid item xs={12} md={2.5}>
                             <FormControl fullWidth size="small">
                                 <InputLabel id="program-filter-label">Ngành học</InputLabel>
                                 <Select
@@ -418,6 +554,7 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
                             </FormControl>
                         </Grid>
                         <Grid item xs={12} md={3.5} sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
+                            
                             <Button
                                 variant="contained"
                                 color="primary"
@@ -428,15 +565,12 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
                                 Thêm sinh viên
                             </Button>
                         </Grid>
-                    </Grid>
-
-                    <TableContainer 
+                    </Grid>                <TableContainer 
                         component={Paper} 
                         sx={{ 
                             mt: 2,
                             borderRadius: '8px', 
                             boxShadow: '0 4px 10px rgba(0, 0, 0, 0.1)', 
-                            border: '1px solid #e0e0e0',
                             width: '100%', 
                             maxWidth: '100%', 
                             minWidth: 1100,
@@ -452,21 +586,21 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
                             }
                         }}
                     >
-                        <Table size="medium" stickyHeader sx={{ tableLayout: 'fixed' }}>
-                            <TableHead>
+                        <Table size="medium" stickyHeader sx={{ tableLayout: 'fixed' }}>                            <TableHead>
                                 <TableRow>
                                     <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '16px', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6', width: '12%' }}>MSSV</TableCell>
                                     <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '16px', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6', width: '20%' }}>Họ và Tên</TableCell>
                                     <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '16px', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6', width: '25%' }}>Email</TableCell>
-                                    <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '16px', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6', width: '8%' }}>Ngành</TableCell>
-                                    <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '16px', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6', width: '15%' }}>Trạng thái</TableCell>
+                                    <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '16px', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6', width: '8%' }}>Khóa</TableCell>
+                                    <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '16px', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6', width: '15%' }}>Ngành</TableCell>
+                                    <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '16px', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6', width: '10%' }}>Trạng thái</TableCell>
                                     <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '16px', fontFamily: '"Varela Round", sans-serif', textAlign: 'center', backgroundColor: '#6ebab6', width: '10%' }}>Thao tác</TableCell>
                                 </TableRow>
                             </TableHead>
                             <TableBody>
                                 {filteredStudents.map((student) => (
                                     <TableRow
-                                        key={student.studentId}
+                                        key={student.id}
                                         sx={{ 
                                             '&:hover': { backgroundColor: '#f5f5f5', cursor: 'pointer' }, 
                                             '&:last-child td, &:last-child th': { borderBottom: 'none' } 
@@ -474,13 +608,14 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
                                         onClick={() => openStudentDetails(student)}
                                     >
                                         <TableCell sx={{ fontSize: '16px', fontFamily: '"Varela Round", sans-serif', fontWeight: 800 }}>{student.studentId}</TableCell>
-                                        <TableCell sx={{ fontSize: '16px', fontFamily: '"Varela Round", sans-serif' }}>{student.fullName}</TableCell>
+                                        <TableCell sx={{ fontSize: '16px', fontFamily: '"Varela Round", sans-serif' }}>{student.name}</TableCell>
                                         <TableCell sx={{ fontSize: '16px', fontFamily: '"Varela Round", sans-serif' }}>{student.email}</TableCell>
-                                        <TableCell sx={{ fontSize: '16px', fontFamily: '"Varela Round", sans-serif' }}>{student.majorId}</TableCell>
+                                        <TableCell sx={{ fontSize: '16px', fontFamily: '"Varela Round", sans-serif' }}>{student.enrollmentYear}</TableCell>
+                                        <TableCell sx={{ fontSize: '16px', fontFamily: '"Varela Round", sans-serif' }}>{student.program}</TableCell>
                                         <TableCell sx={{ fontSize: '16px', fontFamily: '"Varela Round", sans-serif' }}>
                                             <Chip 
-                                                label={student.status || 'đang học'} 
-                                                color={getStatusChipColor(student.status || 'đang học')} 
+                                                label={student.status} 
+                                                color={getStatusChipColor(student.status)} 
                                                 size="small" 
                                                 sx={{ fontWeight: 600 }}
                                             />
@@ -501,7 +636,7 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
                                                 color="error"
                                                 onClick={(e) => {
                                                     e.stopPropagation();
-                                                    handleDeleteStudent(student.studentId);
+                                                    handleDeleteStudent(student.id);
                                                 }}
                                             >
                                                 <DeleteIcon fontSize="small" />
@@ -511,7 +646,7 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
                                 ))}
                                 {filteredStudents.length === 0 && (
                                     <TableRow>
-                                        <TableCell colSpan={6} align="center" sx={{ py: 3 }}>
+                                        <TableCell colSpan={7} align="center" sx={{ py: 3 }}>
                                             <Typography variant="body1" color="text.secondary">
                                                 Không tìm thấy sinh viên nào phù hợp với điều kiện tìm kiếm
                                             </Typography>
@@ -552,8 +687,7 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
                     pt: 2,
                     pb: 0,
                     background: 'transparent',
-                }}>
-                    {currentStudent && (
+                }}>                    {currentStudent && (
                         <Grid container spacing={2} sx={{ mt: 0.5 }}>
                             <Grid item xs={12} md={6}>
                                 <TextField
@@ -577,13 +711,13 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
                             </Grid>
                             <Grid item xs={12} md={6}>
                                 <TextField
-                                    name="fullName"
+                                    name="name"
                                     label="Họ và tên"
                                     fullWidth
                                     margin="normal"
                                     required
                                     variant="outlined"
-                                    value={currentStudent.fullName}
+                                    value={currentStudent.name}
                                     onChange={handleInputChange}
                                     sx={{
                                         borderRadius: '12px',
@@ -634,7 +768,7 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
                             </Grid>
                             <Grid item xs={12} md={6}>
                                 <TextField
-                                    name="dateOfBirth"
+                                    name="dob"
                                     label="Ngày sinh"
                                     type="date"
                                     fullWidth
@@ -642,11 +776,7 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
                                     required
                                     variant="outlined"
                                     InputLabelProps={{ shrink: true }}
-                                    value={
-                                        typeof currentStudent.dateOfBirth === 'string' 
-                                            ? currentStudent.dateOfBirth 
-                                            : currentStudent.dateOfBirth.toISOString().split('T')[0]
-                                    }
+                                    value={currentStudent.dob}
                                     onChange={handleInputChange}
                                     sx={{
                                         borderRadius: '12px',
@@ -657,8 +787,7 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
                                     }}
                                 />
                             </Grid>
-                            <Grid item xs={12} md={6}>
-                                <FormControl fullWidth margin="normal" sx={{ background: '#f7faff', borderRadius: '12px' }}>
+                            <Grid item xs={12} md={6}>                                <FormControl fullWidth margin="normal" sx={{ background: '#f7faff', borderRadius: '12px' }}>
                                     <InputLabel id="gender-select-label" sx={{ fontWeight: 500 }}>Giới tính</InputLabel>
                                     <Select
                                         labelId="gender-select-label"
@@ -714,131 +843,86 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
                                 />
                             </Grid>
                             <Grid item xs={12} md={6}>
-                                <FormControl fullWidth margin="normal" sx={{ background: '#f7faff', borderRadius: '12px' }}>
-                                    <InputLabel id="district-select-label" sx={{ fontWeight: 500 }}>Quận/Huyện</InputLabel>
-                                    <Select
-                                        labelId="district-select-label"
-                                        name="districtId"
-                                        value={currentStudent.districtId || ''}
-                                        label="Quận/Huyện"
-                                        onChange={handleSelectChange}
-                                        sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '12px', '& .MuiOutlinedInput-notchedOutline': { borderRadius: '12px', borderColor: '#d8d8d8' } }}
-                                        MenuProps={{
-                                            PaperProps: {
-                                                elevation: 4,
-                                                sx: {
-                                                    borderRadius: 3,
-                                                    minWidth: 200,
-                                                    boxShadow: '0 4px 24px 0 rgba(0,0,0,0.10)',
-                                                    p: 1,
-                                                },
-                                            },
-                                            MenuListProps: {
-                                                sx: {
-                                                    display: 'flex',
-                                                    flexDirection: 'column',
-                                                    gap: 0.5,
-                                                    fontFamily: '"Varela Round", sans-serif',
-                                                    borderRadius: 3,
-                                                    p: 0,
-                                                },
-                                            },
-                                        }}
-                                    >
-                                        <MenuItem value="Quận 1" sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>Quận 1</MenuItem>
-                                        <MenuItem value="Quận 2" sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>Quận 2</MenuItem>
-                                        <MenuItem value="Quận 3" sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>Quận 3</MenuItem>
-                                        <MenuItem value="Quận 4" sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>Quận 4</MenuItem>
-                                        <MenuItem value="Quận 5" sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>Quận 5</MenuItem>
-                                        <MenuItem value="Quận 7" sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>Quận 7</MenuItem>
-                                        <MenuItem value="Quận 8" sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>Quận 8</MenuItem>
-                                        <MenuItem value="Quận 10" sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>Quận 10</MenuItem>
-                                    </Select>
-                                </FormControl>
+                                <TextField
+                                    name="targetGroup"
+                                    label="Đối tượng ưu tiên"
+                                    fullWidth
+                                    margin="normal"
+                                    variant="outlined"
+                                    value={currentStudent.targetGroup || ''}
+                                    onChange={handleInputChange}
+                                    sx={{
+                                        borderRadius: '12px',
+                                        background: '#f7faff',
+                                        '& .MuiOutlinedInput-root': { borderRadius: '12px' },
+                                        '& .MuiInputLabel-root': { fontWeight: 500 },
+                                        '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d8d8d8' },
+                                    }}
+                                />
                             </Grid>
                             <Grid item xs={12} md={6}>
-                                <FormControl fullWidth margin="normal" sx={{ background: '#f7faff', borderRadius: '12px' }}>
-                                    <InputLabel id="priority-select-label" sx={{ fontWeight: 500 }}>Đối tượng ưu tiên</InputLabel>
-                                    <Select
-                                        labelId="priority-select-label"
-                                        name="priorityObjectId"
-                                        value={currentStudent.priorityObjectId || ''}
-                                        label="Đối tượng ưu tiên"
-                                        onChange={handleSelectChange}
-                                        sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '12px', '& .MuiOutlinedInput-notchedOutline': { borderRadius: '12px', borderColor: '#d8d8d8' } }}
-                                        MenuProps={{
-                                            PaperProps: {
-                                                elevation: 4,
-                                                sx: {
-                                                    borderRadius: 3,
-                                                    minWidth: 250,
-                                                    boxShadow: '0 4px 24px 0 rgba(0,0,0,0.10)',
-                                                    p: 1,
-                                                },
-                                            },
-                                            MenuListProps: {
-                                                sx: {
-                                                    display: 'flex',
-                                                    flexDirection: 'column',
-                                                    gap: 0.5,
-                                                    fontFamily: '"Varela Round", sans-serif',
-                                                    borderRadius: 3,
-                                                    p: 0,
-                                                },
-                                            },
-                                        }}
-                                    >
-                                        <MenuItem value="Sinh viên dân tộc thiểu số" sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>Sinh viên dân tộc thiểu số</MenuItem>
-                                        <MenuItem value="Sinh viên hộ cận nghèo" sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>Sinh viên hộ cận nghèo</MenuItem>
-                                    </Select>
-                                </FormControl>
+                                <TextField
+                                    name="faculty"
+                                    label="Khoa"
+                                    fullWidth
+                                    margin="normal"
+                                    required
+                                    variant="outlined"
+                                    value={currentStudent.faculty}
+                                    onChange={handleInputChange}
+                                    sx={{
+                                        borderRadius: '12px',
+                                        background: '#f7faff',
+                                        '& .MuiOutlinedInput-root': { borderRadius: '12px' },
+                                        '& .MuiInputLabel-root': { fontWeight: 500 },
+                                        '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d8d8d8' },
+                                    }}
+                                />
                             </Grid>
                             <Grid item xs={12} md={6}>
-                                <FormControl fullWidth margin="normal" sx={{ background: '#f7faff', borderRadius: '12px' }}>
-                                    <InputLabel id="major-select-label" sx={{ fontWeight: 500 }}>Ngành học *</InputLabel>
-                                    <Select
-                                        labelId="major-select-label"
-                                        name="majorId"
-                                        value={currentStudent.majorId || ''}
-                                        label="Ngành học *"
-                                        onChange={handleSelectChange}
-                                        required
-                                        sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '12px', '& .MuiOutlinedInput-notchedOutline': { borderRadius: '12px', borderColor: '#d8d8d8' } }}
-                                        MenuProps={{
-                                            PaperProps: {
-                                                elevation: 4,
-                                                sx: {
-                                                    borderRadius: 3,
-                                                    minWidth: 250,
-                                                    boxShadow: '0 4px 24px 0 rgba(0,0,0,0.10)',
-                                                    p: 1,
-                                                },
-                                            },
-                                            MenuListProps: {
-                                                sx: {
-                                                    display: 'flex',
-                                                    flexDirection: 'column',
-                                                    gap: 0.5,
-                                                    fontFamily: '"Varela Round", sans-serif',
-                                                    borderRadius: 3,
-                                                    p: 0,
-                                                },
-                                            },
-                                        }}
-                                    >
-                                        <MenuItem value="Công nghệ thông tin" sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>Công nghệ thông tin</MenuItem>
-                                        <MenuItem value="Hệ thống thông tin" sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>Hệ thống thông tin</MenuItem>
-                                        <MenuItem value="Khoa học máy tính" sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>Khoa học máy tính</MenuItem>
-                                    </Select>
-                                </FormControl>
+                                <TextField
+                                    name="program"
+                                    label="Ngành học"
+                                    fullWidth
+                                    margin="normal"
+                                    required
+                                    variant="outlined"
+                                    value={currentStudent.program}
+                                    onChange={handleInputChange}
+                                    sx={{
+                                        borderRadius: '12px',
+                                        background: '#f7faff',
+                                        '& .MuiOutlinedInput-root': { borderRadius: '12px' },
+                                        '& .MuiInputLabel-root': { fontWeight: 500 },
+                                        '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d8d8d8' },
+                                    }}
+                                />
                             </Grid>
                             <Grid item xs={12} md={6}>
-                                <FormControl fullWidth margin="normal" sx={{ background: '#f7faff', borderRadius: '12px' }}>
+                                <TextField
+                                    name="enrollmentYear"
+                                    label="Năm nhập học"
+                                    fullWidth
+                                    margin="normal"
+                                    required
+                                    variant="outlined"
+                                    value={currentStudent.enrollmentYear}
+                                    onChange={handleInputChange}
+                                    sx={{
+                                        borderRadius: '12px',
+                                        background: '#f7faff',
+                                        '& .MuiOutlinedInput-root': { borderRadius: '12px' },
+                                        '& .MuiInputLabel-root': { fontWeight: 500 },
+                                        '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d8d8d8' },
+                                    }}
+                                />
+                            </Grid>
+                            <Grid item xs={12} md={6}>                                <FormControl fullWidth margin="normal" sx={{ background: '#f7faff', borderRadius: '12px' }}>
                                     <InputLabel id="status-select-label" sx={{ fontWeight: 500 }}>Trạng thái</InputLabel>
                                     <Select
                                         labelId="status-select-label"
                                         name="status"
-                                        value={currentStudent.status || 'đang học'}
+                                        value={currentStudent.status}
                                         label="Trạng thái"
                                         onChange={handleSelectChange}
                                         sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '12px', '& .MuiOutlinedInput-notchedOutline': { borderRadius: '12px', borderColor: '#d8d8d8' } }}
@@ -862,12 +946,84 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
                                                     p: 0,
                                                 },
                                             },
-                                        }}
-                                    >
-                                        <MenuItem value="đang học" sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>Đang học</MenuItem>
-                                        <MenuItem value="thôi học" sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>Thôi học</MenuItem>
+                                        }}                                    >
+                                        <MenuItem value="Đang học" sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>Đang học</MenuItem>
+                                        <MenuItem value="Bảo lưu" sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>Bảo lưu</MenuItem>
+                                        <MenuItem value="Thôi học" sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>Thôi học</MenuItem>
                                     </Select>
-                                </FormControl>
+                                </FormControl>                            </Grid>
+                            
+                            {/* Permanent Address Section */}
+                            <Grid item xs={12}>
+                                <Divider sx={{ my: 2 }}>
+                                    <Typography variant="h6" sx={{ 
+                                        fontFamily: '"Montserrat", sans-serif',
+                                        fontWeight: 600,
+                                        color: '#555',
+                                        fontSize: '1.1rem',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: 1
+                                    }}>
+                                        <HomeIcon sx={{ fontSize: '1.2rem', color: '#6ebab6' }} />
+                                        Địa chỉ thường trú
+                                    </Typography>
+                                </Divider>
+                            </Grid>
+                            
+                            <Grid item xs={12} md={6}>
+                                <TextField
+                                    name="permanentAddress.province"
+                                    label="Tỉnh/Thành phố"
+                                    fullWidth
+                                    margin="normal"
+                                    variant="outlined"
+                                    value={currentStudent.permanentAddress.province}
+                                    onChange={handleInputChange}
+                                    sx={{
+                                        borderRadius: '12px',
+                                        background: '#f7faff',
+                                        '& .MuiOutlinedInput-root': { borderRadius: '12px' },
+                                        '& .MuiInputLabel-root': { fontWeight: 500 },
+                                        '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d8d8d8' },
+                                    }}
+                                />
+                            </Grid>
+                            <Grid item xs={12} md={6}>
+                                <TextField
+                                    name="permanentAddress.district"
+                                    label="Quận/Huyện"
+                                    fullWidth
+                                    margin="normal"
+                                    variant="outlined"
+                                    value={currentStudent.permanentAddress.district}
+                                    onChange={handleInputChange}
+                                    sx={{
+                                        borderRadius: '12px',
+                                        background: '#f7faff',
+                                        '& .MuiOutlinedInput-root': { borderRadius: '12px' },
+                                        '& .MuiInputLabel-root': { fontWeight: 500 },
+                                        '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d8d8d8' },
+                                    }}
+                                />
+                            </Grid>
+                            <Grid item xs={12}>
+                                <TextField
+                                    name="permanentAddress.ward"
+                                    label="Số nhà, đường, phường/xã"
+                                    fullWidth
+                                    margin="normal"
+                                    variant="outlined"
+                                    value={currentStudent.permanentAddress.ward}
+                                    onChange={handleInputChange}
+                                    sx={{
+                                        borderRadius: '12px',
+                                        background: '#f7faff',
+                                        '& .MuiOutlinedInput-root': { borderRadius: '12px' },
+                                        '& .MuiInputLabel-root': { fontWeight: 500 },
+                                        '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d8d8d8' },
+                                    }}
+                                />
                             </Grid>
                         </Grid>
                     )}
@@ -887,10 +1043,7 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
                     <Button variant="contained" color="primary" onClick={handleSaveStudent}>
                         {isEditing ? "Cập nhật" : "Thêm mới"}
                     </Button>
-                </DialogActions>
-            </Dialog>
-
-            {/* Student Detail Dialog */}
+                </DialogActions>            </Dialog>              {/* Student Detail Dialog */}
             <Dialog open={detailDialog.open} onClose={closeStudentDetails} maxWidth="md" fullWidth
                 sx={{
                     '& .MuiPaper-root': {
@@ -936,7 +1089,7 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
                                             mt: 4
                                         }}
                                     >
-                                        {detailDialog.student.fullName.charAt(0)}
+                                        {detailDialog.student.name.charAt(0)}
                                     </Avatar>
                                     <Box sx={{ flexGrow: 1, mt: 4 }}>
                                         <Typography variant="h5" component="h2" sx={{ 
@@ -944,15 +1097,15 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
                                             color: '#333333',
                                             fontFamily: '"Montserrat", sans-serif',
                                         }}>
-                                            {detailDialog.student.fullName}
+                                            {detailDialog.student.name}
                                         </Typography>
                                         <Box sx={{ display: 'flex', alignItems: 'center', mt: 0.5 }}>
                                             <Typography variant="body1" sx={{ color: '#666666', mr: 2, display: 'flex', alignItems: 'center', gap: 0.5 }}>
                                                 <PersonIcon fontSize="small" /> MSSV: {detailDialog.student.studentId}
                                             </Typography>
                                             <Chip 
-                                                label={detailDialog.student.status || 'đang học'} 
-                                                color={getStatusChipColor(detailDialog.student.status || 'đang học')}
+                                                label={detailDialog.student.status} 
+                                                color={getStatusChipColor(detailDialog.student.status)}
                                                 size="small"
                                                 sx={{ fontWeight: 500 }}
                                             />
@@ -987,16 +1140,16 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
                                                 </Typography>
                                                 <Grid container spacing={2}>
                                                     <Grid item xs={12}>
-                                                        <Typography variant="body2" color="text.secondary">Ngành</Typography>
-                                                        <Typography variant="body1">{detailDialog.student.majorId}</Typography>
-                                                    </Grid>
-                                                    <Grid item xs={12}>
                                                         <Typography variant="body2" color="text.secondary">Khoa</Typography>
                                                         <Typography variant="body1">{detailDialog.student.faculty}</Typography>
                                                     </Grid>
                                                     <Grid item xs={12}>
-                                                        <Typography variant="body2" color="text.secondary">Đối tượng ưu tiên</Typography>
-                                                        <Typography variant="body1">{detailDialog.student.priorityObjectId || "Chưa cập nhật"}</Typography>
+                                                        <Typography variant="body2" color="text.secondary">Chương trình đào tạo</Typography>
+                                                        <Typography variant="body1">{detailDialog.student.program}</Typography>
+                                                    </Grid>
+                                                    <Grid item xs={12}>
+                                                        <Typography variant="body2" color="text.secondary">Năm nhập học</Typography>
+                                                        <Typography variant="body1">{detailDialog.student.enrollmentYear}</Typography>
                                                     </Grid>
                                                 </Grid>
                                             </Box>
@@ -1023,7 +1176,7 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
                                                     <Grid item xs={12}>
                                                         <Typography variant="body2" color="text.secondary">Ngày sinh</Typography>
                                                         <Typography variant="body1">
-                                                            {new Date(detailDialog.student.dateOfBirth).toLocaleDateString('vi-VN')}
+                                                            {new Date(detailDialog.student.dob).toLocaleDateString('vi-VN')}
                                                         </Typography>
                                                     </Grid>
                                                     <Grid item xs={12}>
@@ -1031,12 +1184,12 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
                                                         <Typography variant="body1">{detailDialog.student.gender || "Chưa cập nhật"}</Typography>
                                                     </Grid>
                                                     <Grid item xs={12}>
-                                                        <Typography variant="body2" color="text.secondary">Tỉnh/Thành phố</Typography>
+                                                        <Typography variant="body2" color="text.secondary">Quê quán</Typography>
                                                         <Typography variant="body1">{detailDialog.student.hometown || "Chưa cập nhật"}</Typography>
                                                     </Grid>
                                                     <Grid item xs={12}>
-                                                        <Typography variant="body2" color="text.secondary">Quận/Huyện</Typography>
-                                                        <Typography variant="body1">{detailDialog.student.districtId || "Chưa cập nhật"}</Typography>
+                                                        <Typography variant="body2" color="text.secondary">Đối tượng ưu tiên</Typography>
+                                                        <Typography variant="body1">{detailDialog.student.targetGroup || "Chưa cập nhật"}</Typography>
                                                     </Grid>
                                                 </Grid>
                                             </Box>
@@ -1075,6 +1228,20 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
                                                             <Box>
                                                                 <Typography variant="body2" color="text.secondary">Số điện thoại</Typography>
                                                                 <Typography variant="body1">{detailDialog.student.phone}</Typography>
+                                                            </Box>
+                                                        </Box>
+                                                    </Grid>
+                                                    <Grid item xs={12}>
+                                                        <Box sx={{ display: 'flex', alignItems: 'flex-start' }}>
+                                                            <HomeIcon sx={{ color: '#999', mr: 1, mt: 0.3, fontSize: '1.1rem' }} />                                                            <Box>
+                                                                <Typography variant="body2" color="text.secondary">Địa chỉ thường trú</Typography>
+                                                                <Typography variant="body1">
+                                                                    {[
+                                                                        detailDialog.student.permanentAddress.ward,
+                                                                        detailDialog.student.permanentAddress.district,
+                                                                        detailDialog.student.permanentAddress.province
+                                                                    ].filter(Boolean).join(', ')}
+                                                                </Typography>
                                                             </Box>
                                                         </Box>
                                                     </Grid>
@@ -1138,12 +1305,12 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
                     Xác nhận xóa sinh viên
                 </DialogTitle>
                 <DialogContent>
-                    <Typography 
-                        id="delete-dialog-description" 
+                    <Typography
+                        id="delete-dialog-description"
                         component="div"
                         sx={{
                             fontSize: '17px',
-                            color: '#5c6c7c', 
+                            color: '#5c6c7c',
                             textAlign: 'center',
                             fontWeight: 400
                         }}
@@ -1157,53 +1324,6 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
                     </Button>
                     <Button onClick={handleConfirmDelete} color="error" variant="contained">
                         Xóa
-                    </Button>
-                </DialogActions>
-            </Dialog>
-
-            {/* Error Dialog */}
-            <Dialog
-                open={errorDialog.open}
-                onClose={() => setErrorDialog({ open: false, message: '' })}
-                aria-labelledby="error-dialog-title"
-                maxWidth="sm"
-                fullWidth
-                sx={{
-                    '& .MuiPaper-root': {
-                        borderRadius: '16px',
-                    },
-                }}
-            >
-                <DialogTitle id="error-dialog-title" sx={{ 
-                    fontFamily: '"Roboto", sans-serif', 
-                    fontWeight: 500,
-                    color: '#d32f2f',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 1
-                }}>
-                    ⚠️ Lỗi
-                </DialogTitle>
-                <DialogContent>
-                    <Typography 
-                        component="div"
-                        sx={{
-                            fontSize: '16px',
-                            color: '#333', 
-                            fontWeight: 400,
-                            lineHeight: 1.5
-                        }}
-                    >
-                        {errorDialog.message}
-                    </Typography>
-                </DialogContent>
-                <DialogActions>
-                    <Button 
-                        onClick={() => setErrorDialog({ open: false, message: '' })} 
-                        color="primary"
-                        variant="contained"
-                    >
-                        Đóng
                     </Button>
                 </DialogActions>
             </Dialog>
