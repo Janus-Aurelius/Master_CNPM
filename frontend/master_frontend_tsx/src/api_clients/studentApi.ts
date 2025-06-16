@@ -1,50 +1,75 @@
-import axios from 'axios';
+import axiosInstance from './axios';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+// Add request interceptor to add token
+axiosInstance.interceptors.request.use((config: any) => {
+    const token = localStorage.getItem('token');
+    if (token && config.headers) {
+        config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+});
 
 export interface Student {
-    id: string;
     studentId: string;
-    name: string;
-    email: string;
-    faculty: string;
-    program: string;
-    enrollmentYear: string;
-    status: string;
-    phone: string;
-    dob: string;
-    address: string;
-    avatar?: string;
-    gender?: string;
-    hometown?: string;
-    targetGroup?: string;
+    fullName: string;
+    dateOfBirth: Date | string;  // Allow both Date and string to handle API response
+    gender: string;
+    hometown: string;           // Sẽ chứa tên tỉnh
+    districtId: string;         // Sẽ chứa tên huyện
+    priorityObjectId: string;   // Sẽ chứa tên đối tượng ưu tiên
+    majorId: string;            // Sẽ chứa tên ngành
+    email?: string;
+    phone?: string;
+    status?: 'active' | 'inactive' | 'đang học' | 'thôi học';
+    faculty?: string;           // Tên khoa
+}
+
+interface ApiResponse<T> {
+    success: boolean;
+    data: T;
+    message?: string;
 }
 
 export const studentApi = {
     getStudents: async (): Promise<Student[]> => {
-        const response = await axios.get(`${API_URL}/students`);
-        return response.data as Student[];
+        const { data } = await axiosInstance.get<ApiResponse<Student[]>>('/academic/students');
+        if (!data || !data.success) {
+            throw new Error(data?.message || 'No data received from server');
+        }
+        return data.data || [];
     },
 
     createStudent: async (student: Omit<Student, 'id'>): Promise<Student> => {
-        const response = await axios.post(`${API_URL}/students`, student);
-        return response.data as Student;
+        const { data } = await axiosInstance.post<ApiResponse<Student>>('/academic/students', student);
+        if (!data || !data.success) {
+            throw new Error(data?.message || 'Failed to create student');
+        }
+        return data.data;
     },
 
     updateStudent: async (id: string, student: Student): Promise<Student> => {
-        const response = await axios.put(`${API_URL}/students/${id}`, student);
-        return response.data as Student;
+        const { data } = await axiosInstance.put<ApiResponse<Student>>(`/academic/students/${id}`, student);
+        if (!data || !data.success) {
+            throw new Error(data?.message || 'Failed to update student');
+        }
+        return data.data;
     },
 
     deleteStudent: async (id: string): Promise<void> => {
-        await axios.delete(`${API_URL}/students/${id}`);
+        const { data } = await axiosInstance.delete<ApiResponse<void>>(`/academic/students/${id}`);
+        if (!data || !data.success) {
+            throw new Error(data?.message || 'Failed to delete student');
+        }
     },
 
     searchStudents: async (query: string): Promise<Student[]> => {
-        const response = await axios.get(`${API_URL}/students/search`, {
+        const { data } = await axiosInstance.get<ApiResponse<Student[]>>('/academic/students/search', {
             params: { query }
         });
-        return response.data as Student[];
+        if (!data || !data.success) {
+            throw new Error(data?.message || 'No data received from server');
+        }
+        return data.data || [];
     }
 };
 

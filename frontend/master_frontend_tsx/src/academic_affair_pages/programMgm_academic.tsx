@@ -61,35 +61,31 @@ export default function ProgramMgmAcademic({ user, onLogout }: AcademicPageProps
         message: '',
         severity: 'error'
     });
+    const [oldKeys, setOldKeys] = useState<{ maNganh: string, maMonHoc: string, maHocKy: string } | null>(null);
+
+    const fetchPrograms = async () => {
+        try {
+            setLoading(true);
+            const response = await programApi.getPrograms();
+            const formattedPrograms = response.map((program: any) => ({
+                id: program.id || 0,
+                maNganh: program.maNganh || program.manganh || '',
+                maMonHoc: program.maMonHoc || program.mamonhoc || '',
+                maHocKy: program.maHocKy || program.mahocky || '',
+                ghiChu: program.ghiChu || program.ghichu || '',
+                thoiGianBatDau: program.thoiGianBatDau || program.thoigianbatdau || '',
+                thoiGianKetThuc: program.thoiGianKetThuc || program.thoigianketthuc || ''
+            }));
+            setPrograms(formattedPrograms);
+            setError(null);
+        } catch (err) {
+            setError('Failed to fetch programs');
+        } finally {
+            setLoading(false);
+        }
+    };
 
     useEffect(() => {
-        const fetchPrograms = async () => {
-            try {
-                setLoading(true);
-                const response = await programApi.getPrograms();
-                console.log('API Response:', response);
-                
-                // Kiểm tra và chuyển đổi dữ liệu
-                const formattedPrograms = Array.isArray(response) 
-                    ? response.map((program: any) => ({
-                        id: program.id || 0,
-                        maNganh: program.maNganh || program.manganh || '',
-                        maMonHoc: program.maMonHoc || program.mamonhoc || '',
-                        maHocKy: program.maHocKy || program.mahocky || '',
-                        ghiChu: program.ghiChu || program.ghichu || ''
-                    }))
-                    : [];
-                
-                console.log('Formatted programs:', formattedPrograms);
-                setPrograms(formattedPrograms);
-                setError(null);
-            } catch (err) {
-                console.error('Error fetching programs:', err);
-                setError('Failed to fetch programs');
-            } finally {
-                setLoading(false);
-            }
-        };
         fetchPrograms();
     }, []);
 
@@ -111,6 +107,11 @@ export default function ProgramMgmAcademic({ user, onLogout }: AcademicPageProps
         setIsEditing(edit);
         if (edit && program) {
             setCurrentProgram(program);
+            setOldKeys({
+                maNganh: program.maNganh,
+                maMonHoc: program.maMonHoc,
+                maHocKy: program.maHocKy
+            });
         } else {
             setCurrentProgram({
                 id: 0,
@@ -119,6 +120,7 @@ export default function ProgramMgmAcademic({ user, onLogout }: AcademicPageProps
                 maHocKy: "",
                 ghiChu: ""
             });
+            setOldKeys(null);
         }
         setOpenDialog(true);
     };
@@ -133,36 +135,33 @@ export default function ProgramMgmAcademic({ user, onLogout }: AcademicPageProps
 
     const handleSaveProgram = async () => {
         try {
-            if (isEditing) {
-                const updatedProgram = await programApi.updateProgram(
-                    currentProgram.maNganh,
-                    currentProgram.maMonHoc,
-                    currentProgram.maHocKy,
+            // Validate maHocKy exists in HOCKYNAMHOC
+            const isValidSemester = await programApi.validateSemester(currentProgram.maHocKy);
+            if (!isValidSemester) {
+                setSnackbar({
+                    open: true,
+                    message: 'Mã học kỳ không tồn tại trong hệ thống',
+                    severity: 'error'
+                });
+                return;
+            }
+
+            if (isEditing && oldKeys) {
+                await programApi.updateProgram(
+                    oldKeys.maNganh,
+                    oldKeys.maMonHoc,
+                    oldKeys.maHocKy,
                     currentProgram
                 );
-                setPrograms(programs.map(p =>
-                    p.maNganh === currentProgram.maNganh &&
-                    p.maMonHoc === currentProgram.maMonHoc &&
-                    p.maHocKy === currentProgram.maHocKy
-                        ? updatedProgram
-                        : p
-                ));
+                await fetchPrograms();
                 setSnackbar({
                     open: true,
                     message: 'Cập nhật chương trình học thành công!',
                     severity: 'success'
                 });
             } else {
-                const newProgram = await programApi.createProgram(currentProgram);
-                const np: any = newProgram;
-                const mappedProgram = {
-                    id: np.id || 0,
-                    maNganh: np.maNganh || np.manganh || '',
-                    maMonHoc: np.maMonHoc || np.mamonhoc || '',
-                    maHocKy: np.maHocKy || np.mahocky || '',
-                    ghiChu: np.ghiChu || np.ghichu || ''
-                };
-                setPrograms([...programs, mappedProgram]);
+                await programApi.createProgram(currentProgram);
+                await fetchPrograms();
                 setSnackbar({
                     open: true,
                     message: 'Thêm chương trình học thành công!',
@@ -363,6 +362,8 @@ export default function ProgramMgmAcademic({ user, onLogout }: AcademicPageProps
                                             <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '20px', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6' }}>Mã ngành</TableCell>
                                             <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '20px', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6' }}>Mã môn học</TableCell>
                                             <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '20px', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6' }}>Mã học kỳ</TableCell>
+                                            <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '20px', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6' }}>Thời gian bắt đầu</TableCell>
+                                            <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '20px', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6' }}>Thời gian kết thúc</TableCell>
                                             <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '20px', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6' }}>Ghi chú</TableCell>
                                             <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '20px', fontFamily: '"Varela Round", sans-serif', textAlign: 'center', backgroundColor: '#6ebab6' }}>Thao tác</TableCell>
                                         </TableRow>
@@ -383,6 +384,8 @@ export default function ProgramMgmAcademic({ user, onLogout }: AcademicPageProps
                                                 <TableCell sx={{ fontSize: '16px', fontFamily: '"Varela Round", sans-serif', fontWeight: 800}}>{program.maNganh}</TableCell>
                                                 <TableCell sx={{ fontSize: '16px', fontFamily: '"Varela Round", sans-serif' }}>{program.maMonHoc}</TableCell>
                                                 <TableCell sx={{ fontSize: '16px', fontFamily: '"Varela Round", sans-serif' }}>{program.maHocKy}</TableCell>
+                                                <TableCell sx={{ fontSize: '16px', fontFamily: '"Varela Round", sans-serif' }}>{formatDate(program.thoiGianBatDau || '')}</TableCell>
+                                                <TableCell sx={{ fontSize: '16px', fontFamily: '"Varela Round", sans-serif' }}>{formatDate(program.thoiGianKetThuc || '')}</TableCell>
                                                 <TableCell sx={{ fontSize: '16px', fontFamily: '"Varela Round", sans-serif' }}>{program.ghiChu || '-'}</TableCell>
                                                 <TableCell sx={{ textAlign: 'center' }}>
                                                     <IconButton 

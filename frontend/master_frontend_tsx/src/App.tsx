@@ -14,7 +14,6 @@ import TuitionCollecting  from "./student_pages/tuition_collecting";
 import AcademicPage from "./academic_affair_pages/dashboard_academic";
 import ProgramMgmAcademic from "./academic_affair_pages/programMgm_academic.tsx";
 import CourseMgmAcademic from "./academic_affair_pages/courseMgm_academic.tsx";
-import StudentSubjectReqMgmAcademic from "./academic_affair_pages/studentSubjectReqMgm_academic.tsx";
 import OpenCourseMgmAcademic from "./academic_affair_pages/openCourseMgm_academic.tsx";
 import StudentMgmAcademic from "./academic_affair_pages/studentMgm_academic.tsx";
 //Financial
@@ -39,6 +38,7 @@ interface UserData {
 }
 
 export default function App() {
+    console.log('App component loaded');
     const navigate = useNavigate();
     const [user, setUser] = useState<User | null>(null);
     const [isAuthChecked, setIsAuthChecked] = useState(false);
@@ -66,6 +66,7 @@ export default function App() {
 
     // Protected route component
     const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) => {
+        console.log('ProtectedRoute', { user, allowedRoles });
         if (!user) {
             return <Navigate to="/login" replace />;
         }
@@ -81,6 +82,9 @@ export default function App() {
         // Or a spinner/loading indicator
         return <div>Loading...</div>;
     }
+
+    console.log('App render, user:', user);
+    console.log('Academic ProtectedRoute');
 
     return (
 // reroute the flow to login first then to the respective role
@@ -107,14 +111,15 @@ export default function App() {
                             {/* Add more student routes here */}
                         </Routes>
                     </ProtectedRoute>
-                } />                <Route path="/academic/*" element={
+                } />
+
+                <Route path="/academic/*" element={
                     <ProtectedRoute allowedRoles={['academic']}>
                         <Routes>
                             <Route index element={<AcademicPage user={user} onLogout={handleLogout} />} />
                             <Route path="dashboard" element={<AcademicPage user={user} onLogout={handleLogout} />} />
                             <Route path="programsMgm" element={<ProgramMgmAcademic user={user} onLogout={handleLogout} />} />
                             <Route path="subjectMgm" element={<CourseMgmAcademic user={user} onLogout={handleLogout} />} />
-                            <Route path="studentSubjectReq" element={<StudentSubjectReqMgmAcademic user={user} onLogout={handleLogout} />} />
                             <Route path="openCourseMgm" element={<OpenCourseMgmAcademic user={user} onLogout={handleLogout} />} />
                             <Route path="studentMgm" element={<StudentMgmAcademic user={user} onLogout={handleLogout} />} />
                         </Routes>
