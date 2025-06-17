@@ -36,8 +36,9 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.validatePayment = void 0;
+exports.validateBatchCourseTypePrice = exports.validateCourseTypePrice = exports.validatePriorityObject = exports.validatePayment = void 0;
 var express_validator_1 = require("express-validator");
+// Payment validation rules based on IPaymentData interface
 var paymentValidationRules = function () {
     return [
         (0, express_validator_1.body)('studentId')
@@ -48,27 +49,86 @@ var paymentValidationRules = function () {
             .isNumeric()
             .notEmpty()
             .withMessage('Amount is required')
-            .isFloat({ min: 0 })
+            .isFloat({ min: 1 })
             .withMessage('Amount must be greater than 0'),
         (0, express_validator_1.body)('paymentMethod')
             .isString()
             .notEmpty()
-            .withMessage('Payment method is required'),
+            .withMessage('Payment method is required')
+            .isIn(['cash', 'bank_transfer', 'momo', 'vnpay'])
+            .withMessage('Invalid payment method. Must be: cash, bank_transfer, momo, vnpay'),
         (0, express_validator_1.body)('semester')
             .isString()
             .notEmpty()
             .withMessage('Semester is required'),
         (0, express_validator_1.body)('status')
+            .optional()
             .isString()
-            .isIn(['PENDING', 'COMPLETED', 'FAILED', 'REFUNDED'])
-            .withMessage('Invalid payment status'),
+            .isIn(['PAID', 'PARTIAL', 'UNPAID'])
+            .withMessage('Invalid payment status. Must be: PAID, PARTIAL, UNPAID'),
         (0, express_validator_1.body)('paymentDate')
             .isISO8601()
-            .withMessage('Invalid payment date format'),
+            .withMessage('Invalid payment date format (ISO8601 required)'),
         (0, express_validator_1.body)('notes')
             .optional()
             .isString()
-            .withMessage('Notes must be a string')
+            .isLength({ max: 500 })
+            .withMessage('Notes must be a string and cannot exceed 500 characters'),
+        (0, express_validator_1.body)('receiptNumber')
+            .optional()
+            .isString()
+            .isLength({ max: 50 })
+            .withMessage('Receipt number cannot exceed 50 characters')
+    ];
+};
+// Priority object validation rules
+var priorityObjectValidationRules = function () {
+    return [
+        (0, express_validator_1.body)('priorityId')
+            .isString()
+            .notEmpty()
+            .withMessage('Priority ID is required')
+            .isLength({ max: 20 })
+            .withMessage('Priority ID cannot exceed 20 characters'),
+        (0, express_validator_1.body)('priorityName')
+            .isString()
+            .notEmpty()
+            .withMessage('Priority name is required')
+            .isLength({ max: 100 })
+            .withMessage('Priority name cannot exceed 100 characters'),
+        (0, express_validator_1.body)('discountAmount')
+            .isNumeric()
+            .notEmpty()
+            .withMessage('Discount amount is required')
+            .isFloat({ min: 0, max: 50000000 })
+            .withMessage('Discount amount must be between 0 and 50,000,000 VND')
+    ];
+};
+// Course type price validation rules
+var courseTypePriceValidationRules = function () {
+    return [
+        (0, express_validator_1.body)('newPrice')
+            .isNumeric()
+            .notEmpty()
+            .withMessage('New price is required')
+            .isFloat({ min: 100000, max: 5000000 })
+            .withMessage('Price per credit must be between 100,000 and 5,000,000 VND')
+    ];
+};
+// Batch course type price update validation
+var batchCourseTypePriceValidationRules = function () {
+    return [
+        (0, express_validator_1.body)('updates')
+            .isArray({ min: 1 })
+            .withMessage('Updates array is required and must contain at least one item'),
+        (0, express_validator_1.body)('updates.*.courseTypeId')
+            .isString()
+            .notEmpty()
+            .withMessage('Course type ID is required for each update'),
+        (0, express_validator_1.body)('updates.*.newPrice')
+            .isNumeric()
+            .isFloat({ min: 100000, max: 5000000 })
+            .withMessage('New price must be between 100,000 and 5,000,000 VND for each update')
     ];
 };
 var validate = function (req, res, next) {
@@ -76,11 +136,13 @@ var validate = function (req, res, next) {
     if (!errors.isEmpty()) {
         return res.status(400).json({
             success: false,
+            message: 'Validation failed',
             errors: errors.array()
         });
     }
     next();
 };
+// Export validation middlewares
 var validatePayment = function (req, res, next) { return __awaiter(void 0, void 0, void 0, function () {
     return __generator(this, function (_a) {
         switch (_a.label) {
@@ -93,3 +155,39 @@ var validatePayment = function (req, res, next) { return __awaiter(void 0, void 
     });
 }); };
 exports.validatePayment = validatePayment;
+var validatePriorityObject = function (req, res, next) { return __awaiter(void 0, void 0, void 0, function () {
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0: return [4 /*yield*/, Promise.all(priorityObjectValidationRules().map(function (validation) { return validation.run(req); }))];
+            case 1:
+                _a.sent();
+                validate(req, res, next);
+                return [2 /*return*/];
+        }
+    });
+}); };
+exports.validatePriorityObject = validatePriorityObject;
+var validateCourseTypePrice = function (req, res, next) { return __awaiter(void 0, void 0, void 0, function () {
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0: return [4 /*yield*/, Promise.all(courseTypePriceValidationRules().map(function (validation) { return validation.run(req); }))];
+            case 1:
+                _a.sent();
+                validate(req, res, next);
+                return [2 /*return*/];
+        }
+    });
+}); };
+exports.validateCourseTypePrice = validateCourseTypePrice;
+var validateBatchCourseTypePrice = function (req, res, next) { return __awaiter(void 0, void 0, void 0, function () {
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0: return [4 /*yield*/, Promise.all(batchCourseTypePriceValidationRules().map(function (validation) { return validation.run(req); }))];
+            case 1:
+                _a.sent();
+                validate(req, res, next);
+                return [2 /*return*/];
+        }
+    });
+}); };
+exports.validateBatchCourseTypePrice = validateBatchCourseTypePrice;
