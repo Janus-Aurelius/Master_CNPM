@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { userManager } from '../../business/AdminBussiness/userManager';
 import { auditlogManager } from '../../business/AdminBussiness/auditlogManager';
-
+import { dashboardAdminManager } from '../../business/AdminBussiness/dashboardManager';
 
 
 class AdminController {
@@ -40,7 +40,7 @@ class AdminController {
     }
     async getDashboard(req: Request, res: Response, next: NextFunction) {
         try {
-            const stats = await userManager.getDashboardStats();
+            const stats = await dashboardAdminManager.getDashboardStats();
             res.status(200).json({
                 success: true,
                 data: stats

@@ -7,10 +7,19 @@ export interface IUser {
     studentId?: string;         // MaSoSinhVien
 
     // Additional UI fields
-    status?: boolean;
+    status?: string;
     name?: string;
     email?: string;
-    role?: "student" | "admin" | "financial" | "academic";
+    role?: "N1" | "N2" | "N3" | "N4";
     createdAt?: Date;
     updatedAt?: Date;
+}
+
+export interface IUserSearchResult {
+    id: string;           // UserID
+    name: string;         // HoTen từ SINHVIEN
+    studentId: string;    // MaSoSinhVien
+    role: string;         // MaNhom
+    status: string;       // TrangThai
+    department: string;   // TenKhoa từ KHOA
 }

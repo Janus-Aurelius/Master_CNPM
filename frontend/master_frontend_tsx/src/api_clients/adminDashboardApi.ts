@@ -11,7 +11,7 @@ export interface AuditLog {
     id: number;
     user_id: string;
     action_type: string;
-    details: string;
+    status: string;
     created_at: string;
     ip_address?: string;
     user_agent?: string;
@@ -26,18 +26,15 @@ export interface RecentActivity {
 
 export const adminDashboardApi = {
     getSummary: async (): Promise<AdminDashboardSummary> => {
-        const response = await axiosInstance.get('/admin/dashboard/summary');
-        // Nếu backend trả về { success: true, data: {...} }
-        return response.data.data as AdminDashboardSummary;
+        const response = await axiosInstance.get<{ success: boolean; data: AdminDashboardSummary }>('/admin/dashboard/summary');
+        return response.data.data;
     },
     getAuditLogs: async (): Promise<AuditLog[]> => {
-        const response = await axiosInstance.get('/admin/dashboard/audit-logs');
-        // Nếu backend trả về { success: true, data: [...] }
-        return response.data.data as AuditLog[];
+        const response = await axiosInstance.get<{ success: boolean; data: AuditLog[] }>('/admin/dashboard/audit-logs');
+        return response.data.data;
     },
     getRecentActivities: async (): Promise<RecentActivity[]> => {
-        const response = await axiosInstance.get('/admin/dashboard/recent-activities');
-        // Nếu backend trả về { success: true, data: [...] }
-        return response.data.data as RecentActivity[];
+        const response = await axiosInstance.get<{ success: boolean; data: RecentActivity[] }>('/admin/dashboard/recent-activities');
+        return response.data.data;
     },
 };

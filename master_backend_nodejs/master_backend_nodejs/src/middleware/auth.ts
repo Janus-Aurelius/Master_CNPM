@@ -1,6 +1,9 @@
 // src/middleware/auth.ts
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
+import { securityService } from '../services/AdminService/systemService';
+import { AppError } from './errorHandler';
+
 
 // Sử dụng biến môi trường hoặc giá trị mặc định
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
@@ -87,3 +90,49 @@ export const authorizeRoles = (roles: string[]) => {
     }
   };
 };
+
+export const checkIPRestriction = async (req: Request, res: Response, next: NextFunction) => {
+    const config = await securityService.getSecuritySettings();
+    if (config.ipRestriction) {
+        const allowedIPs = Array.isArray(config.allowedIPs) ? config.allowedIPs : [];
+        const clientIP = req.ip || req.connection.remoteAddress;
+        if (!allowedIPs.includes(clientIP)) {
+            return res.status(403).json({ success: false, message: 'IP của bạn không được phép đăng nhập' });
+        }
+    }
+    next();
+};
+
+export const checkLoginAttempts = async (req: Request, res: Response, next: NextFunction) => {
+    const config = await securityService.getSecuritySettings();
+    if (req.user) {
+        if (req.user.failed_login_attempts >= config.loginAttempts) {
+            throw new AppError(403, 'Tài khoản đã bị khóa do đăng nhập sai quá nhiều lần');
+        }
+    }
+    next();
+};
+
+export const checkPasswordExpiry = async (req: Request, res: Response, next: NextFunction) => {
+    const config = await securityService.getSecuritySettings();
+    if (config.passwordExpiry > 0) {
+        const user = req.user;
+        if (user) {
+            const lastChange = user.last_password_change || user.created_at;
+            const daysSinceChange = (Date.now() - new Date(lastChange).getTime()) / (1000 * 60 * 60 * 24);
+            if (daysSinceChange > config.passwordExpiry) {
+                throw new AppError(403, 'Mật khẩu đã hết hạn, vui lòng đổi mật khẩu');
+            }
+        }
+    }
+    next();
+};
+
+export const generateToken = async (payload: UserPayload) => {
+    const securityConfig = await securityService.getSecuritySettings();
+    const token = jwt.sign(payload, JWT_SECRET, { expiresIn: securityConfig.sessionTimeout * 60 });
+    return token;
+};
+
+
+

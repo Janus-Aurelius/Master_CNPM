@@ -108,6 +108,7 @@ export const AdminSidebarContent = ({ onLogout }: AdminSidebarContentProps) => {
     const location = useLocation();
     const [selectedPath, setSelectedPath] = useState(location.pathname);
     const [openDialog, setOpenDialog] = useState(false);
+    const [filterRole, setFilterRole] = useState("all");
 
     useEffect(() => {
         setSelectedPath(location.pathname);

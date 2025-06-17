@@ -12,7 +12,7 @@ import { setupSocketHandlers } from './src/socket/socketHandler';
 import { errorHandler } from './src/middleware/errorHandler';
 import { maintenanceMode } from './src/middleware/maintenance';
 import { auditLogger } from './src/middleware/auditLogger'; // Đường dẫn đúng tới file của bạn
-
+import { securityController } from './src/controllers/AdminController/systemController';
 
 // Load environment variables
 dotenv.config();

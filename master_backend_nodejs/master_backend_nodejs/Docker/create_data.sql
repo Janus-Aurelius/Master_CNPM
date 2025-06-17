@@ -1299,7 +1299,7 @@ INSERT INTO PHANQUYEN (MaNhom, MaChucNang) VALUES
 
 -- Thêm người dùng kế toán
 INSERT INTO NGUOIDUNG (TenDangNhap, UserID, MatKhau, MaNhom, MaSoSinhVien) VALUES
-  ('ketoan','U004','123','N4',NULL);
+  ('ketoan','U003','123','N4',NULL);
 
 
 INSERT INTO NHOMNGUOIDUNG (MaNhom, TenNhom) VALUES
@@ -1327,7 +1327,6 @@ INSERT INTO PHANQUYEN (MaNhom, MaChucNang) VALUES
 INSERT INTO NGUOIDUNG (TenDangNhap, UserID, MatKhau, MaNhom, MaSoSinhVien) VALUES
   ('admin','U001','123', 'N1', NULL),
   ('giangvien','U002','123', 'N2', NULL),
-  ('sv0001','U003','123','N3','SV0001'),
   ('sv0002','U004','123','N3','SV0002'),
   ('sv0003','U005','123','N3','SV0003'),
   ('sv0004','U006','123','N3','SV0004'),
@@ -2328,3 +2327,13 @@ INSERT INTO NGUOIDUNG (TenDangNhap, UserID, MatKhau, MaNhom, MaSoSinhVien) VALUE
   ('sv0999','U1001','123','N3','SV0999'),
   ('sv1000','U1002','123','N3','SV1000');
 
+
+INSERT INTO system_settings (setting_key, setting_value, setting_type)
+VALUES
+('security_passwordMinLength', '8', 'number'),
+('security_passwordExpiry', '90', 'number'),
+('security_loginAttempts', '5', 'number'),
+('security_mfaRequired', 'true', 'boolean'),
+('security_sessionTimeout', '30', 'number'),
+('security_ipRestriction', 'false', 'boolean'),
+('security_allowedIPs', '[]', 'json');

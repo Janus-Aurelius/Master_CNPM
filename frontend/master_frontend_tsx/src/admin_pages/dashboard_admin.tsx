@@ -1,4 +1,5 @@
 import { ThemeLayout } from "../styles/theme_layout.tsx";
+import { format } from 'date-fns';
 import {
     Typography,
     Grid,
@@ -282,12 +283,25 @@ export default function DashboardAdmin({ user, onLogout }: AdminPageProps) {
                                             .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                                             .map((log) => (
                                                 <TableRow key={log.id}>
-                                                <TableCell>{log.user_id}</TableCell>
-                                                <TableCell>{log.action_type}</TableCell>
-                                                <TableCell>{log.details}</TableCell>
-                                                <TableCell>{log.created_at}</TableCell>
-                                                <TableCell>{renderStatusChip(log.action_type)}</TableCell>
-                                            </TableRow>
+                                                    <TableCell>{log.user_id}</TableCell>
+                                                    <TableCell>{log.action_type}</TableCell>
+                                                    <TableCell>
+                                                        {format(new Date(log.created_at), 'dd/MM/yyyy HH:mm:ss')}
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <Chip
+                                                            label={log.status}
+                                                            color={
+                                                                log.status === 'thành công'
+                                                                    ? 'success'
+                                                                    : log.status === 'thất bại'
+                                                                    ? 'error'
+                                                                    : 'default'
+                                                            }
+                                                            variant="filled"
+                                                        />
+                                                    </TableCell>
+                                                </TableRow>
                                             ))
                                     )}
                                 </TableBody>

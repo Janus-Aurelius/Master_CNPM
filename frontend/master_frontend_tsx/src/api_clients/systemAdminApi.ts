@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axiosInstance from './axios';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
@@ -14,7 +14,7 @@ export interface AuditLog {
     id: number;
     user_id: string;  // Thay đổi từ user
     action_type: string;  // Thay đổi từ action
-    details: string;
+    status: string;
     created_at: string;  // Thay đổi từ timestamp
     ip_address?: string;  // Thay đổi từ ipAddress
     user_agent?: string;  // Thêm mới
@@ -28,28 +28,28 @@ export interface SystemSettings {
 }
 
 export const systemAdminApi = {
-    getSettings: async (): Promise<SystemSettings> => {
-        const response = await axios.get(`${API_URL}/admin/system/settings`);
-        return response.data as SystemSettings;
+
+    getSecuritySettings: async (): Promise<any> => {
+        const res = await axiosInstance.get<any>(`${API_URL}/admin/system/getsecurity`);
+        return res.data;
     },
-    updateSettings: async (section: string, settings: any): Promise<SystemSettings> => {
-        const response = await axios.put(`${API_URL}/admin/system/settings/${section}`, settings);
-        return response.data as SystemSettings;
+    updateSecuritySettings: async (settings: any): Promise<void> => {
+        await axiosInstance.put(`${API_URL}/admin/system/updatesecurity`, settings);
     },
-    getBackupHistory: async (): Promise<BackupHistory[]> => {
-        const response = await axios.get(`${API_URL}/admin/system/backup-history`);
-        return response.data as BackupHistory[];
-    },
-    startBackup: async (): Promise<{ message: string }> => {
-        const response = await axios.post(`${API_URL}/admin/system/backup`);
-        return response.data as { message: string };
+    getMaintenanceSettings: async (): Promise<any> => {
+        const res = await axiosInstance.get<any>(`${API_URL}/admin/maintenance/status`);
+        return res.data.data;
     },
     getAuditLogs: async (): Promise<AuditLog[]> => {
-        const response = await axios.get(`${API_URL}/admin/system/audit-logs`);
-        return response.data as AuditLog[];
+        const res = await axiosInstance.get(`${API_URL}/admin/system/audit-logs`);
+
+        if (Array.isArray(res.data)) {
+            return res.data;
+        }
+        return [];
     },
-    toggleMaintenance: async (enable: boolean): Promise<{ maintenanceMode: boolean }> => {
-        const response = await axios.post(`${API_URL}/admin/system/maintenance`, { enable });
-        return response.data as { maintenanceMode: boolean };
+    toggleMaintenance: async (enable: boolean): Promise<any> => {
+        const res = await axiosInstance.post(`${API_URL}/admin/system/maintenance`, { enable });
+        return res.data;
     }
 }; 

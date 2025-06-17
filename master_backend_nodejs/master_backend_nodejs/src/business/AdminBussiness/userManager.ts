@@ -1,8 +1,8 @@
-import { IUser } from '../../models/user';
+import { IUser, IUserSearchResult } from '../../models/user';
 import { AppError } from '../../middleware/errorHandler';
-import * as DashboardService from '../../services/AdminService/dashboardService';
-import { DatabaseService } from '../../services/database/databaseService';
+import * as userService from '../../services/AdminService/userService';
 import { DashboardSummary } from '../../models/adminDashboard';
+
 
 class UserManager {
     async getAllUsers(page: number = 1, limit: number = 10, filters?: {
@@ -16,20 +16,20 @@ class UserManager {
             let queryParams = [];
             let paramIndex = 1;
 
-            if (filters?.role) {
-                whereConditions.push(`role = $${paramIndex}`);
+            if (filters?.status === true || filters?.status === false) {
+                whereConditions.push(`nguoidung.TrangThai = $${paramIndex}`);
+                queryParams.push(filters.status ? 'active' : 'inactive');
+                paramIndex++;
+            }
+
+            if (filters?.role && filters.role !== 'all') {
+                whereConditions.push(`nguoidung.MaNhom = $${paramIndex}`);
                 queryParams.push(filters.role);
                 paramIndex++;
             }
 
-            if (filters?.status !== undefined) {
-                whereConditions.push(`status = $${paramIndex}`);
-                queryParams.push(filters.status);
-                paramIndex++;
-            }
-
             if (filters?.search) {
-                whereConditions.push(`(name ILIKE $${paramIndex} OR email ILIKE $${paramIndex})`);
+                whereConditions.push(`(nguoidung.UserID ILIKE $${paramIndex} OR nguoidung.TenDangNhap ILIKE $${paramIndex} OR sinhvien.HoTen ILIKE $${paramIndex})`);
                 queryParams.push(`%${filters.search}%`);
                 paramIndex++;
             }
@@ -37,41 +37,36 @@ class UserManager {
             const whereClause = whereConditions.length > 0 
                 ? `WHERE ${whereConditions.join(' AND ')}` 
                 : '';
+            console.log('Request params:', { page, limit, filters });
+            console.log('Final whereClause:', whereClause);
+            console.log('Final queryParams:', queryParams);
 
-            // Get total count
-            const totalCount = await DatabaseService.queryOne<{ total: string }>(`
-                SELECT COUNT(*) as total
-                FROM NGUOIDUNG
-                ${whereClause}
-            `, queryParams);
+            const totalCount = await userService.getUserCount(whereClause, queryParams);
+            const total = parseInt(totalCount?.total || '0');
 
-            // Get paginated users
-            const users = await DatabaseService.query<IUser>(`
-                SELECT *
-                FROM NGUOIDUNG
-                ${whereClause}
-                ORDER BY created_at DESC
-                LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
-            `, [...queryParams, limit, offset]);
+            const users = await userService.getAllUsers(whereClause, queryParams, limit, offset);
 
             return {
-                users,
-                total: parseInt(totalCount?.total || '0'),
+                users: users || [],
+                total,
                 page,
-                totalPages: Math.ceil(parseInt(totalCount?.total || '0') / limit)
+                totalPages: Math.ceil(total / limit)
             };
         } catch (error) {
-            console.error('Error getting users:', error);
-            throw new AppError(500, 'Error retrieving users');
+            console.error('Error in getAllUsers:', error);
+            throw new AppError(500, 'Error retrieving users: ' + (error as Error).message);
         }
     }
 
-    async getUserById(id: number): Promise<IUser | null> {
+    async getUserById(id: string): Promise<{ users: IUser[], total: number, page: number, totalPages: number }> {
         try {
-            const user = await DatabaseService.queryOne<IUser>(`
-                SELECT * FROM NGUOIDUNG WHERE id = $1
-            `, [id]);
-            return user || null;
+            const user = await userService.getUserById(id);
+            return {
+                users: user ? [user] : [],
+                total: user ? 1 : 0,
+                page: 1,
+                totalPages: 1
+            };
         } catch (error) {
             console.error('Error getting user:', error);
             throw new AppError(500, 'Error retrieving user');
@@ -79,107 +74,68 @@ class UserManager {
     }
 
     async createUser(userData: Omit<IUser, 'id' | 'createdAt' | 'updatedAt'>): Promise<IUser> {
-        try {
-            const existingUser = await DatabaseService.queryOne<IUser>(`
-                SELECT * FROM NGUOIDUNG WHERE email = $1
-            `, [userData.email]);
+        // Validate studentId thay vì email
+        if (!userData.studentId) throw new AppError(400, 'Student ID is required');
+        
+        // Check duplicate username (mã số sinh viên)
+        const existingUser = await userService.getUserByUsername(userData.studentId);
+        if (existingUser) throw new AppError(400, 'User already exists');
 
-            if (existingUser) {
-                throw new AppError(400, 'Email already exists');
-            }
-
-            const result = await DatabaseService.query<IUser>(`
-                INSERT INTO NGUOIDUNG (name, email, role, status, created_at, updated_at)
-                VALUES ($1, $2, $3, $4, NOW(), NOW())
-                RETURNING *
-            `, [userData.name, userData.email, userData.role, userData.status]);
-
-            return result[0];
-        } catch (error) {
-            if (error instanceof AppError) throw error;
-            console.error('Error creating user:', error);
-            throw new AppError(500, 'Error creating user');
+        // Nếu là sinh viên thì kiểm tra tồn tại trong bảng SINHVIEN
+        if (userData.role === 'N3') {
+            const student = await userService.getStudentById(userData.studentId);
+            if (!student) throw new AppError(400, 'Student does not exist');
         }
+
+        // Sinh mã UserID mới
+        const lastUser = await userService.getLastUser();
+        let newUserId = 'U001';
+        if (lastUser && lastUser.UserID) {
+            const num = parseInt(lastUser.UserID.replace('U', '')) + 1;
+            newUserId = 'U' + num.toString().padStart(3, '0');
+        }
+
+        // Gọi service để insert - dùng studentId làm TenDangNhap
+        const result = await userService.createUser({
+            username: userData.studentId,
+            userId: newUserId,
+            password: '123456',
+            role: userData.role || '',
+            studentId: userData.studentId,
+            status: userData.status ? 'active' : 'inactive'
+        });
+        if (!result) throw new AppError(500, 'Failed to create user');
+        return result;
     }
 
-    async updateUser(id: number, userData: Partial<IUser>): Promise<IUser | null> {
-        try {
-            if (userData.email) {
-                const existingUser = await DatabaseService.queryOne<IUser>(`
-                    SELECT * FROM NGUOIDUNG WHERE email = $1 AND id != $2
-                `, [userData.email, id]);
-
-                if (existingUser) {
-                    throw new AppError(400, 'Email already exists');
-                }
-            }
-
-            const result = await DatabaseService.query<IUser>(`
-                UPDATE NGUOIDUNG 
-                SET 
-                    name = COALESCE($1, name),
-                    email = COALESCE($2, email),
-                    role = COALESCE($3, role),
-                    status = COALESCE($4, status),
-                    updated_at = NOW()
-                WHERE id = $5
-                RETURNING *
-            `, [userData.name, userData.email, userData.role, userData.status, id]);
-
-            return result[0] || null;
-        } catch (error) {
-            if (error instanceof AppError) throw error;
-            console.error('Error updating user:', error);
-            throw new AppError(500, 'Error updating user');
+    async updateUser(
+        id: string,
+        userData: { name?: string; department?: string; status?: string; studentid?: string; role?: string }
+    ): Promise<IUser | null> {
+        // Nếu là sinh viên, cập nhật họ tên và mã ngành (department là mã ngành)
+        if (userData.role === 'N3' && userData.studentid && userData.name && userData.department) {
+            await userService.updateStudentInfo(userData.studentid, userData.name, userData.department);
         }
+        // Chỉ cập nhật trạng thái ở NGUOIDUNG
+        const result = await userService.updateUser(id, {
+            status: userData.status
+        });
+        return result[0] || null;
     }
 
-    async deleteUser(id: number): Promise<boolean> {
+    async deleteUser(id: string): Promise<boolean> {
         try {
-            // Start transaction
-            await DatabaseService.query('BEGIN');
-
-            try {
-                // Delete related records first
-                await DatabaseService.query(`
-                    DELETE FROM user_sessions WHERE user_id = $1;
-                    DELETE FROM audit_logs WHERE user_id = $1;
-                    DELETE FROM academic_requests WHERE student_id = (SELECT student_id FROM students WHERE user_id = $1);
-                    DELETE FROM enrollments WHERE student_id = (SELECT student_id FROM students WHERE user_id = $1);
-                    DELETE FROM tuition_records WHERE student_id = (SELECT student_id FROM students WHERE user_id = $1);
-                    DELETE FROM payment_receipts WHERE student_id = (SELECT student_id FROM students WHERE user_id = $1);
-                    DELETE FROM students WHERE user_id = $1;
-                `, [id]);
-
-                // Finally delete the user
-                const result = await DatabaseService.query<IUser>(`
-                    DELETE FROM NGUOIDUNG WHERE id = $1 RETURNING *
-                `, [id]);
-
-                // Commit transaction
-                await DatabaseService.query('COMMIT');
-
-                return result.length > 0;
-            } catch (error) {
-                // Rollback on error
-                await DatabaseService.query('ROLLBACK');
-                throw error;
-            }
+            const result = await userService.deleteUser(id);
+            return result.length > 0;
         } catch (error) {
             console.error('Error deleting user:', error);
             throw new AppError(500, 'Error deleting user and related data');
         }
     }
 
-    async changeUserStatus(id: number, status: boolean): Promise<IUser | null> {
+    async changeUserStatus(id: string, status: boolean): Promise<IUser | null> {
         try {
-            const result = await DatabaseService.query<IUser>(`
-                UPDATE NGUOIDUNG 
-                SET 
-                    status = $1
-                WHERE id = $2
-                RETURNING *
-            `, [status, id]);
+            const result = await userService.changeUserStatus(id, status);
             return result[0] || null;
         } catch (error) {
             console.error('Error changing user status:', error);
@@ -189,14 +145,7 @@ class UserManager {
 
     async getDashboardStats(): Promise<DashboardSummary> {
         try {
-            const stats = await DatabaseService.queryOne(`
-                SELECT 
-                    (SELECT COUNT(*) FROM NGUOIDUNG WHERE MaNhom = 'N3') as "totalStudents",
-                    (SELECT COUNT(*) FROM PHIEUDANGKY WHERE SoTienConLai > 0) as "pendingPayments",
-                    (SELECT COUNT(*) FROM PHIEUDANGKY WHERE NgayLap >= CURRENT_DATE - INTERVAL '7 days') as "newRegistrations",
-                    (SELECT COUNT(*) FROM AUDIT_LOGS WHERE action_type = 'ERROR' AND created_at >= CURRENT_DATE - INTERVAL '7 days') as "systemAlerts"
-            `);
-    
+            const stats = await userService.getDashboardStats();
             return stats || {
                 totalStudents: 0,
                 pendingPayments: 0,
@@ -216,17 +165,7 @@ class UserManager {
     }
     async getSystemConfig() {
         try {
-            // Get system configuration from database
-            const configs = await DatabaseService.query(`
-                SELECT setting_key, setting_value, setting_type 
-                FROM system_settings 
-                WHERE setting_key IN (
-                    'max_users', 'allowed_domains', 'password_min_length',
-                    'password_require_numbers', 'password_require_special_chars',
-                    'session_timeout', 'maintenance_mode', 'backup_frequency'
-                )
-            `);
-
+            const configs = await userService.getSystemConfigs();
             const configMap: any = {};
             configs.forEach((config: any) => {
                 let value = config.setting_value;
@@ -285,51 +224,145 @@ class UserManager {
                 settingValue = JSON.stringify(configValue);
             }
 
-            await DatabaseService.query(`
-                INSERT INTO system_settings (setting_key, setting_value, setting_type, updated_at)
-                VALUES ($1, $2, $3, NOW())
-                ON CONFLICT (setting_key) 
-                DO UPDATE SET 
-                    setting_value = EXCLUDED.setting_value,
-                    setting_type = EXCLUDED.setting_type,
-                    updated_at = NOW()
-            `, [configKey, settingValue, settingType]);            return { success: true, message: 'System configuration updated successfully' };
+            await userService.updateSystemConfig(configKey, settingValue, settingType);
+            return { success: true, message: 'System configuration updated successfully' };
         } catch (error) {
             console.error('Error updating system config:', error);
             throw new AppError(500, 'Error updating system configuration');
         }
     }
 
-    async getAuditLogs(limit: number = 50) {
+    async searchUsersByName(searchTerm: string): Promise<IUserSearchResult[]> {
         try {
-            const auditLogs = await DatabaseService.query(`
-                SELECT 
-                    id,
-                    user_id,
-                    action_type,
-                    details,
-                    ip_address,
-                    user_agent,
-                    created_at
-                FROM AUDIT_LOGS 
-                ORDER BY created_at DESC 
-                LIMIT $1
-            `, [limit]);
-            return auditLogs || [];
+            // Validate search term
+            if (!searchTerm || searchTerm.trim().length === 0) {
+                return [];
+            }
+
+            // Chuẩn hóa search term
+            const normalizedSearchTerm = searchTerm.trim().toLowerCase();
+
+            // Kiểm tra độ dài tối thiểu
+            if (normalizedSearchTerm.length < 2) {
+                return [];
+            }
+
+            // Tạo where clause và query params
+            const whereConditions = [];
+            const queryParams = [];
+            let paramIndex = 1;
+
+            // Tìm kiếm theo tên sinh viên
+            whereConditions.push(`LOWER(sinhvien.HoTen) LIKE LOWER($${paramIndex})`);
+            queryParams.push(`%${normalizedSearchTerm}%`);
+            paramIndex++;
+
+            // Thêm điều kiện chỉ lấy sinh viên (MaNhom = 'N3')
+            whereConditions.push(`nguoidung.MaNhom = $${paramIndex}`);
+            queryParams.push('N3');
+
+            const whereClause = whereConditions.length > 0 
+                ? `WHERE ${whereConditions.join(' AND ')}` 
+                : '';
+
+            // Gọi service để thực hiện tìm kiếm
+            const results = await userService.getAllUsers(
+                whereClause,
+                queryParams,
+                10, // Giới hạn 10 kết quả
+                0   // Không cần offset vì đây là tìm kiếm
+            );
+
+            // Map kết quả về định dạng IUserSearchResult
+            const mappedResults = results.map(user => ({
+                id: user.id,
+                name: user.name || user.studentId, // Fallback to studentId if name is null
+                studentId: user.studentId,
+                role: user.role,
+                status: user.status,
+                department: user.department
+            }));
+
+            return mappedResults;
         } catch (error) {
-            console.error('Error fetching audit logs:', error);
-            return [];
+            console.error('Error in searchUsersByName:', error);
+            throw new AppError(500, 'Error searching users: ' + (error as Error).message);
         }
     }
-    
-    async createAuditLog(userId: string, actionType: string, details: string, ipAddress?: string) {
+
+    // Thêm phương thức mới để xử lý tìm kiếm nâng cao
+    async advancedSearch(params: {
+        searchTerm?: string;
+        role?: string;
+        status?: boolean;
+        department?: string;
+    }): Promise<{ users: IUserSearchResult[], total: number }> {
         try {
-            await DatabaseService.query(`
-                INSERT INTO AUDIT_LOGS (user_id, action_type, details, ip_address, created_at)
-                VALUES ($1, $2, $3, $4, NOW())
-            `, [userId, actionType, details, ipAddress]);
+            const whereConditions = [];
+            const queryParams = [];
+            let paramIndex = 1;
+
+            // Xử lý tìm kiếm theo tên
+            if (params.searchTerm && params.searchTerm.trim().length >= 2) {
+                whereConditions.push(`(LOWER(sinhvien.HoTen) LIKE LOWER($${paramIndex}) OR LOWER(nguoidung.TenDangNhap) LIKE LOWER($${paramIndex}))`);
+                queryParams.push(`%${params.searchTerm.trim().toLowerCase()}%`);
+                paramIndex++;
+            }
+
+            // Xử lý lọc theo vai trò
+            if (params.role && params.role !== 'all') {
+                whereConditions.push(`nguoidung.MaNhom = $${paramIndex}`);
+                queryParams.push(params.role);
+                paramIndex++;
+            }
+
+            // Xử lý lọc theo trạng thái
+            if (params.status !== undefined) {
+                whereConditions.push(`nguoidung.TrangThai = $${paramIndex}`);
+                queryParams.push(params.status ? 'active' : 'inactive');
+                paramIndex++;
+            }
+
+            // Xử lý lọc theo khoa
+            if (params.department) {
+                whereConditions.push(`khoa.TenKhoa = $${paramIndex}`);
+                queryParams.push(params.department);
+                paramIndex++;
+            }
+
+            const whereClause = whereConditions.length > 0 
+                ? `WHERE ${whereConditions.join(' AND ')}` 
+                : '';
+
+            // Lấy tổng số kết quả
+            const totalCount = await userService.getUserCount(whereClause, queryParams);
+            const total = parseInt(totalCount?.total || '0');
+
+            // Lấy danh sách người dùng
+            const users = await userService.getAllUsers(
+                whereClause,
+                queryParams,
+                10, // Giới hạn 10 kết quả cho tìm kiếm
+                0   // Không cần offset
+            );
+
+            // Map kết quả về định dạng IUserSearchResult
+            const mappedResults = users.map(user => ({
+                id: user.id,
+                name: user.name || user.studentId,
+                studentId: user.studentId,
+                role: user.role,
+                status: user.status,
+                department: user.department
+            }));
+
+            return {
+                users: mappedResults,
+                total
+            };
         } catch (error) {
-            console.error('Error creating audit log:', error);
+            console.error('Error in advancedSearch:', error);
+            throw new AppError(500, 'Error performing advanced search: ' + (error as Error).message);
         }
     }
 }

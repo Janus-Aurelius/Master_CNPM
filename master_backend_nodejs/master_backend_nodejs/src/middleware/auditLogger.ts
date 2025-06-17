@@ -1,6 +1,6 @@
 // src/middleware/activityLogger.ts
 import { Request, Response, NextFunction } from 'express';
-import { createAuditLog} from '../services/AdminService/auditlogService';
+import { auditlogService} from '../services/AdminService/auditlogService';
 function mapAction(method: string, path: string): string | null {
     // Quản lý học phần
     if (method === 'POST' && path.startsWith('/api/academic/courseMgm')) return 'Thêm học phần';
@@ -52,7 +52,7 @@ export const auditLogger = (req: Request, res: Response, next: NextFunction) => 
     // Ghi log sau khi response gửi xong để lấy status code
     res.on('finish', () => {
         const status = res.statusCode < 400 ? 'thành công' : 'thất bại';
-        createAuditLog({
+        auditlogService.createAuditLog({
             user_id: req.user?.id || 'anonymous',
             action_type: actionType,
             status: status,

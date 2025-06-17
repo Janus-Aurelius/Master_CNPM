@@ -5,11 +5,14 @@ import maintenanceController from '../../controllers/AdminController/maintenance
 import { adminController } from '../../controllers/AdminController/adminController';
 import { authenticateToken, authorizeRoles } from '../../middleware/auth';
 import { checkMaintenance } from '../../middleware/maintenance';
+import { RoleController } from '../../controllers/AdminController/roleController';
+import { securityController } from '../../controllers/AdminController/systemController';
+
 
 
 const router = express.Router();
 const userController = new UserController();
-
+const roleController = new RoleController();
 // Middleware setup
 router.use(authenticateToken, authorizeRoles(['admin']));
 
@@ -37,6 +40,9 @@ router.post('/users', (req, res, next) => userController.createUser(req, res, ne
 router.put('/users/:id', (req, res, next) => userController.updateUser(req, res, next));
 router.delete('/users/:id', (req, res, next) => userController.deleteUser(req, res, next));
 router.patch('/users/:id/status', (req, res, next) => userController.changeUserStatus(req, res, next));
+router.get('/roles', (req, res, next) => roleController.getAllRoles(req, res, next));
+router.get('/users/search', (req, res, next) => userController.searchUsersByName(req, res, next));
+router.get('/users/advanced-search', (req, res, next) => userController.advancedSearch(req, res, next));
 
 // Maintenance routes (excluded from maintenance check)
 router.get('/maintenance/status', (req, res, next) => maintenanceController.getMaintenanceStatus(req, res, next));
@@ -45,5 +51,10 @@ router.post('/maintenance/disable', (req, res, next) => maintenanceController.di
 router.put('/maintenance/message', (req, res, next) => maintenanceController.updateMaintenanceMessage(req, res, next));
 router.post('/maintenance/allowed-ips', (req, res, next) => maintenanceController.addAllowedIP(req, res, next));
 router.delete('/maintenance/allowed-ips', (req, res, next) => maintenanceController.removeAllowedIP(req, res, next));
+
+router.get('/system/getsecurity', (req, res, next) => securityController.getSecuritySettings(req, res, next));
+router.put('/system/updatesecurity', (req, res, next) => securityController.updateSecuritySettings(req, res, next));
+router.post('/system/maintenance', (req, res, next) => maintenanceController.toggleMaintenance(req, res, next));
+router.get('/system/audit-logs', (req, res, next) => adminController.getAuditLog(req, res, next));
 
 export default router;

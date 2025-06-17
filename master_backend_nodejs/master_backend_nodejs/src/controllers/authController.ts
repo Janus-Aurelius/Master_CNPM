@@ -1,7 +1,7 @@
 // Auth Controller for master_cnpm database
 import { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
-import { getUserByEmail, getUserById, verifyPassword, blacklistToken, isTokenBlacklisted } from '../services/userService';
+import { getUserByEmail, getUserById, verifyPassword, blacklistToken, isTokenBlacklisted } from '../services/AdminService/userService';
 import bcrypt from 'bcrypt';
 import { Database } from '../config/database';
 import { config } from '../config';
@@ -49,6 +49,13 @@ export const login = async (req: Request, res: Response) => {
         message: 'Tên đăng nhập không tồn tại'
       });
     }
+
+    if (user.trangthai !== 'active') {
+      return res.status(403).json({
+        success: false,
+        message: 'Tài khoản đã bị vô hiệu hóa'
+      });
+  }
 
     // Check password
     const isPasswordValid = password === user.matkhau;
@@ -188,7 +195,7 @@ export const refreshToken = async (req: Request, res: Response) => {
 
     const newToken = jwt.sign(
       { 
-        id: user.id, 
+        id: user.userId, 
         email: user.email, 
         role: user.role
       },
@@ -224,7 +231,7 @@ export const me = async (req: Request, res: Response) => {
     res.json({
       success: true,
       user: {
-        id: user.id,
+        id: user.userId,
         email: user.email,
         name: user.name,
         role: user.role,
