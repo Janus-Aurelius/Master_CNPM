@@ -12,35 +12,24 @@ const validateTimeFormat = (time: string): boolean => {
     return timeRegex.test(time);
 };
 
-const validateSchedule = (schedule: ICourse['schedule']): boolean => {
-    if (!schedule) return false;
-    
-    const { day, session, fromTo, room } = schedule;
-    if (!day || !session || !fromTo || !room) return false;
-    
-    const validDays = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'];
-    if (!validDays.includes(day)) return false;
-    
-    const [startTime, endTime] = fromTo.split('-').map((t: string) => t.trim());
-    if (!validateTimeFormat(startTime) || !validateTimeFormat(endTime)) return false;
-    
-    // Check if end time is after start time
-    const start = new Date(`2000-01-01T${startTime}`);
-    const end = new Date(`2000-01-01T${endTime}`);
-    if (end <= start) return false;
-    
-    return true;
-};
-
 export const validateAndAddCourse = async (course: ICourse): Promise<ICourse> => {
     const errors: string[] = [];
 
-    if (!validateTotalHours(course.totalHours)) {
-        errors.push('Course total hours must be between 1 and 60');
+    // Validate required fields
+    if (!course.courseId || course.courseId.trim() === '') {
+        errors.push('Course ID is required');
     }
 
-    if (!validateSchedule(course.schedule)) {
-        errors.push('Invalid schedule format');
+    if (!course.courseName || course.courseName.trim() === '') {
+        errors.push('Course name is required');
+    }
+
+    if (!course.courseTypeId || course.courseTypeId.trim() === '') {
+        errors.push('Course type ID is required');
+    }
+
+    if (!validateTotalHours(course.totalHours)) {
+        errors.push('Course total hours must be between 1 and 60');
     }
 
     if (errors.length > 0) {
@@ -50,44 +39,34 @@ export const validateAndAddCourse = async (course: ICourse): Promise<ICourse> =>
     return courseService.addCourse(course);
 };
 
-export const listCourses = async (): Promise<ICourse[]> => {
+export const listCourses = async (): Promise<any[]> => {
     return courseService.getCourses();
 };
 
-export const getCourseById = async (subjectId: string): Promise<ICourse | null> => {
-    const courses = await courseService.getCourses();
-    return courses.find(course => course.subjectId === subjectId) || null;
+export const getCourseById = async (maMonHoc: string): Promise<any | null> => {
+    return courseService.getCourseById(maMonHoc);
 };
 
-export const createCourse = async (courseData: Omit<ICourse, 'subjectId'>): Promise<ICourse> => {
-    const newCourse: ICourse = {
-        ...courseData,
-        subjectId: `SUB${Date.now()}` // Temporary ID generation
-    };
-    
-    return validateAndAddCourse(newCourse);
-};
-
-export const updateCourse = async (subjectId: string, courseData: Partial<ICourse>): Promise<ICourse | null> => {
-    const existingCourse = await getCourseById(subjectId);
-    if (!existingCourse) {
-        return null;
+export const createCourse = async (courseData: any): Promise<any> => {
+    // Validate các trường cần thiết
+    if (!courseData.maMonHoc || !courseData.tenMonHoc || !courseData.maLoaiMon || !courseData.soTiet) {
+        throw new Error('Missing required fields');
     }
-    
-    const updatedCourse: ICourse = {
-        ...existingCourse,
-        ...courseData,
-        subjectId // Keep original ID
-    };
-    
-    if (updatedCourse.totalHours <= 0) {
-        throw new Error("Course total hours must be positive");
+    // Check trùng mã môn học
+    const existing = await courseService.getCourseById(courseData.maMonHoc);
+    if (existing) {
+        throw new Error('Mã môn học đã tồn tại');
     }
-    
-    return updatedCourse;
+    return courseService.addCourse(courseData);
 };
 
-export const deleteCourse = async (subjectId: string): Promise<boolean> => {
-    const course = await getCourseById(subjectId);
-    return course !== null;
+export const updateCourse = async (maMonHocCu: string, courseData: any): Promise<any> => {
+    // Xóa bản ghi cũ
+    await courseService.deleteCourse(maMonHocCu);
+    // Thêm bản ghi mới
+    return courseService.addCourse(courseData);
+};
+
+export const deleteCourse = async (maMonHoc: string): Promise<boolean> => {
+    return courseService.deleteCourse(maMonHoc);
 };

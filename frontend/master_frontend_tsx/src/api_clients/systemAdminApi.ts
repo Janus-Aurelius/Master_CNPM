@@ -12,12 +12,20 @@ export interface BackupHistory {
 
 export interface AuditLog {
     id: number;
-    user_id: string;  // Thay đổi từ user
-    action_type: string;  // Thay đổi từ action
+    user_id: string;
+    action_type: string;
+    created_at: string;
     status: string;
-    created_at: string;  // Thay đổi từ timestamp
-    ip_address?: string;  // Thay đổi từ ipAddress
-    user_agent?: string;  // Thêm mới
+    ip_address: string;
+    user_agent: string;
+}
+
+export interface AuditLogResponse {
+    success: boolean;
+    data: AuditLog[];
+    total: number;
+    page: number;
+    size: number;
 }
 
 export interface SystemSettings {
@@ -40,13 +48,9 @@ export const systemAdminApi = {
         const res = await axiosInstance.get<any>(`${API_URL}/admin/maintenance/status`);
         return res.data.data;
     },
-    getAuditLogs: async (): Promise<AuditLog[]> => {
-        const res = await axiosInstance.get(`${API_URL}/admin/system/audit-logs`);
-
-        if (Array.isArray(res.data)) {
-            return res.data;
-        }
-        return [];
+    getAuditLogs: async (page: number, size: number): Promise<AuditLogResponse> => {
+        const response = await axiosInstance.get<AuditLogResponse>(`${API_URL}/admin/system/audit-logs?page=${page}&size=${size}`);
+        return response.data;
     },
     toggleMaintenance: async (enable: boolean): Promise<any> => {
         const res = await axiosInstance.post(`${API_URL}/admin/system/maintenance`, { enable });

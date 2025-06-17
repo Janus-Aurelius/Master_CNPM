@@ -1,453 +1,471 @@
-import request from 'supertest';
-import express from 'express';
-import studentRoutes from '../routes/student/student.routes';
-import { describe, it, expect, beforeAll } from '@jest/globals';
-import jwt from 'jsonwebtoken';
-import { dashboardService } from '../services/studentService/dashboardService';
-import { subjectRegistrationService, subjects } from '../services/studentService/subjectRegistrationService';
-import { enrollmentService, enrollments, enrolledSubjects } from '../services/studentService/enrollmentService';
-import { gradeService, grades } from '../services/studentService/gradeService';
-import { studentTuitionPaymentService, tuitionRecords, paymentReceipts } from '../services/studentService/studentTuitionPaymentService';
-import { IEnrolledSubject, IEnrollment } from '../models/student_related/studentEnrollmentInterface';
-import { IGrade } from '../models/student_related/studentDashboardInterface';
-import { IStudentOverview } from '../models/student_related/studentDashboardInterface';
-import { ITuitionRecord } from '../models/student_related/studentPaymentInterface';
+import { registrationService } from '../services/studentService/registrationService';
+import { registrationManager } from '../business/studentBusiness/registrationManager';
+import { DatabaseService } from '../services/database/databaseService';
 
-// Mock authentication middleware
-jest.mock('../middleware/auth', () => ({
-    authenticateToken: (req: any, res: any, next: any) => {
-        // Mock user data from token
-        const authHeader = req.headers['authorization'];
-        const token = authHeader && authHeader.split(' ')[1];
-        
-        if (!token) {
-            return res.status(401).json({ 
-                success: false,
-                message: 'Yêu cầu đăng nhập' 
-            });
-        }
-        
-        try {
-            const decoded = jwt.verify(token, '1234567890');
-            req.user = decoded;
-            next();
-        } catch (error) {
-            return res.status(403).json({ 
-                success: false,
-                message: 'Phiên đăng nhập không hợp lệ hoặc đã hết hạn' 
-            });
-        }
-    },
-    authorizeRoles: (roles: string[]) => {
-        return (req: any, res: any, next: any) => {
-            if (!req.user) {
-                return res.status(401).json({ 
-                    success: false,
-                    message: 'Yêu cầu đăng nhập' 
-                });
-            }
-            
-            if (!roles.includes(req.user.role)) {
-                return res.status(403).json({ 
-                    success: false,
-                    message: 'Bạn không có quyền truy cập chức năng này' 
-                });
-            }
-            
-            next();
-        };
+// Mock DatabaseService
+jest.mock('../services/database/databaseService', () => ({
+    DatabaseService: {
+        query: jest.fn(),
+        queryOne: jest.fn(),
     }
 }));
 
-const app = express();
-app.use(express.json());
-app.use('/api/students', studentRoutes);
+const mockDatabaseService = DatabaseService as jest.Mocked<typeof DatabaseService>;
 
-// Mock token for testing
-const secretKey = '1234567890';
-const mockToken = jwt.sign(
-    { id: 'SV001', role: 'student' },
-    secretKey,
-    { expiresIn: '1h' }
-);
+describe('Student Course Registration System', () => {
+    beforeEach(() => {
+        jest.clearAllMocks();
+    });
 
-// Mock data
-const mockStudent = {
-    studentId: 'SV001',
-    name: 'Test Student',
-    email: 'test@example.com',
-    class: 'IT1',
-    major: 'Information Technology'
-};
+    describe('RegistrationService', () => {
+        const mockStudentId = 'SV001';
+        const mockSemesterId = 'HK001';
+        const mockCourseId = 'MH001';
 
-const mockSchedule = {
-    student: mockStudent,
-    subjects: [
-        {
-            id: 'IT001',
-            name: 'Introduction to Programming',
-            lecturer: 'Dr. Smith',
-            day: 'Monday',
-            session: '1-3',
-            room: 'A101'
-        }
-    ]
-};
+        describe('getAvailableCourses', () => {
+            it('should return available courses for a semester', async () => {
+                const mockCourses = [
+                    {
+                        courseId: 'MH001',
+                        courseName: 'Lập trình Web',
+                        credits: 3,
+                        courseType: 'Bắt buộc',
+                        fee: 1500000,
+                        semesterId: 'HK001',
+                        minStudents: 10,
+                        maxStudents: 40,
+                        currentStudents: 25,
+                        status: 'OPEN',
+                        prerequisiteCourses: [],
+                        schedules: [],
+                        dayOfWeek: 2,
+                        startPeriod: 1,
+                        endPeriod: 3
+                    }
+                ];
 
-const mockSubject = {
-    subjectId: 'IT001',
-    subjectName: 'Introduction to Programming',
-    subjectTypeId: 'LT',
-    totalHours: 45,
-    description: 'Basic programming concepts',
-    prerequisiteSubjects: [],
-    type: 'Required' as 'Required' | 'Elective',
-    department: 'Information Technology',
-    lecturer: 'Dr. Smith',
-    schedule: {
-        day: 'Monday',
-        session: '1-3',
-        fromTo: '07:00-09:30',
-        room: 'A101'
-    }
-};
+                mockDatabaseService.query.mockResolvedValueOnce(mockCourses);
 
-const mockEnrollment: IEnrollment = {
-    id: 'ENR001',
-    studentId: 'SV001',
-    courseId: 'IT001',
-    courseName: 'Introduction to Programming',
-    semester: 'HK1 2023-2024',
-    isEnrolled: true, // Using boolean instead of status enum
-    credits: 3
-};
+                const result = await registrationService.getAvailableCourses(mockSemesterId);
 
-const mockGrade = {
-    studentId: 'SV001',
-    subjectId: 'IT001',
-    subjectName: 'Introduction to Programming',
-    midtermGrade: 8.5,
-    finalGrade: 9.0,
-    totalGrade: 8.8,
-    letterGrade: 'A'
-};
+                expect(result).toEqual(mockCourses);
+                expect(mockDatabaseService.query).toHaveBeenCalledWith(
+                    expect.stringContaining('DANHSACHMONHOCMO'),
+                    [mockSemesterId]
+                );
+            });
 
-const mockTuitionRecord = {
-    id: 'TR001',
-    studentId: 'SV001',
-    semester: 'HK1 2023-2024',
-    totalAmount: 3000000,
-    paidAmount: 0,
-    outstandingAmount: 3000000,
-    paymentStatus: 'UNPAID' as 'UNPAID' | 'PARTIAL' | 'PAID',
-    remainingAmount: 3000000,
-    status: 'PENDING' as 'PENDING' | 'PARTIAL' | 'PAID' | 'OVERPAID',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-    courses: [
-        {
-            courseId: 'IT001',
-            courseName: 'Introduction to Programming',
-            credits: 3,
-            amount: 3000000,
-            semester: 'HK1 2023-2024',
-            academicYear: '2023-2024'
-        }
-    ]
-};
+            it('should handle database errors', async () => {
+                mockDatabaseService.query.mockRejectedValueOnce(new Error('Database connection failed'));
 
-// Setup mock data before tests
-beforeAll(() => {
-    // Clear existing data
-    subjects.length = 0;
-    enrollments.length = 0;
-    enrolledSubjects.length = 0;
-    grades.length = 0;
-    tuitionRecords.length = 0;
-    paymentReceipts.length = 0;
+                await expect(registrationService.getAvailableCourses(mockSemesterId))
+                    .rejects.toThrow('Database connection failed');
 
-    // Add mock data for each service
-    subjects.push(mockSubject);
-    enrollments.push(mockEnrollment);    // Fix IEnrolledSubject structure
-    const enrolledSubject: IEnrolledSubject = {
-        enrollment: mockEnrollment,
-        subjectDetails: {
-            id: 'IT001',
-            name: 'Introduction to Programming',
-            lecturer: 'Dr. Smith',
-            credits: 3,
-            maxStudents: 50,
-            currentStudents: 25,
-            schedule: [
-                {
-                    day: 'Monday',
-                    session: '1-3',
-                    room: 'A101'
-                }
-            ]
-        },grade: {
-            midterm: 8.5,
-            final: 9.0,
-            total: 8.75,
-            letter: 'A'
-        },
-        attendanceRate: 95
-    };
-    
-    enrolledSubjects.push(enrolledSubject);
-    grades.push(mockGrade);
-    tuitionRecords.push(mockTuitionRecord);
+                expect(mockDatabaseService.query).toHaveBeenCalledWith(
+                    expect.stringContaining('DANHSACHMONHOCMO'),
+                    [mockSemesterId]
+                );
+            });
+        });        describe('getRegisteredCourses', () => {
+            it('should return registered courses for a student', async () => {
+                const mockRegisteredCourses = [
+                    {
+                        registrationId: 'PDK_SV001_HK001',
+                        courseId: 'MH001',
+                        courseName: 'Lập trình Web',
+                        credits: 3,
+                        courseType: 'Bắt buộc',
+                        fee: 1500000
+                    }
+                ];
 
-    // Fix IStudentOverview structure
-    (dashboardService as any).students = [mockStudent];
-    (dashboardService as any).schedules = [mockSchedule];
-    (dashboardService as any).overviews = [{
-        student: mockStudent,
-        enrolledSubjects: 1,
-        totalCredits: 3,
-        gpa: 8.8,
-        upcomingClasses: [
-            {
-                id: 'IT001',
-                name: 'Introduction to Programming',
-                lecturer: 'Dr. Smith',
-                day: 'Monday',
-                startTime: '07:00',
-                endTime: '09:30',
-                room: 'A101'
-            }
-        ],        recentPayments: [
-            {
-                id: 'PAY001',
-                studentId: 'SV001',
-                amount: 3000000,
-                paymentDate: new Date().toISOString(),
-                paymentMethod: 'BANK_TRANSFER',
-                status: 'COMPLETED'
-            }
-        ]
-    }];
-});
+                mockDatabaseService.query.mockResolvedValueOnce(mockRegisteredCourses);
 
-describe('Student API Endpoints', () => {
-    const mockStudentId = 'SV001';
-    const mockSemester = 'HK1 2023-2024';// Test Dashboard & Schedule endpoints
-    describe('Dashboard & Schedule', () => {
-        it('should get student dashboard', async () => {
-            const res = await request(app)
-                .get('/api/students/dashboard')
-                .set('Authorization', `Bearer ${mockToken}`);
-            
-            expect(res.status).toBe(200);
-            expect(res.body.success).toBe(true);
-            expect(res.body.data).toHaveProperty('student');
-            expect(res.body.data).toHaveProperty('schedule');
+                const result = await registrationService.getRegisteredCourses(mockStudentId, mockSemesterId);
+
+                expect(result).toEqual(mockRegisteredCourses);
+                expect(mockDatabaseService.query).toHaveBeenCalledWith(
+                    expect.stringContaining('CT_PHIEUDANGKY'),
+                    [mockStudentId, mockSemesterId]
+                );
+            });
         });
 
-        it('should get student timetable', async () => {
-            const res = await request(app)
-                .get('/api/students/timetable')
-                .set('Authorization', `Bearer ${mockToken}`);
-            
-            expect(res.status).toBe(200);
-            expect(res.body.success).toBe(true);
-            expect(Array.isArray(res.body.data)).toBe(true);
-        });        it('should return 404 for non-existent student', async () => {
-            const invalidToken = jwt.sign(
-                { id: '99999999', role: 'student' },
-                secretKey,
-                { expiresIn: '1h' }
-            );
-            const res = await request(app)
-                .get('/api/students/dashboard')
-                .set('Authorization', `Bearer ${invalidToken}`);
-            
-            expect(res.status).toBe(404);
-            expect(res.body.success).toBe(false);
-        });
-    });    // Test Subject Registration endpoints
-    describe('Subject Registration', () => {
-        it('should get available subjects', async () => {
-            const res = await request(app)
-                .get('/api/students/subjects')
-                .set('Authorization', `Bearer ${mockToken}`);
-            
-            expect(res.status).toBe(200);
-            expect(res.body.success).toBe(true);
-            expect(Array.isArray(res.body.data)).toBe(true);
+        describe('registerCourse', () => {
+            it('should successfully register a course for new registration', async () => {
+                // Mock offered course exists
+                mockDatabaseService.queryOne
+                    .mockResolvedValueOnce({ MaHocKy: mockSemesterId, MaMonHoc: mockCourseId }) // offered course check
+                    .mockResolvedValueOnce(null) // no existing registration
+                    .mockResolvedValueOnce(null) // no existing course registration
+                    .mockResolvedValueOnce({ SoTienMotTC: 500000, SoTiet: 3 }) // course info
+                    .mockResolvedValueOnce({ MaSoSinhVien: mockStudentId, HoTen: 'Nguyen Van A' }) // student info
+                    .mockResolvedValueOnce({ MaMonHoc: mockCourseId, TenMonHoc: 'Lập trình Web' }); // course info
+
+                mockDatabaseService.query
+                    .mockResolvedValueOnce([]) // insert registration
+                    .mockResolvedValueOnce([]) // insert registration detail
+                    .mockResolvedValueOnce([]) // update registration amount
+                    .mockResolvedValueOnce([]); // insert activity log
+
+                const result = await registrationService.registerCourse(mockStudentId, mockCourseId, mockSemesterId);
+
+                expect(result).toBe(true);
+                expect(mockDatabaseService.query).toHaveBeenCalledTimes(4);
+            });
+
+            it('should successfully register a course for existing registration', async () => {
+                // Mock offered course exists and existing registration exists
+                mockDatabaseService.queryOne
+                    .mockResolvedValueOnce({ MaHocKy: mockSemesterId, MaMonHoc: mockCourseId }) // offered course check
+                    .mockResolvedValueOnce({ MaPhieuDangKy: 'PDK_SV001_HK001' }) // existing registration
+                    .mockResolvedValueOnce(null) // no existing course registration
+                    .mockResolvedValueOnce({ SoTienMotTC: 500000, SoTiet: 3 }) // course info
+                    .mockResolvedValueOnce({ MaSoSinhVien: mockStudentId, HoTen: 'Nguyen Van A' }) // student info
+                    .mockResolvedValueOnce({ MaMonHoc: mockCourseId, TenMonHoc: 'Lập trình Web' }); // course info
+
+                mockDatabaseService.query
+                    .mockResolvedValueOnce([]) // insert registration detail
+                    .mockResolvedValueOnce([]) // update registration amount
+                    .mockResolvedValueOnce([]); // insert activity log
+
+                const result = await registrationService.registerCourse(mockStudentId, mockCourseId, mockSemesterId);
+
+                expect(result).toBe(true);
+                expect(mockDatabaseService.query).toHaveBeenCalledTimes(3);
+            });
+
+            it('should throw error if course is not offered', async () => {
+                mockDatabaseService.queryOne.mockResolvedValueOnce(null); // no offered course
+
+                await expect(registrationService.registerCourse(mockStudentId, mockCourseId, mockSemesterId))
+                    .rejects.toThrow('Môn học này không có trong danh sách mở');
+            });
+
+            it('should throw error if course is already registered', async () => {
+                mockDatabaseService.queryOne
+                    .mockResolvedValueOnce({ MaHocKy: mockSemesterId, MaMonHoc: mockCourseId }) // offered course check
+                    .mockResolvedValueOnce({ MaPhieuDangKy: 'PDK_SV001_HK001' }) // existing registration
+                    .mockResolvedValueOnce({ MaPhieuDangKy: 'PDK_SV001_HK001' }); // existing course registration
+
+                await expect(registrationService.registerCourse(mockStudentId, mockCourseId, mockSemesterId))
+                    .rejects.toThrow('Sinh viên đã đăng ký môn học này rồi');
+            });
         });
 
-        it('should search subjects', async () => {
-            const res = await request(app)
-                .get('/api/students/subjects/search?query=IT')
-                .set('Authorization', `Bearer ${mockToken}`);
-            
-            expect(res.status).toBe(200);
-            expect(res.body.success).toBe(true);
-            expect(Array.isArray(res.body.data)).toBe(true);
+        describe('cancelCourseRegistration', () => {
+            it('should successfully cancel course registration', async () => {
+                mockDatabaseService.queryOne
+                    .mockResolvedValueOnce({ MaPhieuDangKy: 'PDK_SV001_HK001' }) // existing registration
+                    .mockResolvedValueOnce({ MaPhieuDangKy: 'PDK_SV001_HK001' }) // existing course registration
+                    .mockResolvedValueOnce({ SoTienMotTC: 500000, SoTiet: 3 }) // course info
+                    .mockResolvedValueOnce({ MaSoSinhVien: mockStudentId, HoTen: 'Nguyen Van A' }) // student info
+                    .mockResolvedValueOnce({ MaMonHoc: mockCourseId, TenMonHoc: 'Lập trình Web' }); // course info
+
+                mockDatabaseService.query
+                    .mockResolvedValueOnce([]) // delete registration detail
+                    .mockResolvedValueOnce([]) // update registration amount
+                    .mockResolvedValueOnce([]); // insert activity log
+
+                const result = await registrationService.cancelCourseRegistration(mockStudentId, mockCourseId, mockSemesterId);
+
+                expect(result).toBe(true);
+                expect(mockDatabaseService.query).toHaveBeenCalledWith(
+                    expect.stringContaining('DELETE FROM CT_PHIEUDANGKY'),
+                    ['PDK_SV001_HK001', mockCourseId]
+                );
+            });
+
+            it('should throw error if registration not found', async () => {
+                mockDatabaseService.queryOne.mockResolvedValueOnce(null); // no registration
+
+                await expect(registrationService.cancelCourseRegistration(mockStudentId, mockCourseId, mockSemesterId))
+                    .rejects.toThrow('Không tìm thấy phiếu đăng ký');
+            });
+
+            it('should throw error if course not registered', async () => {
+                mockDatabaseService.queryOne
+                    .mockResolvedValueOnce({ MaPhieuDangKy: 'PDK_SV001_HK001' }) // existing registration
+                    .mockResolvedValueOnce(null); // no course registration
+
+                await expect(registrationService.cancelCourseRegistration(mockStudentId, mockCourseId, mockSemesterId))
+                    .rejects.toThrow('Sinh viên chưa đăng ký môn học này');
+            });
+        });        describe('registerCourses (batch)', () => {
+            it('should register multiple courses successfully', async () => {
+                const courseIds = ['MH001', 'MH002'];
+                const requestData = { studentId: mockStudentId, courseIds, semesterId: mockSemesterId };
+                
+                // Mock for first course
+                mockDatabaseService.queryOne
+                    .mockResolvedValueOnce({ MaHocKy: mockSemesterId, MaMonHoc: 'MH001' })
+                    .mockResolvedValueOnce({ MaPhieuDangKy: 'PDK_SV001_HK001' })
+                    .mockResolvedValueOnce(null)
+                    .mockResolvedValueOnce({ SoTienMotTC: 500000, SoTiet: 3 })
+                    .mockResolvedValueOnce({ MaSoSinhVien: mockStudentId, HoTen: 'Nguyen Van A' })
+                    .mockResolvedValueOnce({ MaMonHoc: 'MH001', TenMonHoc: 'Course 1' })
+                    // Mock for second course
+                    .mockResolvedValueOnce({ MaHocKy: mockSemesterId, MaMonHoc: 'MH002' })
+                    .mockResolvedValueOnce({ MaPhieuDangKy: 'PDK_SV001_HK001' })
+                    .mockResolvedValueOnce(null)
+                    .mockResolvedValueOnce({ SoTienMotTC: 500000, SoTiet: 3 })
+                    .mockResolvedValueOnce({ MaSoSinhVien: mockStudentId, HoTen: 'Nguyen Van A' })
+                    .mockResolvedValueOnce({ MaMonHoc: 'MH002', TenMonHoc: 'Course 2' });
+
+                mockDatabaseService.query.mockResolvedValue([]);
+
+                const result = await registrationService.registerCourses(requestData);
+
+                expect(result.success).toBe(true);
+                expect(result.details).toHaveLength(2);
+                expect(result.details[0].success).toBe(true);
+                expect(result.details[1].success).toBe(true);
+            });
+
+            it('should handle partial success', async () => {
+                const courseIds = ['MH001', 'MH002'];
+                const requestData = { studentId: mockStudentId, courseIds, semesterId: mockSemesterId };
+                
+                // Mock for first course (success)
+                mockDatabaseService.queryOne
+                    .mockResolvedValueOnce({ MaHocKy: mockSemesterId, MaMonHoc: 'MH001' })
+                    .mockResolvedValueOnce({ MaPhieuDangKy: 'PDK_SV001_HK001' })
+                    .mockResolvedValueOnce(null)
+                    .mockResolvedValueOnce({ SoTienMotTC: 500000, SoTiet: 3 })
+                    .mockResolvedValueOnce({ MaSoSinhVien: mockStudentId, HoTen: 'Nguyen Van A' })
+                    .mockResolvedValueOnce({ MaMonHoc: 'MH001', TenMonHoc: 'Course 1' })
+                    // Mock for second course (failure)
+                    .mockResolvedValueOnce(null); // no offered course
+
+                mockDatabaseService.query.mockResolvedValue([]);
+
+                const result = await registrationService.registerCourses(requestData);
+
+                expect(result.success).toBe(true); // Still success because at least one course registered
+                expect(result.details).toHaveLength(2);
+                expect(result.details[0].success).toBe(true);
+                expect(result.details[1].success).toBe(false);
+            });
         });
 
-        it('should register for a subject', async () => {
-            const res = await request(app)
-                .post('/api/students/subjects/register')
-                .set('Authorization', `Bearer ${mockToken}`)
-                .send({
+        describe('getRegistrationInfo', () => {
+            it('should return registration information', async () => {
+                const mockRegistration = {
+                    registrationId: 'PDK_SV001_HK001',
+                    registrationDate: new Date('2025-06-17T02:00:31.807Z'),
+                    studentId: 'SV001',
+                    semesterId: 'HK001',
+                    maxCredits: 24,
+                    registrationAmount: 1500000,
+                    requiredAmount: 1500000,
+                    paidAmount: 0,
+                    remainingAmount: 1500000
+                };
+
+                mockDatabaseService.queryOne.mockResolvedValueOnce(mockRegistration);
+
+                const result = await registrationService.getRegistrationInfo(mockStudentId, mockSemesterId);
+
+                expect(result).toEqual(mockRegistration);
+                expect(mockDatabaseService.queryOne).toHaveBeenCalledWith(
+                    expect.stringContaining('PHIEUDANGKY'),
+                    [mockStudentId, mockSemesterId]
+                );
+            });
+        });
+    });
+
+    describe('RegistrationManager', () => {
+        const mockStudentId = 'SV001';
+        const mockSemesterId = 'HK001';
+        const mockCourseId = 'MH001';
+
+        describe('getAvailableCourses', () => {
+            it('should return success response with available courses', async () => {
+                const mockCourses = [{ courseId: 'MH001', courseName: 'Test Course' }];
+                mockDatabaseService.query.mockResolvedValueOnce(mockCourses);
+
+                const result = await registrationManager.getAvailableCourses(mockSemesterId);
+
+                expect(result.success).toBe(true);
+                expect(result.data).toEqual(mockCourses);
+            });
+
+            it('should return error response for empty semester ID', async () => {
+                const result = await registrationManager.getAvailableCourses('');
+
+                expect(result.success).toBe(false);
+                expect(result.message).toBe('Mã học kỳ không được để trống');
+            });
+
+            it('should handle service errors', async () => {
+                mockDatabaseService.query.mockRejectedValueOnce(new Error('Database error'));
+
+                const result = await registrationManager.getAvailableCourses(mockSemesterId);
+
+                expect(result.success).toBe(false);
+                expect(result.message).toBe('Không thể lấy danh sách môn học');
+            });
+        });
+
+        describe('getRegisteredCourses', () => {
+            it('should return success response with registered courses', async () => {
+                const mockCourses = [{ courseId: 'MH001', courseName: 'Test Course' }];
+                mockDatabaseService.query.mockResolvedValueOnce(mockCourses);
+
+                const result = await registrationManager.getRegisteredCourses(mockStudentId, mockSemesterId);
+
+                expect(result.success).toBe(true);
+                expect(result.data).toEqual(mockCourses);
+            });
+
+            it('should return error response for empty student ID', async () => {
+                const result = await registrationManager.getRegisteredCourses('', mockSemesterId);
+
+                expect(result.success).toBe(false);
+                expect(result.message).toBe('Mã sinh viên không được để trống');
+            });
+        });        describe('registerCourses', () => {
+            beforeEach(() => {
+                // Mock successful semester and student existence check
+                mockDatabaseService.queryOne
+                    .mockResolvedValueOnce({ MaHocKy: mockSemesterId, TrangThaiHocKy: 'ACTIVE' }) // semester check
+                    .mockResolvedValueOnce({ MaSoSinhVien: mockStudentId }); // student check
+            });            it('should return success response for successful registration', async () => {
+                const mockResult = { success: true, message: 'Đăng ký thành công 1/1 môn học', details: [{ courseId: mockCourseId, success: true, message: 'Đăng ký thành công' }] };
+                jest.spyOn(registrationService, 'registerCourses').mockResolvedValueOnce(mockResult);
+
+                const result = await registrationManager.registerCourses(mockStudentId, [mockCourseId], mockSemesterId);
+
+                expect(result.success).toBe(true);
+                expect(result.data).toEqual(mockResult.details);
+            });
+
+            it('should return error response for registration failure', async () => {
+                // Mock semester not found
+                mockDatabaseService.queryOne.mockReset().mockResolvedValueOnce(null);
+
+                const result = await registrationManager.registerCourses(mockStudentId, [mockCourseId], mockSemesterId);
+
+                expect(result.success).toBe(false);
+                expect(result.message).toBe('Học kỳ không tồn tại');
+            });
+
+            it('should validate required parameters', async () => {
+                const result = await registrationManager.registerCourses('', [mockCourseId], mockSemesterId);
+
+                expect(result.success).toBe(false);
+                expect(result.message).toBe('Thông tin đăng ký không đầy đủ');
+            });
+        });
+
+        describe('unregisterCourse', () => {
+            beforeEach(() => {
+                // Mock successful student existence check
+                mockDatabaseService.queryOne.mockResolvedValueOnce({ MaSoSinhVien: mockStudentId });
+            });
+
+            it('should return success response for successful cancellation', async () => {
+                jest.spyOn(registrationService, 'cancelCourseRegistration').mockResolvedValueOnce(true);
+
+                const result = await registrationManager.unregisterCourse(mockStudentId, mockCourseId, mockSemesterId);
+
+                expect(result.success).toBe(true);
+                expect(result.message).toBe('Hủy đăng ký môn học thành công');
+            });
+
+            it('should return error response for cancellation failure', async () => {
+                jest.spyOn(registrationService, 'cancelCourseRegistration').mockRejectedValueOnce(new Error('Registration not found'));
+
+                const result = await registrationManager.unregisterCourse(mockStudentId, mockCourseId, mockSemesterId);
+
+                expect(result.success).toBe(false);
+                expect(result.message).toBe('Lỗi trong quá trình hủy đăng ký');
+            });
+        });        describe('getRegistrationSummary', () => {
+            it('should return registration summary', async () => {
+                const mockRegistration = {
+                    registrationId: 'PDK_SV001_HK001',
+                    registrationDate: new Date(),
                     studentId: mockStudentId,
-                    courseId: 'IT001'
-                });
-            
-            expect(res.status).toBe(201);
-            expect(res.body.success).toBe(true);
+                    semesterId: mockSemesterId,
+                    registrationAmount: 1500000,
+                    requiredAmount: 1500000,
+                    paidAmount: 0,
+                    remainingAmount: 1500000,
+                    maxCredits: 24
+                };
+                const mockCourses = [
+                    {
+                        registrationId: 'PDK_SV001_HK001',
+                        courseId: 'MH001',
+                        courseName: 'Test Course',
+                        credits: 3,
+                        courseType: 'Bắt buộc',
+                        fee: 1500000
+                    }
+                ];
+                const expectedSummary = {
+                    registration: mockRegistration,
+                    courses: mockCourses,
+                    statistics: {
+                        totalCourses: 1,
+                        totalCredits: 3,
+                        totalFee: 1500000
+                    }
+                };
+
+                jest.spyOn(registrationService, 'getRegistrationInfo').mockResolvedValueOnce(mockRegistration);
+                jest.spyOn(registrationService, 'getRegisteredCourses').mockResolvedValueOnce(mockCourses);
+
+                const result = await registrationManager.getRegistrationSummary(mockStudentId, mockSemesterId);
+
+                expect(result.success).toBe(true);
+                expect(result.data).toEqual(expectedSummary);
+            });
         });
 
-        it('should return 400 for invalid course ID', async () => {
-            const res = await request(app)
-                .post('/api/students/subjects/register')
-                .set('Authorization', `Bearer ${mockToken}`)
-                .send({
-                    studentId: mockStudentId,
-                    courseId: 'INVALID'
-                });
-            
-            expect(res.status).toBe(400);
-            expect(res.body.success).toBe(false);
-        });
-    });    // Test Enrolled Subjects endpoints
-    describe('Enrolled Subjects', () => {
-        it('should get enrolled subjects', async () => {
-            const res = await request(app)
-                .get('/api/students/enrolled-subjects')
-                .set('Authorization', `Bearer ${mockToken}`);
-            
-            expect(res.status).toBe(200);
-            expect(res.body.success).toBe(true);
-            expect(Array.isArray(res.body.data)).toBe(true);
-        });
+        describe('Compatibility aliases', () => {
+            beforeEach(() => {
+                // Mock successful student existence check
+                mockDatabaseService.queryOne.mockResolvedValueOnce({ MaSoSinhVien: mockStudentId });
+            });
 
-        it('should cancel subject registration', async () => {
-            const res = await request(app)
-                .post('/api/students/enrolled-subjects/cancel')
-                .set('Authorization', `Bearer ${mockToken}`)
-                .send({
-                    studentId: mockStudentId,
-                    courseId: 'IT001'
-                });
-            
-            expect(res.status).toBe(200);
-            expect(res.body.success).toBe(true);
-        });
-        it('should return 404 for non-existent enrollment', async () => {
-            const res = await request(app)
-                .post('/api/students/enrolled-subjects/cancel')
-                .set('Authorization', `Bearer ${mockToken}`)
-                .send({
-                    studentId: mockStudentId,
-                    courseId: 'NONEXISTENT'
-                });
-            
-            expect(res.status).toBe(404);
-            expect(res.body.success).toBe(false);
-        });
-    });    // Test Grades endpoints
-    describe('Grades', () => {
-        it('should get student grades', async () => {
-            const res = await request(app)
-                .get('/api/students/grades')
-                .set('Authorization', `Bearer ${mockToken}`);
-            
-            expect(res.status).toBe(200);
-            expect(res.body.success).toBe(true);
-            expect(Array.isArray(res.body.data)).toBe(true);
-        });
+            it('should support getAvailableSubjects alias', async () => {
+                const mockCourses = [{ courseId: 'MH001', courseName: 'Test Course' }];
+                mockDatabaseService.query.mockResolvedValueOnce(mockCourses);
 
-        it('should get subject grade details', async () => {
-            const res = await request(app)
-                .get('/api/students/enrolled-subjects/IT001')
-                .set('Authorization', `Bearer ${mockToken}`);
-            
-            expect(res.status).toBe(200);
-            expect(res.body.success).toBe(true);
-            expect(res.body.data).toHaveProperty('subjectId');
-            expect(res.body.data).toHaveProperty('grade');
-        });
+                const result = await registrationManager.getAvailableSubjects(mockSemesterId);
 
-        it('should return 404 for non-existent grade', async () => {
-            const res = await request(app)
-                .get('/api/students/enrolled-subjects/NONEXISTENT')
-                .set('Authorization', `Bearer ${mockToken}`);
-            
-            expect(res.status).toBe(404);
-            expect(res.body.success).toBe(false);
-        });
-    });    // Test Tuition endpoints
-    describe('Tuition', () => {
-        it('should confirm registration', async () => {
-            const res = await request(app)
-                .post('/api/students/tuition/confirm')
-                .set('Authorization', `Bearer ${mockToken}`)
-                .send({
-                    studentId: mockStudentId,
-                    semester: mockSemester,
-                    courses: [
-                        {
-                            courseId: 'IT001',
-                            courseName: 'Introduction to Programming',
-                            credits: 3,
-                            price: 3000000
-                        }
-                    ]
-                });
-            
-            expect(res.status).toBe(201);
-            expect(res.body.success).toBe(true);
-        });
+                expect(result.success).toBe(true);
+                expect(result.data).toEqual(mockCourses);
+            });            it('should support registerSubject alias', async () => {
+                const mockResult = { success: true, message: 'Đăng ký thành công 1/1 môn học', details: [{ courseId: mockCourseId, success: true, message: 'Đăng ký thành công' }] };
+                jest.spyOn(registrationService, 'registerCourses').mockResolvedValueOnce(mockResult);
 
-        it('should pay tuition', async () => {
-            const res = await request(app)
-                .post('/api/students/tuition/pay')
-                .set('Authorization', `Bearer ${mockToken}`)
-                .send({
-                    tuitionRecordId: 'TR001',
-                    amount: 3000000,
-                    paymentMethod: 'BANK_TRANSFER'
-                });
-            
-            expect(res.status).toBe(200);
-            expect(res.body.success).toBe(true);
-        });
+                const result = await registrationManager.registerSubject(mockStudentId, mockCourseId, mockSemesterId);
 
-        it('should return 400 for invalid payment amount', async () => {
-            const res = await request(app)
-                .post('/api/students/tuition/pay')
-                .set('Authorization', `Bearer ${mockToken}`)
-                .send({
-                    tuitionRecordId: 'TR001',
-                    amount: -1000000,
-                    paymentMethod: 'BANK_TRANSFER'
-                });
-            
-            expect(res.status).toBe(400);
-            expect(res.body.success).toBe(false);
-        });
+                expect(result.success).toBe(true);
+            });
 
-        it('should get tuition records', async () => {
-            const res = await request(app)
-                .get('/api/students/tuition')
-                .set('Authorization', `Bearer ${mockToken}`);
-            
-            expect(res.status).toBe(200);
-            expect(res.body.success).toBe(true);
-            expect(Array.isArray(res.body.data)).toBe(true);
-        });
+            it('should support getEnrolledCourses alias', async () => {
+                const mockCourses = [{ courseId: 'MH001', courseName: 'Test Course' }];
+                mockDatabaseService.query.mockResolvedValueOnce(mockCourses);
 
-        it('should get payment receipts', async () => {
-            const res = await request(app)
-                .get('/api/students/tuition/history/TR001')
-                .set('Authorization', `Bearer ${mockToken}`);
-            
-            expect(res.status).toBe(200);
-            expect(res.body.success).toBe(true);
-            expect(Array.isArray(res.body.data)).toBe(true);
+                const result = await registrationManager.getEnrolledCourses(mockStudentId, mockSemesterId);
+
+                expect(result.success).toBe(true);
+                expect(result.data).toEqual(mockCourses);
+            });
+
+            it('should support cancelRegistration alias', async () => {
+                jest.spyOn(registrationService, 'cancelCourseRegistration').mockResolvedValueOnce(true);
+
+                const result = await registrationManager.cancelRegistration(mockStudentId, mockCourseId, mockSemesterId);
+
+                expect(result.success).toBe(true);
+                expect(result.message).toBe('Hủy đăng ký môn học thành công');
+            });
         });
     });
 });

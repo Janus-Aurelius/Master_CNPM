@@ -1,5 +1,6 @@
 import { DatabaseService } from '../database/databaseService';
 import { DatabaseError } from '../../utils/errors/database.error';
+import { ValidationError } from '../../utils/errors/validation.error';
 
 export interface Program {
     id: number;
@@ -10,10 +11,13 @@ export interface Program {
 }
 
 export class ProgramService {
-    static async getAllPrograms(): Promise<Program[]> {
+    static async getAllPrograms(): Promise<(Program & { thoiGianBatDau?: string, thoiGianKetThuc?: string })[]> {
         try {
             const result = await DatabaseService.query(
-                `SELECT * FROM chuongtrinhhoc ORDER BY maNganh, maHocKy`
+                `SELECT cth.*, hknh.thoigianbatdau, hknh.thoigianketthuc
+                 FROM chuongtrinhhoc cth
+                 LEFT JOIN hockynamhoc hknh ON cth.mahocky = hknh.mahocky
+                 ORDER BY cth.manganh, cth.mahocky`
             );
             return result;
         } catch (error) {
@@ -35,6 +39,32 @@ export class ProgramService {
         }
     }
 
+    static async checkMonHocExists(maMonHoc: string): Promise<boolean> {
+        try {
+            const result = await DatabaseService.query(
+                'SELECT 1 FROM monhoc WHERE mamonhoc = $1',
+                [maMonHoc]
+            );
+            return result.length > 0;
+        } catch (error) {
+            console.error('Error checking monhoc:', error);
+            throw new DatabaseError('Failed to check monhoc');
+        }
+    }
+
+    static async checkHocKyExists(maHocKy: string): Promise<boolean> {
+        try {
+            const result = await DatabaseService.query(
+                'SELECT 1 FROM hockynamhoc WHERE mahocky = $1',
+                [maHocKy]
+            );
+            return result.length > 0;
+        } catch (error) {
+            console.error('Error checking hocky:', error);
+            throw new DatabaseError('Failed to check hocky');
+        }
+    }
+
     static async createProgram(program: Omit<Program, 'id'>): Promise<Program> {
         try {
             const result = await DatabaseService.query(
@@ -46,7 +76,7 @@ export class ProgramService {
             return result[0];
         } catch (error) {
             console.error('Error in createProgram:', error);
-            throw new DatabaseError('Failed to create program');
+            throw error;
         }
     }
 
@@ -57,48 +87,46 @@ export class ProgramService {
         program: Partial<Program>
     ): Promise<Program | null> {
         try {
-            // Build dynamic SET clause
-            const fields = [];
-            const values = [];
-            let idx = 1;
+            await DatabaseService.query('BEGIN');
 
-            if (program.ghiChu !== undefined) {
-                fields.push(`ghiChu = $${idx++}`);
-                values.push(program.ghiChu);
-            }
-            if (program.maNganh !== undefined) {
-                fields.push(`maNganh = $${idx++}`);
-                values.push(program.maNganh);
-            }
-            if (program.maMonHoc !== undefined) {
-                fields.push(`maMonHoc = $${idx++}`);
-                values.push(program.maMonHoc);
-            }
-            if (program.maHocKy !== undefined) {
-                fields.push(`maHocKy = $${idx++}`);
-                values.push(program.maHocKy);
-            }
-            // Add more fields if needed
-
-            if (fields.length === 0) {
-                throw new Error('No fields to update');
+            // 1. Kiểm tra bản ghi cũ
+            const existingProgram = await DatabaseService.query(
+                `SELECT * FROM chuongtrinhhoc 
+                 WHERE maNganh = $1 AND maMonHoc = $2 AND maHocKy = $3`,
+                [maNganh, maMonHoc, maHocKy]
+            );
+            
+            if (existingProgram.length === 0) {
+                await DatabaseService.query('ROLLBACK');
+                throw new DatabaseError('Program not found');
             }
 
-            // Add composite key to values
-            values.push(maNganh, maMonHoc, maHocKy);
+            // 3. Xóa bản ghi cũ
+            await DatabaseService.query(
+                `DELETE FROM chuongtrinhhoc 
+                 WHERE maNganh = $1 AND maMonHoc = $2 AND maHocKy = $3`,
+                [maNganh, maMonHoc, maHocKy]
+            );
 
-            const sql = `
-                UPDATE chuongtrinhhoc
-                SET ${fields.join(', ')}
-                WHERE maNganh = $${idx++} AND maMonHoc = $${idx++} AND maHocKy = $${idx}
-                RETURNING *
-            `;
+            // 4. Thêm bản ghi mới với thông tin mới
+            const newProgram = await DatabaseService.query(
+                `INSERT INTO chuongtrinhhoc (maNganh, maMonHoc, maHocKy, ghiChu)
+                 VALUES ($1, $2, $3, $4)
+                 RETURNING *`,
+                [
+                    program.maNganh || maNganh,
+                    program.maMonHoc || maMonHoc,
+                    program.maHocKy || maHocKy,
+                    program.ghiChu || existingProgram[0].ghiChu
+                ]
+            );
 
-            const result = await DatabaseService.query(sql, values);
-            return result[0] || null;
+            await DatabaseService.query('COMMIT');
+            return newProgram[0];
         } catch (error) {
+            await DatabaseService.query('ROLLBACK');
             console.error('Error in updateProgram:', error);
-            throw new DatabaseError('Failed to update program');
+            throw error;
         }
     }
 

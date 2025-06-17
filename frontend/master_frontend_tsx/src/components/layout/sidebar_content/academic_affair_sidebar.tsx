@@ -21,6 +21,7 @@ import HelpOutlineOutlined from '@mui/icons-material/HelpOutlineOutlined';
 import ClassOutlined from '@mui/icons-material/ClassOutlined';
 import LogoutOutlined from '@mui/icons-material/LogoutOutlined';
 import PeopleOutline from '@mui/icons-material/PeopleOutline';
+import DateRangeOutlined from '@mui/icons-material/DateRangeOutlined';
 
 interface StyledNavItemProps {
     sx?: React.CSSProperties;
@@ -162,10 +163,12 @@ export const AcademicSidebarContent = ({ onLogout }: AcademicSidebarContentProps
                     <span style={{ color: '#38b2ac' }}>PĐT</span>
                 </Typography>
                 <Divider sx={{ my: 2 }} />
-                <div style={{ flexGrow: 1 }}>
-                    <Stack spacing={1.5} sx={{ flex: 1 }}>
+                <div style={{ flexGrow: 1 }}>                    <Stack spacing={1.5} sx={{ flex: 1 }}>
                         <NavItem to="/academic" sx={{ color: '#0173d3' }} selected={selectedPath === "/academic"} icon={<DashboardOutlined />}>
                             Trang chủ
+                        </NavItem>
+                        <NavItem to="/academic/termMgm" sx={{ color: '#0173d3' }} selected={selectedPath === "/academic/termMgm"} icon={<DateRangeOutlined />}>
+                            Quản lý năm học, học kì
                         </NavItem>
                         <NavItem to="/academic/programsMgm" sx={{ color: '#0173d3' }} selected={selectedPath === "/academic/programsMgm"} icon={<SchoolOutlined />}>
                             Quản lý CTĐT
@@ -175,7 +178,8 @@ export const AcademicSidebarContent = ({ onLogout }: AcademicSidebarContentProps
                         </NavItem>
                         <NavItem to="/academic/openCourseMgm" sx={{ color: '#0173d3' }} selected={selectedPath === "/academic/openCourseMgm"} icon={<ClassOutlined />}>
                             Quản lý môn học mở
-                        </NavItem>                        <NavItem to="/academic/studentMgm" sx={{ color: '#0173d3' }} selected={selectedPath.includes("/academic/studentMgm")} icon={<PeopleOutline />}>
+                        </NavItem>                        
+                        <NavItem to="/academic/studentMgm" sx={{ color: '#0173d3' }} selected={selectedPath.includes("/academic/studentMgm")} icon={<PeopleOutline />}>
                             Quản lý sinh viên
                         </NavItem>
                     </Stack>

@@ -1,69 +1,96 @@
 // src/controllers/academicController/course.controller.ts
 import { Request, Response, NextFunction } from "express";
 import * as courseBusiness from "../../business/academicBusiness/course.business";
+import { AcademicStructureService } from '../../services/academicService/academicStructure.service';
 import { AppError } from '../../middleware/errorHandler';
 
-export const getCoursesHandler = async (req: Request, res: Response, next: NextFunction) => {
+export const getCoursesHandler = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
         const courses = await courseBusiness.listCourses();
         res.json({ success: true, data: courses });
     } catch (error) {
-        next(error);
+        res.status(500).json({ success: false, message: 'Internal server error' });
     }
 };
 
-export const getCourseByIdHandler = async (req: Request, res: Response, next: NextFunction) => {
+export const getCourseByIdHandler = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
         const { id } = req.params;
         const course = await courseBusiness.getCourseById(id);
-        
         if (!course) {
-            throw new AppError(404, 'Course not found');
+            res.status(404).json({ success: false, message: 'Course not found' });
+            return;
         }
-
         res.json({ success: true, data: course });
     } catch (error) {
-        next(error);
+        res.status(500).json({ success: false, message: 'Internal server error' });
     }
 };
 
-export const createCourseHandler = async (req: Request, res: Response, next: NextFunction) => {
+export const createCourseHandler = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
         const courseData = req.body;
         const newCourse = await courseBusiness.createCourse(courseData);
         res.status(201).json({ success: true, data: newCourse });
-    } catch (error) {
-        next(error);
+    } catch (error: any) {
+        if (error.message && error.message.includes('Mã môn học đã tồn tại')) {
+            res.status(400).json({ success: false, message: error.message });
+        } else {
+            res.status(400).json({ success: false, message: error.message || 'Failed to create course' });
+        }
     }
 };
 
-export const updateCourseHandler = async (req: Request, res: Response, next: NextFunction) => {
+export const updateCourseHandler = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
         const { id } = req.params;
         const courseData = req.body;
         const updatedCourse = await courseBusiness.updateCourse(id, courseData);
-        
         if (!updatedCourse) {
-            throw new AppError(404, 'Course not found');
+            res.status(404).json({ success: false, message: 'Course not found' });
+            return;
         }
-
         res.json({ success: true, data: updatedCourse });
-    } catch (error) {
-        next(error);
+    } catch (error: any) {
+        res.status(400).json({ success: false, message: error.message || 'Failed to update course' });
     }
 };
 
-export const deleteCourseHandler = async (req: Request, res: Response, next: NextFunction) => {
+export const deleteCourseHandler = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
         const { id } = req.params;
         const success = await courseBusiness.deleteCourse(id);
-        
         if (!success) {
-            throw new AppError(404, 'Course not found');
+            res.status(404).json({ success: false, message: 'Course not found' });
+            return;
         }
-
-        res.status(204).send();
+        res.json({ success: true, message: 'Course deleted successfully' });
     } catch (error) {
-        next(error);
+        res.status(500).json({ success: false, message: 'Failed to delete course' });
+    }
+};
+
+// Course Type management for course forms
+export const getCourseTypesHandler = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+        const courseTypes = await AcademicStructureService.getAllCourseTypes();
+        res.json({ success: true, data: courseTypes });
+    } catch (error) {
+        console.error('Error getting course types:', error);
+        res.status(500).json({ success: false, message: 'Failed to fetch course types' });
+    }
+};
+
+export const getCourseFormData = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+        const courseTypes = await AcademicStructureService.getAllCourseTypes();
+        res.json({ 
+            success: true, 
+            data: { courseTypes },
+            message: 'Course form data fetched successfully'
+        });
+    } catch (error) {
+        console.error('Error getting course form data:', error);
+        res.status(500).json({ success: false, message: 'Failed to fetch course form data' });
     }
 };

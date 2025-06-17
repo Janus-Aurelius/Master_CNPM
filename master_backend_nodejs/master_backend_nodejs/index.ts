@@ -37,7 +37,7 @@ app.use(express.json());
 app.use(auditLogger);
 // Routes
 app.use('/api/auth', maintenanceMode, authRoutes);
-app.use('/api/admin', maintenanceMode, adminRoutes);
+app.use('/api/admin', adminRoutes);
 app.use('/api/academic', maintenanceMode, academicRoutes);
 app.use('/api/financial', maintenanceMode, financialRoutes);
 app.use('/api/student', maintenanceMode, studentRoutes);

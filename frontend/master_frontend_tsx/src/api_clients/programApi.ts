@@ -6,62 +6,95 @@ export interface ProgramSchedule {
     maMonHoc: string;
     maHocKy: string;
     ghiChu?: string;
+    thoiGianBatDau?: string;
+    thoiGianKetThuc?: string;
+}
+
+interface ApiResponse<T> {
+    success: boolean;
+    data: T;
+    message?: string;
 }
 
 export const programApi = {
     getPrograms: async (): Promise<ProgramSchedule[]> => {
-        const response = await axiosInstance.get(`/academic/programsMgm`);
-        if (!response.data) {
-            throw new Error('No data received from server');
+        const { data } = await axiosInstance.get<ApiResponse<ProgramSchedule[]>>(`/academic/programsMgm`);
+        if (!data || !data.success) {
+            throw new Error(data?.message || 'No data received from server');
         }
-        return Array.isArray(response.data) ? response.data : [];
+        return data.data || [];
     },
 
     createProgram: async (program: Omit<ProgramSchedule, 'id'>): Promise<ProgramSchedule> => {
-        const response = await axiosInstance.post(`/academic/programsMgm`, program);
-        if (!response.data) {
-            throw new Error('No data received from server');
+        const { data } = await axiosInstance.post<ApiResponse<ProgramSchedule>>(`/academic/programsMgm`, program);
+        if (!data || !data.success) {
+            throw new Error(data?.message || 'Failed to create program');
         }
-        return response.data as ProgramSchedule;
+        return data.data;
     },
 
     updateProgram: async (maNganh: string, maMonHoc: string, maHocKy: string, program: Partial<ProgramSchedule>): Promise<ProgramSchedule> => {
-        const response = await axiosInstance.put(`/academic/programsMgm/${maNganh}/${maMonHoc}/${maHocKy}`, program);
-        return response.data as ProgramSchedule;
+        const { data } = await axiosInstance.put<ApiResponse<ProgramSchedule>>(`/academic/programsMgm/${maNganh}/${maMonHoc}/${maHocKy}`, program);
+        if (!data || !data.success) {
+            throw new Error(data?.message || 'Failed to update program');
+        }
+        return data.data;
     },
 
     deleteProgram: async (maNganh: string, maMonHoc: string, maHocKy: string): Promise<void> => {
-        await axiosInstance.delete(`/academic/programsMgm/${maNganh}/${maMonHoc}/${maHocKy}`);
+        const { data } = await axiosInstance.delete<ApiResponse<void>>(`/academic/programsMgm/${maNganh}/${maMonHoc}/${maHocKy}`);
+        if (!data || !data.success) {
+            throw new Error(data?.message || 'Failed to delete program');
+        }
     },
 
     getProgramsByNganh: async (maNganh: string): Promise<ProgramSchedule[]> => {
-        const response = await axiosInstance.get(`/academic/programsMgm/nganh/${maNganh}`);
-        if (!response.data) {
-            throw new Error('No data received from server');
+        const { data } = await axiosInstance.get<ApiResponse<ProgramSchedule[]>>(`/academic/programsMgm/nganh/${maNganh}`);
+        if (!data || !data.success) {
+            throw new Error(data?.message || 'No data received from server');
         }
-        return Array.isArray(response.data) ? response.data : [];
+        return data.data || [];
     },
 
     getProgramsByHocKy: async (maHocKy: string): Promise<ProgramSchedule[]> => {
-        const response = await axiosInstance.get(`/academic/programsMgm/hocky/${maHocKy}`);
-        if (!response.data) {
-            throw new Error('No data received from server');
+        const { data } = await axiosInstance.get<ApiResponse<ProgramSchedule[]>>(`/academic/programsMgm/hocky/${maHocKy}`);
+        if (!data || !data.success) {
+            throw new Error(data?.message || 'No data received from server');
         }
-        return Array.isArray(response.data) ? response.data : [];
+        return data.data || [];
     },
 
     getProgramsByDepartment: async (department: string): Promise<ProgramSchedule[]> => {
-        const response = await axiosInstance.get(`/academic/programsMgm/department/${department}`);
-        return response.data as ProgramSchedule[];
+        const { data } = await axiosInstance.get<ApiResponse<ProgramSchedule[]>>(`/academic/programsMgm/department/${department}`);
+        if (!data || !data.success) {
+            throw new Error(data?.message || 'No data received from server');
+        }
+        return data.data || [];
     },
 
     getProgramsByStatus: async (status: string): Promise<ProgramSchedule[]> => {
-        const response = await axiosInstance.get(`/academic/programsMgm/status/${status}`);
-        return response.data as ProgramSchedule[];
+        const { data } = await axiosInstance.get<ApiResponse<ProgramSchedule[]>>(`/academic/programsMgm/status/${status}`);
+        if (!data || !data.success) {
+            throw new Error(data?.message || 'No data received from server');
+        }
+        return data.data || [];
     },
 
     updateProgramStatus: async (id: number, status: string): Promise<ProgramSchedule> => {
-        const response = await axiosInstance.put(`/academic/programsMgm/${id}/status`, { status });
-        return response.data as ProgramSchedule;
+        const { data } = await axiosInstance.put<ApiResponse<ProgramSchedule>>(`/academic/programsMgm/${id}/status`, { status });
+        if (!data || !data.success) {
+            throw new Error(data?.message || 'Failed to update program status');
+        }
+        return data.data;
+    },
+
+    validateSemester: async (maHocKy: string): Promise<boolean> => {
+        try {
+            const { data } = await axiosInstance.get<ApiResponse<{ exists: boolean }>>(`/academic/programsMgm/validate-semester/${maHocKy}`);
+            return data.data.exists;
+        } catch (error) {
+            console.error('Error validating semester:', error);
+            return false;
+        }
     }
 }; 

@@ -1,7 +1,9 @@
 import { dashboardService } from '../../services/studentService/dashboardService';
+import { OpenCourseService } from '../../services/courseService/openCourse.service';
 import { IStudentOverview } from '../../models/student_related/studentDashboardInterface';
 import { DatabaseService } from '../../services/database/databaseService';
-import { IPayment } from '../../models/payment'
+import { IPayment } from '../../models/payment';
+import tuitionManager from './tuitionManager';
 
 class DashboardManager {
     public async getStudentDashboard(studentId: string): Promise<IStudentOverview | null> {
@@ -32,12 +34,11 @@ class DashboardManager {
 
             if (!student) {
                 return null;
-            }
-
-            // Get upcoming classes for today and tomorrow
+            }            // Get upcoming classes for today and tomorrow
             const upcomingClasses = await this.getUpcomingClasses(studentId);
 
-            // Get recent payments
+            // Get available open courses for registration
+            const availableOpenCourses = await this.getAvailableOpenCourses(studentId);            // Get recent payments
             const recentPayments = await this.getRecentPayments(studentId);
 
             // Get current semester
@@ -51,25 +52,15 @@ class DashboardManager {
                     studentId: student.student_id,
                     fullName: student.name,
                     dateOfBirth: student.date_of_birth || new Date(),
-                    gender: student.gender,
-                    hometown: student.hometown ? JSON.parse(student.hometown) : undefined,
-                    districtId: student.district_id,
+                    gender: student.gender,                    hometown: student.hometown ? JSON.parse(student.hometown) : undefined,                    districtId: student.district_id,
                     priorityObjectId: student.priority_object_id,
                     majorId: student.major,
                     email: student.email,
-                    phone: student.phone,
-                    status: student.status || 'active',
-                    avatarUrl: student.avatar_url,
-                    credits: {
-                        completed: parseInt(student.credits_earned) || 0,
-                        current: parseInt(student.current_credits) || 0,
-                        required: student.required_credits || 120
-                    }
-                },
-                enrolledSubjects: parseInt(student.current_enrollments) || 0,
+                    phone: student.phone                },
+                enrolledCourses: parseInt(student.current_enrollments) || 0,
                 totalCredits: parseInt(student.current_credits) || 0,
                 gpa: parseFloat(student.gpa) || 0,
-                upcomingClasses: upcomingClasses,
+                availableOpenCourses: availableOpenCourses,
                 recentPayments: recentPayments
             };
 
@@ -156,8 +147,8 @@ class DashboardManager {
                 const schedule = this.parseScheduleForUpcoming(cls.schedule);
                 return {
                     id: cls.id,
-                    subjectId: cls.id,
-                    subjectName: cls.name,
+                    courseId: cls.id,
+                    courseName: cls.name,
                     lecturer: cls.lecturer,
                     day: schedule.day,
                     time: `${schedule.startTime}-${schedule.endTime}`,
@@ -173,35 +164,19 @@ class DashboardManager {
 
     /**
      * Get student's recent payment records
-     */
-    private async getRecentPayments(studentId: string) {
+     */    private async getRecentPayments(studentId: string) {
         try {
-            const payments = await DatabaseService.query(`
-                SELECT 
-                    pr.id,
-                    pr.amount,
-                    pr.payment_date as paymentDate,
-                    pr.payment_method as paymentMethod,
-                    pr.status,
-                    tr.semester
-                FROM payment_receipts pr
-                JOIN tuition_records tr ON pr.tuition_record_id = tr.id
-                WHERE tr.student_id = $1
-                ORDER BY pr.payment_date DESC
-                LIMIT 5
-            `, [studentId]);
-
-            const recentPayments: IPayment[] = payments.map(payment => ({
-                paymentId: payment.id.toString(),
+            // Use the new tuition manager to get recent payments
+            const recentPayments = await tuitionManager.getRecentPayments(studentId);            // Convert to IPayment format for dashboard
+            return recentPayments.map(payment => ({
+                paymentId: payment.paymentId,
                 paymentDate: payment.paymentDate,
-                registrationId: payment.courseId.toString(),
+                registrationId: payment.registrationId,
                 paymentAmount: payment.amount,
-                status: payment.status,
-                paymentMethod: payment.paymentMethod,
-                transactionId: payment.id
+                status: 'paid' as const, // Assuming completed payments
+                paymentMethod: 'cash' as const, // Default payment method
+                transactionId: payment.paymentId
             }));
-
-            return recentPayments;
 
         } catch (error) {
             console.error('Error getting recent payments:', error);
@@ -351,6 +326,34 @@ class DashboardManager {
             return { day: 'TBD', startTime: '00:00', endTime: '00:00' };
         }
     }
+
+    /**
+     * Get available open courses for student registration
+     */
+    private async getAvailableOpenCourses(studentId: string) {
+        try {
+            // Get current semester
+            const currentSemester = await DatabaseService.queryOne(`
+                SELECT setting_value FROM system_settings WHERE setting_key = 'current_semester'
+            `);
+            
+            const semester = currentSemester?.setting_value || '2024-1';
+            
+            // Get available courses that student hasn't enrolled yet
+            const courses = await OpenCourseService.getAllCourses();
+            
+            // Filter to only show courses from current semester and available for registration
+            return courses.filter(course => 
+                course.semesterId === semester && 
+                course.currentStudents < course.maxStudents &&
+                course.isAvailable !== false
+            ).slice(0, 5); // Show top 5 available courses
+            
+        } catch (error) {
+            console.error('Error getting available open courses:', error);
+            return [];
+        }
+    }
 }
 
-export default new DashboardManager(); 
+export default new DashboardManager();

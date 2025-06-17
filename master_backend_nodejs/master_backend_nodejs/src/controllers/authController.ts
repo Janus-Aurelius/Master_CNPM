@@ -5,6 +5,7 @@ import { getUserByEmail, getUserById, verifyPassword, blacklistToken, isTokenBla
 import bcrypt from 'bcrypt';
 import { Database } from '../config/database';
 import { config } from '../config';
+import { maintenanceManager } from '../business/AdminBussiness/maintenanceManager';
 
 const JWT_SECRET = config.jwtSecret;
 const JWT_EXPIRES = '24h';
@@ -22,6 +23,23 @@ export const login = async (req: Request, res: Response) => {
     console.log('=== Login Request ===');
     console.log('Request body:', req.body);
     const { username, password } = req.body;
+
+    // Kiểm tra maintenance mode
+    if (maintenanceManager.isInMaintenanceMode()) {
+      // Kiểm tra xem user có phải admin không
+      const result = await Database.query(
+        'SELECT * FROM NGUOIDUNG WHERE TenDangNhap = $1',
+        [username]
+      );
+      
+      const user = result[0];
+      if (!user || user.manhom !== 'N1') {
+        return res.status(503).json({
+          success: false,
+          message: 'Hệ thống đang trong quá trình bảo trì. Chỉ admin mới có thể đăng nhập.'
+        });
+      }
+    }
 
     if (!username || !password) {
       console.log('Missing username or password');
@@ -55,7 +73,7 @@ export const login = async (req: Request, res: Response) => {
         success: false,
         message: 'Tài khoản đã bị vô hiệu hóa'
       });
-  }
+    }
 
     // Check password
     const isPasswordValid = password === user.matkhau;

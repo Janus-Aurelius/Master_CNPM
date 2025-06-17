@@ -70,6 +70,15 @@ const columnWidths = {
     actions: 120,
 };
 
+const departmentMap = {
+    'Công nghệ phần mềm': 'KTPM',
+    'Hệ thống thông tin': 'HTTT',
+    'Khoa học máy tính': 'KHMT',
+    'Kỹ thuật máy tính': 'KTMT',
+    'Truyền thông & Mạng máy tính': 'TTMT',
+    'An toàn thông tin': 'ATTT'
+};
+
 export default function UserManagement({user, onLogout}: UserManagementProps) {
     const [tabValue, setTabValue] = useState(0);
     const [searchTerm, setSearchTerm] = useState("");
@@ -167,9 +176,16 @@ export default function UserManagement({user, onLogout}: UserManagementProps) {
         try {
             setIsLoading(true);
             if (dialogType === "add") {
-                await userAdminApi.createUser(currentUser);
+                await userAdminApi.createUser({
+                    ...currentUser,
+                    studentId: currentUser.studentid,
+                });
             } else if (dialogType === "edit") {
-                await userAdminApi.updateUser(currentUser.id, currentUser);
+                const majorId = departmentMap[currentUser.department as keyof typeof departmentMap];
+                await userAdminApi.updateUser(currentUser.id, {
+                    ...currentUser,
+                    department: majorId,
+                });
             }
             await fetchUsers();
             handleCloseDialog();
@@ -609,7 +625,7 @@ export default function UserManagement({user, onLogout}: UserManagementProps) {
                                         label="Mã số sinh viên"
                                         fullWidth
                                         value={currentUser?.studentid || ''}
-                                        disabled
+                                        disabled={dialogType === "edit"}
                                         onChange={(e) => setCurrentUser({...currentUser, studentid: e.target.value})}
                                         sx={{
                                             borderRadius: '12px',

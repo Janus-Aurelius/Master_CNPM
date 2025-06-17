@@ -1,15 +1,11 @@
 import { Request, Response } from 'express';
 import { IStudent, IStudentSchedule } from '../../models/student_related/studentInterface';
-import { IStudentOverview, IAcademicRequest } from '../../models/student_related/studentDashboardInterface';
-import { IEnrollment, IEnrolledSubject } from '../../models/student_related/studentEnrollmentInterface';
+import { IStudentOverview } from '../../models/student_related/studentDashboardInterface';
+import { IRegistration, IRegistrationDetail } from '../../models/student_related/studentEnrollmentInterface';
+import { IPaymentRequest } from '../../models/student_related/studentPaymentInterface';
 import { dashboardService } from '../../services/studentService/dashboardService';
-import { academicRequestService } from '../../services/studentService/academicRequestService';
-import { gradeService } from '../../services/studentService/gradeService';
+import tuitionManager from '../../business/studentBusiness/tuitionManager';
 import registrationManager from '../../business/studentBusiness/registrationManager';
-import enrollmentManager from '../../business/studentBusiness/enrollmentManager';
-import { tuitionPaymentManager } from '../../business/studentBusiness/tuitionPaymentManager';
-import { studentTuitionPaymentService } from '../../services/studentService/studentTuitionPaymentService';
-import { TuitionCourseItem } from '../../models/student_related/studentPaymentInterface';
 import { AppError } from '../../middleware/errorHandler';
 
 
@@ -23,38 +19,20 @@ interface IStudentController {
     searchSubjects(req: Request, res: Response): Promise<Response>;
     registerSubject(req: Request, res: Response): Promise<Response>;
     
-    // Academic Request
-    createRequest(req: Request, res: Response): Promise<Response>;
-    getRequestHistory(req: Request, res: Response): Promise<Response>;
-    
     // Enrolled Subjects Management
-    getEnrolledSubjects(req: Request, res: Response): Promise<Response>;
-    getSubjectDetails(req: Request, res: Response): Promise<Response>;
+    getEnrolledCourses(req: Request, res: Response): Promise<Response>;
     cancelRegistration(req: Request, res: Response): Promise<Response>;
     
     // Student profile routes
     register(req: Request, res: Response): Promise<Response>;
-    updateProfile(req: Request, res: Response): Promise<Response>;
+    updateProfile(req: Request, res: Response): Promise<Response>;    
     registerCourses(req: Request, res: Response): Promise<Response>;
     getRegisteredCourses(req: Request, res: Response): Promise<Response>;
 
-    // Grades
-    getGrades(req: Request, res: Response): Promise<Response>;
-
-    // Xác nhận đăng ký, tạo phiếu học phí
-    confirmRegistration(req: Request, res: Response): Promise<Response>;
-    
-    // Thanh toán học phí
-    payTuition(req: Request, res: Response): Promise<Response>;
-    
-    // Sửa đăng ký
-    editRegistration(req: Request, res: Response): Promise<Response>;
-    
-    // Lấy danh sách phiếu học phí theo sinh viên
-    getTuitionRecordsByStudent(req: Request, res: Response): Promise<Response>;
-    
-    // Lấy danh sách biên lai thanh toán theo phiếu học phí
-    getPaymentReceiptsByRecord(req: Request, res: Response): Promise<Response>;
+    // Tuition Payment - NEW METHODS
+    getTuitionStatus(req: Request, res: Response): Promise<Response>;
+    makePayment(req: Request, res: Response): Promise<Response>;
+    getPaymentHistory(req: Request, res: Response): Promise<Response>;
 }
 
 class StudentController implements IStudentController {    public async getDashboard(req: Request, res: Response): Promise<Response> {
@@ -64,15 +42,11 @@ class StudentController implements IStudentController {    public async getDashb
             if (!studentId) {
                 return res.status(400).json({ success: false, message: 'Missing studentId in user token' });
             }
-            const dashboard = await dashboardService.getStudentOverview(studentId);
-            if (!dashboard) {
+            const dashboard = await dashboardService.getStudentOverview(studentId);            if (!dashboard) {
                 return res.status(404).json({ success: false, message: 'Student dashboard not found' });
             }
-            const response = {
-                ...dashboard,
-                schedule: dashboard.upcomingClasses
-            };
-            return res.status(200).json({ success: true, data: response });
+            
+            return res.status(200).json({ success: true, data: dashboard });
         } catch (error: unknown) {
             console.error(`Error getting dashboard: ${error}`);
             return res.status(500).json({ success: false, message: 'Internal server error' });
@@ -87,7 +61,7 @@ class StudentController implements IStudentController {    public async getDashb
             if (!schedule) {
                 return res.status(404).json({ success: false, message: 'Student schedule not found' });
             }
-            return res.status(200).json({ success: true, data: schedule.subjects });
+            return res.status(200).json({ success: true, data: schedule.courses });
         } catch (error: unknown) {
             console.error(`Error getting timetable: ${error}`);
             return res.status(500).json({ success: false, message: 'Internal server error' });
@@ -166,86 +140,22 @@ class StudentController implements IStudentController {    public async getDashb
                     message: 'Internal server error'
                 });
             }
-        }
-    }
+        }    }
 
-    public async createRequest(req: Request, res: Response): Promise<Response> {
-        try {
-            const request = await academicRequestService.createRequest(req.body);
-            return res.status(201).json({
-                success: true,
-                data: request
-            });
-        } catch (error: unknown) {
-            console.error(`Error creating request: ${error}`);
-            return res.status(500).json({
-                success: false,
-                message: 'Internal server error'
-            });
-        }
-    }
-
-    public async getRequestHistory(req: Request, res: Response): Promise<Response> {
-        try {
-            const studentId = req.user?.studentId;
-            if (!studentId) {
-                return res.status(400).json({ success: false, message: 'Missing studentId in user token' });
-            }
-            const history = await academicRequestService.getRequestsByStudent(studentId);
-            return res.status(200).json({ success: true, data: history });
-        } catch (error: unknown) {
-            console.error(`Error getting request history: ${error}`);
-            return res.status(500).json({ success: false, message: 'Internal server error' });
-        }
-    }
-
-    public async getEnrolledSubjects(req: Request, res: Response): Promise<Response> {
+    public async getEnrolledCourses(req: Request, res: Response): Promise<Response> {
         try {
             const studentId = req.user?.studentId;
             const semester = (req.query.semester as string) || 'HK1 2023-2024';
             if (!studentId) {
                 return res.status(400).json({ success: false, message: 'Missing studentId in user token' });
             }
-            const enrolledSubjects = await enrollmentManager.getEnrolledSubjects(studentId, semester);
-            return res.status(200).json({ success: true, data: enrolledSubjects });
+            const enrolledCourses = await registrationManager.getEnrolledCourses(studentId, semester);
+            return res.status(200).json({ success: true, data: enrolledCourses });
         } catch (error: any) {
-            console.error('Error getting enrolled subjects:', error);
-            return res.status(500).json({
+            console.error('Error getting enrolled courses:', error);            return res.status(500).json({
                 success: false,
                 message: 'Internal server error'
             });
-        }
-    }    public async getSubjectDetails(req: Request, res: Response): Promise<Response> {
-        try {
-            const studentId = req.user?.studentId;
-            const { courseId } = req.params;
-            if (!studentId || !courseId) {
-                return res.status(400).json({ success: false, message: 'Missing studentId or courseId' });
-            }
-            const enrolledSubjects = await enrollmentManager.getEnrolledSubjects(studentId, 'HK1 2023-2024');
-            const enrolledSubject = enrolledSubjects.find(subject => subject.enrollment.courseId === courseId);
-            if (!enrolledSubject) {
-                return res.status(404).json({ success: false, message: 'Subject not found or student not enrolled' });
-            }
-            const grades = await gradeService.getStudentGrades(studentId);
-            const subjectGrade = grades.find((grade: any) => grade.subjectId === courseId);
-            return res.status(200).json({
-                success: true,
-                data: {
-                    subjectId: courseId,
-                    grade: subjectGrade || {
-                        subjectId: courseId,
-                        midtermGrade: null,
-                        finalGrade: null,
-                        totalGrade: null,
-                        letterGrade: null
-                    },
-                    subject: enrolledSubject
-                }
-            });
-        } catch (error) {
-            console.error('Error getting subject details:', error);
-            return res.status(500).json({ success: false, message: 'Internal server error' });
         }
     }
 
@@ -297,9 +207,7 @@ class StudentController implements IStudentController {    public async getDashb
             console.error('Error registering courses:', error);
             return res.status(500).json({ success: false, message: 'Internal server error' });
         }
-    }
-
-    public async getRegisteredCourses(req: Request, res: Response): Promise<Response> {
+    }    public async getRegisteredCourses(req: Request, res: Response): Promise<Response> {
         try {
             const studentId = req.user?.studentId;
             const semester = req.query.semester as string;
@@ -311,141 +219,99 @@ class StudentController implements IStudentController {    public async getDashb
         } catch (error: any) {
             console.error('Error getting registered courses:', error);
             return res.status(500).json({ success: false, message: 'Internal server error' });
+        }    }
+
+    // === TUITION PAYMENT METHODS ===
+
+    public async getTuitionStatus(req: Request, res: Response): Promise<Response> {
+        try {
+            const studentId = req.user?.studentId;
+            const { semesterId } = req.query;
+            
+            if (!studentId || !semesterId) {
+                return res.status(400).json({ 
+                    success: false, 
+                    message: 'Missing studentId or semesterId' 
+                });
+            }
+
+            const tuitionStatus = await tuitionManager.getStudentTuitionStatus(studentId, semesterId as string);
+            
+            if (!tuitionStatus) {
+                return res.status(404).json({ 
+                    success: false, 
+                    message: 'No registration found for this semester' 
+                });
+            }
+
+            return res.status(200).json({ success: true, data: tuitionStatus });
+        } catch (error: any) {
+            console.error('Error getting tuition status:', error);
+            return res.status(500).json({ 
+                success: false, 
+                message: 'Internal server error' 
+            });
         }
     }
 
-    public async getGrades(req: Request, res: Response): Promise<Response> {
+    public async makePayment(req: Request, res: Response): Promise<Response> {
         try {
             const studentId = req.user?.studentId;
+            const paymentRequest: IPaymentRequest = req.body;
+
             if (!studentId) {
-                return res.status(400).json({ success: false, message: 'Missing studentId in user token' });
-            }
-            const grades = await gradeService.getStudentGrades(studentId);
-            return res.status(200).json({ success: true, data: grades });
-        } catch (error: unknown) {
-            console.error(`Error getting grades: ${error}`);
-            return res.status(500).json({
-                success: false,
-                message: 'Internal server error'
-            });
-        }
-    }
-
-    public async confirmRegistration(req: Request, res: Response): Promise<Response> {
-        try {
-            if (!req.user) {
-                return res.status(401).json({
-                    success: false,
-                    message: 'Unauthorized'
+                return res.status(400).json({ 
+                    success: false, 
+                    message: 'Missing studentId in user token' 
                 });
             }
 
-            const { semester, courses } = req.body; // courses: TuitionCourseItem[]
-            const studentId = req.user.id;
-
-            // Validate input
-            if (!semester || !courses || !Array.isArray(courses) || courses.length === 0) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'Invalid input data'
+            // Validate payment request
+            if (!paymentRequest.registrationId || !paymentRequest.amount || paymentRequest.amount <= 0) {
+                return res.status(400).json({ 
+                    success: false, 
+                    message: 'Invalid payment request' 
                 });
             }
 
-            // Create tuition record
-            const record = await studentTuitionPaymentService.createTuitionRecord(studentId, semester, courses);
-
-            return res.status(200).json({
-                success: true,
-                message: 'Registration confirmed and tuition record created',
-                data: record
+            const paymentResponse = await tuitionManager.processPayment(paymentRequest);
+            
+            return res.status(200).json({ 
+                success: true, 
+                data: paymentResponse,
+                message: 'Payment processed successfully'
             });
-        } catch (error) {
-            console.error('Error confirming registration:', error);
-            return res.status(500).json({
-                success: false,
-                message: 'Error confirming registration'
-            });
-        }
-    }
-
-    public async payTuition(req: Request, res: Response): Promise<Response> {
-        try {
-            const studentId = req.user?.studentId;
-            const { tuitionRecordId, amount } = req.body;
-            if (!studentId || !tuitionRecordId || typeof amount !== 'number' || amount < 0) {
-                return res.status(400).json({ success: false, message: 'Missing studentId, tuitionRecordId, or invalid amount' });
-            }
-            // Simulate payment logic
-            return res.status(200).json({ success: true, message: 'Payment processed successfully' });
         } catch (error: any) {
-            console.error('Error processing payment:', error);
-            return res.status(500).json({ success: false, message: 'Internal server error' });
-        }
-    }
-
-    public async editRegistration(req: Request, res: Response): Promise<Response> {
-        try {
-            if (!req.user) {
-                return res.status(401).json({
-                    success: false,
-                    message: 'Unauthorized'
-                });
-            }
-
-            const { tuitionRecordId, newCourses } = req.body; // newCourses: TuitionCourseItem[]
-            const studentId = req.user.id;
-
-            // Validate input
-            if (!tuitionRecordId || !newCourses || !Array.isArray(newCourses)) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'Invalid input data'
-                });
-            }
-
-            // Update tuition record
-            const record = await studentTuitionPaymentService.editRegistration(tuitionRecordId, newCourses);
-
-            return res.status(200).json({
-                success: true,
-                message: 'Registration updated successfully',
-                data: record
-            });
-        } catch (error) {
-            console.error('Error editing registration:', error);
-            return res.status(500).json({
-                success: false,
-                message: 'Error editing registration'
+            console.error('Error making payment:', error);
+            return res.status(500).json({ 
+                success: false, 
+                message: error.message || 'Internal server error' 
             });
         }
-    }
-
-    public async getTuitionRecordsByStudent(req: Request, res: Response): Promise<Response> {
+    }    public async getPaymentHistory(req: Request, res: Response): Promise<Response> {
         try {
             const studentId = req.user?.studentId;
+            const { semesterId } = req.query;
+            
             if (!studentId) {
-                return res.status(400).json({ success: false, message: 'Missing studentId in user token' });
+                return res.status(400).json({ 
+                    success: false, 
+                    message: 'Missing studentId in user token' 
+                });
             }
-            const records = await tuitionPaymentManager.getTuitionRecordsByStudent(studentId);
-            return res.status(200).json({ success: true, data: records });
-        } catch (error: any) {
-            console.error('Error getting tuition records:', error);
-            return res.status(500).json({ success: false, message: 'Internal server error' });
-        }
-    }
 
-    public async getPaymentReceiptsByRecord(req: Request, res: Response): Promise<Response> {
-        try {
-            const studentId = req.user?.studentId;
-            const { tuitionRecordId } = req.query;
-            if (!studentId || !tuitionRecordId) {
-                return res.status(400).json({ success: false, message: 'Missing studentId or tuitionRecordId' });
-            }
-            const receipts = await tuitionPaymentManager.getPaymentReceiptsByRecord(tuitionRecordId as string);
-            return res.status(200).json({ success: true, data: receipts });
+            const paymentHistory = await tuitionManager.getPaymentHistory(studentId, semesterId as string);
+            
+            return res.status(200).json({ 
+                success: true, 
+                data: paymentHistory 
+            });
         } catch (error: any) {
-            console.error('Error getting payment receipts:', error);
-            return res.status(500).json({ success: false, message: 'Internal server error' });
+            console.error('Error getting payment history:', error);
+            return res.status(500).json({ 
+                success: false, 
+                message: 'Internal server error' 
+            });
         }
     }
 
@@ -456,7 +322,7 @@ class StudentController implements IStudentController {    public async getDashb
             if (!studentId || !courseId) {
                 return res.status(400).json({ success: false, message: 'Missing studentId or courseId' });
             }
-            await enrollmentManager.cancelRegistration(studentId, courseId);
+            await registrationManager.cancelRegistration(studentId, courseId);
             return res.status(200).json({ success: true, message: 'Registration cancelled successfully' });
         } catch (error: any) {
             if (error.message.includes('not found')) {

@@ -1,14 +1,7 @@
 export interface Subject {
-    id: number;
-    name: string;
-    code: string;
+    maMonHoc: string;
+    tenMonHoc: string;
+    maLoaiMon: string;
+    soTiet: number;
     credits: number;
-    description?: string;
-    lecturer: string;
-    day: string;
-    session: string;
-    fromTo: string;
-    room: string;
-    createdAt?: Date;
-    updatedAt?: Date;
 } 

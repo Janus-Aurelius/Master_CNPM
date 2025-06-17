@@ -1,10 +1,10 @@
 import { IStudentSchedule } from '../../models/student_related/studentInterface';
-import { IStudentOverview, IClass } from '../../models/student_related/studentDashboardInterface';
+import { IStudentOverview } from '../../models/student_related/studentDashboardInterface';
 import { IStudent } from '../../models/student_related/studentInterface';
+import { IOfferedCourse } from '../../models/academic_related/openCourse';
 import { DatabaseService } from '../database/databaseService';
 
-export const dashboardService = {
-    async getStudentOverview(studentId: string): Promise<IStudentOverview | null> {
+export const dashboardService = {    async getStudentOverview(studentId: string): Promise<IStudentOverview | null> {
         try {
             // Get student info
             const student = await DatabaseService.queryOne(`
@@ -19,18 +19,14 @@ export const dashboardService = {
                     major,
                     faculty,
                     program,
-                    status,
-                    avatar_url as "avatarUrl",
-                    completed_credits as "completedCredits",
-                    current_credits as "currentCredits",
-                    required_credits as "requiredCredits"
+                    status
                 FROM students 
                 WHERE student_id = $1
             `, [studentId]);
 
             if (!student) return null;
 
-            // Get enrolled subjects count and total credits
+            // Get enrolled courses count and total credits
             const enrollmentStats = await DatabaseService.queryOne<{enrolled_count: number, total_credits: number}>(`
                 SELECT 
                     COUNT(*) as enrolled_count,
@@ -45,31 +41,28 @@ export const dashboardService = {
                 SELECT COALESCE(AVG(total_grade), 0) as gpa
                 FROM grades
                 WHERE student_id = $1
-            `, [studentId]);
-
-            // Get upcoming classes
-            const upcomingClasses = await DatabaseService.query<IClass>(`
+            `, [studentId]);            // Get available open courses
+            const availableOpenCourses = await DatabaseService.query<IOfferedCourse>(`
                 SELECT 
-                    c.id,
-                    s.id as subject_id,
-                    s.name as subject_name,
+                    oc.id,
+                    s.id as "courseId",
+                    s.name as "courseName",
                     s.lecturer,
-                    c.day,
-                    CASE 
-                        WHEN c.session = '1' THEN '7:30-9:30'
-                        WHEN c.session = '2' THEN '9:30-11:30'
-                        WHEN c.session = '3' THEN '13:30-15:30'
-                        ELSE '15:30-17:30'
-                    END as time,
-                    c.room
-                FROM classes c
-                JOIN subjects s ON c.subject_id = s.id
-                JOIN enrollments e ON s.id = e.course_id
-                WHERE e.student_id = $1 
-                AND e.is_enrolled = true
-                AND c.day >= CURRENT_DATE
-                ORDER BY c.day, c.session
-                LIMIT 5
+                    s.credits,
+                    oc.max_students as "maxStudents",
+                    oc.current_students as "currentStudents",
+                    oc.semester,
+                    oc.is_registration_open as "isRegistrationOpen"
+                FROM open_courses oc
+                JOIN subjects s ON oc.course_id = s.id
+                WHERE oc.is_registration_open = true
+                AND oc.current_students < oc.max_students
+                AND s.id NOT IN (
+                    SELECT course_id FROM enrollments 
+                    WHERE student_id = $1 AND is_enrolled = true
+                )
+                ORDER BY s.name
+                LIMIT 10
             `, [studentId]);
 
             // Get recent payments
@@ -85,9 +78,7 @@ export const dashboardService = {
                 WHERE student_id = $1
                 ORDER BY payment_date DESC
                 LIMIT 5
-            `, [studentId]);
-
-            return {
+            `, [studentId]);            return {
                 student: {
                     studentId: student.studentId,
                     fullName: student.name,
@@ -96,30 +87,19 @@ export const dashboardService = {
                     hometown: student.hometown,
                     districtId: student.districtId,
                     priorityObjectId: student.priorityObjectId,
-                    majorId: student.major,
-                    email: student.email,
-                    phone: student.phone,
-                    status: student.status,
-                    avatarUrl: student.avatarUrl,
-                    credits: {
-                        completed: student.completedCredits,
-                        current: student.currentCredits,
-                        required: student.requiredCredits
-                    }
+                    majorId: student.major,                    email: student.email,
+                    phone: student.phone
                 },
-                enrolledSubjects: enrollmentStats?.enrolled_count || 0,
-                totalCredits: enrollmentStats?.total_credits || 0,
-                gpa: gpa?.gpa || 0,
-                upcomingClasses,
+                enrolledCourses: enrollmentStats?.enrolled_count || 0,
+                totalCredits: enrollmentStats?.total_credits || 0,                gpa: gpa?.gpa || 0,
+                availableOpenCourses,
                 recentPayments
             };
         } catch (error) {
             console.error('Error getting student overview:', error);
             throw error;
         }
-    },
-
-    async getStudentSchedule(studentId: string): Promise<IStudentSchedule | null> {
+    },    async getStudentSchedule(studentId: string): Promise<IStudentSchedule | null> {
         try {
             // Get student info
             const student = await DatabaseService.queryOne(`
@@ -134,11 +114,7 @@ export const dashboardService = {
                     major,
                     faculty,
                     program,
-                    status,
-                    avatar_url as "avatarUrl",
-                    completed_credits as "completedCredits",
-                    current_credits as "currentCredits",
-                    required_credits as "requiredCredits"
+                    status
                 FROM students 
                 WHERE student_id = $1
             `, [studentId]);
@@ -155,10 +131,8 @@ export const dashboardService = {
                 LIMIT 1
             `, [studentId]);
 
-            if (!currentSemester) return null;
-
-            // Get enrolled subjects with schedule
-            const subjects = await DatabaseService.query(`
+            if (!currentSemester) return null;            // Get enrolled courses with schedule
+            const courses = await DatabaseService.query(`
                 SELECT 
                     s.id,
                     s.name,
@@ -183,9 +157,7 @@ export const dashboardService = {
                 AND e.semester = $2
                 AND e.is_enrolled = true
                 GROUP BY s.id, s.name, s.credits, s.lecturer
-            `, [studentId, currentSemester.semester]);
-
-            return {
+            `, [studentId, currentSemester.semester]);return {
                 student: {
                     studentId: student.studentId,
                     fullName: student.name,
@@ -193,20 +165,12 @@ export const dashboardService = {
                     gender: student.gender,
                     hometown: student.hometown,
                     districtId: student.districtId,
-                    priorityObjectId: student.priorityObjectId,
-                    majorId: student.major,
+                    priorityObjectId: student.priorityObjectId,                    majorId: student.major,
                     email: student.email,
-                    phone: student.phone,
-                    status: student.status,
-                    avatarUrl: student.avatarUrl,
-                    credits: {
-                        completed: student.completedCredits,
-                        current: student.currentCredits,
-                        required: student.requiredCredits
-                    }
+                    phone: student.phone
                 },
                 semester: currentSemester.semester,
-                subjects: subjects.map(s => ({
+                courses: courses.map(s => ({
                     id: s.id,
                     name: s.name,
                     credit: s.credits,

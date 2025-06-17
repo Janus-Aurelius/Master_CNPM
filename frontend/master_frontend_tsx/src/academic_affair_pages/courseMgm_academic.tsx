@@ -1,6 +1,6 @@
 import { ThemeLayout } from "../styles/theme_layout.tsx";
 import { User } from "../types";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import UserInfo from "../components/UserInfo";
 import {
     Button,
@@ -10,7 +10,6 @@ import {
     DialogTitle,
     IconButton,
     Paper,
-    Stack,
     Table,
     TableBody,
     TableCell,
@@ -20,19 +19,18 @@ import {
     TextField,
     Typography,
     MenuItem,
-    Select,
-    FormControl,
-    InputLabel,
     Box,
     Grid,
-    Divider
+    InputAdornment,
+    Snackbar,
+    Alert
 } from "@mui/material";
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
-import UploadFileIcon from '@mui/icons-material/UploadFile';
 import { courseApi } from '../api_clients/courseApi';
 import { Subject } from '../types/course';
+import SearchIcon from '@mui/icons-material/Search';
 
 interface AcademicPageProps {
     user: User | null;
@@ -64,37 +62,63 @@ const CourseMgmAcademic: React.FC<AcademicPageProps> = ({ user, onLogout }) => {
 
     const [openDialog, setOpenDialog] = useState(false);
     const [currentSubject, setCurrentSubject] = useState<Subject>({
-        id: 0,
-        name: '',
-        code: '',
-        credits: 0,
-        lecturer: '',
-        day: '',
-        session: '',
-        fromTo: '',
-        room: '',
-        description: ''
+        maMonHoc: '',
+        tenMonHoc: '',
+        maLoaiMon: '',
+        soTiet: 0,
+        credits: 0
     });
     const [isEditing, setIsEditing] = useState(false);
-    const [confirmDelete, setConfirmDelete] = useState<{ open: boolean; id: number | null }>({ open: false, id: null });
+    const [confirmDelete, setConfirmDelete] = useState<{ open: boolean; id: string | null }>({ open: false, id: null });
+
+    const [searchMaMonHoc, setSearchMaMonHoc] = useState('');
+    const [searchTenMonHoc, setSearchTenMonHoc] = useState('');
+    const [creditsFilter, setCreditsFilter] = useState<string>('all');
+
+    const [maLoaiMonFilter, setMaLoaiMonFilter] = useState<string>('all');
+    const [soTietFilter, setSoTietFilter] = useState<string>('all');
+
+    const [oldMaMonHoc, setOldMaMonHoc] = useState<string | null>(null);
+
+    const uniqueMaLoaiMon = useMemo(() => Array.from(new Set(subjects.map(s => s.maLoaiMon))).filter(Boolean), [subjects]);
+    const uniqueSoTiet = useMemo(() => Array.from(new Set(subjects.map(s => s.soTiet))).filter(Boolean), [subjects]);
+    const uniqueCredits = useMemo(() => Array.from(new Set(subjects.map(s => parseInt(s.credits.toString(), 10)))).filter(Boolean), [subjects]);
+
+    const filteredSubjects = useMemo(() => {
+        return subjects.filter(subject => {
+            const matchesMaMonHoc = subject.maMonHoc.toLowerCase().includes(searchMaMonHoc.toLowerCase());
+            const matchesTenMonHoc = subject.tenMonHoc.toLowerCase().includes(searchTenMonHoc.toLowerCase());
+            const matchesMaLoaiMon = maLoaiMonFilter === 'all' || subject.maLoaiMon === maLoaiMonFilter;
+            const matchesSoTiet = soTietFilter === 'all' || subject.soTiet === Number(soTietFilter);
+            const matchesCredits = creditsFilter === 'all' || parseInt(subject.credits.toString(), 10) === Number(creditsFilter);
+            return matchesMaMonHoc && matchesTenMonHoc && matchesMaLoaiMon && matchesSoTiet && matchesCredits;
+        });
+    }, [subjects, searchMaMonHoc, searchTenMonHoc, maLoaiMonFilter, soTietFilter, creditsFilter]);
+
+    const [snackbar, setSnackbar] = useState<{
+        open: boolean;
+        message: string;
+        severity: 'success' | 'error' | 'info' | 'warning';
+    }>({
+        open: false,
+        message: '',
+        severity: 'error'
+    });
 
     const handleOpenDialog = (edit: boolean = false, subject?: Subject) => {
         setIsEditing(edit);
         if (edit && subject) {
             setCurrentSubject(subject);
+            setOldMaMonHoc(subject.maMonHoc);
         } else {
             setCurrentSubject({
-                id: 0,
-                name: '',
-                code: '',
-                credits: 0,
-                lecturer: '',
-                day: '',
-                session: '',
-                fromTo: '',
-                room: '',
-                description: ''
+                maMonHoc: '',
+                tenMonHoc: '',
+                maLoaiMon: '',
+                soTiet: 0,
+                credits: 0
             });
+            setOldMaMonHoc(null);
         }
         setOpenDialog(true);
     };
@@ -103,12 +127,14 @@ const CourseMgmAcademic: React.FC<AcademicPageProps> = ({ user, onLogout }) => {
         setOpenDialog(false);
     };
 
-    const handleUpdate = async (id: number, subject: Subject) => {
+    const handleUpdate = async (id: string, subject: Subject) => {
         try {
-            await courseApi.updateCourse(id, subject);
+            if (!oldMaMonHoc) return;
+            await courseApi.updateCourse(oldMaMonHoc, subject);
             fetchSubjects();
-        } catch (error) {
-            console.error('Error updating subject:', error);
+            setSnackbar({ open: true, message: 'Cập nhật môn học thành công!', severity: 'success' });
+        } catch (error: any) {
+            setSnackbar({ open: true, message: error?.message || 'Có lỗi khi cập nhật môn học', severity: 'error' });
         }
     };
 
@@ -116,32 +142,42 @@ const CourseMgmAcademic: React.FC<AcademicPageProps> = ({ user, onLogout }) => {
         try {
             await courseApi.createCourse(subject);
             fetchSubjects();
-        } catch (error) {
-            console.error('Error creating subject:', error);
+            setSnackbar({ open: true, message: 'Thêm môn học thành công!', severity: 'success' });
+        } catch (error: any) {
+            if (error?.message?.includes('Mã môn học đã tồn tại')) {
+                setSnackbar({ open: true, message: 'Mã môn học đã tồn tại!', severity: 'error' });
+            } else {
+                setSnackbar({ open: true, message: error?.message || 'Có lỗi khi thêm môn học', severity: 'error' });
+            }
         }
     };
 
-    const handleDelete = async (id: number) => {
+    const handleDelete = async (id: string) => {
         try {
             await courseApi.deleteCourse(id);
-            fetchSubjects();
-        } catch (error) {
+            await fetchSubjects();
+            setSnackbar({ 
+                open: true, 
+                message: 'Xóa môn học thành công!', 
+                severity: 'success' 
+            });
+        } catch (error: any) {
             console.error('Error deleting subject:', error);
+            setSnackbar({ 
+                open: true, 
+                message: error?.message || 'Có lỗi khi xóa môn học', 
+                severity: 'error' 
+            });
         }
     };
 
-    const handleDeleteSubject = (id: number) => {
+    const handleDeleteSubject = (id: string) => {
         setConfirmDelete({ open: true, id });
     };
 
     const handleConfirmDelete = async () => {
         if (confirmDelete.id !== null) {
-            try {
                 await handleDelete(confirmDelete.id);
-            } catch (err) {
-                setError('Failed to delete subject');
-                console.error(err);
-            }
         }
         setConfirmDelete({ open: false, id: null });
     };
@@ -154,15 +190,7 @@ const CourseMgmAcademic: React.FC<AcademicPageProps> = ({ user, onLogout }) => {
         const { name, value } = e.target;
         setCurrentSubject({
             ...currentSubject,
-            [name]: name === "credits" ? Number(value) : value
-        });
-    };
-
-    const handleSelectChange = (e: any) => {
-        const { name, value } = e.target;
-        setCurrentSubject({
-            ...currentSubject,
-            [name]: value
+            [name]: name === "credits" || name === "soTiet" ? Number(value) : value
         });
     };
 
@@ -225,73 +253,408 @@ const CourseMgmAcademic: React.FC<AcademicPageProps> = ({ user, onLogout }) => {
                         <Typography color="error" sx={{ textAlign: 'center', mb: 2 }}>
                             {error}
                         </Typography>
-                    )}
-                    <Box sx={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '16px', gap: 2 }}>
-                        <Button
+                    )}                    <Box sx={{ marginBottom: '24px' }}>
+                        {/* Search and Filter Row */}
+                        <Grid container spacing={2} sx={{ mb: 2 }}>
+                            <Grid item xs={12} md={3}>
+                                <TextField
+                                    fullWidth
+                                    placeholder="Tìm kiếm theo mã môn học"
+                                    value={searchMaMonHoc}
+                                    onChange={e => setSearchMaMonHoc(e.target.value)}
+                                    InputProps={{
+                                        startAdornment: (
+                                            <InputAdornment position="start">
+                                                <SearchIcon sx={{ color: '#9e9e9e' }} />
+                                            </InputAdornment>
+                                        ),
+                                    }}
+                                    variant="outlined"
+                                    size="small"
+                                    sx={{ 
+                                        fontFamily: '"Varela Round", sans-serif',
+                                        '& .MuiOutlinedInput-root': {
+                                            borderRadius: '12px',
+                                            backgroundColor: '#fafafa',
+                                            '&:hover': {
+                                                backgroundColor: '#f5f5f5',
+                                            },
+                                            '&.Mui-focused': {
+                                                backgroundColor: '#fff',
+                                            }
+                                        }
+                                    }}
+                                />
+                            </Grid>
+                            <Grid item xs={12} md={3}>
+                                <TextField
+                                    fullWidth
+                                    placeholder="Tìm kiếm theo tên môn học"
+                                    value={searchTenMonHoc}
+                                    onChange={e => setSearchTenMonHoc(e.target.value)}
+                                    InputProps={{
+                                        startAdornment: (
+                                            <InputAdornment position="start">
+                                                <SearchIcon sx={{ color: '#9e9e9e' }} />
+                                            </InputAdornment>
+                                        ),
+                                    }}
                             variant="outlined"
-                            color="primary"
-                            startIcon={<UploadFileIcon />}
-                            sx={{ borderColor: '#1976d2', color: '#1976d2', borderRadius: '8px', fontFamily: '"Varela Round", sans-serif' }}
-                        >
-                            Nhập file
-                        </Button>
+                                    size="small"
+                                    sx={{ 
+                                        fontFamily: '"Varela Round", sans-serif',
+                                        '& .MuiOutlinedInput-root': {
+                                            borderRadius: '12px',
+                                            backgroundColor: '#fafafa',
+                                            '&:hover': {
+                                                backgroundColor: '#f5f5f5',
+                                            },
+                                            '&.Mui-focused': {
+                                                backgroundColor: '#fff',
+                                            }
+                                        }
+                                    }}
+                                />
+                            </Grid>
+                            <Grid item xs={12} md={2}>
+                                <TextField
+                                    select
+                                    label="Mã loại môn"
+                                    value={maLoaiMonFilter}
+                                    onChange={e => setMaLoaiMonFilter(e.target.value)}
+                                    size="small"
+                                    fullWidth
+                                    sx={{ 
+                                        fontFamily: '"Varela Round", sans-serif',
+                                        '& .MuiOutlinedInput-root': {
+                                            borderRadius: '12px',
+                                            backgroundColor: '#fafafa',
+                                            '&:hover': {
+                                                backgroundColor: '#f5f5f5',
+                                            },
+                                            '&.Mui-focused': {
+                                                backgroundColor: '#fff',
+                                            }
+                                        }
+                                    }}
+                                >
+                                    <MenuItem value="all">Tất cả</MenuItem>
+                                    {uniqueMaLoaiMon.map(ma => (
+                                        <MenuItem key={ma} value={ma}>{ma}</MenuItem>
+                                    ))}
+                                </TextField>
+                            </Grid>
+                            <Grid item xs={12} md={2}>
+                                <TextField
+                                    select
+                                    label="Số tiết"
+                                    value={soTietFilter}
+                                    onChange={e => setSoTietFilter(e.target.value)}
+                                    size="small"
+                                    fullWidth
+                                    sx={{ 
+                                        fontFamily: '"Varela Round", sans-serif',
+                                        '& .MuiOutlinedInput-root': {
+                                            borderRadius: '12px',
+                                            backgroundColor: '#fafafa',
+                                            '&:hover': {
+                                                backgroundColor: '#f5f5f5',
+                                            },
+                                            '&.Mui-focused': {
+                                                backgroundColor: '#fff',
+                                            }
+                                        }
+                                    }}
+                                >
+                                    <MenuItem value="all">Tất cả</MenuItem>
+                                    {uniqueSoTiet.map(st => (
+                                        <MenuItem key={st} value={st}>{st}</MenuItem>
+                                    ))}
+                                </TextField>
+                            </Grid>
+                            <Grid item xs={12} md={2}>
+                                <TextField
+                                    select
+                                    label="Số tín chỉ"
+                                    value={creditsFilter}
+                                    onChange={e => setCreditsFilter(e.target.value)}
+                                    size="small"
+                                    fullWidth
+                                    sx={{ 
+                                        fontFamily: '"Varela Round", sans-serif',
+                                        '& .MuiOutlinedInput-root': {
+                                            borderRadius: '12px',
+                                            backgroundColor: '#fafafa',
+                                            '&:hover': {
+                                                backgroundColor: '#f5f5f5',
+                                            },
+                                            '&.Mui-focused': {
+                                                backgroundColor: '#fff',
+                                            }
+                                        }
+                                    }}
+                                >
+                                    <MenuItem value="all">Tất cả</MenuItem>
+                                    {uniqueCredits.map(cr => (
+                                        <MenuItem key={cr} value={cr}>{cr}</MenuItem>
+                                    ))}
+                                </TextField>
+                            </Grid>
+                        </Grid>
+                        
+                        {/* Action Button Row */}
+                        <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
                         <Button
                             variant="contained"
                             color="primary"
                             startIcon={<AddIcon />}
                             onClick={() => handleOpenDialog(false)}
-                            sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '8px' }}
+                                sx={{ 
+                                    fontFamily: '"Varela Round", sans-serif', 
+                                    borderRadius: '12px',
+                                    px: 3,
+                                    py: 1,
+                                    fontSize: '14px',
+                                    fontWeight: 600,
+                                    textTransform: 'none',
+                                    boxShadow: '0 4px 12px rgba(25, 118, 210, 0.3)',
+                                    '&:hover': {
+                                        boxShadow: '0 6px 16px rgba(25, 118, 210, 0.4)',
+                                        transform: 'translateY(-1px)',
+                                    },
+                                    transition: 'all 0.2s ease-in-out'
+                                }}
                         >
                             Thêm môn học
                         </Button>
+                        </Box>
                     </Box>
                     {loading ? (
-                        <Typography sx={{ textAlign: 'center', mt: 4 }}>Loading...</Typography>
-                    ) : (
-                        <TableContainer component={Paper} sx={{ mt: 2, borderRadius: '12px', boxShadow: '0 4px 10px rgba(0, 0, 0, 0.1)' }}>
+                        <Typography sx={{ textAlign: 'center', mt: 4 }}>Loading...</Typography>                    ) : (
+                        <TableContainer component={Paper} sx={{ 
+                            mt: 2, 
+                            borderRadius: '16px', 
+                            boxShadow: '0 8px 24px rgba(0, 0, 0, 0.08)',
+                            border: '1px solid rgba(224, 224, 224, 0.3)',
+                            overflow: 'auto',
+                            maxHeight: 'calc(100vh - 400px)',
+                            '&::-webkit-scrollbar': {
+                                width: '8px',
+                                height: '8px'
+                            },
+                            '&::-webkit-scrollbar-track': {
+                                backgroundColor: '#f1f1f1',
+                                borderRadius: '8px'
+                            },
+                            '&::-webkit-scrollbar-thumb': {
+                                backgroundColor: 'rgba(0,0,0,0.3)',
+                                borderRadius: '8px',
+                                '&:hover': {
+                                    backgroundColor: 'rgba(0,0,0,0.5)'
+                                }
+                            },
+                            '&::-webkit-scrollbar-corner': {
+                                backgroundColor: '#f1f1f1'
+                            }
+                        }}>
                             <Table size="medium" stickyHeader>
                                 <TableHead>
                                     <TableRow>
-                                        <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '18px', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6' }}>Mã môn học</TableCell>
-                                        <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '18px', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6' }}>Tên môn học</TableCell>
-                                        <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '18px', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6' }}>Giảng viên</TableCell>
-                                        <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '18px', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6' }}>Ngày</TableCell>
-                                        <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '18px', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6' }}>Ca học</TableCell>
-                                        <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '18px', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6' }}>Thời gian</TableCell>
-                                        <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '18px', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6' }}>Phòng</TableCell>
-                                        <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '18px', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6' }}>Số tín chỉ</TableCell>
-                                        <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '18px', fontFamily: '"Varela Round", sans-serif', textAlign: 'center', backgroundColor: '#6ebab6' }}>Thao tác</TableCell>
+                                        <TableCell sx={{ 
+                                            fontWeight: 700,
+                                            backgroundColor: '#f8f9fa',
+                                            color: '#2c3e50',
+                                            fontFamily: '"Montserrat", sans-serif',
+                                            fontSize: '14px',
+                                            borderBottom: '2px solid #e9ecef',
+                                            py: 2
+                                        }}>
+                                            Mã môn học
+                                        </TableCell>
+                                        <TableCell sx={{ 
+                                            fontWeight: 700,
+                                            backgroundColor: '#f8f9fa',
+                                            color: '#2c3e50',
+                                            fontFamily: '"Montserrat", sans-serif',
+                                            fontSize: '14px',
+                                            borderBottom: '2px solid #e9ecef',
+                                            py: 2
+                                        }}>
+                                            Tên môn học
+                                        </TableCell>
+                                        <TableCell sx={{ 
+                                            fontWeight: 700,
+                                            backgroundColor: '#f8f9fa',
+                                            color: '#2c3e50',
+                                            fontFamily: '"Montserrat", sans-serif',
+                                            fontSize: '14px',
+                                            borderBottom: '2px solid #e9ecef',
+                                            py: 2
+                                        }}>
+                                            Mã loại môn
+                                        </TableCell>
+                                        <TableCell sx={{ 
+                                            fontWeight: 700,
+                                            backgroundColor: '#f8f9fa',
+                                            color: '#2c3e50',
+                                            fontFamily: '"Montserrat", sans-serif',
+                                            fontSize: '14px',
+                                            borderBottom: '2px solid #e9ecef',
+                                            py: 2
+                                        }}>
+                                            Số tiết
+                                        </TableCell>
+                                        <TableCell sx={{ 
+                                            fontWeight: 700,
+                                            backgroundColor: '#f8f9fa',
+                                            color: '#2c3e50',
+                                            fontFamily: '"Montserrat", sans-serif',
+                                            fontSize: '14px',
+                                            borderBottom: '2px solid #e9ecef',
+                                            py: 2
+                                        }}>
+                                            Số tín chỉ
+                                        </TableCell>
+                                        <TableCell sx={{ 
+                                            fontWeight: 700,
+                                            backgroundColor: '#f8f9fa',
+                                            color: '#2c3e50',
+                                            fontFamily: '"Montserrat", sans-serif',
+                                            fontSize: '14px',
+                                            borderBottom: '2px solid #e9ecef',
+                                            py: 2,
+                                            textAlign: 'center'
+                                        }}>
+                                            Thao tác
+                                        </TableCell>
                                     </TableRow>
                                 </TableHead>
                                 <TableBody>
-                                    {subjects.map((subject) => (
+                                    {filteredSubjects.map((subject) => (
                                         <TableRow
-                                            key={subject.id}
-                                            sx={{ '&:hover': { backgroundColor: '#f5f5f5' }, '&:last-child td, &:last-child th': { borderBottom: 'none' } }}
+                                            key={subject.maMonHoc}
+                                            sx={{
+                                                '&:nth-of-type(odd)': {
+                                                    backgroundColor: 'rgba(0, 0, 0, 0.02)',
+                                                },
+                                                '&:hover': {
+                                                    backgroundColor: 'rgba(25, 118, 210, 0.04)',
+                                                    transform: 'translateY(-1px)',
+                                                    boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)',
+                                                },
+                                                transition: 'all 0.2s ease-in-out',
+                                                cursor: 'pointer'
+                                            }}
                                         >
-                                            <TableCell sx={{ fontSize: '16px', fontFamily: '"Varela Round", sans-serif', fontWeight: 800 }}>{subject.code}</TableCell>
-                                            <TableCell sx={{ fontSize: '16px', fontFamily: '"Varela Round", sans-serif' }}>{subject.name}</TableCell>
-                                            <TableCell sx={{ fontSize: '16px', fontFamily: '"Varela Round", sans-serif' }}>{subject.lecturer}</TableCell>
-                                            <TableCell sx={{ fontSize: '16px', fontFamily: '"Varela Round", sans-serif' }}>{subject.day}</TableCell>
-                                            <TableCell sx={{ fontSize: '16px', fontFamily: '"Varela Round", sans-serif' }}>{subject.session}</TableCell>
-                                            <TableCell sx={{ fontSize: '16px', fontFamily: '"Varela Round", sans-serif' }}>{subject.fromTo}</TableCell>
-                                            <TableCell sx={{ fontSize: '16px', fontFamily: '"Varela Round", sans-serif' }}>{subject.room}</TableCell>
-                                            <TableCell sx={{ fontSize: '16px', fontFamily: '"Varela Round", sans-serif'  }}>{subject.credits}</TableCell>
-                                            <TableCell sx={{ textAlign: 'center' }}>
+                                            <TableCell sx={{ 
+                                                fontFamily: '"Varela Round", sans-serif',
+                                                fontWeight: 600,
+                                                color: '#1976d2',
+                                                py: 2
+                                            }}>
+                                                {subject.maMonHoc}
+                                            </TableCell>
+                                            <TableCell sx={{ 
+                                                fontFamily: '"Varela Round", sans-serif',
+                                                color: '#2c3e50',
+                                                py: 2,
+                                                maxWidth: '200px'
+                                            }}>
+                                                {subject.tenMonHoc}
+                                            </TableCell>
+                                            <TableCell sx={{ 
+                                                fontFamily: '"Varela Round", sans-serif',
+                                                color: '#2c3e50',
+                                                py: 2
+                                            }}>
+                                                <Box sx={{
+                                                    display: 'inline-block',
+                                                    backgroundColor: '#e3f2fd',
+                                                    color: '#1976d2',
+                                                    px: 2,
+                                                    py: 0.5,
+                                                    borderRadius: '20px',
+                                                    fontSize: '12px',
+                                                    fontWeight: 600
+                                                }}>
+                                                    {subject.maLoaiMon}
+                                                </Box>
+                                            </TableCell>
+                                            <TableCell sx={{ 
+                                                fontFamily: '"Varela Round", sans-serif',
+                                                color: '#2c3e50',
+                                                py: 2,
+                                                textAlign: 'center'
+                                            }}>
+                                                <Box sx={{
+                                                    display: 'inline-block',
+                                                    backgroundColor: '#f3e5f5',
+                                                    color: '#7b1fa2',
+                                                    px: 2,
+                                                    py: 0.5,
+                                                    borderRadius: '20px',
+                                                    fontSize: '12px',
+                                                    fontWeight: 600,
+                                                    minWidth: '40px'
+                                                }}>
+                                                    {subject.soTiet}
+                                                </Box>
+                                            </TableCell>
+                                            <TableCell sx={{ 
+                                                fontFamily: '"Varela Round", sans-serif',
+                                                color: '#2c3e50',
+                                                py: 2,
+                                                textAlign: 'center'
+                                            }}>
+                                                <Box sx={{
+                                                    display: 'inline-block',
+                                                    backgroundColor: '#e8f5e8',
+                                                    color: '#2e7d32',
+                                                    px: 2,
+                                                    py: 0.5,
+                                                    borderRadius: '20px',
+                                                    fontSize: '12px',
+                                                    fontWeight: 600,
+                                                    minWidth: '30px'
+                                                }}>
+                                                    {parseInt(subject.credits.toString(), 10)}
+                                                </Box>
+                                            </TableCell>
+                                            <TableCell sx={{ py: 2, textAlign: 'center' }}>
+                                                <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1 }}>
                                                 <IconButton
                                                     size="small"
-                                                    color="primary"
                                                     onClick={() => handleOpenDialog(true, subject)}
+                                                        sx={{
+                                                            color: '#1976d2',
+                                                            backgroundColor: 'rgba(25, 118, 210, 0.1)',
+                                                            borderRadius: '8px',
+                                                            '&:hover': {
+                                                                backgroundColor: 'rgba(25, 118, 210, 0.2)',
+                                                                transform: 'scale(1.1)',
+                                                            },
+                                                            transition: 'all 0.2s ease-in-out'
+                                                        }}
                                                 >
                                                     <EditIcon fontSize="small" />
                                                 </IconButton>
                                                 <IconButton
                                                     size="small"
-                                                    color="error"
-                                                    onClick={() => handleDeleteSubject(subject.id)}
+                                                        onClick={() => handleDeleteSubject(subject.maMonHoc)}
+                                                        sx={{
+                                                            color: '#d32f2f',
+                                                            backgroundColor: 'rgba(211, 47, 47, 0.1)',
+                                                            borderRadius: '8px',
+                                                            '&:hover': {
+                                                                backgroundColor: 'rgba(211, 47, 47, 0.2)',
+                                                                transform: 'scale(1.1)',
+                                                            },
+                                                            transition: 'all 0.2s ease-in-out'
+                                                        }}
                                                 >
                                                     <DeleteIcon fontSize="small" />
                                                 </IconButton>
+                                                </Box>
                                             </TableCell>
                                         </TableRow>
                                     ))}
@@ -322,210 +685,109 @@ const CourseMgmAcademic: React.FC<AcademicPageProps> = ({ user, onLogout }) => {
                     pt: 3
                 }}>
                     {isEditing ? "Chỉnh sửa môn học" : "Thêm môn học mới"}
-                </DialogTitle>
-                <DialogContent dividers sx={{
+                </DialogTitle>                <DialogContent dividers sx={{
                     border: 'none',
                     px: 4,
-                    pt: 2,
-                    pb: 0,
+                    pt: 3,
+                    pb: 2,
                     background: 'transparent',
                 }}>
-                    <Grid container spacing={2} sx={{ mt: 0.5 }}>
+                    <Grid container spacing={3} sx={{ mt: 0.5 }}>
                         <Grid item xs={12} md={6}>
                             <TextField
-                                autoFocus
-                                name="code"
+                                name="maMonHoc"
                                 label="Mã môn học"
                                 fullWidth
                                 margin="normal"
                                 required
                                 variant="outlined"
-                                value={currentSubject.code}
+                                value={currentSubject.maMonHoc}
                                 onChange={handleInputChange}
+                                disabled={isEditing}
                                 sx={{
+                                    '& .MuiOutlinedInput-root': {
                                     borderRadius: '12px',
-                                    background: '#f7faff',
-                                    '& .MuiOutlinedInput-root': { borderRadius: '12px' },
-                                    '& .MuiInputLabel-root': { fontWeight: 500 },
-                                    '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d8d8d8' },
+                                        backgroundColor: isEditing ? '#f5f5f5' : '#fafafa',
+                                        '&:hover': {
+                                            backgroundColor: isEditing ? '#f5f5f5' : '#f0f0f0',
+                                        },
+                                        '&.Mui-focused': {
+                                            backgroundColor: '#fff',
+                                        }
+                                    }
                                 }}
                             />
                         </Grid>
                         <Grid item xs={12} md={6}>
                             <TextField
-                                name="name"
-                                label="Tên học phần"
+                                name="tenMonHoc"
+                                label="Tên môn học"
                                 fullWidth
                                 margin="normal"
                                 required
                                 variant="outlined"
-                                value={currentSubject.name}
+                                value={currentSubject.tenMonHoc}
                                 onChange={handleInputChange}
                                 sx={{
+                                    '& .MuiOutlinedInput-root': {
                                     borderRadius: '12px',
-                                    background: '#f7faff',
-                                    '& .MuiOutlinedInput-root': { borderRadius: '12px' },
-                                    '& .MuiInputLabel-root': { fontWeight: 500 },
-                                    '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d8d8d8' },
+                                        backgroundColor: '#fafafa',
+                                        '&:hover': {
+                                            backgroundColor: '#f0f0f0',
+                                        },
+                                        '&.Mui-focused': {
+                                            backgroundColor: '#fff',
+                                        }
+                                    }
                                 }}
-                            />
-                        </Grid>
+                            />                        </Grid>
                         <Grid item xs={12} md={6}>
                             <TextField
-                                name="lecturer"
-                                label="Giảng viên"
+                                name="maLoaiMon"
+                                label="Mã loại môn"
                                 fullWidth
                                 margin="normal"
                                 required
                                 variant="outlined"
-                                value={currentSubject.lecturer}
+                                value={currentSubject.maLoaiMon}
                                 onChange={handleInputChange}
                                 sx={{
+                                    '& .MuiOutlinedInput-root': {
                                     borderRadius: '12px',
-                                    background: '#f7faff',
-                                    '& .MuiOutlinedInput-root': { borderRadius: '12px' },
-                                    '& .MuiInputLabel-root': { fontWeight: 500 },
-                                    '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d8d8d8' },
-                                }}
-                            />
-                        </Grid>
-                        <Grid item xs={12} md={6}>
-                            <FormControl fullWidth margin="normal" sx={{ background: '#f7faff', borderRadius: '12px' }}>
-                                <InputLabel id="day-select-label" sx={{ fontWeight: 500 }}>Ngày</InputLabel>
-                                <Select
-                                    labelId="day-select-label"
-                                    name="day"
-                                    value={currentSubject.day}
-                                    label="Ngày"
-                                    onChange={handleSelectChange}
-                                    sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '12px', '& .MuiOutlinedInput-notchedOutline': { borderRadius: '12px', borderColor: '#d8d8d8' } }}
-                                    MenuProps={{
-                                        PaperProps: {
-                                            elevation: 4,
-                                            sx: {
-                                                borderRadius: 3,
-                                                minWidth: 200,
-                                                boxShadow: '0 4px 24px 0 rgba(0,0,0,0.10)',
-                                                p: 1,
-                                            },
+                                        backgroundColor: '#fafafa',
+                                        '&:hover': {
+                                            backgroundColor: '#f0f0f0',
                                         },
-                                        MenuListProps: {
-                                            sx: {
-                                                display: 'flex',
-                                                flexDirection: 'column',
-                                                gap: 0.5,
-                                                fontFamily: '"Varela Round", sans-serif',
-                                                borderRadius: 3,
-                                                p: 0,
-                                            },
-                                        },
-                                    }}
-                                >
-                                    <MenuItem value="Thứ Hai" sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>Thứ Hai</MenuItem>
-                                    <MenuItem value="Thứ Ba" sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>Thứ Ba</MenuItem>
-                                    <MenuItem value="Thứ Tư" sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>Thứ Tư</MenuItem>
-                                    <MenuItem value="Thứ Năm" sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>Thứ Năm</MenuItem>
-                                    <MenuItem value="Thứ Sáu" sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>Thứ Sáu</MenuItem>
-                                    <MenuItem value="Thứ Bảy" sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>Thứ Bảy</MenuItem>
-                                    <MenuItem value="Chủ Nhật" sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>Chủ Nhật</MenuItem>
-                                </Select>
-                            </FormControl>
-                        </Grid>
-                        <Grid item xs={12} md={6}>
-                            <FormControl fullWidth margin="normal" sx={{ background: '#f7faff', borderRadius: '12px' }}>
-                                <InputLabel id="session-select-label" sx={{ fontWeight: 500 }}>Ca học</InputLabel>
-                                <Select
-                                    labelId="session-select-label"
-                                    name="session"
-                                    value={currentSubject.session}
-                                    label="Ca học"
-                                    onChange={handleSelectChange}
-                                    sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '12px', '& .MuiOutlinedInput-notchedOutline': { borderRadius: '12px', borderColor: '#d8d8d8' } }}
-                                    MenuProps={{
-                                        PaperProps: {
-                                            elevation: 4,
-                                            sx: {
-                                                borderRadius: 3,
-                                                minWidth: 200,
-                                                boxShadow: '0 4px 24px 0 rgba(0,0,0,0.10)',
-                                                p: 1,
-                                            },
-                                        },
-                                        MenuListProps: {
-                                            sx: {
-                                                display: 'flex',
-                                                flexDirection: 'column',
-                                                gap: 0.5,
-                                                fontFamily: '"Varela Round", sans-serif',
-                                                borderRadius: 3,
-                                                p: 0,
-                                            },
-                                        },
-                                    }}
-                                >
-                                    <MenuItem value="1" sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>Ca 1</MenuItem>
-                                    <MenuItem value="2" sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>Ca 2</MenuItem>
-                                    <MenuItem value="3" sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>Ca 3</MenuItem>
-                                    <MenuItem value="4" sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>Ca 4</MenuItem>
-                                    <MenuItem value="5" sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>Ca 5</MenuItem>
-                                </Select>
-                            </FormControl>
-                        </Grid>
-                        <Grid item xs={12} md={6}>
-                            <TextField
-                                name="fromTo"
-                                label="Thời gian"
-                                fullWidth
-                                margin="normal"
-                                required
-                                variant="outlined"
-                                value={currentSubject.fromTo}
-                                onChange={handleInputChange}
-                                placeholder="Ví dụ: 08:00-10:00"
-                                sx={{
-                                    borderRadius: '12px',
-                                    background: '#f7faff',
-                                    '& .MuiOutlinedInput-root': { borderRadius: '12px' },
-                                    '& .MuiInputLabel-root': { fontWeight: 500 },
-                                    '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d8d8d8' },
+                                        '&.Mui-focused': {
+                                            backgroundColor: '#fff',
+                                        }
+                                    }
                                 }}
                             />
                         </Grid>
                         <Grid item xs={12} md={6}>
                             <TextField
-                                name="room"
-                                label="Phòng"
-                                fullWidth
-                                margin="normal"
-                                variant="outlined"
-                                value={currentSubject.room}
-                                onChange={handleInputChange}
-                                sx={{
-                                    borderRadius: '12px',
-                                    background: '#f7faff',
-                                    '& .MuiOutlinedInput-root': { borderRadius: '12px' },
-                                    '& .MuiInputLabel-root': { fontWeight: 500 },
-                                    '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d8d8d8' },
-                                }}
-                            />
-                        </Grid>
-                        <Grid item xs={12} md={6}>
-                            <TextField
-                                name="credits"
-                                label="Số tín chỉ"
+                                name="soTiet"
+                                label="Số tiết"
                                 type="number"
                                 fullWidth
                                 margin="normal"
                                 required
                                 variant="outlined"
-                                value={currentSubject.credits}
+                                value={currentSubject.soTiet}
                                 onChange={handleInputChange}
+                                inputProps={{ min: 0 }}
                                 sx={{
+                                    '& .MuiOutlinedInput-root': {
                                     borderRadius: '12px',
-                                    background: '#f7faff',
-                                    '& .MuiOutlinedInput-root': { borderRadius: '12px' },
-                                    '& .MuiInputLabel-root': { fontWeight: 500 },
-                                    '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d8d8d8' },
+                                        backgroundColor: '#fafafa',
+                                        '&:hover': {
+                                            backgroundColor: '#f0f0f0',
+                                        },
+                                        '&.Mui-focused': {
+                                            backgroundColor: '#fff',
+                                        }
+                                    }
                                 }}
                             />
                         </Grid>
@@ -545,7 +807,7 @@ const CourseMgmAcademic: React.FC<AcademicPageProps> = ({ user, onLogout }) => {
                     </Button>
                     <Button variant="contained" color="primary" onClick={() => {
                         if (isEditing) {
-                            handleUpdate(currentSubject.id, currentSubject);
+                            handleUpdate(currentSubject.maMonHoc, currentSubject);
                         } else {
                             handleCreate(currentSubject);
                         }
@@ -592,6 +854,20 @@ const CourseMgmAcademic: React.FC<AcademicPageProps> = ({ user, onLogout }) => {
                     </Button>
                 </DialogActions>
             </Dialog>
+            <Snackbar 
+                open={snackbar.open} 
+                autoHideDuration={6000} 
+                onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}
+                anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+            >
+                <Alert 
+                    onClose={() => setSnackbar(prev => ({ ...prev, open: false }))} 
+                    severity={snackbar.severity}
+                    sx={{ width: '100%' }}
+                >
+                    {snackbar.message}
+                </Alert>
+            </Snackbar>
         </ThemeLayout>
     );
 };

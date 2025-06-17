@@ -1,4 +1,3 @@
-// src/routes/admin.routes.ts
 import express, { RequestHandler } from 'express';
 import { UserController } from '../../controllers/AdminController/userController';
 import maintenanceController from '../../controllers/AdminController/maintenanceController';
@@ -7,7 +6,6 @@ import { authenticateToken, authorizeRoles } from '../../middleware/auth';
 import { checkMaintenance } from '../../middleware/maintenance';
 import { RoleController } from '../../controllers/AdminController/roleController';
 import { securityController } from '../../controllers/AdminController/systemController';
-
 
 
 const router = express.Router();

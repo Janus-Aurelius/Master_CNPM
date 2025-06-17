@@ -1,143 +1,155 @@
-import { IOfferedSubject } from '../../models/academic_related/openCourse';
+import { IOfferedCourse } from '../../models/academic_related/openCourse';
 import { Database } from '../../config/database';
 import { DatabaseError } from '../../utils/errors/database.error';
 
 export class OpenCourseService {
-    static async getAllCourses(): Promise<IOfferedSubject[]> {
+    static async getAllCourses(): Promise<IOfferedCourse[]> {
         try {
-            const query = 'SELECT * FROM open_courses ORDER BY created_at DESC';
+            const query = `
+                SELECT 
+                    dm.MaHocKy as semesterId,
+                    dm.MaMonHoc as courseId,
+                    dm.SiSoToiThieu as minStudents,
+                    dm.SiSoToiDa as maxStudents,
+                    dm.SoSVDaDangKy as currentStudents,
+                    dm.Thu as dayOfWeek,
+                    dm.TietBatDau as startPeriod,
+                    dm.TietKetThuc as endPeriod,
+                    mh.TenMonHoc as courseName,
+                    mh.MaLoaiMon as courseTypeId,
+                    lm.TenLoaiMon as courseTypeName,
+                    mh.SoTiet as totalHours,
+                    lm.SoTietMotTC as hoursPerCredit,
+                    lm.SoTienMotTC as pricePerCredit,
+                    CASE 
+                        WHEN dm.SoSVDaDangKy < dm.SiSoToiDa THEN true 
+                        ELSE false 
+                    END as isAvailable
+                FROM DANHSACHMONHOCMO dm
+                JOIN MONHOC mh ON dm.MaMonHoc = mh.MaMonHoc
+                JOIN LOAIMON lm ON mh.MaLoaiMon = lm.MaLoaiMon
+                ORDER BY dm.MaHocKy, dm.MaMonHoc
+            `;
             return await Database.query(query);
         } catch (error) {
             throw new DatabaseError('Error fetching open courses');
         }
-    }
-
-    static async getCourseById(id: number): Promise<IOfferedSubject | null> {
+    }    static async getCourseById(semesterId: string, courseId: string): Promise<IOfferedCourse | null> {
         try {
-            const query = 'SELECT * FROM open_courses WHERE id = $1';
-            const result = await Database.query(query, [id]);
-            return result[0] || null;
+            const query = `
+                SELECT 
+                    dm.MaHocKy as semesterId,
+                    dm.MaMonHoc as courseId,
+                    dm.SiSoToiThieu as minStudents,
+                    dm.SiSoToiDa as maxStudents,
+                    dm.SoSVDaDangKy as currentStudents,
+                    dm.Thu as dayOfWeek,
+                    dm.TietBatDau as startPeriod,
+                    dm.TietKetThuc as endPeriod,
+                    mh.TenMonHoc as courseName,
+                    mh.MaLoaiMon as courseTypeId,
+                    lm.TenLoaiMon as courseTypeName,
+                    mh.SoTiet as totalHours,
+                    lm.SoTietMotTC as hoursPerCredit,
+                    lm.SoTienMotTC as pricePerCredit,
+                    CASE 
+                        WHEN dm.SoSVDaDangKy < dm.SiSoToiDa THEN true 
+                        ELSE false 
+                    END as isAvailable
+                FROM DANHSACHMONHOCMO dm
+                JOIN MONHOC mh ON dm.MaMonHoc = mh.MaMonHoc
+                JOIN LOAIMON lm ON mh.MaLoaiMon = lm.MaLoaiMon
+                WHERE dm.MaHocKy = $1 AND dm.MaMonHoc = $2
+            `;
+            const result = await Database.query(query, [semesterId, courseId]);            return result[0] || null;
         } catch (error) {
             throw new DatabaseError('Error fetching open course by ID');
         }
     }
 
-    static async createCourse(courseData: Omit<IOfferedSubject, 'id' | 'createdAt' | 'updatedAt'>): Promise<IOfferedSubject> {
+    static async createCourse(courseData: IOfferedCourse): Promise<IOfferedCourse> {
         try {
             const query = `
-                INSERT INTO open_courses (
-                    subject_id,
-                    semester_id,
-                    subject_name,
-                    subject_type_id,
-                    total_hours,
-                    max_students,
-                    current_students,
-                    lecturer,
-                    schedule,
-                    status,
-                    start_date,
-                    end_date,
-                    registration_start_date,
-                    registration_end_date,
-                    prerequisites,
-                    description,
-                    created_at,
-                    updated_at
+                INSERT INTO DANHSACHMONHOCMO (
+                    MaHocKy,
+                    MaMonHoc,
+                    SiSoToiThieu,
+                    SiSoToiDa,
+                    SoSVDaDangKy,
+                    Thu,
+                    TietBatDau,
+                    TietKetThuc
                 ) VALUES (
-                    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, NOW(), NOW()
+                    $1, $2, $3, $4, $5, $6, $7, $8
                 ) RETURNING *
             `;
 
-            const values = [
-                courseData.subjectId,
+            const result = await Database.query(query, [
                 courseData.semesterId,
-                courseData.subjectName,
-                courseData.subjectTypeId,
-                courseData.totalHours,
+                courseData.courseId,
+                courseData.minStudents,
                 courseData.maxStudents,
-                courseData.currentStudents,
-                courseData.lecturer,
-                courseData.schedule ? JSON.stringify(courseData.schedule) : null,
-                courseData.status || 'open',
-                courseData.startDate,
-                courseData.endDate,
-                courseData.registrationStartDate,
-                courseData.registrationEndDate,
-                courseData.prerequisites ? JSON.stringify(courseData.prerequisites) : null,
-                courseData.description
-            ];
+                courseData.currentStudents || 0,
+                courseData.dayOfWeek,
+                courseData.startPeriod,
+                courseData.endPeriod
+            ]);
 
-            const result = await Database.query(query, values);
-            return this.mapToIOfferedSubject(result);
+            return result[0];
         } catch (error) {
-            console.error('Error creating course:', error);
-            throw new DatabaseError('Failed to create course');
+            throw new DatabaseError('Error creating open course');
         }
-    }
-
-    private static mapToIOfferedSubject(data: any): IOfferedSubject {
+    }    private static mapToIOfferedCourse(data: any): IOfferedCourse {
         return {
-            subjectId: data.subject_id,
-            semesterId: data.semester_id,
-            subjectName: data.subject_name,
-            subjectTypeId: data.subject_type_id,
-            totalHours: data.total_hours,
-            maxStudents: data.max_students,
-            currentStudents: data.current_students,
-            lecturer: data.lecturer,
-            schedule: data.schedule ? JSON.parse(data.schedule) : undefined,
-            status: data.status,
-            startDate: data.start_date,
-            endDate: data.end_date,
-            registrationStartDate: data.registration_start_date,
-            registrationEndDate: data.registration_end_date,
-            prerequisites: data.prerequisites ? JSON.parse(data.prerequisites) : undefined,
-            description: data.description,
-            createdAt: data.created_at,
-            updatedAt: data.updated_at
+            semesterId: data.semesterId || data.semester_id,
+            courseId: data.courseId || data.course_id,
+            minStudents: data.minStudents || data.min_students,
+            maxStudents: data.maxStudents || data.max_students,
+            currentStudents: data.currentStudents || data.current_students,
+            dayOfWeek: data.dayOfWeek || data.day_of_week,
+            startPeriod: data.startPeriod || data.start_period,
+            endPeriod: data.endPeriod || data.end_period,
+            courseName: data.courseName || data.course_name,
+            courseTypeId: data.courseTypeId || data.course_type_id,
+            courseTypeName: data.courseTypeName || data.course_type_name,
+            totalHours: data.totalHours || data.total_hours,
+            hoursPerCredit: data.hoursPerCredit || data.hours_per_credit,
+            pricePerCredit: data.pricePerCredit || data.price_per_credit,
+            isAvailable: data.isAvailable || data.is_available,
+            registrationStartDate: data.registrationStartDate || data.registration_start_date,
+            registrationEndDate: data.registrationEndDate || data.registration_end_date
         };
-    }
-
-    static async updateCourse(id: number, courseData: Partial<IOfferedSubject>): Promise<IOfferedSubject> {
+    }static async updateCourse(id: number, courseData: Partial<IOfferedCourse>): Promise<IOfferedCourse> {
         try {
+            // First get the current course to update only the fields that exist in the schema
+            const currentCourse = await this.getCourseById(courseData.semesterId || '', courseData.courseId || '');
+            if (!currentCourse) {
+                throw new Error('Course not found');
+            }
+
             const query = `
-                UPDATE open_courses 
-                SET subject_id = COALESCE($1, subject_id),
-                    subject_name = COALESCE($2, subject_name),
-                    semester_id = COALESCE($3, semester_id),
-                    max_students = COALESCE($4, max_students),
-                    current_students = COALESCE($5, current_students),
-                    lecturer = COALESCE($6, lecturer),
-                    schedule = COALESCE($7, schedule),
-                    status = COALESCE($8, status),
-                    start_date = COALESCE($9, start_date),
-                    end_date = COALESCE($10, end_date),
-                    registration_start_date = COALESCE($11, registration_start_date),
-                    registration_end_date = COALESCE($12, registration_end_date),
-                    prerequisites = COALESCE($13, prerequisites),
-                    description = COALESCE($14, description),
-                    updated_at = CURRENT_TIMESTAMP
-                WHERE id = $15
+                UPDATE DANHSACHMONHOCMO 
+                SET SiSoToiThieu = COALESCE($3, SiSoToiThieu),
+                    SiSoToiDa = COALESCE($4, SiSoToiDa),
+                    SoSVDaDangKy = COALESCE($5, SoSVDaDangKy),
+                    Thu = COALESCE($6, Thu),
+                    TietBatDau = COALESCE($7, TietBatDau),
+                    TietKetThuc = COALESCE($8, TietKetThuc)
+                WHERE MaHocKy = $1 AND MaMonHoc = $2
                 RETURNING *
             `;
+
             const result = await Database.query(query, [
-                courseData.subjectId,
-                courseData.subjectName,
-                courseData.semesterId,
+                courseData.semesterId || currentCourse.semesterId,
+                courseData.courseId || currentCourse.courseId,
+                courseData.minStudents,
                 courseData.maxStudents,
                 courseData.currentStudents,
-                courseData.lecturer,
-                courseData.schedule ? JSON.stringify(courseData.schedule) : null,
-                courseData.status,
-                courseData.startDate,
-                courseData.endDate,
-                courseData.registrationStartDate,
-                courseData.registrationEndDate,
-                courseData.prerequisites ? JSON.stringify(courseData.prerequisites) : null,
-                courseData.description,
-                id
+                courseData.dayOfWeek,
+                courseData.startPeriod,
+                courseData.endPeriod
             ]);
+
             if (!result[0]) {
                 throw new Error('Course not found');
             }
@@ -145,51 +157,45 @@ export class OpenCourseService {
         } catch (error) {
             throw new DatabaseError('Error updating open course');
         }
-    }
-
-    static async deleteCourse(id: number): Promise<void> {
-        try {
-            const query = 'DELETE FROM open_courses WHERE id = $1';
-            await Database.query(query, [id]);
+    }    static async deleteCourse(semesterId: string, courseId: string): Promise<void> {
+        try {            const query = 'DELETE FROM DANHSACHMONHOCMO WHERE MaHocKy = $1 AND MaMonHoc = $2';
+            await Database.query(query, [semesterId, courseId]);
         } catch (error) {
             throw new DatabaseError('Error deleting open course');
         }
     }
 
-    static async getCoursesByStatus(status: IOfferedSubject['status']): Promise<IOfferedSubject[]> {
-        try {
-            const query = 'SELECT * FROM open_courses WHERE status = $1 ORDER BY created_at DESC';
-            return await Database.query(query, [status]);
-        } catch (error) {
-            throw new DatabaseError('Error fetching courses by status');
-        }
-    }
-
-    static async getCoursesBySemester(semester: string, academicYear: string): Promise<IOfferedSubject[]> {
-        try {
-            const query = 'SELECT * FROM open_courses WHERE semester = $1 AND academic_year = $2 ORDER BY created_at DESC';
-            return await Database.query(query, [semester, academicYear]);
-        } catch (error) {
-            throw new DatabaseError('Error fetching courses by semester');
-        }
-    }
-
-    static async updateCourseStatus(id: number, status: IOfferedSubject['status']): Promise<IOfferedSubject> {
+    static async getCoursesBySemester(semester: string, academicYear: string): Promise<IOfferedCourse[]> {
         try {
             const query = `
-                UPDATE open_courses 
-                SET status = $1,
-                    updated_at = CURRENT_TIMESTAMP
-                WHERE id = $2
-                RETURNING *
+                SELECT 
+                    dm.MaHocKy as semesterId,
+                    dm.MaMonHoc as courseId,
+                    dm.SiSoToiThieu as minStudents,
+                    dm.SiSoToiDa as maxStudents,
+                    dm.SoSVDaDangKy as currentStudents,
+                    dm.Thu as dayOfWeek,
+                    dm.TietBatDau as startPeriod,
+                    dm.TietKetThuc as endPeriod,
+                    mh.TenMonHoc as courseName,
+                    mh.MaLoaiMon as courseTypeId,
+                    lm.TenLoaiMon as courseTypeName,
+                    mh.SoTiet as totalHours,
+                    lm.SoTietMotTC as hoursPerCredit,
+                    lm.SoTienMotTC as pricePerCredit,
+                    CASE 
+                        WHEN dm.SoSVDaDangKy < dm.SiSoToiDa THEN true 
+                        ELSE false 
+                    END as isAvailable
+                FROM DANHSACHMONHOCMO dm
+                JOIN MONHOC mh ON dm.MaMonHoc = mh.MaMonHoc
+                JOIN LOAIMON lm ON mh.MaLoaiMon = lm.MaLoaiMon
+                WHERE dm.MaHocKy LIKE $1
+                ORDER BY dm.MaHocKy, dm.MaMonHoc
             `;
-            const result = await Database.query(query, [status, id]);
-            if (!result[0]) {
-                throw new Error('Course not found');
-            }
-            return result[0];
+            return await Database.query(query, [`%${semester}%`]);
         } catch (error) {
-            throw new DatabaseError('Error updating course status');
+            throw new DatabaseError('Error fetching courses by semester');
         }
     }
 } 

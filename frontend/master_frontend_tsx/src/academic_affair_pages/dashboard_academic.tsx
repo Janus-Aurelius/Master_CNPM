@@ -1,6 +1,6 @@
 import {ThemeLayout} from "../styles/theme_layout.tsx";
 import {
-    Typography, 
+    Typography,
     Grid,
     Paper,
     Box,
@@ -27,7 +27,9 @@ import {
 } from "@mui/icons-material";
 import UserInfo from "../components/UserInfo";
 import { useState, useEffect } from "react";
-import { dashboardApi, DashboardSummary, UpcomingEvent, StudentRequest } from "../api_clients/dashboardApi";
+import { dashboardApi, DashboardSummary, UpcomingEvent, StudentRequest } from "../api_clients/dashboardApi";   
+
+console.log('dashboard_academic.tsx file loaded');
 
 interface AcademicPageProps {
     user: User | null;
@@ -35,6 +37,7 @@ interface AcademicPageProps {
 }
 
 export default function DashboardAcademic({ user, onLogout }: AcademicPageProps) {
+    console.log('DashboardAcademic component loaded', user, onLogout);
     const [summaryData, setSummaryData] = useState<DashboardSummary | null>(null);
     const [upcomingEvents, setUpcomingEvents] = useState<UpcomingEvent[]>([]);
     const [studentRequests, setStudentRequests] = useState<StudentRequest[]>([]);
@@ -42,6 +45,7 @@ export default function DashboardAcademic({ user, onLogout }: AcademicPageProps)
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
+        console.log('DashboardAcademic useEffect start');
         const fetchDashboardData = async () => {
             try {
                 setLoading(true);
@@ -50,19 +54,40 @@ export default function DashboardAcademic({ user, onLogout }: AcademicPageProps)
                     dashboardApi.getUpcomingEvents(),
                     dashboardApi.getStudentRequests()
                 ]);
+                console.log('Fetched summary:', summary);
+                console.log('Fetched events:', events);
+                console.log('Fetched requests:', requests);
                 setSummaryData(summary);
-                setUpcomingEvents(events);
-                setStudentRequests(requests);
+                const eventsArray = Array.isArray(events) ? events : [];
+                setUpcomingEvents(eventsArray);
+                const mappedRequests = requests.map(r => ({
+                    id: r.id,
+                    studentId: r.studentid,
+                    studentName: r.studentname,
+                    course: r.course,
+                    requestType: r.requesttype,
+                    submittedDateTime: r.submitteddatetime,
+                    //chỗ này là tính năng không phải lỗi
+                }));
+                setStudentRequests(mappedRequests);
                 setError(null);
             } catch (err) {
                 setError('Failed to fetch dashboard data');
-                console.error(err);
+                console.error('Dashboard fetch error:', err);
             } finally {
                 setLoading(false);
+                console.log('DashboardAcademic useEffect end');
             }
         };
         fetchDashboardData();
     }, []);
+
+    useEffect(() => {
+        return () => {
+            console.log('DashboardAcademic useEffect cleanup');
+        }
+    }, []);
+    console.log('DashboardAcademic before return', { loading, error });
 
     if (loading) {
         return (
@@ -82,17 +107,18 @@ export default function DashboardAcademic({ user, onLogout }: AcademicPageProps)
         );
     }
 
+    console.log('studentRequests:', studentRequests);
+
     return (
         <ThemeLayout role="academic" onLogout={onLogout}>
             <UserInfo user={user} />
-            {/* Summary Cards */}
-            <Grid container spacing={3} sx={{ mb: 4, mt: '2.25rem' }}>
-                <Grid item xs={12} sm={6} md={3}>
-                    <Paper sx={{ 
+            {/* Summary Cards */}            <Grid container spacing={3} sx={{ mb: 4, mt: '2.25rem' }}>        
+                <Grid item xs={12} sm={6} md={4}>
+                    <Paper sx={{
                         bgcolor: '#fce4ec',
                         color: '#ad1457',
                         borderRadius: '16px',
-                        boxShadow: '0 2px 5px rgba(0, 0, 0, 0.1)', 
+                        boxShadow: '0 2px 5px rgba(0, 0, 0, 0.1)',
                         transition: 'all 0.25s ease',
                         display: 'flex',
                         flexDirection: 'column',
@@ -105,50 +131,48 @@ export default function DashboardAcademic({ user, onLogout }: AcademicPageProps)
                         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', p: 2 }}>
                             <Box>
                                 <Typography variant="h6" component="div" fontWeight="bold">
-                                    {summaryData?.totalStudents}
-                                </Typography>
-                                <Typography variant="body2">Tổng số sinh viên</Typography>
-                            </Box>
-                            <Avatar sx={{ bgcolor: '#d81b60' }}>
-                                <PeopleOutline />
-                            </Avatar>
-                        </Box>
-                    </Paper>
-                </Grid>
-                <Grid item xs={12} sm={6} md={3}>
-                    <Paper sx={{ 
-                        bgcolor: '#e3f2fd', 
-                        color: '#0d47a1',
-                        borderRadius: '16px',
-                        boxShadow: '0 2px 5px rgba(0, 0, 0, 0.1)', 
-                        transition: 'all 0.25s ease',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        flexGrow: 1,
-                        '&:hover': {
-                            boxShadow: '0 5px 15px rgba(0, 0, 0, 0.1)',
-                            transform: 'translateY(-2px)'
-                        }
-                    }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', p: 2 }}>
-                            <Box>
-                                <Typography variant="h6" component="div" fontWeight="bold">
-                                    {summaryData?.totalCourses}
+                                    {summaryData?.totalSubjects}
                                 </Typography>
                                 <Typography variant="body2">Tổng số môn học</Typography>
+                            </Box>
+                            <Avatar sx={{ bgcolor: '#d81b60' }}>
+                                <LibraryBooksOutlined />
+                            </Avatar>
+                        </Box>                    </Paper>
+                </Grid>
+                <Grid item xs={12} sm={6} md={4}>
+                    <Paper sx={{
+                        bgcolor: '#e3f2fd',
+                        color: '#0d47a1',
+                        borderRadius: '16px',
+                        boxShadow: '0 2px 5px rgba(0, 0, 0, 0.1)',
+                        transition: 'all 0.25s ease',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        flexGrow: 1,
+                        '&:hover': {
+                            boxShadow: '0 5px 15px rgba(0, 0, 0, 0.1)',
+                            transform: 'translateY(-2px)'
+                        }
+                    }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', p: 2 }}>
+                            <Box>
+                                <Typography variant="h6" component="div" fontWeight="bold">
+                                    {summaryData?.totalOpenCourses}
+                                </Typography>
+                                <Typography variant="body2">Lớp học phần đang mở</Typography>
                             </Box>
                             <Avatar sx={{ bgcolor: '#2196f3' }}>
                                 <LibraryBooksOutlined />
                             </Avatar>
                         </Box>
-                    </Paper>
-                </Grid>
-                <Grid item xs={12} sm={6} md={3}>
-                    <Paper sx={{ 
-                        bgcolor: '#e8f5e9', 
+                    </Paper>                </Grid>
+                <Grid item xs={12} sm={6} md={4}>
+                    <Paper sx={{
+                        bgcolor: '#e8f5e9',
                         color: '#2e7d32',
                         borderRadius: '16px',
-                        boxShadow: '0 2px 5px rgba(0, 0, 0, 0.1)', 
+                        boxShadow: '0 2px 5px rgba(0, 0, 0, 0.1)',
                         transition: 'all 0.25s ease',
                         display: 'flex',
                         flexDirection: 'column',
@@ -161,65 +185,36 @@ export default function DashboardAcademic({ user, onLogout }: AcademicPageProps)
                         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', p: 2 }}>
                             <Box>
                                 <Typography variant="h6" component="div" fontWeight="bold">
-                                    {summaryData?.activeRegistrations}
+                                    {summaryData?.totalPrograms}
                                 </Typography>
-                                <Typography variant="body2">Sinh viên đăng ký</Typography>
+                                <Typography variant="body2">Tổng số chương trình</Typography>
                             </Box>
                             <Avatar sx={{ bgcolor: '#4caf50' }}>
                                 <LibraryBooksOutlined />
                             </Avatar>
                         </Box>
-                    </Paper>
-                </Grid>
-                <Grid item xs={12} sm={6} md={3}>
-                    <Paper sx={{ 
-                        bgcolor: '#fff8e1', 
-                        color: '#ff6d00',
-                        borderRadius: '16px',
-                        boxShadow: '0 2px 5px rgba(0, 0, 0, 0.1)', 
-                        transition: 'all 0.25s ease',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        flexGrow: 1,
-                        '&:hover': {
-                            boxShadow: '0 5px 15px rgba(0, 0, 0, 0.1)',
-                            transform: 'translateY(-2px)'
-                        }
-                    }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', p: 2 }}>
-                            <Box>
-                                <Typography variant="h6" component="div" fontWeight="bold">
-                                    {summaryData?.pendingRequests}
-                                </Typography>
-                                <Typography variant="body2">Yêu cầu đang chờ</Typography>
-                            </Box>
-                            <Avatar sx={{ bgcolor: '#ff9800' }}>
-                                <EventNoteOutlined />
-                            </Avatar>
-                        </Box>
-                    </Paper>
-                </Grid>
+                    </Paper>                </Grid>
             </Grid>
             {/* Main Content Area */}
             <Grid container spacing={3}>
                 {/* Student Registration Requests */}
                 <Grid item xs={12} md={8}>
-                    <Paper sx={{ 
+                    <Paper sx={{
                         p: 3,
                         borderRadius: '16px',
                         backgroundColor: '#ffffff',
-                        boxShadow: '0 2px 5px rgba(0, 0, 0, 0.05)', 
+                        boxShadow: '0 2px 5px rgba(0, 0, 0, 0.05)',
                         transition: 'all 0.25s ease',
                         border: '1px solid rgba(0, 0, 0, 0.03)',
                         '&:hover': {
                             boxShadow: '0 5px 15px rgba(0, 0, 0, 0.05)',
                         }
                     }}>
-                        <Typography 
-                            variant="h6" 
-                            fontWeight="600" 
-                            mb={2.5} 
-                            sx={{ 
+                        <Typography
+                            variant="h6"
+                            fontWeight="600"
+                            mb={2.5}
+                            sx={{
                                 fontFamily: '"Varela Round", sans-serif',
                                 color: '#1a237e',
                                 fontSize: '1.1rem',
@@ -228,9 +223,9 @@ export default function DashboardAcademic({ user, onLogout }: AcademicPageProps)
                         >
                             Các yêu cầu đăng ký/hủy đăng ký môn học
                         </Typography>
-                        <TableContainer sx={{ 
+                        <TableContainer sx={{
                             height: 350,
-                            maxHeight: 350, 
+                            maxHeight: 350,
                             borderRadius: '16px',
                             overflow: 'auto',
                             backgroundColor: '#ffffff',
@@ -263,9 +258,9 @@ export default function DashboardAcademic({ user, onLogout }: AcademicPageProps)
                                 </TableHead>
                                 <TableBody>
                                     {studentRequests.map((request) => (
-                                        <TableRow 
+                                        <TableRow
                                             key={request.id}
-                                            sx={{ 
+                                            sx={{
                                                 '&:last-child td, &:last-child th': { border: 0 },
                                                 borderBottom: '1px solid rgba(224, 224, 224, 0.3)',
                                                 bgcolor: 'transparent',
@@ -283,9 +278,9 @@ export default function DashboardAcademic({ user, onLogout }: AcademicPageProps)
                                             <TableCell sx={{ fontWeight: 500 }}>{request.studentName}</TableCell>
                                             <TableCell>{request.course}</TableCell>
                                             <TableCell>
-                                                <Box sx={{ 
-                                                    display: 'flex', 
-                                                    alignItems: 'center', 
+                                                <Box sx={{
+                                                    display: 'flex',
+                                                    alignItems: 'center',
                                                     backgroundColor: request.requestType === 'register' ? 'rgba(76, 175, 80, 0.08)' : 'rgba(244, 67, 54, 0.08)',
                                                     borderRadius: '16px',
                                                     padding: '4px 10px',
@@ -296,11 +291,15 @@ export default function DashboardAcademic({ user, onLogout }: AcademicPageProps)
                                                     ) : (
                                                         <RemoveCircleOutlined fontSize="small" sx={{ color: '#e53935', mr: 0.7 }} />
                                                     )}
-                                                    <Typography variant="body2" sx={{ 
+                                                    <Typography variant="body2" sx={{
                                                         fontWeight: 500,
                                                         color: request.requestType === 'register' ? '#2e7d32' : '#e53935'
                                                     }}>
-                                                        {request.requestType === 'register' ? 'Đăng ký' : 'Hủy đăng ký'}
+                                                        {request.requestType === 'register'
+                                                          ? 'Đăng ký'
+                                                          : request.requestType === 'cancel'
+                                                            ? 'Hủy đăng ký'
+                                                            : request.requestType}
                                                     </Typography>
                                                 </Box>
                                             </TableCell>
@@ -316,11 +315,11 @@ export default function DashboardAcademic({ user, onLogout }: AcademicPageProps)
                 {/* Side Panels */}
                 <Grid item xs={12} md={4}>
                     {/* Upcoming Events */}
-                    <Paper sx={{ 
+                    <Paper sx={{
                         p: 3,
                         borderRadius: '16px',
                         backgroundColor: 'rgb(250, 250, 250)',
-                        boxShadow: '0 2px 5px rgba(0, 0, 0, 0.1)', 
+                        boxShadow: '0 2px 5px rgba(0, 0, 0, 0.1)',
                         transition: 'all 0.25s ease',
                         '&:hover': {
                             boxShadow: '0 5px 15px rgba(0, 0, 0, 0.1)',
@@ -330,16 +329,16 @@ export default function DashboardAcademic({ user, onLogout }: AcademicPageProps)
                             Sự kiện sắp tới
                         </Typography>
                         <List>
-                            {upcomingEvents.map((event, index) => (
+                            {Array.isArray(upcomingEvents) && upcomingEvents.map((event, index) => (
                                 <Box key={event.id}>
                                     <ListItem alignItems="flex-start" sx={{ px: 0 }}>
                                         <ListItemIcon sx={{ minWidth: '36px' }}>
                                             <EventNoteOutlined color="primary" />
                                         </ListItemIcon>
                                         <ListItemText
-                                            primary={event.event}
-                                            secondary={event.date}
-                                            primaryTypographyProps={{ 
+                                            primary={event.description}
+                                            secondary={new Date(event.timestamp).toLocaleString()}
+                                            primaryTypographyProps={{
                                                 fontWeight: 500,
                                                 fontSize: '0.9rem'
                                             }}

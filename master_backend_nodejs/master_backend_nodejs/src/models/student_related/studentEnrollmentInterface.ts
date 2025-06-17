@@ -1,4 +1,4 @@
-// Schema-based interfaces
+// Schema-based interfaces - Database driven
 export interface IRegistration {
     registrationId: string;     // maPhieuDangKy
     registrationDate: Date;     // ngayLap
@@ -13,42 +13,27 @@ export interface IRegistration {
 
 export interface IRegistrationDetail {
     registrationId: string;     // maPhieuDangKy
-    subjectId: string;          // maMonHoc
+    courseId: string;          // maMonHoc
+    // Computed fields from JOINs
+    courseName?: string;       // From MONHOC.TenMonHoc
+    credits?: number;          // From LOAIMON.SoTiet
+    courseType?: string;       // From LOAIMON.TenLoaiMon
+    fee?: number;             // From LOAIMON.SoTienMotTC
 }
 
-// Additional UI interfaces
-export interface IEnrollment {
-    id: string;
+// UI presentation interface for student academic history
+export interface IStudentAcademicRecord {
     studentId: string;
-    courseId: string;
-    courseName: string;
-    semester: string;
-    isEnrolled: boolean; // true = enrolled, false = not enrolled/dropped
-    credits: number;
-    midtermGrade?: number;
-    finalGrade?: number;
-}
-
-export interface IEnrolledSubject {
-    enrollment: IEnrollment;
-    subjectDetails: {
-        id: string;
-        name: string;
-        lecturer: string;
-        credits: number;
-        maxStudents: number;
-        currentStudents: number;
-        schedule: {
-            day: string;
-            session: string;
-            room: string;
-        }[];
-    };
-    grade: {
-        midterm?: number;
-        final?: number;
-        total?: number;
-        letter?: string;
-    } | null;
-    attendanceRate: number;
+    studentName: string;
+    registrations: Array<{
+        registration: IRegistration;
+        courses: IRegistrationDetail[];
+        semesterInfo: {
+            semesterId: string;
+            semesterName: string;
+            year: number;
+            startDate: Date;
+            endDate: Date;
+        };
+    }>;
 }

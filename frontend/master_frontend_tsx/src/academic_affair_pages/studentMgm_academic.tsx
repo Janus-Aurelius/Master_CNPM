@@ -44,137 +44,350 @@ import ContactMailIcon from '@mui/icons-material/ContactMail';
 import EmailIcon from '@mui/icons-material/Email';
 import PhoneIcon from '@mui/icons-material/Phone';
 import HomeIcon from '@mui/icons-material/Home';
-import { studentApi, Student } from "../api_clients/studentApi";
 
 interface StudentMgmAcademicProps {
     user: User | null;
     onLogout: () => void;
 }
 
-export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademicProps) {
-    const [students, setStudents] = useState<Student[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+interface Student {
+    id: number;
+    studentId: string;
+    name: string;
+    email: string;
+    faculty: string;
+    program: string;
+    enrollmentYear: string;
+    status: string;
+    phone: string;
+    dob: string;
+    permanentAddress: {
+        province: string; // Tỉnh/Thành phố
+        district: string; // Quận/Huyện
+        ward: string; // Số nhà, đường, phường/xã
+    };
+    avatar?: string;
+    gender?: string;
+    hometown?: string; // quê quán
+    targetGroup?: string; // đối tượng
+}
+
+export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademicProps) {    const [students, setStudents] = useState<Student[]>([        { 
+            id: 1, 
+            studentId: '21520001', 
+            name: 'Nguyễn Văn An', 
+            email: 'an.nguyen@student.uit.edu.vn', 
+            faculty: 'Công nghệ thông tin', 
+            program: 'Kỹ thuật phần mềm', 
+            enrollmentYear: '2021', 
+            status: 'Đang học', 
+            phone: '0901234567', 
+            dob: '2003-05-15', 
+            permanentAddress: {
+                province: 'TP.HCM',
+                district: 'Quận 9',
+                ward: 'Số 17, Đường số 5, Khu dân cư An Phú'
+            },
+            gender: 'Nam',
+            hometown: 'Bình Định',
+            targetGroup: 'Người dân tộc thiểu số'
+        },{ 
+            id: 2, 
+            studentId: '21520002', 
+            name: 'Trần Thị Bình', 
+            email: 'binh.tran@student.uit.edu.vn', 
+            faculty: 'Công nghệ thông tin', 
+            program: 'Khoa học máy tính', 
+            enrollmentYear: '2021', 
+            status: 'Đang học', 
+            phone: '0909876543', 
+            dob: '2003-03-20', 
+            permanentAddress: {
+                province: 'TP.HCM',
+                district: 'Thủ Đức',
+                ward: '23/15 Đường Võ Văn Ngân, Phường Linh Chiểu'
+            },
+            gender: 'Nữ',
+            hometown: 'Tiền Giang',
+            targetGroup: 'Anh hùng Lực lượng vũ trang'
+        },{ 
+            id: 3, 
+            studentId: '21520003', 
+            name: 'Lê Văn Cường', 
+            email: 'cuong.le@student.uit.edu.vn', 
+            faculty: 'Công nghệ thông tin', 
+            program: 'Hệ thống thông tin', 
+            enrollmentYear: '2021', 
+            status: 'Đang học', 
+            phone: '0905678901', 
+            dob: '2003-07-10', 
+            permanentAddress: {
+                province: 'TP.HCM',
+                district: 'Bình Thạnh',
+                ward: '45 Đinh Tiên Hoàng, Phường 3'
+            },
+            gender: 'Nam',
+            hometown: 'Đà Nẵng',
+            targetGroup: 'Thương binh'
+        },        { 
+            id: 4, 
+            studentId: '21520004', 
+            name: 'Phạm Thị Dung', 
+            email: 'dung.pham@student.uit.edu.vn', 
+            faculty: 'Công nghệ thông tin', 
+            program: 'Mạng máy tính', 
+            enrollmentYear: '2021', 
+            status: 'Bảo lưu', 
+            phone: '0908765432', 
+            dob: '2003-09-25', 
+            permanentAddress: {
+                province: 'TP.HCM',
+                district: 'Quận 1',
+                ward: '78 Lê Lợi, Phường Bến Nghé'
+            },
+            gender: 'Nữ',
+            hometown: 'Cần Thơ',
+            targetGroup: 'Con liệt sĩ'
+        },        { 
+            id: 5, 
+            studentId: '21520005', 
+            name: 'Hoàng Văn Em', 
+            email: 'em.hoang@student.uit.edu.vn', 
+            faculty: 'Công nghệ thông tin', 
+            program: 'Kỹ thuật phần mềm', 
+            enrollmentYear: '2021', 
+            status: 'Đang học', 
+            phone: '0904567890', 
+            dob: '2003-02-18', 
+            permanentAddress: {
+                province: 'TP.HCM',
+                district: 'Gò Vấp',
+                ward: '123 Nguyễn Văn Linh, Phường 5'
+            },
+            gender: 'Nam',
+            hometown: 'Hà Nội',
+            targetGroup: 'Con thương binh'
+        },        { 
+            id: 6, 
+            studentId: '21520006', 
+            name: 'Đỗ Thị Phương', 
+            email: 'phuong.do@student.uit.edu.vn', 
+            faculty: 'Công nghệ thông tin', 
+            program: 'An toàn thông tin', 
+            enrollmentYear: '2021', 
+            status: 'Đang học', 
+            phone: '0907654321', 
+            dob: '2003-11-05', 
+            permanentAddress: {
+                province: 'TP.HCM',
+                district: 'Phú Nhuận',
+                ward: '56 Hoàng Hoa Thám, Phường 10'
+            },
+            gender: 'Nữ',
+            hometown: 'Lâm Đồng',
+            targetGroup: 'Người nhiễm chất độc hóa học'
+        },        { 
+            id: 7, 
+            studentId: '21520007', 
+            name: 'Vũ Văn Giang', 
+            email: 'giang.vu@student.uit.edu.vn', 
+            faculty: 'Công nghệ thông tin', 
+            program: 'Khoa học máy tính', 
+            enrollmentYear: '2021', 
+            status: 'Thôi học', 
+            phone: '0903456789', 
+            dob: '2003-08-12', 
+            permanentAddress: {
+                province: 'TP.HCM',
+                district: 'Quận 10',
+                ward: '89 Trần Hưng Đạo, Phường 3'
+            },
+            gender: 'Nam',
+            hometown: 'Bắc Ninh',
+            targetGroup: 'Người khuyết tật'
+        },        { 
+            id: 8, 
+            studentId: '21520008', 
+            name: 'Lý Thị Hoa', 
+            email: 'hoa.ly@student.uit.edu.vn', 
+            faculty: 'Công nghệ thông tin', 
+            program: 'Hệ thống thông tin', 
+            enrollmentYear: '2021', 
+            status: 'Đang học', 
+            phone: '0906543210', 
+            dob: '2003-04-30', 
+            permanentAddress: {
+                province: 'TP.HCM',
+                district: 'Tân Bình',
+                ward: '34 Cách Mạng Tháng 8, Phường 6'
+            },
+            gender: 'Nữ',
+            hometown: 'Huế',
+            targetGroup: 'Hộ nghèo'
+        },
+        { 
+            id: 9, 
+            studentId: '21520009', 
+            name: 'Trịnh Văn Khoa', 
+            email: 'khoa.trinh@student.uit.edu.vn', 
+            faculty: 'Khoa học máy tính', 
+            program: 'An toàn thông tin', 
+            enrollmentYear: '2021', 
+            status: 'Đang học', 
+            phone: '0902345678', 
+            dob: '2003-06-22', 
+            permanentAddress: {
+                province: 'TP.HCM',
+                district: 'Bình Tân',
+                ward: '112 Lạc Long Quân, Phường 3'
+            },
+            gender: 'Nam',
+            hometown: 'An Giang',            targetGroup: 'Vùng đặc biệt khó khăn'
+        }
+    ]);
+    const [filteredStudents, setFilteredStudents] = useState<Student[]>(students);
     const [searchQuery, setSearchQuery] = useState("");
+    const [statusFilter, setStatusFilter] = useState("all");
+    const [programFilter, setProgramFilter] = useState("all");
     const [openDialog, setOpenDialog] = useState(false);
-    const [currentStudent, setCurrentStudent] = useState<Student | null>(null);
-    const [isEditing, setIsEditing] = useState(false);
-    const [confirmDelete, setConfirmDelete] = useState<{ open: boolean; id: string | null }>({ open: false, id: null });
+    const [currentStudent, setCurrentStudent] = useState<Student | null>(null);    const [isEditing, setIsEditing] = useState(false);
+    // Không sử dụng phân trang nữa, hiển thị tất cả trong thanh cuộn
+    // const [page, setPage] = useState(0);
+    // const [rowsPerPage, setRowsPerPage] = useState(5);
+    const [confirmDelete, setConfirmDelete] = useState<{ open: boolean; id: number | null }>({ open: false, id: null });
+    const [detailDialog, setDetailDialog] = useState<{ open: boolean; student: Student | null }>({ open: false, student: null });
+
+    // Extract unique programs and statuses for filters
+    const uniquePrograms = Array.from(new Set(students.map(s => s.program)));
+    const uniqueStatuses = Array.from(new Set(students.map(s => s.status)));
 
     useEffect(() => {
-        const fetchStudents = async () => {
-            try {
-                setLoading(true);
-                const data = await studentApi.getStudents();
-                setStudents(data);
-            } catch (err) {
-                setError('Failed to fetch students');
-                console.error(err);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchStudents();
-    }, []);
+        applyFilters();
+    }, [searchQuery, statusFilter, programFilter, students]);    const applyFilters = () => {
+        let result = [...students];
 
-    const handleSearch = async () => {
-        if (!searchQuery.trim()) {
-            try {
-                const data = await studentApi.getStudents();
-                setStudents(data);
-            } catch (err) {
-                setError('Failed to fetch students');
-                console.error(err);
-            }
-            return;
+        if (searchQuery) {
+            result = result.filter(student => 
+                student.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                student.studentId.toLowerCase().includes(searchQuery.toLowerCase())
+            );
         }
 
-        try {
-            const results = await studentApi.searchStudents(searchQuery);
-            setStudents(results);
-        } catch (err) {
-            setError('Failed to search students');
-            console.error(err);
+        if (statusFilter !== "all") {
+            result = result.filter(student => student.status === statusFilter);
         }
+
+        if (programFilter !== "all") {
+            result = result.filter(student => student.program === programFilter);
+        }
+
+        setFilteredStudents(result);
+    };    // Không cần các hàm xử lý phân trang nữa
+
+    const handleOpenDialog = (edit: boolean = false, student?: Student) => {
+        setIsEditing(edit);
+        if (edit && student) {
+            setCurrentStudent(student);        } else {            setCurrentStudent({
+                id: students.length + 1,
+                studentId: '',
+                name: '',
+                email: '',
+                faculty: '',
+                program: '',
+                enrollmentYear: '',
+                status: 'Đang học',
+                phone: '',
+                dob: '',
+                permanentAddress: {
+                    province: '',
+                    district: '',
+                    ward: ''
+                },
+                gender: '',
+                hometown: '',
+                targetGroup: ''
+            });
+        }
+        setOpenDialog(true);
     };
 
-    const handleDeleteStudent = (studentId: string) => {
-        setConfirmDelete({ open: true, id: studentId });
+    const handleCloseDialog = () => {
+        setOpenDialog(false);
+        setCurrentStudent(null);
     };
 
-    const handleConfirmDelete = async () => {
+    const handleSaveStudent = () => {
+        if (!currentStudent) return;
+        
+        if (isEditing) {
+            setStudents(students.map(s => s.id === currentStudent.id ? currentStudent : s));
+        } else {
+            setStudents([...students, currentStudent]);
+        }
+        handleCloseDialog();
+    };
+
+    const handleDeleteStudent = (id: number) => {
+        setConfirmDelete({ open: true, id });
+    };
+
+    const handleConfirmDelete = () => {
         if (confirmDelete.id !== null) {
-            try {
-                await studentApi.deleteStudent(confirmDelete.id);
-                setStudents(students.filter(s => s.id !== confirmDelete.id));
-            } catch (err) {
-                setError('Failed to delete student');
-                console.error(err);
-            }
+            setStudents(students.filter(s => s.id !== confirmDelete.id));
         }
         setConfirmDelete({ open: false, id: null });
     };
 
     const handleCancelDelete = () => {
         setConfirmDelete({ open: false, id: null });
-    };
-
-    const handleAddEditStudent = () => {
-        setCurrentStudent({
-            id: '',
-            studentId: '',
-            name: '',
-            email: '',
-            faculty: '',
-            program: '',
-            enrollmentYear: '',
-            status: 'active',
-            phone: '',
-            dob: '',
-            address: ''
-        });
-        setIsEditing(false);
-        setOpenDialog(true);
-    };
-
-    const handleOpenEditDialog = (student: Student) => {
-        setCurrentStudent(student);
-        setIsEditing(true);
-        setOpenDialog(true);
-    };
-
-    const getStatusColor = (status: string) => {
-        switch (status.toLowerCase()) {
-            case 'active':
-                return { bgcolor: '#e8f5e9', color: '#2e7d32' };
-            case 'inactive':
-                return { bgcolor: '#ffebee', color: '#c62828' };
-            case 'graduated':
-                return { bgcolor: '#e3f2fd', color: '#1565c0' };
-            default:
-                return { bgcolor: '#f5f5f5', color: '#616161' };
+    };    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (!currentStudent) return;
+        
+        const { name, value } = e.target;
+        
+        // Handle nested permanentAddress fields
+        if (name.startsWith('permanentAddress.')) {
+            const addressField = name.split('.')[1];
+            setCurrentStudent({
+                ...currentStudent,
+                permanentAddress: {
+                    ...currentStudent.permanentAddress,
+                    [addressField]: value
+                }
+            });
+        } else {
+            setCurrentStudent({
+                ...currentStudent,
+                [name]: value
+            });
         }
     };
 
-    if (loading) {
-        return (
-            <ThemeLayout role="academic" onLogout={onLogout}>
-                <UserInfo user={user} />
-                <Typography sx={{ textAlign: 'center', mt: 4 }}>Loading...</Typography>
-            </ThemeLayout>
-        );
-    }
+    const handleSelectChange = (e: any) => {
+        if (!currentStudent) return;
+        
+        const { name, value } = e.target;
+        setCurrentStudent({
+            ...currentStudent,
+            [name]: value
+        });
+    };
 
-    if (error) {
-        return (
-            <ThemeLayout role="academic" onLogout={onLogout}>
-                <UserInfo user={user} />
-                <Typography color="error" sx={{ textAlign: 'center', mt: 4 }}>{error}</Typography>
-            </ThemeLayout>
-        );
-    }
+    const openStudentDetails = (student: Student) => {
+        setDetailDialog({ open: true, student });
+    };
 
-    return (
+    const closeStudentDetails = () => {
+        setDetailDialog({ open: false, student: null });
+    };    // Helper function for status chips
+    const getStatusChipColor = (status: string) => {
+        switch (status) {
+            case 'Đang học': return 'success';
+            case 'Bảo lưu': return 'warning';
+            case 'Thôi học': return 'error';
+            default: return 'default';
+        }
+    };return (
         <ThemeLayout role="academic" onLogout={onLogout}>
             <UserInfo user={user} />
             <Box sx={{ display: 'flex', justifyContent: 'center', mt: '0.25rem' }}>
@@ -206,8 +419,8 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
                         borderBottomRightRadius: '16px',
                         marginTop: '3.5rem',
                         flexGrow: 1,
-                        minHeight: '25rem',
-                        maxHeight: 'calc(100vh - 9.375rem)',
+                        minHeight: '400px',
+                        maxHeight: 'calc(100vh - 150px)',
                         paddingLeft: '16px',
                         paddingRight: '16px',
                         marginLeft: '0px',
@@ -231,13 +444,12 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
                     </Typography>
 
                     <Grid container spacing={2} alignItems="center" sx={{ mb: 2 }}>
-                        <Grid item xs={12} md={8}>
+                        <Grid item xs={12} md={3.5}>
                             <TextField
                                 fullWidth
-                                placeholder="Tìm kiếm theo mã sinh viên, tên hoặc email"
+                                placeholder="Tìm kiếm theo Họ tên hoặc MSSV"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
                                 InputProps={{
                                     startAdornment: (
                                         <InputAdornment position="start">
@@ -255,80 +467,200 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
                                 }}
                             />
                         </Grid>
-                        <Grid item xs={12} md={4} sx={{ textAlign: 'right' }}>
+                        <Grid item xs={12} md={2.5}>                                <FormControl fullWidth size="small">
+                                <InputLabel id="status-filter-label">Trạng thái</InputLabel>
+                                <Select
+                                    labelId="status-filter-label"
+                                    value={statusFilter}
+                                    label="Trạng thái"
+                                    onChange={(e) => setStatusFilter(e.target.value)}
+                                    sx={{ 
+                                        fontFamily: '"Varela Round", sans-serif', 
+                                        borderRadius: '9px',
+                                        '& .MuiOutlinedInput-notchedOutline': {
+                                            borderRadius: '9px',
+                                        }
+                                    }}
+                                    MenuProps={{
+                                        PaperProps: {
+                                            elevation: 4,
+                                            sx: {
+                                                borderRadius: 3,
+                                                minWidth: 200,
+                                                boxShadow: '0 4px 24px 0 rgba(0,0,0,0.10)',
+                                                p: 1,
+                                            },
+                                        },
+                                        MenuListProps: {
+                                            sx: {
+                                                display: 'flex',
+                                                flexDirection: 'column',
+                                                gap: 0.5,
+                                                fontFamily: '"Varela Round", sans-serif',
+                                                borderRadius: 3,
+                                                p: 0,
+                                            },
+                                        },
+                                    }}
+                                >
+                                    <MenuItem value="all" sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>Tất cả trạng thái</MenuItem>
+                                    {uniqueStatuses.map(status => (
+                                        <MenuItem key={status} value={status} sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>{status}</MenuItem>
+                                    ))}
+                                </Select>
+                            </FormControl>
+                        </Grid>                        <Grid item xs={12} md={2.5}>
+                            <FormControl fullWidth size="small">
+                                <InputLabel id="program-filter-label">Ngành học</InputLabel>
+                                <Select
+                                    labelId="program-filter-label"
+                                    value={programFilter}
+                                    label="Ngành học"
+                                    onChange={(e) => setProgramFilter(e.target.value)}
+                                    sx={{ 
+                                        fontFamily: '"Varela Round", sans-serif', 
+                                        borderRadius: '9px',
+                                        '& .MuiOutlinedInput-notchedOutline': {
+                                            borderRadius: '9px',
+                                        }
+                                    }}
+                                    MenuProps={{
+                                        PaperProps: {
+                                            elevation: 4,
+                                            sx: {
+                                                borderRadius: 3,
+                                                minWidth: 200,
+                                                boxShadow: '0 4px 24px 0 rgba(0,0,0,0.10)',
+                                                p: 1,
+                                            },
+                                        },
+                                        MenuListProps: {
+                                            sx: {
+                                                display: 'flex',
+                                                flexDirection: 'column',
+                                                gap: 0.5,
+                                                fontFamily: '"Varela Round", sans-serif',
+                                                borderRadius: 3,
+                                                p: 0,
+                                            },
+                                        },
+                                    }}
+                                >
+                                    <MenuItem value="all" sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>Tất cả ngành học</MenuItem>
+                                    {uniquePrograms.map(program => (
+                                        <MenuItem key={program} value={program} sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>{program}</MenuItem>
+                                    ))}
+                                </Select>
+                            </FormControl>
+                        </Grid>
+                        <Grid item xs={12} md={3.5} sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
+                            
                             <Button
                                 variant="contained"
                                 color="primary"
                                 startIcon={<AddIcon />}
-                                onClick={handleAddEditStudent}
+                                onClick={() => handleOpenDialog(false)}
                                 sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '8px' }}
                             >
                                 Thêm sinh viên
                             </Button>
                         </Grid>
-                    </Grid>
-
-                    <TableContainer component={Paper} sx={{ mt: 2, borderRadius: '12px', boxShadow: '0 4px 10px rgba(0, 0, 0, 0.1)' }}>
-                        <Table>
-                            <TableHead>
+                    </Grid>                <TableContainer 
+                        component={Paper} 
+                        sx={{ 
+                            mt: 2,
+                            borderRadius: '8px', 
+                            boxShadow: '0 4px 10px rgba(0, 0, 0, 0.1)', 
+                            width: '100%', 
+                            maxWidth: '100%', 
+                            minWidth: 1100,
+                            maxHeight: 'calc(100vh - 350px)',
+                            height: 'auto',
+                            overflowY: 'auto',
+                            '&::-webkit-scrollbar': {
+                                width: '6px'
+                            },
+                            '&::-webkit-scrollbar-thumb': {
+                                backgroundColor: 'rgba(0,0,0,0.2)',
+                                borderRadius: '6px'
+                            }
+                        }}
+                    >
+                        <Table size="medium" stickyHeader sx={{ tableLayout: 'fixed' }}>                            <TableHead>
                                 <TableRow>
-                                    <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '18px', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6' }}>Mã SV</TableCell>
-                                    <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '18px', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6' }}>Họ và tên</TableCell>
-                                    <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '18px', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6' }}>Email</TableCell>
-                                    <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '18px', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6' }}>Khoa</TableCell>
-                                    <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '18px', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6' }}>Chương trình</TableCell>
-                                    <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '18px', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6' }}>Trạng thái</TableCell>
-                                    <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '18px', fontFamily: '"Varela Round", sans-serif', textAlign: 'center', backgroundColor: '#6ebab6' }}>Thao tác</TableCell>
+                                    <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '16px', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6', width: '12%' }}>MSSV</TableCell>
+                                    <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '16px', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6', width: '20%' }}>Họ và Tên</TableCell>
+                                    <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '16px', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6', width: '25%' }}>Email</TableCell>
+                                    <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '16px', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6', width: '8%' }}>Khóa</TableCell>
+                                    <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '16px', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6', width: '15%' }}>Ngành</TableCell>
+                                    <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '16px', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6', width: '10%' }}>Trạng thái</TableCell>
+                                    <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '16px', fontFamily: '"Varela Round", sans-serif', textAlign: 'center', backgroundColor: '#6ebab6', width: '10%' }}>Thao tác</TableCell>
                                 </TableRow>
                             </TableHead>
                             <TableBody>
-                                {students.map((student) => (
-                                    <TableRow key={student.id}>
-                                        <TableCell>{student.studentId}</TableCell>
-                                        <TableCell>
-                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                                <Avatar src={student.avatar} alt={student.name} sx={{ width: 32, height: 32 }} />
-                                                {student.name}
-                                            </Box>
-                                        </TableCell>
-                                        <TableCell>{student.email}</TableCell>
-                                        <TableCell>{student.faculty}</TableCell>
-                                        <TableCell>{student.program}</TableCell>
-                                        <TableCell>
-                                            <Chip
-                                                label={student.status}
-                                                sx={getStatusColor(student.status)}
+                                {filteredStudents.map((student) => (
+                                    <TableRow
+                                        key={student.id}
+                                        sx={{ 
+                                            '&:hover': { backgroundColor: '#f5f5f5', cursor: 'pointer' }, 
+                                            '&:last-child td, &:last-child th': { borderBottom: 'none' } 
+                                        }}
+                                        onClick={() => openStudentDetails(student)}
+                                    >
+                                        <TableCell sx={{ fontSize: '16px', fontFamily: '"Varela Round", sans-serif', fontWeight: 800 }}>{student.studentId}</TableCell>
+                                        <TableCell sx={{ fontSize: '16px', fontFamily: '"Varela Round", sans-serif' }}>{student.name}</TableCell>
+                                        <TableCell sx={{ fontSize: '16px', fontFamily: '"Varela Round", sans-serif' }}>{student.email}</TableCell>
+                                        <TableCell sx={{ fontSize: '16px', fontFamily: '"Varela Round", sans-serif' }}>{student.enrollmentYear}</TableCell>
+                                        <TableCell sx={{ fontSize: '16px', fontFamily: '"Varela Round", sans-serif' }}>{student.program}</TableCell>
+                                        <TableCell sx={{ fontSize: '16px', fontFamily: '"Varela Round", sans-serif' }}>
+                                            <Chip 
+                                                label={student.status} 
+                                                color={getStatusChipColor(student.status)} 
+                                                size="small" 
+                                                sx={{ fontWeight: 600 }}
                                             />
                                         </TableCell>
-                                        <TableCell align="center">
+                                        <TableCell sx={{ textAlign: 'center' }}>
                                             <IconButton
                                                 size="small"
-                                                onClick={() => handleOpenEditDialog(student)}
+                                                color="primary"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleOpenDialog(true, student);
+                                                }}
                                             >
                                                 <EditIcon fontSize="small" />
                                             </IconButton>
                                             <IconButton
                                                 size="small"
                                                 color="error"
-                                                onClick={() => handleDeleteStudent(student.id)}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleDeleteStudent(student.id);
+                                                }}
                                             >
                                                 <DeleteIcon fontSize="small" />
                                             </IconButton>
                                         </TableCell>
                                     </TableRow>
                                 ))}
+                                {filteredStudents.length === 0 && (
+                                    <TableRow>
+                                        <TableCell colSpan={7} align="center" sx={{ py: 3 }}>
+                                            <Typography variant="body1" color="text.secondary">
+                                                Không tìm thấy sinh viên nào phù hợp với điều kiện tìm kiếm
+                                            </Typography>
+                                        </TableCell>
+                                    </TableRow>
+                                )}
                             </TableBody>
                         </Table>
                     </TableContainer>
                 </Paper>
             </Box>
 
-            {/* Student Form Dialog */}
-            <Dialog
-                open={openDialog}
-                onClose={() => setOpenDialog(false)}
-                maxWidth="md"
-                fullWidth
+            {/* Dialog for adding/editing students */}
+            <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="md" fullWidth
                 sx={{
                     '& .MuiPaper-root': {
                         borderRadius: '20px',
@@ -355,166 +687,346 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
                     pt: 2,
                     pb: 0,
                     background: 'transparent',
-                }}>
-                    <Grid container spacing={2} sx={{ mt: 0.5 }}>
-                        <Grid item xs={12} md={6}>
-                            <TextField
-                                autoFocus
-                                label="Mã sinh viên"
-                                fullWidth
-                                value={currentStudent?.studentId || ''}
-                                onChange={(e) => setCurrentStudent(prev => prev ? { ...prev, studentId: e.target.value } : null)}
-                                sx={{
-                                    borderRadius: '12px',
-                                    background: '#f7faff',
-                                    '& .MuiOutlinedInput-root': { borderRadius: '12px' },
-                                    '& .MuiInputLabel-root': { fontWeight: 500 },
-                                    '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d8d8d8' },
-                                }}
-                            />
-                        </Grid>
-                        <Grid item xs={12} md={6}>
-                            <TextField
-                                label="Họ và tên"
-                                fullWidth
-                                value={currentStudent?.name || ''}
-                                onChange={(e) => setCurrentStudent(prev => prev ? { ...prev, name: e.target.value } : null)}
-                                sx={{
-                                    borderRadius: '12px',
-                                    background: '#f7faff',
-                                    '& .MuiOutlinedInput-root': { borderRadius: '12px' },
-                                    '& .MuiInputLabel-root': { fontWeight: 500 },
-                                    '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d8d8d8' },
-                                }}
-                            />
-                        </Grid>
-                        <Grid item xs={12} md={6}>
-                            <TextField
-                                label="Email"
-                                type="email"
-                                fullWidth
-                                value={currentStudent?.email || ''}
-                                onChange={(e) => setCurrentStudent(prev => prev ? { ...prev, email: e.target.value } : null)}
-                                sx={{
-                                    borderRadius: '12px',
-                                    background: '#f7faff',
-                                    '& .MuiOutlinedInput-root': { borderRadius: '12px' },
-                                    '& .MuiInputLabel-root': { fontWeight: 500 },
-                                    '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d8d8d8' },
-                                }}
-                            />
-                        </Grid>
-                        <Grid item xs={12} md={6}>
-                            <TextField
-                                label="Số điện thoại"
-                                fullWidth
-                                value={currentStudent?.phone || ''}
-                                onChange={(e) => setCurrentStudent(prev => prev ? { ...prev, phone: e.target.value } : null)}
-                                sx={{
-                                    borderRadius: '12px',
-                                    background: '#f7faff',
-                                    '& .MuiOutlinedInput-root': { borderRadius: '12px' },
-                                    '& .MuiInputLabel-root': { fontWeight: 500 },
-                                    '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d8d8d8' },
-                                }}
-                            />
-                        </Grid>
-                        <Grid item xs={12} md={6}>
-                            <TextField
-                                label="Ngày sinh"
-                                type="date"
-                                fullWidth
-                                value={currentStudent?.dob || ''}
-                                onChange={(e) => setCurrentStudent(prev => prev ? { ...prev, dob: e.target.value } : null)}
-                                InputLabelProps={{ shrink: true }}
-                                sx={{
-                                    borderRadius: '12px',
-                                    background: '#f7faff',
-                                    '& .MuiOutlinedInput-root': { borderRadius: '12px' },
-                                    '& .MuiInputLabel-root': { fontWeight: 500 },
-                                    '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d8d8d8' },
-                                }}
-                            />
-                        </Grid>
-                        <Grid item xs={12} md={6}>
-                            <TextField
-                                label="Địa chỉ"
-                                fullWidth
-                                value={currentStudent?.address || ''}
-                                onChange={(e) => setCurrentStudent(prev => prev ? { ...prev, address: e.target.value } : null)}
-                                sx={{
-                                    borderRadius: '12px',
-                                    background: '#f7faff',
-                                    '& .MuiOutlinedInput-root': { borderRadius: '12px' },
-                                    '& .MuiInputLabel-root': { fontWeight: 500 },
-                                    '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d8d8d8' },
-                                }}
-                            />
-                        </Grid>
-                        <Grid item xs={12} md={6}>
-                            <TextField
-                                label="Khoa"
-                                fullWidth
-                                value={currentStudent?.faculty || ''}
-                                onChange={(e) => setCurrentStudent(prev => prev ? { ...prev, faculty: e.target.value } : null)}
-                                sx={{
-                                    borderRadius: '12px',
-                                    background: '#f7faff',
-                                    '& .MuiOutlinedInput-root': { borderRadius: '12px' },
-                                    '& .MuiInputLabel-root': { fontWeight: 500 },
-                                    '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d8d8d8' },
-                                }}
-                            />
-                        </Grid>
-                        <Grid item xs={12} md={6}>
-                            <TextField
-                                label="Chương trình"
-                                fullWidth
-                                value={currentStudent?.program || ''}
-                                onChange={(e) => setCurrentStudent(prev => prev ? { ...prev, program: e.target.value } : null)}
-                                sx={{
-                                    borderRadius: '12px',
-                                    background: '#f7faff',
-                                    '& .MuiOutlinedInput-root': { borderRadius: '12px' },
-                                    '& .MuiInputLabel-root': { fontWeight: 500 },
-                                    '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d8d8d8' },
-                                }}
-                            />
-                        </Grid>
-                        <Grid item xs={12} md={6}>
-                            <TextField
-                                label="Năm nhập học"
-                                fullWidth
-                                value={currentStudent?.enrollmentYear || ''}
-                                onChange={(e) => setCurrentStudent(prev => prev ? { ...prev, enrollmentYear: e.target.value } : null)}
-                                sx={{
-                                    borderRadius: '12px',
-                                    background: '#f7faff',
-                                    '& .MuiOutlinedInput-root': { borderRadius: '12px' },
-                                    '& .MuiInputLabel-root': { fontWeight: 500 },
-                                    '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d8d8d8' },
-                                }}
-                            />
-                        </Grid>
-                        <Grid item xs={12} md={6}>
-                            <FormControl fullWidth sx={{ background: '#f7faff', borderRadius: '12px' }}>
-                                <InputLabel>Trạng thái</InputLabel>
-                                <Select
-                                    value={currentStudent?.status || 'active'}
-                                    onChange={(e) => setCurrentStudent(prev => prev ? { ...prev, status: e.target.value } : null)}
-                                    label="Trạng thái"
+                }}>                    {currentStudent && (
+                        <Grid container spacing={2} sx={{ mt: 0.5 }}>
+                            <Grid item xs={12} md={6}>
+                                <TextField
+                                    autoFocus
+                                    name="studentId"
+                                    label="MSSV"
+                                    fullWidth
+                                    margin="normal"
+                                    required
+                                    variant="outlined"
+                                    value={currentStudent.studentId}
+                                    onChange={handleInputChange}
                                     sx={{
                                         borderRadius: '12px',
+                                        background: '#f7faff',
+                                        '& .MuiOutlinedInput-root': { borderRadius: '12px' },
+                                        '& .MuiInputLabel-root': { fontWeight: 500 },
                                         '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d8d8d8' },
                                     }}
-                                >
-                                    <MenuItem value="active">Đang học</MenuItem>
-                                    <MenuItem value="inactive">Tạm dừng</MenuItem>
-                                    <MenuItem value="graduated">Đã tốt nghiệp</MenuItem>
-                                </Select>
-                            </FormControl>
+                                />
+                            </Grid>
+                            <Grid item xs={12} md={6}>
+                                <TextField
+                                    name="name"
+                                    label="Họ và tên"
+                                    fullWidth
+                                    margin="normal"
+                                    required
+                                    variant="outlined"
+                                    value={currentStudent.name}
+                                    onChange={handleInputChange}
+                                    sx={{
+                                        borderRadius: '12px',
+                                        background: '#f7faff',
+                                        '& .MuiOutlinedInput-root': { borderRadius: '12px' },
+                                        '& .MuiInputLabel-root': { fontWeight: 500 },
+                                        '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d8d8d8' },
+                                    }}
+                                />
+                            </Grid>
+                            <Grid item xs={12} md={6}>
+                                <TextField
+                                    name="email"
+                                    label="Email"
+                                    type="email"
+                                    fullWidth
+                                    margin="normal"
+                                    required
+                                    variant="outlined"
+                                    value={currentStudent.email}
+                                    onChange={handleInputChange}
+                                    sx={{
+                                        borderRadius: '12px',
+                                        background: '#f7faff',
+                                        '& .MuiOutlinedInput-root': { borderRadius: '12px' },
+                                        '& .MuiInputLabel-root': { fontWeight: 500 },
+                                        '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d8d8d8' },
+                                    }}
+                                />
+                            </Grid>
+                            <Grid item xs={12} md={6}>
+                                <TextField
+                                    name="phone"
+                                    label="Số điện thoại"
+                                    fullWidth
+                                    margin="normal"
+                                    variant="outlined"
+                                    value={currentStudent.phone}
+                                    onChange={handleInputChange}
+                                    sx={{
+                                        borderRadius: '12px',
+                                        background: '#f7faff',
+                                        '& .MuiOutlinedInput-root': { borderRadius: '12px' },
+                                        '& .MuiInputLabel-root': { fontWeight: 500 },
+                                        '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d8d8d8' },
+                                    }}
+                                />
+                            </Grid>
+                            <Grid item xs={12} md={6}>
+                                <TextField
+                                    name="dob"
+                                    label="Ngày sinh"
+                                    type="date"
+                                    fullWidth
+                                    margin="normal"
+                                    required
+                                    variant="outlined"
+                                    InputLabelProps={{ shrink: true }}
+                                    value={currentStudent.dob}
+                                    onChange={handleInputChange}
+                                    sx={{
+                                        borderRadius: '12px',
+                                        background: '#f7faff',
+                                        '& .MuiOutlinedInput-root': { borderRadius: '12px' },
+                                        '& .MuiInputLabel-root': { fontWeight: 500 },
+                                        '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d8d8d8' },
+                                    }}
+                                />
+                            </Grid>
+                            <Grid item xs={12} md={6}>                                <FormControl fullWidth margin="normal" sx={{ background: '#f7faff', borderRadius: '12px' }}>
+                                    <InputLabel id="gender-select-label" sx={{ fontWeight: 500 }}>Giới tính</InputLabel>
+                                    <Select
+                                        labelId="gender-select-label"
+                                        name="gender"
+                                        value={currentStudent.gender || ''}
+                                        label="Giới tính"
+                                        onChange={handleSelectChange}
+                                        sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '12px', '& .MuiOutlinedInput-notchedOutline': { borderRadius: '12px', borderColor: '#d8d8d8' } }}
+                                        MenuProps={{
+                                            PaperProps: {
+                                                elevation: 4,
+                                                sx: {
+                                                    borderRadius: 3,
+                                                    minWidth: 200,
+                                                    boxShadow: '0 4px 24px 0 rgba(0,0,0,0.10)',
+                                                    p: 1,
+                                                },
+                                            },
+                                            MenuListProps: {
+                                                sx: {
+                                                    display: 'flex',
+                                                    flexDirection: 'column',
+                                                    gap: 0.5,
+                                                    fontFamily: '"Varela Round", sans-serif',
+                                                    borderRadius: 3,
+                                                    p: 0,
+                                                },
+                                            },
+                                        }}
+                                    >
+                                        <MenuItem value="Nam" sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>Nam</MenuItem>
+                                        <MenuItem value="Nữ" sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>Nữ</MenuItem>
+                                        <MenuItem value="Khác" sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>Khác</MenuItem>
+                                    </Select>
+                                </FormControl>
+                            </Grid>
+                            <Grid item xs={12} md={6}>
+                                <TextField
+                                    name="hometown"
+                                    label="Quê quán"
+                                    fullWidth
+                                    margin="normal"
+                                    variant="outlined"
+                                    value={currentStudent.hometown || ''}
+                                    onChange={handleInputChange}
+                                    sx={{
+                                        borderRadius: '12px',
+                                        background: '#f7faff',
+                                        '& .MuiOutlinedInput-root': { borderRadius: '12px' },
+                                        '& .MuiInputLabel-root': { fontWeight: 500 },
+                                        '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d8d8d8' },
+                                    }}
+                                />
+                            </Grid>
+                            <Grid item xs={12} md={6}>
+                                <TextField
+                                    name="targetGroup"
+                                    label="Đối tượng ưu tiên"
+                                    fullWidth
+                                    margin="normal"
+                                    variant="outlined"
+                                    value={currentStudent.targetGroup || ''}
+                                    onChange={handleInputChange}
+                                    sx={{
+                                        borderRadius: '12px',
+                                        background: '#f7faff',
+                                        '& .MuiOutlinedInput-root': { borderRadius: '12px' },
+                                        '& .MuiInputLabel-root': { fontWeight: 500 },
+                                        '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d8d8d8' },
+                                    }}
+                                />
+                            </Grid>
+                            <Grid item xs={12} md={6}>
+                                <TextField
+                                    name="faculty"
+                                    label="Khoa"
+                                    fullWidth
+                                    margin="normal"
+                                    required
+                                    variant="outlined"
+                                    value={currentStudent.faculty}
+                                    onChange={handleInputChange}
+                                    sx={{
+                                        borderRadius: '12px',
+                                        background: '#f7faff',
+                                        '& .MuiOutlinedInput-root': { borderRadius: '12px' },
+                                        '& .MuiInputLabel-root': { fontWeight: 500 },
+                                        '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d8d8d8' },
+                                    }}
+                                />
+                            </Grid>
+                            <Grid item xs={12} md={6}>
+                                <TextField
+                                    name="program"
+                                    label="Ngành học"
+                                    fullWidth
+                                    margin="normal"
+                                    required
+                                    variant="outlined"
+                                    value={currentStudent.program}
+                                    onChange={handleInputChange}
+                                    sx={{
+                                        borderRadius: '12px',
+                                        background: '#f7faff',
+                                        '& .MuiOutlinedInput-root': { borderRadius: '12px' },
+                                        '& .MuiInputLabel-root': { fontWeight: 500 },
+                                        '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d8d8d8' },
+                                    }}
+                                />
+                            </Grid>
+                            <Grid item xs={12} md={6}>
+                                <TextField
+                                    name="enrollmentYear"
+                                    label="Năm nhập học"
+                                    fullWidth
+                                    margin="normal"
+                                    required
+                                    variant="outlined"
+                                    value={currentStudent.enrollmentYear}
+                                    onChange={handleInputChange}
+                                    sx={{
+                                        borderRadius: '12px',
+                                        background: '#f7faff',
+                                        '& .MuiOutlinedInput-root': { borderRadius: '12px' },
+                                        '& .MuiInputLabel-root': { fontWeight: 500 },
+                                        '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d8d8d8' },
+                                    }}
+                                />
+                            </Grid>
+                            <Grid item xs={12} md={6}>                                <FormControl fullWidth margin="normal" sx={{ background: '#f7faff', borderRadius: '12px' }}>
+                                    <InputLabel id="status-select-label" sx={{ fontWeight: 500 }}>Trạng thái</InputLabel>
+                                    <Select
+                                        labelId="status-select-label"
+                                        name="status"
+                                        value={currentStudent.status}
+                                        label="Trạng thái"
+                                        onChange={handleSelectChange}
+                                        sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '12px', '& .MuiOutlinedInput-notchedOutline': { borderRadius: '12px', borderColor: '#d8d8d8' } }}
+                                        MenuProps={{
+                                            PaperProps: {
+                                                elevation: 4,
+                                                sx: {
+                                                    borderRadius: 3,
+                                                    minWidth: 200,
+                                                    boxShadow: '0 4px 24px 0 rgba(0,0,0,0.10)',
+                                                    p: 1,
+                                                },
+                                            },
+                                            MenuListProps: {
+                                                sx: {
+                                                    display: 'flex',
+                                                    flexDirection: 'column',
+                                                    gap: 0.5,
+                                                    fontFamily: '"Varela Round", sans-serif',
+                                                    borderRadius: 3,
+                                                    p: 0,
+                                                },
+                                            },
+                                        }}                                    >
+                                        <MenuItem value="Đang học" sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>Đang học</MenuItem>
+                                        <MenuItem value="Bảo lưu" sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>Bảo lưu</MenuItem>
+                                        <MenuItem value="Thôi học" sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>Thôi học</MenuItem>
+                                    </Select>
+                                </FormControl>                            </Grid>
+                            
+                            {/* Permanent Address Section */}
+                            <Grid item xs={12}>
+                                <Divider sx={{ my: 2 }}>
+                                    <Typography variant="h6" sx={{ 
+                                        fontFamily: '"Montserrat", sans-serif',
+                                        fontWeight: 600,
+                                        color: '#555',
+                                        fontSize: '1.1rem',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: 1
+                                    }}>
+                                        <HomeIcon sx={{ fontSize: '1.2rem', color: '#6ebab6' }} />
+                                        Địa chỉ thường trú
+                                    </Typography>
+                                </Divider>
+                            </Grid>
+                            
+                            <Grid item xs={12} md={6}>
+                                <TextField
+                                    name="permanentAddress.province"
+                                    label="Tỉnh/Thành phố"
+                                    fullWidth
+                                    margin="normal"
+                                    variant="outlined"
+                                    value={currentStudent.permanentAddress.province}
+                                    onChange={handleInputChange}
+                                    sx={{
+                                        borderRadius: '12px',
+                                        background: '#f7faff',
+                                        '& .MuiOutlinedInput-root': { borderRadius: '12px' },
+                                        '& .MuiInputLabel-root': { fontWeight: 500 },
+                                        '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d8d8d8' },
+                                    }}
+                                />
+                            </Grid>
+                            <Grid item xs={12} md={6}>
+                                <TextField
+                                    name="permanentAddress.district"
+                                    label="Quận/Huyện"
+                                    fullWidth
+                                    margin="normal"
+                                    variant="outlined"
+                                    value={currentStudent.permanentAddress.district}
+                                    onChange={handleInputChange}
+                                    sx={{
+                                        borderRadius: '12px',
+                                        background: '#f7faff',
+                                        '& .MuiOutlinedInput-root': { borderRadius: '12px' },
+                                        '& .MuiInputLabel-root': { fontWeight: 500 },
+                                        '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d8d8d8' },
+                                    }}
+                                />
+                            </Grid>
+                            <Grid item xs={12}>
+                                <TextField
+                                    name="permanentAddress.ward"
+                                    label="Số nhà, đường, phường/xã"
+                                    fullWidth
+                                    margin="normal"
+                                    variant="outlined"
+                                    value={currentStudent.permanentAddress.ward}
+                                    onChange={handleInputChange}
+                                    sx={{
+                                        borderRadius: '12px',
+                                        background: '#f7faff',
+                                        '& .MuiOutlinedInput-root': { borderRadius: '12px' },
+                                        '& .MuiInputLabel-root': { fontWeight: 500 },
+                                        '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d8d8d8' },
+                                    }}
+                                />
+                            </Grid>
                         </Grid>
-                    </Grid>
+                    )}
                 </DialogContent>
                 <DialogActions sx={{
                     px: 4,
@@ -525,33 +1037,256 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
                     gap: 2,
                     background: 'transparent',
                 }}>
-                    <Button onClick={() => setOpenDialog(false)} color="primary">
+                    <Button onClick={handleCloseDialog} color="primary">
                         Hủy
                     </Button>
-                    <Button
-                        variant="contained"
-                        color="primary"
-                        onClick={async () => {
-                            if (currentStudent) {
-                                try {
-                                    if (isEditing) {
-                                        const updatedStudent = await studentApi.updateStudent(currentStudent.id, currentStudent);
-                                        setStudents(students.map(s => s.id === currentStudent.id ? updatedStudent : s));
-                                    } else {
-                                        const newStudent = await studentApi.createStudent(currentStudent);
-                                        setStudents([...students, newStudent]);
-                                    }
-                                    setOpenDialog(false);
-                                } catch (err) {
-                                    setError('Failed to save student');
-                                    console.error(err);
-                                }
-                            }
-                        }}
-                    >
+                    <Button variant="contained" color="primary" onClick={handleSaveStudent}>
                         {isEditing ? "Cập nhật" : "Thêm mới"}
                     </Button>
-                </DialogActions>
+                </DialogActions>            </Dialog>              {/* Student Detail Dialog */}
+            <Dialog open={detailDialog.open} onClose={closeStudentDetails} maxWidth="md" fullWidth
+                sx={{
+                    '& .MuiPaper-root': {
+                        borderRadius: '12px',
+                        background: '#ffffff',
+                        padding: 0,
+                    },
+                }}
+            >
+                {detailDialog.student && (
+                    <>
+                        <DialogTitle sx={{ 
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            borderBottom: '1px solid #f0f0f0',
+                            px: 3,
+                            py: 2
+                        }}>
+                            <Typography variant="h5" component="h2" sx={{ 
+                                fontWeight: 600, 
+                                color: '#333333',
+                                fontFamily: '"Montserrat", sans-serif',
+                            }}>
+                                Thông tin sinh viên
+                            </Typography>
+                            <IconButton onClick={closeStudentDetails} size="small">
+                                <CloseIcon />
+                            </IconButton>
+                        </DialogTitle>
+
+                        <DialogContent sx={{ px: 3, py: 3 }}>
+                            <Grid container spacing={3}>
+                                {/* Header with student name, ID and status */}
+                                <Grid item xs={12} sx={{ display: 'flex', alignItems: 'center', mb: 0 }}>
+                                    <Avatar 
+                                        sx={{ 
+                                            width: 64, 
+                                            height: 64,
+                                            fontSize: '1.75rem',
+                                            bgcolor: '#6ebab6',
+                                            mr: 2,
+                                            mt: 4
+                                        }}
+                                    >
+                                        {detailDialog.student.name.charAt(0)}
+                                    </Avatar>
+                                    <Box sx={{ flexGrow: 1, mt: 4 }}>
+                                        <Typography variant="h5" component="h2" sx={{ 
+                                            fontWeight: 600, 
+                                            color: '#333333',
+                                            fontFamily: '"Montserrat", sans-serif',
+                                        }}>
+                                            {detailDialog.student.name}
+                                        </Typography>
+                                        <Box sx={{ display: 'flex', alignItems: 'center', mt: 0.5 }}>
+                                            <Typography variant="body1" sx={{ color: '#666666', mr: 2, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                                <PersonIcon fontSize="small" /> MSSV: {detailDialog.student.studentId}
+                                            </Typography>
+                                            <Chip 
+                                                label={detailDialog.student.status} 
+                                                color={getStatusChipColor(detailDialog.student.status)}
+                                                size="small"
+                                                sx={{ fontWeight: 500 }}
+                                            />
+                                        </Box>
+                                    </Box>
+                                </Grid>
+
+                                {/* Divider */}
+                                <Grid item xs={12}>
+                                    <Divider sx={{ my: 1 }} />
+                                </Grid>
+                                
+                                {/* Student information sections */}
+                                <Grid item xs={12}>
+                                    <Grid container spacing={3}>
+                                        {/* Academic Info */}
+                                        <Grid item xs={12} md={4}>
+                                            <Box sx={{ mb: 2 }}>
+                                                <Typography 
+                                                    variant="subtitle1" 
+                                                    component="h3" 
+                                                    sx={{ 
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        fontWeight: 600,
+                                                        color: '#555',
+                                                        mb: 2
+                                                    }}
+                                                >
+                                                    <SchoolIcon sx={{ mr: 1, fontSize: '1.2rem', color: '#6ebab6' }} /> 
+                                                    Thông tin học tập
+                                                </Typography>
+                                                <Grid container spacing={2}>
+                                                    <Grid item xs={12}>
+                                                        <Typography variant="body2" color="text.secondary">Khoa</Typography>
+                                                        <Typography variant="body1">{detailDialog.student.faculty}</Typography>
+                                                    </Grid>
+                                                    <Grid item xs={12}>
+                                                        <Typography variant="body2" color="text.secondary">Chương trình đào tạo</Typography>
+                                                        <Typography variant="body1">{detailDialog.student.program}</Typography>
+                                                    </Grid>
+                                                    <Grid item xs={12}>
+                                                        <Typography variant="body2" color="text.secondary">Năm nhập học</Typography>
+                                                        <Typography variant="body1">{detailDialog.student.enrollmentYear}</Typography>
+                                                    </Grid>
+                                                </Grid>
+                                            </Box>
+                                        </Grid>
+                                        
+                                        {/* Personal Info */}
+                                        <Grid item xs={12} md={4}>
+                                            <Box sx={{ mb: 2 }}>
+                                                <Typography 
+                                                    variant="subtitle1" 
+                                                    component="h3" 
+                                                    sx={{ 
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        fontWeight: 600,
+                                                        color: '#555',
+                                                        mb: 2
+                                                    }}
+                                                >
+                                                    <PersonOutlineIcon sx={{ mr: 1, fontSize: '1.2rem', color: '#6ebab6' }} /> 
+                                                    Thông tin cá nhân
+                                                </Typography>
+                                                <Grid container spacing={2}>
+                                                    <Grid item xs={12}>
+                                                        <Typography variant="body2" color="text.secondary">Ngày sinh</Typography>
+                                                        <Typography variant="body1">
+                                                            {new Date(detailDialog.student.dob).toLocaleDateString('vi-VN')}
+                                                        </Typography>
+                                                    </Grid>
+                                                    <Grid item xs={12}>
+                                                        <Typography variant="body2" color="text.secondary">Giới tính</Typography>
+                                                        <Typography variant="body1">{detailDialog.student.gender || "Chưa cập nhật"}</Typography>
+                                                    </Grid>
+                                                    <Grid item xs={12}>
+                                                        <Typography variant="body2" color="text.secondary">Quê quán</Typography>
+                                                        <Typography variant="body1">{detailDialog.student.hometown || "Chưa cập nhật"}</Typography>
+                                                    </Grid>
+                                                    <Grid item xs={12}>
+                                                        <Typography variant="body2" color="text.secondary">Đối tượng ưu tiên</Typography>
+                                                        <Typography variant="body1">{detailDialog.student.targetGroup || "Chưa cập nhật"}</Typography>
+                                                    </Grid>
+                                                </Grid>
+                                            </Box>
+                                        </Grid>
+                                        
+                                        {/* Contact Info */}
+                                        <Grid item xs={12} md={4}>
+                                            <Box sx={{ mb: 2 }}>
+                                                <Typography 
+                                                    variant="subtitle1" 
+                                                    component="h3" 
+                                                    sx={{ 
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        fontWeight: 600,
+                                                        color: '#555',
+                                                        mb: 2
+                                                    }}
+                                                >
+                                                    <ContactMailIcon sx={{ mr: 1, fontSize: '1.2rem', color: '#6ebab6' }} /> 
+                                                    Thông tin liên hệ
+                                                </Typography>
+                                                <Grid container spacing={2}>
+                                                    <Grid item xs={12}>
+                                                        <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 1.5 }}>
+                                                            <EmailIcon sx={{ color: '#999', mr: 1, mt: 0.3, fontSize: '1.1rem' }} />
+                                                            <Box>
+                                                                <Typography variant="body2" color="text.secondary">Email</Typography>
+                                                                <Typography variant="body1">{detailDialog.student.email}</Typography>
+                                                            </Box>
+                                                        </Box>
+                                                    </Grid>
+                                                    <Grid item xs={12}>
+                                                        <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 1.5 }}>
+                                                            <PhoneIcon sx={{ color: '#999', mr: 1, mt: 0.3, fontSize: '1.1rem' }} />
+                                                            <Box>
+                                                                <Typography variant="body2" color="text.secondary">Số điện thoại</Typography>
+                                                                <Typography variant="body1">{detailDialog.student.phone}</Typography>
+                                                            </Box>
+                                                        </Box>
+                                                    </Grid>
+                                                    <Grid item xs={12}>
+                                                        <Box sx={{ display: 'flex', alignItems: 'flex-start' }}>
+                                                            <HomeIcon sx={{ color: '#999', mr: 1, mt: 0.3, fontSize: '1.1rem' }} />                                                            <Box>
+                                                                <Typography variant="body2" color="text.secondary">Địa chỉ thường trú</Typography>
+                                                                <Typography variant="body1">
+                                                                    {[
+                                                                        detailDialog.student.permanentAddress.ward,
+                                                                        detailDialog.student.permanentAddress.district,
+                                                                        detailDialog.student.permanentAddress.province
+                                                                    ].filter(Boolean).join(', ')}
+                                                                </Typography>
+                                                            </Box>
+                                                        </Box>
+                                                    </Grid>
+                                                </Grid>
+                                            </Box>
+                                        </Grid>
+                                    </Grid>
+                                </Grid>
+                            </Grid>
+                        </DialogContent>
+
+                        <DialogActions sx={{ px: 3, py: 2, borderTop: '1px solid #f0f0f0' }}>
+                            <Button 
+                                variant="outlined" 
+                                onClick={() => {
+                                    closeStudentDetails();
+                                    if (detailDialog.student) {
+                                        handleOpenDialog(true, detailDialog.student);
+                                    }
+                                }}
+                                startIcon={<EditIcon />}
+                                sx={{ 
+                                    borderRadius: '6px', 
+                                    textTransform: 'none',
+                                    fontWeight: 500
+                                }}
+                            >
+                                Chỉnh sửa
+                            </Button>
+                            <Button 
+                                variant="contained" 
+                                onClick={closeStudentDetails}
+                                sx={{ 
+                                    borderRadius: '6px', 
+                                    bgcolor: '#6ebab6', 
+                                    '&:hover': { bgcolor: '#5da9a5' },
+                                    textTransform: 'none',
+                                    fontWeight: 500
+                                }}
+                            >
+                                Đóng
+                            </Button>
+                        </DialogActions>
+                    </>
+                )}
             </Dialog>
 
             {/* Confirm Delete Dialog */}
@@ -570,17 +1305,17 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
                     Xác nhận xóa sinh viên
                 </DialogTitle>
                 <DialogContent>
-                    <Typography 
-                        id="delete-dialog-description" 
+                    <Typography
+                        id="delete-dialog-description"
                         component="div"
                         sx={{
                             fontSize: '17px',
-                            color: '#5c6c7c', 
+                            color: '#5c6c7c',
                             textAlign: 'center',
                             fontWeight: 400
                         }}
                     >
-                        Bạn có chắc chắn muốn xóa sinh viên này không?
+                        Bạn có chắc chắn muốn xóa sinh viên này khỏi hệ thống không?
                     </Typography>
                 </DialogContent>
                 <DialogActions>

@@ -33,21 +33,14 @@ router.post('/subjects/register', (req: Request, res: Response) => {
     studentController.registerSubject(req, res);
 });
 
-// Enrolled Subjects
-router.get('/enrolled-subjects', (req: Request, res: Response) => {
+// Enrolled Courses
+router.get('/enrolled-courses', (req: Request, res: Response) => {
     // Thêm studentId từ token JWT vào request params
-    req.params.studentId = req.user?.id.toString() || '';
-    studentController.getEnrolledSubjects(req, res);
-});
-
-router.get('/enrolled-subjects/:courseId', (req: Request, res: Response) => {
-    // Thêm studentId từ token JWT vào params
-    req.params.studentId = req.user?.id.toString() || '';
-    studentController.getSubjectDetails(req, res);
+    req.params.studentId = req.user?.id.toString() || '';    studentController.getEnrolledCourses(req, res);
 });
 
 // Hỗ trợ cả DELETE và POST cho việc hủy đăng ký môn học
-router.delete('/enrolled-subjects/:courseId', (req: Request, res: Response) => {
+router.delete('/enrolled-courses/:courseId', (req: Request, res: Response) => {
     // Xử lý DELETE request cho hủy đăng ký môn học
     req.body = {
         studentId: req.user?.id.toString() || '',
@@ -56,7 +49,7 @@ router.delete('/enrolled-subjects/:courseId', (req: Request, res: Response) => {
     studentController.cancelRegistration(req, res);
 });
 
-router.post('/enrolled-subjects/cancel', (req: Request, res: Response) => {
+router.post('/enrolled-courses/cancel', (req: Request, res: Response) => {
     // Đảm bảo studentId được thiết lập nếu chưa có
     if (!req.body.studentId && req.user) {
         req.body.studentId = req.user.id.toString();
@@ -64,56 +57,20 @@ router.post('/enrolled-subjects/cancel', (req: Request, res: Response) => {
     studentController.cancelRegistration(req, res);
 });
 
-// Academic Request
-router.get('/academic-requests', (req: Request, res: Response) => {
-    // Thêm studentId từ token JWT vào request params
-    req.params.studentId = req.user?.id.toString() || '';
-    studentController.getRequestHistory(req, res);
+// Tuition Payment - NEW ROUTES
+router.get('/tuition/status', (req: Request, res: Response) => {
+    // Get tuition status for specific semester
+    studentController.getTuitionStatus(req, res);
 });
 
-router.post('/academic-requests', (req: Request, res: Response) => {
-    // Thêm studentId từ token JWT vào request body nếu chưa có
-    if (!req.body.studentId && req.user) {
-        req.body.studentId = req.user.id.toString();
-    }
-    studentController.createRequest(req, res);
+router.post('/tuition/payment', (req: Request, res: Response) => {
+    // Make a payment
+    studentController.makePayment(req, res);
 });
 
-// Tuition
-router.get('/tuition', (req: Request, res: Response) => {
-    // Thêm studentId từ token JWT vào query
-    if (req.user) {
-        req.query.studentId = req.user.id.toString();
-    }
-    studentController.getTuitionRecordsByStudent(req, res);
-});
-
-router.get('/tuition/history/:recordId', (req: Request, res: Response) => {
-    // Thêm recordId từ URL params vào query
-    req.query.tuitionRecordId = req.params.recordId;
-    studentController.getPaymentReceiptsByRecord(req, res);
-});
-
-router.post('/tuition/pay', (req: Request, res: Response) => {
-    // Đảm bảo yêu cầu thanh toán được xác thực
-    studentController.payTuition(req, res);
-});
-
-router.post('/tuition/confirm', (req: Request, res: Response) => {
-    // Đảm bảo studentId được thiết lập nếu chưa có
-    if (!req.body.studentId && req.user) {
-        req.body.studentId = req.user.id.toString();
-    }
-    studentController.confirmRegistration(req, res);
-});
-
-router.put('/tuition/edit', studentController.editRegistration as unknown as RequestHandler);
-
-// Grades
-router.get('/grades', (req: Request, res: Response) => {
-    // Thêm studentId từ token JWT vào params
-    req.params.studentId = req.user?.id.toString() || '';
-    studentController.getGrades(req, res);
+router.get('/tuition/history', (req: Request, res: Response) => {
+    // Get payment history
+    studentController.getPaymentHistory(req, res);
 });
 
 // Profile

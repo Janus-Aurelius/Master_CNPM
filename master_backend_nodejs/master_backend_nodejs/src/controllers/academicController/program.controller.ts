@@ -3,6 +3,8 @@ import { ProgramBusiness } from '../../business/academicBusiness/program.busines
 import multer from 'multer';
 import * as XLSX from 'xlsx';
 import path from 'path';
+import { ValidationError } from '../../utils/errors/validation.error';
+import { DatabaseError } from '../../utils/errors/database.error';
 
 // Configure multer for file upload
 const storage = multer.diskStorage({
@@ -30,8 +32,10 @@ export class ProgramController {
     static async getAllPrograms(req: Request, res: Response): Promise<void> {
         try {
             const programs = await ProgramBusiness.getAllPrograms();
-            console.log('Programs from database:', programs);
-            res.json(programs);
+            res.json({ 
+                success: true, 
+                data: programs 
+            });
         } catch (error) {
             console.error('Error in getAllPrograms:', error);
             res.status(500).json({ 
@@ -52,7 +56,7 @@ export class ProgramController {
                 });
                 return;
             }
-            res.json(program);
+            res.json({ success: true, data: program });
         } catch (error) {
             console.error('Error in getProgramById:', error);
             res.status(500).json({ 
@@ -65,13 +69,20 @@ export class ProgramController {
     static async createProgram(req: Request, res: Response): Promise<void> {
         try {
             const program = await ProgramBusiness.createProgram(req.body);
-            res.status(201).json(program);
+            res.status(201).json({ success: true, data: program });
         } catch (error) {
             console.error('Error in createProgram:', error);
-            res.status(500).json({ 
-                success: false, 
-                message: 'Internal server error' 
-            });
+            if (error instanceof ValidationError) {
+                res.status(400).json({ 
+                    success: false, 
+                    message: error.message 
+                });
+            } else {
+                res.status(500).json({ 
+                    success: false, 
+                    message: 'Internal server error' 
+                });
+            }
         }
     }
 
@@ -80,13 +91,28 @@ export class ProgramController {
         const programData = req.body;
         try {
             const updated = await ProgramBusiness.updateProgram(maNganh, maMonHoc, maHocKy, programData);
-            if (!updated) {
-                res.status(404).json({ message: 'Program not found' });
-                return;
-            }
-            res.json(updated);
+            res.json({ 
+                success: true, 
+                data: updated 
+            });
         } catch (error) {
-            res.status(500).json({ message: 'Failed to update program' });
+            console.error('Error in updateProgram:', error);
+            if (error instanceof ValidationError) {
+                res.status(400).json({ 
+                    success: false, 
+                    message: error.message 
+                });
+            } else if (error instanceof DatabaseError) {
+                res.status(404).json({ 
+                    success: false, 
+                    message: error.message 
+                });
+            } else {
+                res.status(500).json({ 
+                    success: false, 
+                    message: 'Internal server error' 
+                });
+            }
         }
     }
 
@@ -100,17 +126,17 @@ export class ProgramController {
             });
         } catch (error) {
             console.error('Error in deleteProgram:', error);
-            if (error instanceof Error && error.message === 'Program not found') {
+            if (error instanceof DatabaseError) {
                 res.status(404).json({ 
                     success: false, 
-                    message: 'Program not found' 
+                    message: error.message 
                 });
-                return;
+            } else {
+                res.status(500).json({ 
+                    success: false, 
+                    message: 'Internal server error' 
+                });
             }
-            res.status(500).json({ 
-                success: false, 
-                message: 'Internal server error' 
-            });
         }
     }
 
@@ -125,16 +151,21 @@ export class ProgramController {
             }
 
             try {
-                const workbook = XLSX.readFile(req.file.path);
-                const sheetName = workbook.SheetNames[0];
-                const worksheet = workbook.Sheets[sheetName];
-                const data = XLSX.utils.sheet_to_json(worksheet);
-
-                // Process the Excel data
                 const processedData = await ProgramBusiness.processExcelData(req.file);
                 res.status(200).json({ success: true, data: processedData });
             } catch (error) {
-                res.status(500).json({ success: false, message: 'Error processing Excel file', error });
+                console.error('Error in uploadExcelFile:', error);
+                if (error instanceof ValidationError) {
+                    res.status(400).json({ 
+                        success: false, 
+                        message: error.message 
+                    });
+                } else {
+                    res.status(500).json({ 
+                        success: false, 
+                        message: 'Error processing Excel file' 
+                    });
+                }
             }
         });
     }
@@ -143,7 +174,7 @@ export class ProgramController {
         try {
             const { maNganh } = req.params;
             const programs = await ProgramBusiness.getProgramsByNganh(maNganh);
-            res.json(programs);
+            res.json({ success: true, data: programs });
         } catch (error) {
             console.error('Error in getProgramsByNganh:', error);
             res.status(500).json({ 
@@ -157,9 +188,26 @@ export class ProgramController {
         try {
             const { maHocKy } = req.params;
             const programs = await ProgramBusiness.getProgramsByHocKy(maHocKy);
-            res.json(programs);
+            res.json({ success: true, data: programs });
         } catch (error) {
             console.error('Error in getProgramsByHocKy:', error);
+            res.status(500).json({ 
+                success: false, 
+                message: 'Internal server error' 
+            });
+        }
+    }
+
+    static async validateSemester(req: Request, res: Response): Promise<void> {
+        try {
+            const { maHocKy } = req.params;
+            const exists = await ProgramBusiness.validateSemester(maHocKy);
+            res.json({ 
+                success: true, 
+                data: { exists } 
+            });
+        } catch (error) {
+            console.error('Error in validateSemester:', error);
             res.status(500).json({ 
                 success: false, 
                 message: 'Internal server error' 

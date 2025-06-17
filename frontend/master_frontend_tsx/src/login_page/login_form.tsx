@@ -66,6 +66,12 @@ export default function LoginForm({ onLogin }: LoginFormProps) {
 
             const data = await response.json();
 
+            if (response.status === 503) {
+                // Hiển thị thông báo bảo trì
+                alert(data.message || 'Hệ thống đang bảo trì');
+                return;
+            }
+
             if (data.success) {
                 // Save user data and tokens to localStorage
                 localStorage.setItem('user', JSON.stringify(data.data.user));

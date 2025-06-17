@@ -43,6 +43,7 @@ import {
 import FilterListIcon from "@mui/icons-material/FilterList";
 import SearchIcon from "@mui/icons-material/Search";
 import { systemAdminApi, AuditLog } from "../api_clients/systemAdminApi";
+import { format } from 'date-fns';
 
 interface SystemConfigAndMaintenanceProps {
     user: User | null;
@@ -63,22 +64,19 @@ export default function SystemConfigAndMaintenance({ onLogout }: SystemConfigAnd
     const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
     const [securitySettings, setSecuritySettings] = useState<any>({});
     const [maintenanceSettings, setMaintenanceSettings] = useState<any>({});
+    const [totalLogs, setTotalLogs] = useState(0);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pageSize, setPageSize] = useState(10);
 
     useEffect(() => {
         const fetchData = async () => {
             try {
                 setLoading(true);
-                const token = localStorage.getItem('auth_token');
-
-
-                const [securityData, maintenanceData, auditData] = await Promise.all([
-                    systemAdminApi.getSecuritySettings(),
-                    systemAdminApi.getMaintenanceSettings(),
-                    systemAdminApi.getAuditLogs()
-                ]);
-                setSecuritySettings(securityData);
-                setMaintenanceSettings(maintenanceData);
-                setAuditLogs(auditData);
+                const response = await systemAdminApi.getAuditLogs(currentPage, pageSize);
+                if (response.success) {
+                    setAuditLogs(response.data);
+                    setTotalLogs(response.total);
+                }
                 setError(null);
             } catch (err) {
                 setError("Không thể tải dữ liệu hệ thống từ server.");
@@ -87,6 +85,23 @@ export default function SystemConfigAndMaintenance({ onLogout }: SystemConfigAnd
             }
         };
         fetchData();
+    }, [currentPage, pageSize]);
+
+    useEffect(() => {
+        const fetchMaintenanceStatus = async () => {
+            try {
+                const status = await systemAdminApi.getMaintenanceSettings();
+                setMaintenanceSettings(status);
+            } catch (err) {
+                console.error('Error fetching maintenance status:', err);
+                setSnackbar({
+                    open: true,
+                    message: "Không thể tải trạng thái bảo trì",
+                    severity: "error"
+                });
+            }
+        };
+        fetchMaintenanceStatus();
     }, []);
 
     const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
@@ -94,24 +109,13 @@ export default function SystemConfigAndMaintenance({ onLogout }: SystemConfigAnd
     };
 
     const handleChangePage = (_event: unknown, newPage: number) => {
-        setPage(newPage);
+        setCurrentPage(newPage + 1);
     };
 
     const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
-        setRowsPerPage(parseInt(event.target.value, 10));
-        setPage(0);
+        setPageSize(parseInt(event.target.value, 10));
+        setCurrentPage(1);
     };
-
-    const filteredLogs = auditLogs.filter(log => {
-        const matchesSearch =
-            log.user_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            log.action_type.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            log.status.toLowerCase().includes(searchTerm.toLowerCase());
-
-        const matchesFilter = filterType === "all" || log.status === filterType;
-
-        return matchesSearch && matchesFilter;
-    });
 
     const handleSaveSecurity = async () => {
         try {
@@ -124,12 +128,23 @@ export default function SystemConfigAndMaintenance({ onLogout }: SystemConfigAnd
 
     const handleToggleMaintenance = async () => {
         try {
-            const enable = !maintenanceSettings.maintenanceMode;
+            const enable = !maintenanceSettings.isMaintenanceMode;
             const result = await systemAdminApi.toggleMaintenance(enable);
-            setMaintenanceSettings((prev: any) => ({ ...prev, maintenanceMode: result.maintenanceMode }));
-            setSnackbar({ open: true, message: enable ? "Đã bật chế độ bảo trì" : "Đã tắt chế độ bảo trì", severity: "success" });
+            
+            const newStatus = await systemAdminApi.getMaintenanceSettings();
+            setMaintenanceSettings(newStatus);
+            
+            setSnackbar({
+                open: true,
+                message: enable ? "Đã bật chế độ bảo trì" : "Đã tắt chế độ bảo trì",
+                severity: "success"
+            });
         } catch (err) {
-            setSnackbar({ open: true, message: "Cập nhật chế độ bảo trì thất bại!", severity: "error" });
+            setSnackbar({
+                open: true,
+                message: "Cập nhật chế độ bảo trì thất bại!",
+                severity: "error"
+            });
         }
     };
 
@@ -325,93 +340,87 @@ export default function SystemConfigAndMaintenance({ onLogout }: SystemConfigAnd
                     <Typography variant="h6" sx={{ mb: 3 }}>
                         Cấu hình bảo trì hệ thống
                     </Typography>
-                    <Alert severity={maintenanceSettings.maintenanceMode ? "warning" : "info"} sx={{ mb: 2 }}>
-                        {maintenanceSettings.maintenanceMode
+                    <Alert severity={maintenanceSettings.isMaintenanceMode ? "warning" : "info"} sx={{ mb: 2 }}>
+                        {maintenanceSettings.isMaintenanceMode
                             ? "Hệ thống hiện đang trong chế độ bảo trì. Người dùng không thể truy cập."
                             : "Hệ thống đang hoạt động bình thường."}
                     </Alert>
                     <Button
-                        variant={maintenanceSettings.maintenanceMode ? "outlined" : "contained"}
-                        color={maintenanceSettings.maintenanceMode ? "success" : "warning"}
+                        variant={maintenanceSettings.isMaintenanceMode ? "outlined" : "contained"}
+                        color={maintenanceSettings.isMaintenanceMode ? "success" : "warning"}
                         onClick={handleToggleMaintenance}
                     >
-                        {maintenanceSettings.maintenanceMode ? "Tắt chế độ bảo trì" : "Bật chế độ bảo trì"}
+                        {maintenanceSettings.isMaintenanceMode ? "Tắt chế độ bảo trì" : "Bật chế độ bảo trì"}
                     </Button>
                 </Paper>
             )}
 
             {/* Tab Nhật ký hệ thống */}
             {activeTab === 2 && (
-                <Paper sx={{ p: 3 }}>
-                    <Typography variant="h6" sx={{ mb: 3 }}>
+                <Paper sx={{
+                    borderRadius: '16px',
+                    padding: '20px',
+                    backgroundColor: 'rgb(250, 250, 250)',
+                    boxShadow: '0 2px 5px rgba(0, 0, 0, 0.1)',
+                    transition: 'all 0.25s ease',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    flexGrow: 1,
+                    p: 2
+                }}>
+                    <Typography variant="h6" sx={{ mb: 2 }}>
                         Nhật ký hệ thống
                     </Typography>
-                    <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between' }}>
-                        <TextField
-                            placeholder="Tìm kiếm nhật ký..."
-                            variant="outlined"
-                            size="small"
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            InputProps={{
-                                startAdornment: (
-                                    <InputAdornment position="start">
-                                        <SearchIcon />
-                                    </InputAdornment>
-                                ),
-                            }}
-                            sx={{ width: '40%' }}
-                        />
-                        <FormControlLabel
-                            control={
-                                <Switch
-                                    checked={filterType === "success"}
-                                    onChange={() => setFilterType(filterType === "success" ? "all" : "success")}
-                                />
-                            }
-                            label="Chỉ thành công"
-                        />
-                    </Box>
                     <TableContainer>
-                        <Table>
+                        <Table size="small">
                             <TableHead>
                                 <TableRow>
-                                    <TableCell>Thời gian</TableCell>
                                     <TableCell>Người dùng</TableCell>
                                     <TableCell>Hành động</TableCell>
-                                    <TableCell>IP</TableCell>
+                                    <TableCell>Thời gian</TableCell>
                                     <TableCell>Trạng thái</TableCell>
                                 </TableRow>
                             </TableHead>
                             <TableBody>
-                                {filteredLogs
-                                    .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                                    .map((log) => (
+                                {auditLogs.length === 0 ? (
+                                    <TableRow>
+                                        <TableCell colSpan={4} align="center">
+                                            Không có nhật ký hoạt động.
+                                        </TableCell>
+                                    </TableRow>
+                                ) : (
+                                    auditLogs.map((log) => (
                                         <TableRow key={log.id}>
-                                            <TableCell>{log.created_at}</TableCell>
                                             <TableCell>{log.user_id}</TableCell>
                                             <TableCell>{log.action_type}</TableCell>
-                                            <TableCell>{log.ip_address}</TableCell>
+                                            <TableCell>
+                                                {format(new Date(log.created_at), 'dd/MM/yyyy HH:mm:ss')}
+                                            </TableCell>
                                             <TableCell>
                                                 <Chip
-                                                    label={log.status === 'success' ? 'Thành công' : log.status === 'warning' ? 'Cảnh báo' : 'Lỗi'}
-                                                    color={log.status === 'success' ? 'success' : log.status === 'warning' ? 'warning' : 'error'}
+                                                    label={log.status === 'thành công' ? 'Thành công' : 'Thất bại'}
+                                                    color={log.status === 'thành công' ? 'success' : 'error'}
                                                     size="small"
+                                                    variant="filled"
                                                 />
                                             </TableCell>
                                         </TableRow>
-                                    ))}
+                                    ))
+                                )}
                             </TableBody>
                         </Table>
                     </TableContainer>
                     <TablePagination
                         rowsPerPageOptions={[5, 10, 25]}
                         component="div"
-                        count={filteredLogs.length}
-                        rowsPerPage={rowsPerPage}
-                        page={page}
-                        onPageChange={handleChangePage}
-                        onRowsPerPageChange={handleChangeRowsPerPage}
+                        count={totalLogs}
+                        rowsPerPage={pageSize}
+                        page={currentPage - 1}
+                        onPageChange={(_, newPage) => setCurrentPage(newPage + 1)}
+                        onRowsPerPageChange={(e) => {
+                            setPageSize(parseInt(e.target.value, 10));
+                            setCurrentPage(1);
+                        }}
                     />
                 </Paper>
             )}

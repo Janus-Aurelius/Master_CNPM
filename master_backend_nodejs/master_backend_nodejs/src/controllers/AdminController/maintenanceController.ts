@@ -92,7 +92,7 @@ export class MaintenanceController {
         try {
             const { enable } = req.body;
             if (enable) {
-                await maintenanceManager.enable("Bật chế độ bảo trì qua API");
+                await maintenanceManager.enable("Máy chủ đang bảo trì");
             } else {
                 await maintenanceManager.disable();
             }
