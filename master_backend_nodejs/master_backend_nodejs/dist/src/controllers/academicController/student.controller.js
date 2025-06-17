@@ -38,6 +38,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.studentController = void 0;
 var student_business_1 = require("../../business/academicBusiness/student.business");
+var academicStructure_service_1 = require("../../services/academicService/academicStructure.service");
 exports.studentController = {
     getStudents: function (req, res) { return __awaiter(void 0, void 0, void 0, function () {
         var students, error_1;
@@ -173,5 +174,195 @@ exports.studentController = {
                 case 3: return [2 /*return*/];
             }
         });
-    }); }
+    }); },
+    // Dropdown data endpoints for student forms
+    getFaculties: function (req, res) { return __awaiter(void 0, void 0, void 0, function () {
+        var faculties, error_6;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    _a.trys.push([0, 2, , 3]);
+                    return [4 /*yield*/, academicStructure_service_1.AcademicStructureService.getAllFaculties()];
+                case 1:
+                    faculties = _a.sent();
+                    res.json({
+                        success: true,
+                        data: faculties,
+                        message: 'Faculties fetched successfully'
+                    });
+                    return [3 /*break*/, 3];
+                case 2:
+                    error_6 = _a.sent();
+                    console.error('Error getting faculties:', error_6);
+                    res.status(500).json({
+                        success: false,
+                        data: null,
+                        error: 'Failed to fetch faculties'
+                    });
+                    return [3 /*break*/, 3];
+                case 3: return [2 /*return*/];
+            }
+        });
+    }); },
+    getMajors: function (req, res) { return __awaiter(void 0, void 0, void 0, function () {
+        var majors, error_7;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    _a.trys.push([0, 2, , 3]);
+                    return [4 /*yield*/, academicStructure_service_1.AcademicStructureService.getAllMajors()];
+                case 1:
+                    majors = _a.sent();
+                    res.json({
+                        success: true,
+                        data: majors,
+                        message: 'Majors fetched successfully'
+                    });
+                    return [3 /*break*/, 3];
+                case 2:
+                    error_7 = _a.sent();
+                    console.error('Error getting majors:', error_7);
+                    res.status(500).json({
+                        success: false,
+                        data: null,
+                        error: 'Failed to fetch majors'
+                    });
+                    return [3 /*break*/, 3];
+                case 3: return [2 /*return*/];
+            }
+        });
+    }); },
+    getMajorsByFaculty: function (req, res) { return __awaiter(void 0, void 0, void 0, function () {
+        var facultyId, majors, error_8;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    _a.trys.push([0, 2, , 3]);
+                    facultyId = req.params.facultyId;
+                    if (!facultyId) {
+                        return [2 /*return*/, res.status(400).json({
+                                success: false,
+                                data: null,
+                                error: 'Faculty ID is required'
+                            })];
+                    }
+                    return [4 /*yield*/, academicStructure_service_1.AcademicStructureService.getMajorsByFaculty(facultyId)];
+                case 1:
+                    majors = _a.sent();
+                    res.json({
+                        success: true,
+                        data: majors,
+                        message: 'Majors by faculty fetched successfully'
+                    });
+                    return [3 /*break*/, 3];
+                case 2:
+                    error_8 = _a.sent();
+                    console.error('Error getting majors by faculty:', error_8);
+                    res.status(500).json({
+                        success: false,
+                        data: null,
+                        error: 'Failed to fetch majors by faculty'
+                    });
+                    return [3 /*break*/, 3];
+                case 3: return [2 /*return*/];
+            }
+        });
+    }); },
+    getProvinces: function (req, res) { return __awaiter(void 0, void 0, void 0, function () {
+        var provinces, error_9;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    _a.trys.push([0, 2, , 3]);
+                    return [4 /*yield*/, academicStructure_service_1.AcademicStructureService.getAllProvinces()];
+                case 1:
+                    provinces = _a.sent();
+                    res.json({
+                        success: true,
+                        data: provinces,
+                        message: 'Provinces fetched successfully'
+                    });
+                    return [3 /*break*/, 3];
+                case 2:
+                    error_9 = _a.sent();
+                    console.error('Error getting provinces:', error_9);
+                    res.status(500).json({
+                        success: false,
+                        data: null,
+                        error: 'Failed to fetch provinces'
+                    });
+                    return [3 /*break*/, 3];
+                case 3: return [2 /*return*/];
+            }
+        });
+    }); },
+    getPriorityGroups: function (req, res) { return __awaiter(void 0, void 0, void 0, function () {
+        var priorityGroups, error_10;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    _a.trys.push([0, 2, , 3]);
+                    return [4 /*yield*/, academicStructure_service_1.AcademicStructureService.getAllPriorityGroups()];
+                case 1:
+                    priorityGroups = _a.sent();
+                    res.json({
+                        success: true,
+                        data: priorityGroups,
+                        message: 'Priority groups fetched successfully'
+                    });
+                    return [3 /*break*/, 3];
+                case 2:
+                    error_10 = _a.sent();
+                    console.error('Error getting priority groups:', error_10);
+                    res.status(500).json({
+                        success: false,
+                        data: null,
+                        error: 'Failed to fetch priority groups'
+                    });
+                    return [3 /*break*/, 3];
+                case 3: return [2 /*return*/];
+            }
+        });
+    }); },
+    // Helper endpoint for all student form data
+    getStudentFormData: function (req, res) { return __awaiter(void 0, void 0, void 0, function () {
+        var _a, faculties, majors, provinces, districts, priorityGroups, error_11;
+        return __generator(this, function (_b) {
+            switch (_b.label) {
+                case 0:
+                    _b.trys.push([0, 2, , 3]);
+                    return [4 /*yield*/, Promise.all([
+                            academicStructure_service_1.AcademicStructureService.getAllFaculties(),
+                            academicStructure_service_1.AcademicStructureService.getAllMajors(),
+                            academicStructure_service_1.AcademicStructureService.getAllProvinces(),
+                            academicStructure_service_1.AcademicStructureService.getAllDistricts(),
+                            academicStructure_service_1.AcademicStructureService.getAllPriorityGroups()
+                        ])];
+                case 1:
+                    _a = _b.sent(), faculties = _a[0], majors = _a[1], provinces = _a[2], districts = _a[3], priorityGroups = _a[4];
+                    res.json({
+                        success: true,
+                        data: {
+                            faculties: faculties,
+                            majors: majors,
+                            provinces: provinces,
+                            districts: districts,
+                            priorityGroups: priorityGroups
+                        },
+                        message: 'Student form data fetched successfully'
+                    });
+                    return [3 /*break*/, 3];
+                case 2:
+                    error_11 = _b.sent();
+                    console.error('Error getting student form data:', error_11);
+                    res.status(500).json({
+                        success: false,
+                        data: null,
+                        error: 'Failed to fetch student form data'
+                    });
+                    return [3 /*break*/, 3];
+                case 3: return [2 /*return*/];
+            }
+        });
+    }); },
 };

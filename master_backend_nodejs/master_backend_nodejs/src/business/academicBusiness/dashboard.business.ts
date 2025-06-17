@@ -31,22 +31,9 @@ export class AcademicDashboardBusiness {
             const activities = await academicDashboardService.getRecentActivities(limit);
             return {
                 success: true,
-                data: activities
-            };
+                data: activities            };
         } catch (error) {
             throw new Error('Error fetching recent activities');
-        }
-    }
-
-    static async getStudentRequests(limit: number = 10) {
-        try {
-            const requests = await academicDashboardService.getStudentRequests(limit);
-            return {
-                success: true,
-                data: requests
-            };
-        } catch (error) {
-            throw new Error('Error fetching student requests');
         }
     }
 }

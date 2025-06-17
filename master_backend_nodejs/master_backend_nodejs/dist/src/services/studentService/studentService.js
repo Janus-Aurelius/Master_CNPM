@@ -63,14 +63,12 @@ exports.studentService = { getStudentInfo: function (studentId) {
                                 studentId: student.studentId,
                                 fullName: student.fullName,
                                 dateOfBirth: student.dateOfBirth,
-                                gender: student.gender,
-                                hometown: student.hometown,
+                                gender: student.gender, hometown: student.hometown,
                                 districtId: student.districtId,
                                 priorityObjectId: student.priorityObjectId,
                                 majorId: student.majorId,
                                 email: student.email,
-                                phone: student.phone,
-                                status: student.status
+                                phone: student.phone
                             }];
                     case 2:
                         error_1 = _a.sent();
@@ -141,11 +139,9 @@ exports.studentService = { getStudentInfo: function (studentId) {
                                 studentData.gender,
                                 studentData.hometown,
                                 studentData.districtId,
-                                studentData.priorityObjectId,
-                                studentData.majorId,
+                                studentData.priorityObjectId, studentData.majorId,
                                 studentData.email,
-                                studentData.phone,
-                                studentData.status
+                                studentData.phone
                             ])];
                     case 1:
                         // Insert student

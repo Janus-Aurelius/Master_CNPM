@@ -80,7 +80,7 @@ var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.userManager = void 0;
 var errorHandler_1 = require("../../middleware/errorHandler");
-var DashboardService = __importStar(require("../../services/adminService/dashboardService"));
+var DashboardService = __importStar(require("../../services/AdminService/dashboardService"));
 var databaseService_1 = require("../../services/database/databaseService");
 var UserManager = /** @class */ (function () {
     function UserManager() {
@@ -231,7 +231,7 @@ var UserManager = /** @class */ (function () {
                     case 2:
                         _a.trys.push([2, 6, , 8]);
                         // Delete related records first
-                        return [4 /*yield*/, databaseService_1.DatabaseService.query("\n                    DELETE FROM user_sessions WHERE user_id = $1;\n                    DELETE FROM audit_logs WHERE user_id = $1;\n                    DELETE FROM academic_requests WHERE student_id = (SELECT student_id FROM students WHERE user_id = $1);\n                    DELETE FROM enrollments WHERE student_id = (SELECT student_id FROM students WHERE user_id = $1);\n                    DELETE FROM tuition_records WHERE student_id = (SELECT student_id FROM students WHERE user_id = $1);\n                    DELETE FROM payment_receipts WHERE student_id = (SELECT student_id FROM students WHERE user_id = $1);\n                    DELETE FROM students WHERE user_id = $1;\n                ", [id])];
+                        return [4 /*yield*/, databaseService_1.DatabaseService.query("\n                    DELETE FROM user_sessions WHERE user_id = $1;\n                    DELETE FROM audit_logs WHERE user_id = $1;\n                    DELETE FROM enrollments WHERE student_id = (SELECT student_id FROM students WHERE user_id = $1);\n                    DELETE FROM tuition_records WHERE student_id = (SELECT student_id FROM students WHERE user_id = $1);\n                    DELETE FROM payment_receipts WHERE student_id = (SELECT student_id FROM students WHERE user_id = $1);\n                    DELETE FROM students WHERE user_id = $1;\n                ", [id])];
                     case 3:
                         // Delete related records first
                         _a.sent();

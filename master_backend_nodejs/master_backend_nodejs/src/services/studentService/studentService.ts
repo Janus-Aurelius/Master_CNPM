@@ -26,14 +26,12 @@ export const studentService = {    async getStudentInfo(studentId: string): Prom
                 studentId: student.studentId,
                 fullName: student.fullName,
                 dateOfBirth: student.dateOfBirth,
-                gender: student.gender,
-                hometown: student.hometown,
+                gender: student.gender,                hometown: student.hometown,
                 districtId: student.districtId,
                 priorityObjectId: student.priorityObjectId,
                 majorId: student.majorId,
                 email: student.email,
-                phone: student.phone,
-                status: student.status
+                phone: student.phone
             };
         } catch (error) {
             console.error('Error getting student info:', error);
@@ -103,11 +101,9 @@ export const studentService = {    async getStudentInfo(studentId: string): Prom
                 studentData.gender,
                 studentData.hometown,
                 studentData.districtId,
-                studentData.priorityObjectId,
-                studentData.majorId,
+                studentData.priorityObjectId,                studentData.majorId,
                 studentData.email,
-                studentData.phone,
-                studentData.status
+                studentData.phone
             ]);
 
             // Return created student

@@ -1,4 +1,4 @@
-import { ITuitionRecord } from '../../models/student_related/studentPaymentInterface';
+import { IRegistration } from '../../models/student_related/studentPaymentInterface';
 import { DatabaseService } from '../database/databaseService';
 
 export const financialService = {

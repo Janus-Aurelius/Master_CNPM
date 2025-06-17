@@ -284,18 +284,18 @@ var MaintenanceManager = /** @class */ (function () {
     MaintenanceManager.prototype.getSystemHealth = function () {
         return __awaiter(this, void 0, void 0, function () {
             var dbCheck, isDatabaseHealthy, systemMetrics, error_7;
-            var _a, _b, _c;
-            return __generator(this, function (_d) {
-                switch (_d.label) {
+            var _a, _b;
+            return __generator(this, function (_c) {
+                switch (_c.label) {
                     case 0:
-                        _d.trys.push([0, 3, , 4]);
+                        _c.trys.push([0, 3, , 4]);
                         return [4 /*yield*/, databaseService_1.DatabaseService.query('SELECT 1 as alive')];
                     case 1:
-                        dbCheck = _d.sent();
+                        dbCheck = _c.sent();
                         isDatabaseHealthy = dbCheck.length > 0;
-                        return [4 /*yield*/, databaseService_1.DatabaseService.query("\n                SELECT \n                    COUNT(*) as total_users \n                FROM users\n                UNION ALL\n                SELECT COUNT(*) as active_sessions \n                FROM user_sessions \n                WHERE expires_at > NOW()\n                UNION ALL\n                SELECT COUNT(*) as pending_requests \n                FROM academic_requests \n                WHERE status = 'pending'\n            ")];
+                        return [4 /*yield*/, databaseService_1.DatabaseService.query("\n                SELECT \n                    COUNT(*) as total_users                FROM users\n                UNION ALL\n                SELECT COUNT(*) as active_sessions \n                FROM user_sessions \n                WHERE expires_at > NOW()\n            ")];
                     case 2:
-                        systemMetrics = _d.sent();
+                        systemMetrics = _c.sent();
                         return [2 /*return*/, {
                                 database: isDatabaseHealthy ? 'healthy' : 'unhealthy',
                                 uptime: process.uptime(),
@@ -303,12 +303,11 @@ var MaintenanceManager = /** @class */ (function () {
                                 timestamp: new Date().toISOString(),
                                 metrics: {
                                     totalUsers: ((_a = systemMetrics[0]) === null || _a === void 0 ? void 0 : _a.total_users) || 0,
-                                    activeSessions: ((_b = systemMetrics[1]) === null || _b === void 0 ? void 0 : _b.active_sessions) || 0,
-                                    pendingRequests: ((_c = systemMetrics[2]) === null || _c === void 0 ? void 0 : _c.pending_requests) || 0
+                                    activeSessions: ((_b = systemMetrics[1]) === null || _b === void 0 ? void 0 : _b.active_sessions) || 0
                                 }
                             }];
                     case 3:
-                        error_7 = _d.sent();
+                        error_7 = _c.sent();
                         console.error('Error getting system health:', error_7);
                         return [2 /*return*/, {
                                 database: 'unhealthy',

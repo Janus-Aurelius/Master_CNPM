@@ -6,12 +6,15 @@ export const getCourses = async (): Promise<any[]> => {
     try {
         const courses = await DatabaseService.query(`
             SELECT 
-                c.MaMonHoc as "maMonHoc",
-                c.TenMonHoc as "tenMonHoc",
-                c.MaLoaiMon as "maLoaiMon",
-                c.SoTiet as "soTiet",
-                l.SoTietMotTC as "soTietMotTC",
-                ROUND(c.SoTiet::numeric / NULLIF(l.SoTietMotTC, 0), 2) as "credits"
+                c.MaMonHoc as "courseId",
+                c.TenMonHoc as "courseName",
+                c.MaLoaiMon as "courseTypeId",
+                c.SoTiet as "totalHours",
+                l.TenLoaiMon as "courseTypeName",
+                l.SoTietMotTC as "hoursPerCredit",
+                l.SoTienMotTC as "pricePerCredit",
+                ROUND(c.SoTiet::numeric / NULLIF(l.SoTietMotTC, 0), 2) as "totalCredits",
+                ROUND((c.SoTiet::numeric / NULLIF(l.SoTietMotTC, 0)) * l.SoTienMotTC, 2) as "totalPrice"
             FROM MONHOC c
             JOIN LOAIMON l ON c.MaLoaiMon = l.MaLoaiMon
             ORDER BY c.MaMonHoc
@@ -27,12 +30,15 @@ export const getCourseById = async (id: string): Promise<any | null> => {
     try {
         const course = await DatabaseService.queryOne(`
             SELECT 
-                c.MaMonHoc as "maMonHoc",
-                c.TenMonHoc as "tenMonHoc",
-                c.MaLoaiMon as "maLoaiMon",
-                c.SoTiet as "soTiet",
-                l.SoTietMotTC as "soTietMotTC",
-                ROUND(c.SoTiet::numeric / NULLIF(l.SoTietMotTC, 0), 2) as "credits"
+                c.MaMonHoc as "courseId",
+                c.TenMonHoc as "courseName",
+                c.MaLoaiMon as "courseTypeId",
+                c.SoTiet as "totalHours",
+                l.TenLoaiMon as "courseTypeName",
+                l.SoTietMotTC as "hoursPerCredit",
+                l.SoTienMotTC as "pricePerCredit",
+                ROUND(c.SoTiet::numeric / NULLIF(l.SoTietMotTC, 0), 2) as "totalCredits",
+                ROUND((c.SoTiet::numeric / NULLIF(l.SoTietMotTC, 0)) * l.SoTienMotTC, 2) as "totalPrice"
             FROM MONHOC c
             JOIN LOAIMON l ON c.MaLoaiMon = l.MaLoaiMon
             WHERE c.MaMonHoc = $1
@@ -47,10 +53,10 @@ export const getCourseById = async (id: string): Promise<any | null> => {
 export const addCourse = async (course: any): Promise<any> => {
     try {
         const newCourse = await DatabaseService.insert('MONHOC', {
-            MaMonHoc: course.maMonHoc,
-            TenMonHoc: course.tenMonHoc,
-            MaLoaiMon: course.maLoaiMon,
-            SoTiet: course.soTiet
+            MaMonHoc: course.courseId,
+            TenMonHoc: course.courseName,
+            MaLoaiMon: course.courseTypeId,
+            SoTiet: course.totalHours
         });
         return newCourse;
     } catch (error) {
@@ -62,9 +68,9 @@ export const addCourse = async (course: any): Promise<any> => {
 export const updateCourse = async (id: string, courseData: Partial<any>): Promise<any | null> => {
     try {
         const updateData: Record<string, any> = {};
-        if (courseData.tenMonHoc) updateData.TenMonHoc = courseData.tenMonHoc;
-        if (courseData.maLoaiMon) updateData.MaLoaiMon = courseData.maLoaiMon;
-        if (courseData.soTiet) updateData.SoTiet = courseData.soTiet;
+        if (courseData.courseName) updateData.TenMonHoc = courseData.courseName;
+        if (courseData.courseTypeId) updateData.MaLoaiMon = courseData.courseTypeId;
+        if (courseData.totalHours) updateData.SoTiet = courseData.totalHours;
         const updatedCourse = await DatabaseService.update('MONHOC', updateData, { MaMonHoc: id });
         return updatedCourse;
     } catch (error) {

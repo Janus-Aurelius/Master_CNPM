@@ -45,7 +45,7 @@ var getCourses = function () { return __awaiter(void 0, void 0, void 0, function
         switch (_a.label) {
             case 0:
                 _a.trys.push([0, 2, , 3]);
-                return [4 /*yield*/, databaseService_1.DatabaseService.query("\n            SELECT \n                c.MaMonHoc as \"maMonHoc\",\n                c.TenMonHoc as \"tenMonHoc\",\n                c.MaLoaiMon as \"maLoaiMon\",\n                c.SoTiet as \"soTiet\",\n                l.SoTietMotTC as \"soTietMotTC\",\n                ROUND(c.SoTiet::numeric / NULLIF(l.SoTietMotTC, 0), 2) as \"credits\"\n            FROM MONHOC c\n            JOIN LOAIMON l ON c.MaLoaiMon = l.MaLoaiMon\n            ORDER BY c.MaMonHoc\n        ")];
+                return [4 /*yield*/, databaseService_1.DatabaseService.query("\n            SELECT \n                c.MaMonHoc as \"courseId\",\n                c.TenMonHoc as \"courseName\",\n                c.MaLoaiMon as \"courseTypeId\",\n                c.SoTiet as \"totalHours\",\n                l.TenLoaiMon as \"courseTypeName\",\n                l.SoTietMotTC as \"hoursPerCredit\",\n                l.SoTienMotTC as \"pricePerCredit\",\n                ROUND(c.SoTiet::numeric / NULLIF(l.SoTietMotTC, 0), 2) as \"totalCredits\",\n                ROUND((c.SoTiet::numeric / NULLIF(l.SoTietMotTC, 0)) * l.SoTienMotTC, 2) as \"totalPrice\"\n            FROM MONHOC c\n            JOIN LOAIMON l ON c.MaLoaiMon = l.MaLoaiMon\n            ORDER BY c.MaMonHoc\n        ")];
             case 1:
                 courses = _a.sent();
                 return [2 /*return*/, courses];
@@ -64,7 +64,7 @@ var getCourseById = function (id) { return __awaiter(void 0, void 0, void 0, fun
         switch (_a.label) {
             case 0:
                 _a.trys.push([0, 2, , 3]);
-                return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("\n            SELECT \n                c.MaMonHoc as \"maMonHoc\",\n                c.TenMonHoc as \"tenMonHoc\",\n                c.MaLoaiMon as \"maLoaiMon\",\n                c.SoTiet as \"soTiet\",\n                l.SoTietMotTC as \"soTietMotTC\",\n                ROUND(c.SoTiet::numeric / NULLIF(l.SoTietMotTC, 0), 2) as \"credits\"\n            FROM MONHOC c\n            JOIN LOAIMON l ON c.MaLoaiMon = l.MaLoaiMon\n            WHERE c.MaMonHoc = $1\n        ", [id])];
+                return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("\n            SELECT \n                c.MaMonHoc as \"courseId\",\n                c.TenMonHoc as \"courseName\",\n                c.MaLoaiMon as \"courseTypeId\",\n                c.SoTiet as \"totalHours\",\n                l.TenLoaiMon as \"courseTypeName\",\n                l.SoTietMotTC as \"hoursPerCredit\",\n                l.SoTienMotTC as \"pricePerCredit\",\n                ROUND(c.SoTiet::numeric / NULLIF(l.SoTietMotTC, 0), 2) as \"totalCredits\",\n                ROUND((c.SoTiet::numeric / NULLIF(l.SoTietMotTC, 0)) * l.SoTienMotTC, 2) as \"totalPrice\"\n            FROM MONHOC c\n            JOIN LOAIMON l ON c.MaLoaiMon = l.MaLoaiMon\n            WHERE c.MaMonHoc = $1\n        ", [id])];
             case 1:
                 course = _a.sent();
                 return [2 /*return*/, course];
@@ -84,10 +84,10 @@ var addCourse = function (course) { return __awaiter(void 0, void 0, void 0, fun
             case 0:
                 _a.trys.push([0, 2, , 3]);
                 return [4 /*yield*/, databaseService_1.DatabaseService.insert('MONHOC', {
-                        MaMonHoc: course.maMonHoc,
-                        TenMonHoc: course.tenMonHoc,
-                        MaLoaiMon: course.maLoaiMon,
-                        SoTiet: course.soTiet
+                        MaMonHoc: course.courseId,
+                        TenMonHoc: course.courseName,
+                        MaLoaiMon: course.courseTypeId,
+                        SoTiet: course.totalHours
                     })];
             case 1:
                 newCourse = _a.sent();
@@ -108,12 +108,12 @@ var updateCourse = function (id, courseData) { return __awaiter(void 0, void 0, 
             case 0:
                 _a.trys.push([0, 2, , 3]);
                 updateData = {};
-                if (courseData.tenMonHoc)
-                    updateData.TenMonHoc = courseData.tenMonHoc;
-                if (courseData.maLoaiMon)
-                    updateData.MaLoaiMon = courseData.maLoaiMon;
-                if (courseData.soTiet)
-                    updateData.SoTiet = courseData.soTiet;
+                if (courseData.courseName)
+                    updateData.TenMonHoc = courseData.courseName;
+                if (courseData.courseTypeId)
+                    updateData.MaLoaiMon = courseData.courseTypeId;
+                if (courseData.totalHours)
+                    updateData.SoTiet = courseData.totalHours;
                 return [4 /*yield*/, databaseService_1.DatabaseService.update('MONHOC', updateData, { MaMonHoc: id })];
             case 1:
                 updatedCourse = _a.sent();

@@ -16,7 +16,6 @@ var __exportStar = (this && this.__exportStar) || function(m, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.studentService = void 0;
 __exportStar(require("./dashboardService"), exports);
-__exportStar(require("./subjectRegistrationService"), exports);
-__exportStar(require("./enrollmentService"), exports);
+__exportStar(require("./registrationService"), exports);
 var studentService_1 = require("./studentService");
 Object.defineProperty(exports, "studentService", { enumerable: true, get: function () { return studentService_1.studentService; } });

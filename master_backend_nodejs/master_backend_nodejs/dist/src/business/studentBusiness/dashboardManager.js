@@ -35,18 +35,23 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
+var openCourse_service_1 = require("../../services/courseService/openCourse.service");
 var databaseService_1 = require("../../services/database/databaseService");
+var tuitionManager_1 = __importDefault(require("./tuitionManager"));
 var DashboardManager = /** @class */ (function () {
     function DashboardManager() {
     }
     DashboardManager.prototype.getStudentDashboard = function (studentId) {
         return __awaiter(this, void 0, void 0, function () {
-            var student, upcomingClasses, recentPayments, currentSemester, semester, dashboardData, error_1;
+            var student, upcomingClasses, availableOpenCourses, recentPayments, currentSemester, semester, dashboardData, error_1;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        _a.trys.push([0, 5, , 6]);
+                        _a.trys.push([0, 6, , 7]);
                         // Validate studentId
                         if (!studentId) {
                             throw new Error('Student ID is required');
@@ -56,15 +61,18 @@ var DashboardManager = /** @class */ (function () {
                         student = _a.sent();
                         if (!student) {
                             return [2 /*return*/, null];
-                        }
+                        } // Get upcoming classes for today and tomorrow
                         return [4 /*yield*/, this.getUpcomingClasses(studentId)];
                     case 2:
                         upcomingClasses = _a.sent();
-                        return [4 /*yield*/, this.getRecentPayments(studentId)];
+                        return [4 /*yield*/, this.getAvailableOpenCourses(studentId)];
                     case 3:
+                        availableOpenCourses = _a.sent();
+                        return [4 /*yield*/, this.getRecentPayments(studentId)];
+                    case 4:
                         recentPayments = _a.sent();
                         return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("\n                SELECT setting_value FROM system_settings WHERE setting_key = 'current_semester'\n            ")];
-                    case 4:
+                    case 5:
                         currentSemester = _a.sent();
                         semester = (currentSemester === null || currentSemester === void 0 ? void 0 : currentSemester.setting_value) || '2024-1';
                         dashboardData = {
@@ -72,26 +80,24 @@ var DashboardManager = /** @class */ (function () {
                                 studentId: student.student_id,
                                 fullName: student.name,
                                 dateOfBirth: student.date_of_birth || new Date(),
-                                gender: student.gender, hometown: student.hometown ? JSON.parse(student.hometown) : undefined,
-                                districtId: student.district_id,
+                                gender: student.gender, hometown: student.hometown ? JSON.parse(student.hometown) : undefined, districtId: student.district_id,
                                 priorityObjectId: student.priority_object_id,
                                 majorId: student.major,
                                 email: student.email,
-                                phone: student.phone,
-                                status: student.status || 'active'
+                                phone: student.phone
                             },
-                            enrolledSubjects: parseInt(student.current_enrollments) || 0,
+                            enrolledCourses: parseInt(student.current_enrollments) || 0,
                             totalCredits: parseInt(student.current_credits) || 0,
                             gpa: parseFloat(student.gpa) || 0,
-                            upcomingClasses: upcomingClasses,
+                            availableOpenCourses: availableOpenCourses,
                             recentPayments: recentPayments
                         };
                         return [2 /*return*/, dashboardData];
-                    case 5:
+                    case 6:
                         error_1 = _a.sent();
                         console.error('Error getting student dashboard:', error_1);
                         throw error_1;
-                    case 6: return [2 /*return*/];
+                    case 7: return [2 /*return*/];
                 }
             });
         });
@@ -149,8 +155,8 @@ var DashboardManager = /** @class */ (function () {
                                 var schedule = _this.parseScheduleForUpcoming(cls.schedule);
                                 return {
                                     id: cls.id,
-                                    subjectId: cls.id,
-                                    subjectName: cls.name,
+                                    courseId: cls.id,
+                                    courseName: cls.name,
                                     lecturer: cls.lecturer,
                                     day: schedule.day,
                                     time: "".concat(schedule.startTime, "-").concat(schedule.endTime),
@@ -168,27 +174,25 @@ var DashboardManager = /** @class */ (function () {
     };
     /**
      * Get student's recent payment records
-     */
-    DashboardManager.prototype.getRecentPayments = function (studentId) {
+     */ DashboardManager.prototype.getRecentPayments = function (studentId) {
         return __awaiter(this, void 0, void 0, function () {
-            var payments, recentPayments, error_4;
+            var recentPayments, error_4;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         _a.trys.push([0, 2, , 3]);
-                        return [4 /*yield*/, databaseService_1.DatabaseService.query("\n                SELECT \n                    pr.id,\n                    pr.amount,\n                    pr.payment_date as paymentDate,\n                    pr.payment_method as paymentMethod,\n                    pr.status,\n                    tr.semester\n                FROM payment_receipts pr\n                JOIN tuition_records tr ON pr.tuition_record_id = tr.id\n                WHERE tr.student_id = $1\n                ORDER BY pr.payment_date DESC\n                LIMIT 5\n            ", [studentId])];
+                        return [4 /*yield*/, tuitionManager_1.default.getRecentPayments(studentId)];
                     case 1:
-                        payments = _a.sent();
-                        recentPayments = payments.map(function (payment) { return ({
-                            paymentId: payment.id.toString(),
-                            paymentDate: payment.paymentDate,
-                            registrationId: payment.courseId.toString(),
-                            paymentAmount: payment.amount,
-                            status: payment.status,
-                            paymentMethod: payment.paymentMethod,
-                            transactionId: payment.id
-                        }); });
-                        return [2 /*return*/, recentPayments];
+                        recentPayments = _a.sent();
+                        return [2 /*return*/, recentPayments.map(function (payment) { return ({
+                                paymentId: payment.paymentId,
+                                paymentDate: payment.paymentDate,
+                                registrationId: payment.registrationId,
+                                paymentAmount: payment.amount,
+                                status: 'paid', // Assuming completed payments
+                                paymentMethod: 'cash', // Default payment method
+                                transactionId: payment.paymentId
+                            }); })];
                     case 2:
                         error_4 = _a.sent();
                         console.error('Error getting recent payments:', error_4);
@@ -318,6 +322,38 @@ var DashboardManager = /** @class */ (function () {
             console.error('Error parsing schedule:', error);
             return { day: 'TBD', startTime: '00:00', endTime: '00:00' };
         }
+    };
+    /**
+     * Get available open courses for student registration
+     */
+    DashboardManager.prototype.getAvailableOpenCourses = function (studentId) {
+        return __awaiter(this, void 0, void 0, function () {
+            var currentSemester, semester_1, courses, error_6;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        _a.trys.push([0, 3, , 4]);
+                        return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("\n                SELECT setting_value FROM system_settings WHERE setting_key = 'current_semester'\n            ")];
+                    case 1:
+                        currentSemester = _a.sent();
+                        semester_1 = (currentSemester === null || currentSemester === void 0 ? void 0 : currentSemester.setting_value) || '2024-1';
+                        return [4 /*yield*/, openCourse_service_1.OpenCourseService.getAllCourses()];
+                    case 2:
+                        courses = _a.sent();
+                        // Filter to only show courses from current semester and available for registration
+                        return [2 /*return*/, courses.filter(function (course) {
+                                return course.semesterId === semester_1 &&
+                                    course.currentStudents < course.maxStudents &&
+                                    course.isAvailable !== false;
+                            }).slice(0, 5)]; // Show top 5 available courses
+                    case 3:
+                        error_6 = _a.sent();
+                        console.error('Error getting available open courses:', error_6);
+                        return [2 /*return*/, []];
+                    case 4: return [2 /*return*/];
+                }
+            });
+        });
     };
     return DashboardManager;
 }());

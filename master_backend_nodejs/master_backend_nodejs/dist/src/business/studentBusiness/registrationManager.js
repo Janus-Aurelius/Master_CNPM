@@ -35,314 +35,142 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
-    if (pack || arguments.length === 2) for (var i = 0, l = from.length, ar; i < l; i++) {
-        if (ar || !(i in from)) {
-            if (!ar) ar = Array.prototype.slice.call(from, 0, i);
-            ar[i] = from[i];
-        }
-    }
-    return to.concat(ar || Array.prototype.slice.call(from));
-};
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.registrationManager = void 0;
+// Registration Manager - Handles student course registration business logic
+var registrationService_1 = require("../../services/studentService/registrationService");
 var databaseService_1 = require("../../services/database/databaseService");
-var crossRoleValidationService_1 = require("../shared/crossRoleValidationService");
-var financialIntegrationService_1 = require("../shared/financialIntegrationService");
 var RegistrationManager = /** @class */ (function () {
     function RegistrationManager() {
     }
-    RegistrationManager.prototype.getAvailableSubjects = function (semester) {
+    /**
+     * Lấy danh sách môn học mở cho đăng ký
+     */
+    RegistrationManager.prototype.getAvailableCourses = function (semesterId) {
         return __awaiter(this, void 0, void 0, function () {
-            var semesterPattern, subjects, error_1;
+            var courses, error_1;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         _a.trys.push([0, 2, , 3]);
-                        // Validate semester
-                        if (!semester) {
-                            throw new Error('Semester is required');
+                        if (!semesterId) {
+                            return [2 /*return*/, {
+                                    success: false,
+                                    message: 'Mã học kỳ không được để trống'
+                                }];
                         }
-                        semesterPattern = /^(HK[1-3] \d{4}-\d{4}|\d{4}-[1-3])$/;
-                        if (!semesterPattern.test(semester)) {
-                            throw new Error('Invalid semester format');
-                        }
-                        return [4 /*yield*/, databaseService_1.DatabaseService.query("\n                SELECT \n                    oc.id,\n                    oc.subject_code,\n                    oc.subject_name,\n                    oc.semester,\n                    oc.academic_year,\n                    oc.max_students,\n                    oc.current_students,\n                    oc.lecturer,\n                    oc.schedule,\n                    oc.room,\n                    oc.status,\n                    oc.registration_start_date,\n                    oc.registration_end_date,\n                    s.credits,\n                    s.description,\n                    s.type,\n                    s.prerequisite_subjects\n                FROM open_courses oc\n                JOIN subjects s ON oc.subject_code = s.subject_code\n                WHERE oc.semester = $1 \n                AND oc.status = 'open'\n                AND oc.registration_start_date <= CURRENT_DATE\n                AND oc.registration_end_date >= CURRENT_DATE\n                ORDER BY oc.subject_code\n            ", [semester])];
+                        return [4 /*yield*/, registrationService_1.registrationService.getAvailableCourses(semesterId)];
                     case 1:
-                        subjects = _a.sent();
-                        return [2 /*return*/, subjects];
+                        courses = _a.sent();
+                        return [2 /*return*/, {
+                                success: true,
+                                message: "T\u00ECm th\u1EA5y ".concat(courses.length, " m\u00F4n h\u1ECDc c\u00F3 th\u1EC3 \u0111\u0103ng k\u00FD"),
+                                data: courses
+                            }];
                     case 2:
                         error_1 = _a.sent();
-                        console.error('Error getting available subjects:', error_1);
-                        throw error_1;
-                    case 3: return [2 /*return*/];
-                }
-            });
-        });
-    };
-    /**
-     * Search subjects by query and semester
-     */
-    RegistrationManager.prototype.searchSubjects = function (query, semester) {
-        return __awaiter(this, void 0, void 0, function () {
-            var cleanQuery, subjects, error_2;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        _a.trys.push([0, 2, , 3]);
-                        // Validate inputs
-                        if (!query || !semester) {
-                            throw new Error('Search query and semester are required');
-                        }
-                        cleanQuery = query.trim();
-                        if (cleanQuery.length < 2) {
-                            throw new Error('Search query must be at least 2 characters');
-                        }
-                        return [4 /*yield*/, databaseService_1.DatabaseService.query("\n                SELECT \n                    oc.id,\n                    oc.subject_code,\n                    oc.subject_name,\n                    oc.semester,\n                    oc.academic_year,\n                    oc.max_students,\n                    oc.current_students,\n                    oc.lecturer,\n                    oc.schedule,\n                    oc.room,\n                    oc.status,\n                    oc.registration_start_date,\n                    oc.registration_end_date,\n                    s.credits,\n                    s.description,\n                    s.type,\n                    s.prerequisite_subjects\n                FROM open_courses oc\n                JOIN subjects s ON oc.subject_code = s.subject_code\n                WHERE oc.semester = $1 \n                AND oc.status = 'open'\n                AND (\n                    LOWER(oc.subject_name) LIKE LOWER($2) OR \n                    LOWER(oc.subject_code) LIKE LOWER($2) OR\n                    LOWER(s.description) LIKE LOWER($2)\n                )\n                ORDER BY oc.subject_code\n            ", [semester, "%".concat(cleanQuery, "%")])];
-                    case 1:
-                        subjects = _a.sent();
-                        return [2 /*return*/, subjects];
-                    case 2:
-                        error_2 = _a.sent();
-                        console.error('Error searching subjects:', error_2);
-                        throw error_2;
-                    case 3: return [2 /*return*/];
-                }
-            });
-        });
-    };
-    /**
-     * Register student for a course with comprehensive validation (Legacy method)
-     */
-    RegistrationManager.prototype.registerSubject = function (studentId, courseId, semester) {
-        return __awaiter(this, void 0, void 0, function () {
-            var validation, eligibility, tuitionResult, warnings, student, enrollment, error_3;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        _a.trys.push([0, 7, , 8]);
-                        // Validate inputs
-                        if (!studentId || !courseId || !semester) {
-                            throw new Error('Student ID, Course ID, and Semester are required');
-                        }
-                        // Validate courseId format (basic validation)
-                        if (courseId === 'INVALID' || courseId.length < 3) {
-                            throw new Error('Invalid course ID format');
-                        }
-                        return [4 /*yield*/, crossRoleValidationService_1.CrossRoleValidationService.validateCourseRegistration(studentId, courseId, semester)];
-                    case 1:
-                        validation = _a.sent();
-                        if (!validation.isValid) {
-                            throw new Error("Registration failed: ".concat(validation.errors.join(', ')));
-                        } // 2. Enhanced eligibility check
-                        return [4 /*yield*/, crossRoleValidationService_1.CrossRoleValidationService.checkStudentEligibility(studentId, courseId)];
-                    case 2:
-                        eligibility = _a.sent();
-                        if (!eligibility.canRegister) {
-                            throw new Error("Student not eligible: ".concat(eligibility.errors.join(', ')));
-                        } // 3. Financial integration - create tuition record
-                        return [4 /*yield*/, financialIntegrationService_1.FinancialIntegrationService.createTuitionRecord(studentId, courseId, semester)];
-                    case 3:
-                        tuitionResult = _a.sent();
-                        warnings = __spreadArray([], validation.warnings, true);
-                        if (!tuitionResult.success) {
-                            warnings.push("Tuition record creation warning: ".concat(tuitionResult.error));
-                        }
-                        return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("\n                SELECT id FROM students WHERE student_id = $1\n            ", [studentId])];
-                    case 4:
-                        student = _a.sent();
-                        if (!student) {
-                            throw new Error('Student not found');
-                        } // Create enrollment record
-                        return [4 /*yield*/, databaseService_1.DatabaseService.insert('enrollments', {
-                                student_id: student.id,
-                                course_id: parseInt(courseId),
-                                enrollment_date: new Date(),
-                                is_enrolled: true // Boolean approach: true = enrolled
-                            })];
-                    case 5:
-                        enrollment = _a.sent();
-                        // Update current students count in open_courses
-                        return [4 /*yield*/, databaseService_1.DatabaseService.query("\n                UPDATE open_courses \n                SET current_students = current_students + 1 \n                WHERE id = $1\n            ", [parseInt(courseId)])];
-                    case 6:
-                        // Update current students count in open_courses
-                        _a.sent();
-                        // 5. Log warnings if any
-                        if (warnings.length > 0) {
-                            console.warn("Registration warnings for student ".concat(studentId, ":"), warnings);
-                        }
-                        return [2 /*return*/, {
-                                success: true,
-                                warnings: warnings,
-                                message: 'Course registered successfully',
-                                tuitionRecordId: tuitionResult.tuitionRecordId,
-                                eligibilityDetails: {
-                                    prerequisitesMet: eligibility.prerequisitesMet,
-                                    creditStatus: !eligibility.creditLimitExceeded,
-                                    paymentStatus: !eligibility.hasPaymentIssues,
-                                    scheduleStatus: !eligibility.hasScheduleConflict
-                                }
-                            }];
-                    case 7:
-                        error_3 = _a.sent();
-                        if (error_3 instanceof Error && error_3.message === 'Already registered') {
-                            throw new Error('Already registered');
-                        }
-                        throw error_3;
-                    case 8: return [2 /*return*/];
-                }
-            });
-        });
-    };
-    /**
-     * Register student for a course with comprehensive validation (New method)
-     */
-    RegistrationManager.prototype.registerForCourse = function (request) {
-        return __awaiter(this, void 0, void 0, function () {
-            var studentId, courseId, semester, validation, student, course, enrollment, error_4;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        _a.trys.push([0, 7, , 8]);
-                        studentId = request.studentId, courseId = request.courseId, semester = request.semester;
-                        return [4 /*yield*/, crossRoleValidationService_1.CrossRoleValidationService.validateCourseRegistration(studentId, courseId, semester)];
-                    case 1:
-                        validation = _a.sent();
-                        if (!validation.isValid) {
-                            return [2 /*return*/, {
-                                    success: false,
-                                    errors: validation.errors,
-                                    warnings: validation.warnings
-                                }];
-                        }
-                        return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("\n                SELECT id, student_id, name FROM students WHERE student_id = $1\n            ", [studentId])];
-                    case 2:
-                        student = _a.sent();
-                        return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("\n                SELECT oc.*, s.credits, s.subject_name \n                FROM open_courses oc \n                JOIN subjects s ON oc.subject_code = s.subject_code \n                WHERE oc.id = $1\n            ", [parseInt(courseId)])];
-                    case 3:
-                        course = _a.sent();
-                        if (!student || !course) {
-                            return [2 /*return*/, {
-                                    success: false,
-                                    errors: ['Student or course not found'],
-                                    warnings: []
-                                }];
-                        } // 3. Create enrollment record
-                        return [4 /*yield*/, databaseService_1.DatabaseService.insert('enrollments', {
-                                student_id: student.student_id,
-                                course_id: parseInt(courseId),
-                                course_name: course.subject_name,
-                                semester: semester,
-                                is_enrolled: true, // Boolean approach: true = enrolled
-                                credits: course.credits
-                            })];
-                    case 4:
-                        enrollment = _a.sent();
-                        // 4. Update course current students count
-                        return [4 /*yield*/, databaseService_1.DatabaseService.query("\n                UPDATE open_courses \n                SET current_students = current_students + 1 \n                WHERE id = $1\n            ", [parseInt(courseId)])];
-                    case 5:
-                        // 4. Update course current students count
-                        _a.sent();
-                        // 5. Create tuition record
-                        return [4 /*yield*/, financialIntegrationService_1.FinancialIntegrationService.createTuitionRecord(student.student_id, courseId, semester)];
-                    case 6:
-                        // 5. Create tuition record
-                        _a.sent();
-                        return [2 /*return*/, {
-                                success: true,
-                                enrollmentId: enrollment.id,
-                                errors: [],
-                                warnings: validation.warnings
-                            }];
-                    case 7:
-                        error_4 = _a.sent();
-                        console.error('Course registration error:', error_4);
+                        console.error('Error in getAvailableCourses:', error_1);
                         return [2 /*return*/, {
                                 success: false,
-                                errors: ["Registration failed: ".concat(error_4 instanceof Error ? error_4.message : 'Unknown error')],
-                                warnings: []
+                                message: 'Không thể lấy danh sách môn học',
+                                error: error_1 instanceof Error ? error_1.message : 'Unknown error'
                             }];
-                    case 8: return [2 /*return*/];
-                }
-            });
-        });
-    };
-    /**
-     * Get student's enrolled courses for a semester
-     */
-    RegistrationManager.prototype.getStudentEnrollments = function (studentId, semester) {
-        return __awaiter(this, void 0, void 0, function () {
-            var query, params, enrollments, error_5;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        _a.trys.push([0, 2, , 3]);
-                        query = "                SELECT \n                    e.id as enrollment_id,\n                    e.course_id,\n                    e.course_name,\n                    e.semester,\n                    e.is_enrolled, -- Updated to boolean field\n                    e.credits,\n                    e.midterm_grade,\n                    e.final_grade,\n                    e.total_grade,\n                    e.letter_grade,\n                    oc.subject_code,\n                    oc.lecturer,\n                    oc.schedule,\n                    oc.room,\n                    s.type,\n                    s.description\n                FROM enrollments e\n                JOIN open_courses oc ON e.course_id = oc.id\n                JOIN subjects s ON oc.subject_code = s.subject_code\n                WHERE e.student_id = $1\n            ";
-                        params = [studentId];
-                        if (semester) {
-                            query += ' AND e.semester = $2';
-                            params.push(semester);
-                        }
-                        query += ' ORDER BY e.created_at DESC';
-                        return [4 /*yield*/, databaseService_1.DatabaseService.query(query, params)];
-                    case 1:
-                        enrollments = _a.sent();
-                        return [2 /*return*/, enrollments];
-                    case 2:
-                        error_5 = _a.sent();
-                        console.error('Error getting student enrollments:', error_5);
-                        throw error_5;
                     case 3: return [2 /*return*/];
                 }
             });
         });
     };
     /**
-     * Drop/withdraw from a course
+     * Lấy danh sách môn học đã đăng ký của sinh viên
      */
-    RegistrationManager.prototype.dropCourse = function (studentId, enrollmentId) {
+    RegistrationManager.prototype.getRegisteredCourses = function (studentId, semesterId) {
         return __awaiter(this, void 0, void 0, function () {
-            var enrollment, error_6;
+            var courses, error_2;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        _a.trys.push([0, 2, , 3]);
+                        if (!studentId) {
+                            return [2 /*return*/, {
+                                    success: false,
+                                    message: 'Mã sinh viên không được để trống'
+                                }];
+                        }
+                        return [4 /*yield*/, registrationService_1.registrationService.getRegisteredCourses(studentId, semesterId || '')];
+                    case 1:
+                        courses = _a.sent();
+                        return [2 /*return*/, {
+                                success: true,
+                                message: "Sinh vi\u00EAn \u0111\u00E3 \u0111\u0103ng k\u00FD ".concat(courses.length, " m\u00F4n h\u1ECDc"),
+                                data: courses
+                            }];
+                    case 2:
+                        error_2 = _a.sent();
+                        console.error('Error in getRegisteredCourses:', error_2);
+                        return [2 /*return*/, {
+                                success: false,
+                                message: 'Không thể lấy danh sách môn học đã đăng ký',
+                                error: error_2 instanceof Error ? error_2.message : 'Unknown error'
+                            }];
+                    case 3: return [2 /*return*/];
+                }
+            });
+        });
+    };
+    /**
+     * Đăng ký môn học cho sinh viên
+     */
+    RegistrationManager.prototype.registerCourses = function (studentId, courseIds, semesterId) {
+        return __awaiter(this, void 0, void 0, function () {
+            var semester, student, result, error_3;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         _a.trys.push([0, 4, , 5]);
-                        return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("\n                SELECT e.*, oc.current_students, oc.id as course_id\n                FROM enrollments e\n                JOIN open_courses oc ON e.course_id = oc.id\n                WHERE e.id = $1 AND e.student_id = $2\n            ", [enrollmentId, studentId])];
+                        // Validate inputs
+                        if (!studentId || !courseIds || courseIds.length === 0 || !semesterId) {
+                            return [2 /*return*/, {
+                                    success: false,
+                                    message: 'Thông tin đăng ký không đầy đủ'
+                                }];
+                        }
+                        return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("\n                SELECT MaHocKy, TrangThaiHocKy, ThoiHanDongHP\n                FROM HOCKYNAMHOC\n                WHERE MaHocKy = $1\n            ", [semesterId])];
                     case 1:
-                        enrollment = _a.sent();
-                        if (!enrollment) {
+                        semester = _a.sent();
+                        if (!semester) {
                             return [2 /*return*/, {
                                     success: false,
-                                    errors: ['Enrollment not found'],
-                                    warnings: []
+                                    message: 'Học kỳ không tồn tại'
                                 }];
-                        } // 2. Check if drop is allowed
-                        if (!enrollment.is_enrolled) {
-                            return [2 /*return*/, {
-                                    success: false,
-                                    errors: ['Cannot drop already dropped course'],
-                                    warnings: []
-                                }];
-                        } // 3. Update enrollment to dropped (boolean false)
-                        return [4 /*yield*/, databaseService_1.DatabaseService.update('enrollments', { is_enrolled: false, drop_date: new Date() }, { id: enrollmentId })];
+                        }
+                        return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("\n                SELECT MaSoSinhVien FROM SINHVIEN WHERE MaSoSinhVien = $1\n            ", [studentId])];
                     case 2:
-                        _a.sent();
-                        // 4. Update course current students count
-                        return [4 /*yield*/, databaseService_1.DatabaseService.query("\n                UPDATE open_courses \n                SET current_students = GREATEST(current_students - 1, 0) \n                WHERE id = $1\n            ", [enrollment.course_id])];
+                        student = _a.sent();
+                        if (!student) {
+                            return [2 /*return*/, {
+                                    success: false,
+                                    message: 'Sinh viên không tồn tại trong hệ thống'
+                                }];
+                        }
+                        return [4 /*yield*/, registrationService_1.registrationService.registerCourses({
+                                studentId: studentId,
+                                courseIds: courseIds,
+                                semesterId: semesterId
+                            })];
                     case 3:
-                        // 4. Update course current students count
-                        _a.sent();
+                        result = _a.sent();
                         return [2 /*return*/, {
-                                success: true,
-                                errors: [],
-                                warnings: ['Course dropped successfully']
+                                success: result.success,
+                                message: result.message,
+                                data: result.details
                             }];
                     case 4:
-                        error_6 = _a.sent();
-                        console.error('Course drop error:', error_6);
+                        error_3 = _a.sent();
+                        console.error('Error in registerCourses:', error_3);
                         return [2 /*return*/, {
                                 success: false,
-                                errors: ["Drop failed: ".concat(error_6 instanceof Error ? error_6.message : 'Unknown error')],
-                                warnings: []
+                                message: 'Lỗi trong quá trình đăng ký môn học',
+                                error: error_3 instanceof Error ? error_3.message : 'Unknown error'
                             }];
                     case 5: return [2 /*return*/];
                 }
@@ -350,28 +178,178 @@ var RegistrationManager = /** @class */ (function () {
         });
     };
     /**
-     * Get student's academic summary
+     * Hủy đăng ký môn học
      */
-    RegistrationManager.prototype.getStudentAcademicSummary = function (studentId) {
+    RegistrationManager.prototype.unregisterCourse = function (studentId, courseId, semesterId) {
         return __awaiter(this, void 0, void 0, function () {
-            var summary, error_7;
+            var success, error_4;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         _a.trys.push([0, 2, , 3]);
-                        return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("\n                SELECT \n                    s.student_id,\n                    s.name,\n                    s.major,\n                    s.enrollment_year,                    s.completed_credits,\n                    s.current_credits,\n                    s.required_credits,\n                    COUNT(e.id) as total_enrollments,\n                    COUNT(CASE WHEN e.is_enrolled = true AND e.total_grade IS NOT NULL THEN 1 END) as completed_courses,\n                    COUNT(CASE WHEN e.is_enrolled = true AND e.total_grade IS NULL THEN 1 END) as current_enrollments,\n                    COALESCE(AVG(CASE WHEN e.is_enrolled = true AND e.total_grade IS NOT NULL THEN e.total_grade END), 0) as gpa\n                FROM students s\n                LEFT JOIN enrollments e ON s.student_id = e.student_id\n                WHERE s.student_id = $1\n                GROUP BY s.student_id, s.name, s.major, s.enrollment_year, \n                         s.completed_credits, s.current_credits, s.required_credits\n            ", [studentId])];
+                        if (!studentId || !courseId || !semesterId) {
+                            return [2 /*return*/, {
+                                    success: false,
+                                    message: 'Thông tin hủy đăng ký không đầy đủ'
+                                }];
+                        }
+                        return [4 /*yield*/, registrationService_1.registrationService.unregisterCourse(studentId, courseId, semesterId)];
                     case 1:
-                        summary = _a.sent();
-                        return [2 /*return*/, summary];
+                        success = _a.sent();
+                        if (success) {
+                            return [2 /*return*/, {
+                                    success: true,
+                                    message: 'Hủy đăng ký môn học thành công'
+                                }];
+                        }
+                        else {
+                            return [2 /*return*/, {
+                                    success: false,
+                                    message: 'Không thể hủy đăng ký môn học'
+                                }];
+                        }
+                        return [3 /*break*/, 3];
                     case 2:
-                        error_7 = _a.sent();
-                        console.error('Error getting academic summary:', error_7);
-                        throw error_7;
+                        error_4 = _a.sent();
+                        console.error('Error in unregisterCourse:', error_4);
+                        return [2 /*return*/, {
+                                success: false,
+                                message: 'Lỗi trong quá trình hủy đăng ký',
+                                error: error_4 instanceof Error ? error_4.message : 'Unknown error'
+                            }];
                     case 3: return [2 /*return*/];
+                }
+            });
+        });
+    };
+    /**
+     * Lấy thông tin tổng quan đăng ký của sinh viên
+     */
+    RegistrationManager.prototype.getRegistrationSummary = function (studentId, semesterId) {
+        return __awaiter(this, void 0, void 0, function () {
+            var registration, courses, summary, error_5;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        _a.trys.push([0, 3, , 4]);
+                        if (!studentId || !semesterId) {
+                            return [2 /*return*/, {
+                                    success: false,
+                                    message: 'Mã sinh viên và học kỳ không được để trống'
+                                }];
+                        }
+                        return [4 /*yield*/, registrationService_1.registrationService.getRegistrationInfo(studentId, semesterId)];
+                    case 1:
+                        registration = _a.sent();
+                        return [4 /*yield*/, registrationService_1.registrationService.getRegisteredCourses(studentId, semesterId)];
+                    case 2:
+                        courses = _a.sent();
+                        summary = {
+                            registration: registration,
+                            courses: courses, statistics: {
+                                totalCourses: courses.length,
+                                totalCredits: courses.reduce(function (sum, course) { return sum + (course.credits || 0); }, 0),
+                                totalFee: courses.reduce(function (sum, course) { return sum + (course.fee || 0); }, 0)
+                            }
+                        };
+                        return [2 /*return*/, {
+                                success: true,
+                                message: 'Lấy thông tin đăng ký thành công',
+                                data: summary
+                            }];
+                    case 3:
+                        error_5 = _a.sent();
+                        console.error('Error in getRegistrationSummary:', error_5);
+                        return [2 /*return*/, {
+                                success: false,
+                                message: 'Không thể lấy thông tin tổng quan đăng ký',
+                                error: error_5 instanceof Error ? error_5.message : 'Unknown error'
+                            }];
+                    case 4: return [2 /*return*/];
+                }
+            });
+        });
+    };
+    /**
+     * Alias methods for compatibility with controller
+     */
+    RegistrationManager.prototype.getAvailableSubjects = function (semesterId) {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this.getAvailableCourses(semesterId)];
+                    case 1: return [2 /*return*/, _a.sent()];
+                }
+            });
+        });
+    };
+    RegistrationManager.prototype.searchSubjects = function (query, semesterId) {
+        return __awaiter(this, void 0, void 0, function () {
+            var courses, filteredCourses, error_6;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        _a.trys.push([0, 2, , 3]);
+                        return [4 /*yield*/, registrationService_1.registrationService.getAvailableCourses(semesterId)];
+                    case 1:
+                        courses = _a.sent();
+                        filteredCourses = courses.filter(function (course) {
+                            return (course.courseName && course.courseName.toLowerCase().includes(query.toLowerCase())) ||
+                                (course.courseId && course.courseId.toLowerCase().includes(query.toLowerCase()));
+                        });
+                        return [2 /*return*/, {
+                                success: true,
+                                message: "T\u00ECm th\u1EA5y ".concat(filteredCourses.length, " m\u00F4n h\u1ECDc ph\u00F9 h\u1EE3p"),
+                                data: filteredCourses
+                            }];
+                    case 2:
+                        error_6 = _a.sent();
+                        console.error('Error in searchSubjects:', error_6);
+                        return [2 /*return*/, {
+                                success: false,
+                                message: 'Không thể tìm kiếm môn học',
+                                error: error_6 instanceof Error ? error_6.message : 'Unknown error'
+                            }];
+                    case 3: return [2 /*return*/];
+                }
+            });
+        });
+    };
+    RegistrationManager.prototype.registerSubject = function (studentId, courseId, semesterId) {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this.registerCourses(studentId, [courseId], semesterId)];
+                    case 1: return [2 /*return*/, _a.sent()];
+                }
+            });
+        });
+    };
+    RegistrationManager.prototype.getEnrolledCourses = function (studentId, semesterId) {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this.getRegisteredCourses(studentId, semesterId)];
+                    case 1: return [2 /*return*/, _a.sent()];
+                }
+            });
+        });
+    };
+    RegistrationManager.prototype.cancelRegistration = function (studentId, courseId, semesterId) {
+        return __awaiter(this, void 0, void 0, function () {
+            var semester;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        semester = semesterId || 'HK1_2024';
+                        return [4 /*yield*/, this.unregisterCourse(studentId, courseId, semester)];
+                    case 1: // Default semester if not provided
+                    return [2 /*return*/, _a.sent()];
                 }
             });
         });
     };
     return RegistrationManager;
 }());
-exports.default = new RegistrationManager();
+exports.registrationManager = new RegistrationManager();
+exports.default = exports.registrationManager;

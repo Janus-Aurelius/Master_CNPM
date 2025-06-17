@@ -1,174 +1,183 @@
-// Consolidated Student Payment Interface - All payment and tuition related interfaces
+// Student Payment Interfaces - Based on Database Schema
 
-// Schema-based interfaces
+// === DATABASE SCHEMA INTERFACES ===
+
+// Maps to PHIEUDANGKY table
 export interface IRegistration {
-    registrationId: string;     // maPhieuDangKy
-    registrationDate: Date;     // ngayLap
-    studentId: string;          // maSoSinhVien
-    semesterId: string;         // maHocKy
-    registrationAmount: number; // soTienDangKy
-    requiredAmount: number;     // soTienPhaiDong
-    paidAmount: number;         // soTienDaDong
-    remainingAmount: number;    // soTienConLai
-    maxCredits: number;         // soTinChiToiDa
+    registrationId: string;     // MaPhieuDangKy
+    registrationDate: Date;     // NgayLap
+    studentId: string;          // MaSoSinhVien
+    semesterId: string;         // MaHocKy
+    registrationAmount: number; // SoTienDangKy
+    requiredAmount: number;     // SoTienPhaiDong (after discount)
+    paidAmount: number;         // SoTienDaDong
+    remainingAmount: number;    // SoTienConLai
+    maxCredits: number;         // SoTinChiToiDa
 }
 
-export interface ITuitionPayment {
-    paymentId: string;          // maPhieuThu
-    paymentDate: Date;          // ngayLap
-    registrationId: string;     // maPhieuDangKy
-    paymentAmount: number;      // soTienDong
-}
-
+// Maps to BAOCAOSINHVIENNOHP table
 export interface IOutstandingTuition {
-    semesterId: string;         // maHocKy
-    studentId: string;          // maSoSinhVien
-    registrationId: string;     // maPhieuDangKy
+    semesterId: string;         // MaHocKy
+    studentId: string;          // MaSoSinhVien
+    registrationId: string;     // MaPhieuDangKy
 }
 
-// Additional UI interfaces
-export type PaymentStatus = 
-    | 'pending'
-    | 'paid'
-    | 'overdue';
+// === BUSINESS LOGIC INTERFACES ===
 
-export type PaymentMethod = 
-    | 'bank_transfer'
-    | 'credit_card';
-
-export interface IPayment {
-    id: string;
-    studentId: string;
-    amount: number;
-    semester: string;
-    academicYear: string;
-    paymentDate: string;
-    status: 'paid' | 'pending' | 'failed';
-    method: 'cash' | 'banking';
-}
-
-export interface ITuitionInfo {
-    id: string;
-    studentId: string;
-    semester: string;
-    academicYear: string;
-    dueDate: string;
-    totalAmount: number;
-    status: 'paid' | 'pending' | 'unpaid' | 'overdue';
-    subjects: {
-        subjectId: string;
-        subjectName: string;
-        credits: number;
-        tuitionPerCredit: number;
-        amount: number;
-    }[];
-}
-
-// New payment and tuition interfaces (preferred)
-export interface ITuitionRecord {
-    id: string;
-    studentId: string;
-    semester: string;
-    totalAmount: number;
-    paidAmount: number;
-    outstandingAmount: number;
-    paymentStatus: 'PAID' | 'PARTIAL' | 'UNPAID';
-    courses: TuitionCourseItem[];
-    createdAt: string;
-    updatedAt: string;
-}
-
-// Interface cho từng môn học trong phiếu học phí
-export interface TuitionCourseItem {
-    courseId: string;
-    courseName: string;
-    credits: number;
-    amount: number;
-    semester: string;
-    academicYear: string;
-}
-
-// Interface cho phiếu thu học phí
-export interface ITuitionPaymentReceipt {
-    id: string;
-    tuitionRecordId: string;
-    studentId: string;
-    amount: number;
-    paymentMethod: string;
-    receiptNumber: string;
-    paymentDate: string;
-    notes?: string;
-    createdAt: string;
-}
-
-// Interface cho tuition settings
-export interface ITuitionSetting {
-    id?: number;
-    faculty: string;
-    program: string;
-    creditCost: number;
-    semester: string;
-    academicYear: string;
-    effectiveDate: Date;
-    expiryDate: Date;
-    fees: {
-        type: string;
-        amount: number;
-        description: string;
-        mandatory: boolean;
-    }[];
-    discounts: {
+// For tuition status page display
+export interface ITuitionStatus {
+    registration: IRegistration;
+    courses: ICourseDetail[];
+    discount: {
         type: string;
         percentage: number;
-        description: string;
-        priority: boolean;
-        maxStackable: number;
-        conditions?: {
-            type: string;
-            value: any;
-        }[];
-    }[];
-    paymentDeadlines: {
-        early: Date;
-        regular: Date;
-        late: Date;
-    };
-    settings: {
-        lateFeePercentage: number;
-        earlyDiscountPercentage: number;
-        maxTotalDiscount: number;
-    };
+        amount: number;
+    } | null;
+    paymentHistory: IPaymentHistory[];
 }
 
-// Interface cho payment data structure
+// Course detail with calculated fee
+export interface ICourseDetail {
+    courseId: string;           // MaMonHoc
+    courseName: string;         // TenMonHoc
+    credits: number;            // SoTiet from MONHOC
+    pricePerCredit: number;     // SoTienMotTC from LOAIMON
+    totalFee: number;           // Calculated: credits * pricePerCredit
+    courseType: string;         // TenLoaiMon
+}
+
+// Payment history from PHIEUTHUHP
+export interface IPaymentHistory {
+    paymentId: string;          // MaPhieuThu
+    paymentDate: Date;          // NgayLap
+    amount: number;             // SoTienDong
+    registrationId: string;     // MaPhieuDangKy
+}
+
+// === UI/FRONTEND INTERFACES ===
+
+export type PaymentStatus = 'paid' | 'partial' | 'unpaid' | 'overdue';
+export type PaymentMethod = 'cash' | 'bank_transfer' | 'momo' | 'vnpay';
+
+// For payment form
+export interface IPaymentRequest {
+    registrationId: string;
+    amount: number;
+    paymentMethod: PaymentMethod;
+    notes?: string;
+}
+
+// For payment response
+export interface IPaymentResponse {
+    success: boolean;
+    paymentId: string;
+    newPaidAmount: number;
+    newRemainingAmount: number;
+    status: PaymentStatus;
+}
+
+// === CALCULATION INTERFACES ===
+
+// For tuition calculation with discount
+export interface ITuitionCalculation {
+    baseAmount: number;         // Total before discount
+    discountAmount: number;     // Discount applied
+    finalAmount: number;        // After discount
+    discountDetails: {
+        type: string;           // Priority type name
+        rate: number;           // Discount rate
+    } | null;
+}
+
+// === FINANCIAL MANAGEMENT INTERFACES ===
+
+// Maps to DOITUONGUUTIEN table - for discount management
+export interface IPriorityObject {
+    priorityId: string;         // MaDoiTuong
+    priorityName: string;       // TenDoiTuong
+    discountAmount: number;     // MucGiamHocPhi (VND amount, not percentage)
+}
+
+// For financial department to manage course types and pricing
+export interface ICourseTypeManagement {
+    courseTypeId: string;       // MaLoaiMon
+    courseTypeName: string;     // TenLoaiMon
+    hoursPerCredit: number;     // SoTietMotTC
+    pricePerCredit: number;     // SoTienMotTC
+}
+
+// For financial payment management
+export interface IFinancialPaymentData {
+    studentId: string;
+    registrationId: string;
+    amount: number;
+    paymentMethod: PaymentMethod;
+    receiptNumber?: string;
+    paymentDate: Date;
+    notes?: string;
+    semesterId: string;
+    status: PaymentStatus;
+}
+
+// Payment data interface for updates
 export interface IPaymentData {
     studentId: string;
     amount: number;
     paymentMethod: string;
-    receiptNumber: string;
+    receiptNumber?: string;
     paymentDate: Date;
     notes?: string;
     semester: string;
-    status: 'PENDING' | 'COMPLETED' | 'FAILED' | 'REFUNDED';
+    status: 'PAID' | 'PARTIAL' | 'UNPAID';
 }
 
-// Interface cho payment validation
+// Payment validation interface
 export interface IPaymentValidation {
     isValid: boolean;
     errors: string[];
-    warnings: string[];
-    details: {
-        amount: number;
-        expectedAmount: number;
-        difference: number;
-        status: 'VALID' | 'INVALID' | 'WARNING';
-    };
+    warnings?: string[];
+    details?: any;
 }
 
-// Interface cho payment audit
+// Tuition course item interface  
+export interface TuitionCourseItem {
+    courseCode: string;
+    courseName: string;
+    credits: number;
+    creditPrice: number;
+    amount: number;
+    feeType: string;
+}
+
+// Extended ITuitionCalculation with full details
+export interface ITuitionCalculationExtended {
+    studentId: string;
+    semester: string;
+    baseTuition: number;
+    discountAmount: number;
+    discountPercentage: number;
+    additionalFees: number;
+    totalAmount: number;
+    courses: TuitionCourseItem[];
+    priorityObject?: string | null;
+    calculatedAt: Date;
+    breakdown: {
+        courseFees: number;
+        discounts: number;
+        additionalCharges: number;
+        netAmount: number;
+    };
+    feeStructure: {
+        type: string;
+        amount: number;
+        description: string;
+    }[];
+}
+
+// For payment audit trail
 export interface IPaymentAudit {
-    id: number;
-    tuitionRecordId: number;
+    id: string;
+    tuitionRecordId: string;
     studentId: string;
     action: string;
     amount: number;
@@ -180,28 +189,4 @@ export interface IPaymentAudit {
     notes?: string;
     performedBy: string;
     timestamp: Date;
-}
-
-// Interface cho tuition calculation
-export interface ITuitionCalculation {
-    baseAmount: number;
-    fees: {
-        type: string;
-        amount: number;
-        description: string;
-        isMandatory: boolean;
-    }[];
-    discounts: {
-        type: string;
-        percentage: number;
-        amount: number;
-        description: string;
-        isPriority: boolean;
-    }[];
-    feesTotal: number;
-    discountsTotal: number;
-    totalAmount: number;
-    finalAmount: number;
-    adjustments: { description: string; amount: number }[];
-    dueDate: string;
 }

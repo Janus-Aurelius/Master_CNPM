@@ -3,7 +3,7 @@ import { studentService } from '../../services/academicService/student.service';
 
 export const studentBusiness = {
     getStudents: async (): Promise<IStudent[]> => {
-        return await studentService.getStudents();
+        return await studentService.getAllStudents();
     },
 
     createStudent: async (student: Omit<IStudent, 'id'>): Promise<IStudent> => {

@@ -37,7 +37,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.MaintenanceController = void 0;
-var maintenanceManager_1 = require("../../business/adminBussiness/maintenanceManager");
+var maintenanceManager_1 = require("../../business/AdminBussiness/maintenanceManager");
 var errorHandler_1 = require("../../middleware/errorHandler");
 var MaintenanceController = /** @class */ (function () {
     function MaintenanceController() {

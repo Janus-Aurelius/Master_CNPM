@@ -111,10 +111,10 @@ export class OpenCourseController {
             const { status } = req.params;
             if (!status || !['open', 'closed', 'cancelled'].includes(status)) {
                 res.status(400).json({ error: 'Invalid status' });
-                return;
-            }
+                return;            }
 
-            const courses = await OpenCourseBusiness.getCoursesByStatus(status as 'open' | 'closed' | 'cancelled');
+            // Status functionality has been removed, return all courses instead
+            const courses = await OpenCourseBusiness.getAllCourses();
             res.json(courses);
         } catch (error) {
             Logger.error('Error in getCoursesByStatus:', error);
@@ -161,12 +161,11 @@ export class OpenCourseController {
 
             const { status } = req.body;
             if (!status || !['open', 'closed', 'cancelled'].includes(status)) {
-                res.status(400).json({ error: 'Invalid status' });
-                return;
+                res.status(400).json({ error: 'Invalid status' });                return;
             }
 
-            const course = await OpenCourseBusiness.updateCourseStatus(id, status as 'open' | 'closed' | 'cancelled');
-            res.json(course);
+            // For now, just return a simple response as status functionality is removed
+            res.json({ message: 'Status update functionality has been removed' });
         } catch (error) {
             Logger.error('Error in updateCourseStatus:', error);
             if (error instanceof ValidationError) {

@@ -1,15 +1,4 @@
 "use strict";
-var __assign = (this && this.__assign) || function () {
-    __assign = Object.assign || function(t) {
-        for (var s, i = 1, n = arguments.length; i < n; i++) {
-            s = arguments[i];
-            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
-                t[p] = s[p];
-        }
-        return t;
-    };
-    return __assign.apply(this, arguments);
-};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -51,18 +40,14 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 var dashboardService_1 = require("../../services/studentService/dashboardService");
-var academicRequestService_1 = require("../../services/studentService/academicRequestService");
-var gradeService_1 = require("../../services/studentService/gradeService");
+var tuitionManager_1 = __importDefault(require("../../business/studentBusiness/tuitionManager"));
 var registrationManager_1 = __importDefault(require("../../business/studentBusiness/registrationManager"));
-var enrollmentManager_1 = __importDefault(require("../../business/studentBusiness/enrollmentManager"));
-var tuitionPaymentManager_1 = require("../../business/studentBusiness/tuitionPaymentManager");
-var studentTuitionPaymentService_1 = require("../../services/studentService/studentTuitionPaymentService");
 var StudentController = /** @class */ (function () {
     function StudentController() {
     }
     StudentController.prototype.getDashboard = function (req, res) {
         return __awaiter(this, void 0, void 0, function () {
-            var studentId, dashboard, response, error_1;
+            var studentId, dashboard, error_1;
             var _a;
             return __generator(this, function (_b) {
                 switch (_b.label) {
@@ -78,8 +63,7 @@ var StudentController = /** @class */ (function () {
                         if (!dashboard) {
                             return [2 /*return*/, res.status(404).json({ success: false, message: 'Student dashboard not found' })];
                         }
-                        response = __assign(__assign({}, dashboard), { schedule: dashboard.upcomingClasses });
-                        return [2 /*return*/, res.status(200).json({ success: true, data: response })];
+                        return [2 /*return*/, res.status(200).json({ success: true, data: dashboard })];
                     case 2:
                         error_1 = _b.sent();
                         console.error("Error getting dashboard: ".concat(error_1));
@@ -107,7 +91,7 @@ var StudentController = /** @class */ (function () {
                         if (!schedule) {
                             return [2 /*return*/, res.status(404).json({ success: false, message: 'Student schedule not found' })];
                         }
-                        return [2 /*return*/, res.status(200).json({ success: true, data: schedule.subjects })];
+                        return [2 /*return*/, res.status(200).json({ success: true, data: schedule.courses })];
                     case 2:
                         error_2 = _b.sent();
                         console.error("Error getting timetable: ".concat(error_2));
@@ -229,60 +213,9 @@ var StudentController = /** @class */ (function () {
             });
         });
     };
-    StudentController.prototype.createRequest = function (req, res) {
+    StudentController.prototype.getEnrolledCourses = function (req, res) {
         return __awaiter(this, void 0, void 0, function () {
-            var request, error_6;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        _a.trys.push([0, 2, , 3]);
-                        return [4 /*yield*/, academicRequestService_1.academicRequestService.createRequest(req.body)];
-                    case 1:
-                        request = _a.sent();
-                        return [2 /*return*/, res.status(201).json({
-                                success: true,
-                                data: request
-                            })];
-                    case 2:
-                        error_6 = _a.sent();
-                        console.error("Error creating request: ".concat(error_6));
-                        return [2 /*return*/, res.status(500).json({
-                                success: false,
-                                message: 'Internal server error'
-                            })];
-                    case 3: return [2 /*return*/];
-                }
-            });
-        });
-    };
-    StudentController.prototype.getRequestHistory = function (req, res) {
-        return __awaiter(this, void 0, void 0, function () {
-            var studentId, history_1, error_7;
-            var _a;
-            return __generator(this, function (_b) {
-                switch (_b.label) {
-                    case 0:
-                        _b.trys.push([0, 2, , 3]);
-                        studentId = (_a = req.user) === null || _a === void 0 ? void 0 : _a.studentId;
-                        if (!studentId) {
-                            return [2 /*return*/, res.status(400).json({ success: false, message: 'Missing studentId in user token' })];
-                        }
-                        return [4 /*yield*/, academicRequestService_1.academicRequestService.getRequestsByStudent(studentId)];
-                    case 1:
-                        history_1 = _b.sent();
-                        return [2 /*return*/, res.status(200).json({ success: true, data: history_1 })];
-                    case 2:
-                        error_7 = _b.sent();
-                        console.error("Error getting request history: ".concat(error_7));
-                        return [2 /*return*/, res.status(500).json({ success: false, message: 'Internal server error' })];
-                    case 3: return [2 /*return*/];
-                }
-            });
-        });
-    };
-    StudentController.prototype.getEnrolledSubjects = function (req, res) {
-        return __awaiter(this, void 0, void 0, function () {
-            var studentId, semester, enrolledSubjects, error_8;
+            var studentId, semester, enrolledCourses, error_6;
             var _a;
             return __generator(this, function (_b) {
                 switch (_b.label) {
@@ -293,65 +226,18 @@ var StudentController = /** @class */ (function () {
                         if (!studentId) {
                             return [2 /*return*/, res.status(400).json({ success: false, message: 'Missing studentId in user token' })];
                         }
-                        return [4 /*yield*/, enrollmentManager_1.default.getEnrolledSubjects(studentId, semester)];
+                        return [4 /*yield*/, registrationManager_1.default.getEnrolledCourses(studentId, semester)];
                     case 1:
-                        enrolledSubjects = _b.sent();
-                        return [2 /*return*/, res.status(200).json({ success: true, data: enrolledSubjects })];
+                        enrolledCourses = _b.sent();
+                        return [2 /*return*/, res.status(200).json({ success: true, data: enrolledCourses })];
                     case 2:
-                        error_8 = _b.sent();
-                        console.error('Error getting enrolled subjects:', error_8);
+                        error_6 = _b.sent();
+                        console.error('Error getting enrolled courses:', error_6);
                         return [2 /*return*/, res.status(500).json({
                                 success: false,
                                 message: 'Internal server error'
                             })];
                     case 3: return [2 /*return*/];
-                }
-            });
-        });
-    };
-    StudentController.prototype.getSubjectDetails = function (req, res) {
-        return __awaiter(this, void 0, void 0, function () {
-            var studentId, courseId_1, enrolledSubjects, enrolledSubject, grades, subjectGrade, error_9;
-            var _a;
-            return __generator(this, function (_b) {
-                switch (_b.label) {
-                    case 0:
-                        _b.trys.push([0, 3, , 4]);
-                        studentId = (_a = req.user) === null || _a === void 0 ? void 0 : _a.studentId;
-                        courseId_1 = req.params.courseId;
-                        if (!studentId || !courseId_1) {
-                            return [2 /*return*/, res.status(400).json({ success: false, message: 'Missing studentId or courseId' })];
-                        }
-                        return [4 /*yield*/, enrollmentManager_1.default.getEnrolledSubjects(studentId, 'HK1 2023-2024')];
-                    case 1:
-                        enrolledSubjects = _b.sent();
-                        enrolledSubject = enrolledSubjects.find(function (subject) { return subject.enrollment.courseId === courseId_1; });
-                        if (!enrolledSubject) {
-                            return [2 /*return*/, res.status(404).json({ success: false, message: 'Subject not found or student not enrolled' })];
-                        }
-                        return [4 /*yield*/, gradeService_1.gradeService.getStudentGrades(studentId)];
-                    case 2:
-                        grades = _b.sent();
-                        subjectGrade = grades.find(function (grade) { return grade.subjectId === courseId_1; });
-                        return [2 /*return*/, res.status(200).json({
-                                success: true,
-                                data: {
-                                    subjectId: courseId_1,
-                                    grade: subjectGrade || {
-                                        subjectId: courseId_1,
-                                        midtermGrade: null,
-                                        finalGrade: null,
-                                        totalGrade: null,
-                                        letterGrade: null
-                                    },
-                                    subject: enrolledSubject
-                                }
-                            })];
-                    case 3:
-                        error_9 = _b.sent();
-                        console.error('Error getting subject details:', error_9);
-                        return [2 /*return*/, res.status(500).json({ success: false, message: 'Internal server error' })];
-                    case 4: return [2 /*return*/];
                 }
             });
         });
@@ -448,25 +334,36 @@ var StudentController = /** @class */ (function () {
             });
         });
     };
-    StudentController.prototype.getGrades = function (req, res) {
+    // === TUITION PAYMENT METHODS ===
+    StudentController.prototype.getTuitionStatus = function (req, res) {
         return __awaiter(this, void 0, void 0, function () {
-            var studentId, grades, error_10;
+            var studentId, semesterId, tuitionStatus, error_7;
             var _a;
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
                         _b.trys.push([0, 2, , 3]);
                         studentId = (_a = req.user) === null || _a === void 0 ? void 0 : _a.studentId;
-                        if (!studentId) {
-                            return [2 /*return*/, res.status(400).json({ success: false, message: 'Missing studentId in user token' })];
+                        semesterId = req.query.semesterId;
+                        if (!studentId || !semesterId) {
+                            return [2 /*return*/, res.status(400).json({
+                                    success: false,
+                                    message: 'Missing studentId or semesterId'
+                                })];
                         }
-                        return [4 /*yield*/, gradeService_1.gradeService.getStudentGrades(studentId)];
+                        return [4 /*yield*/, tuitionManager_1.default.getStudentTuitionStatus(studentId, semesterId)];
                     case 1:
-                        grades = _b.sent();
-                        return [2 /*return*/, res.status(200).json({ success: true, data: grades })];
+                        tuitionStatus = _b.sent();
+                        if (!tuitionStatus) {
+                            return [2 /*return*/, res.status(404).json({
+                                    success: false,
+                                    message: 'No registration found for this semester'
+                                })];
+                        }
+                        return [2 /*return*/, res.status(200).json({ success: true, data: tuitionStatus })];
                     case 2:
-                        error_10 = _b.sent();
-                        console.error("Error getting grades: ".concat(error_10));
+                        error_7 = _b.sent();
+                        console.error('Error getting tuition status:', error_7);
                         return [2 /*return*/, res.status(500).json({
                                 success: false,
                                 message: 'Internal server error'
@@ -476,158 +373,79 @@ var StudentController = /** @class */ (function () {
             });
         });
     };
-    StudentController.prototype.confirmRegistration = function (req, res) {
+    StudentController.prototype.makePayment = function (req, res) {
         return __awaiter(this, void 0, void 0, function () {
-            var _a, semester, courses, studentId, record, error_11;
-            return __generator(this, function (_b) {
-                switch (_b.label) {
-                    case 0:
-                        _b.trys.push([0, 2, , 3]);
-                        if (!req.user) {
-                            return [2 /*return*/, res.status(401).json({
-                                    success: false,
-                                    message: 'Unauthorized'
-                                })];
-                        }
-                        _a = req.body, semester = _a.semester, courses = _a.courses;
-                        studentId = req.user.id;
-                        // Validate input
-                        if (!semester || !courses || !Array.isArray(courses) || courses.length === 0) {
-                            return [2 /*return*/, res.status(400).json({
-                                    success: false,
-                                    message: 'Invalid input data'
-                                })];
-                        }
-                        return [4 /*yield*/, studentTuitionPaymentService_1.studentTuitionPaymentService.createTuitionRecord(studentId, semester, courses)];
-                    case 1:
-                        record = _b.sent();
-                        return [2 /*return*/, res.status(200).json({
-                                success: true,
-                                message: 'Registration confirmed and tuition record created',
-                                data: record
-                            })];
-                    case 2:
-                        error_11 = _b.sent();
-                        console.error('Error confirming registration:', error_11);
-                        return [2 /*return*/, res.status(500).json({
-                                success: false,
-                                message: 'Error confirming registration'
-                            })];
-                    case 3: return [2 /*return*/];
-                }
-            });
-        });
-    };
-    StudentController.prototype.payTuition = function (req, res) {
-        return __awaiter(this, void 0, void 0, function () {
-            var studentId, _a, tuitionRecordId, amount;
-            var _b;
-            return __generator(this, function (_c) {
-                try {
-                    studentId = (_b = req.user) === null || _b === void 0 ? void 0 : _b.studentId;
-                    _a = req.body, tuitionRecordId = _a.tuitionRecordId, amount = _a.amount;
-                    if (!studentId || !tuitionRecordId || typeof amount !== 'number' || amount < 0) {
-                        return [2 /*return*/, res.status(400).json({ success: false, message: 'Missing studentId, tuitionRecordId, or invalid amount' })];
-                    }
-                    // Simulate payment logic
-                    return [2 /*return*/, res.status(200).json({ success: true, message: 'Payment processed successfully' })];
-                }
-                catch (error) {
-                    console.error('Error processing payment:', error);
-                    return [2 /*return*/, res.status(500).json({ success: false, message: 'Internal server error' })];
-                }
-                return [2 /*return*/];
-            });
-        });
-    };
-    StudentController.prototype.editRegistration = function (req, res) {
-        return __awaiter(this, void 0, void 0, function () {
-            var _a, tuitionRecordId, newCourses, studentId, record, error_12;
-            return __generator(this, function (_b) {
-                switch (_b.label) {
-                    case 0:
-                        _b.trys.push([0, 2, , 3]);
-                        if (!req.user) {
-                            return [2 /*return*/, res.status(401).json({
-                                    success: false,
-                                    message: 'Unauthorized'
-                                })];
-                        }
-                        _a = req.body, tuitionRecordId = _a.tuitionRecordId, newCourses = _a.newCourses;
-                        studentId = req.user.id;
-                        // Validate input
-                        if (!tuitionRecordId || !newCourses || !Array.isArray(newCourses)) {
-                            return [2 /*return*/, res.status(400).json({
-                                    success: false,
-                                    message: 'Invalid input data'
-                                })];
-                        }
-                        return [4 /*yield*/, studentTuitionPaymentService_1.studentTuitionPaymentService.editRegistration(tuitionRecordId, newCourses)];
-                    case 1:
-                        record = _b.sent();
-                        return [2 /*return*/, res.status(200).json({
-                                success: true,
-                                message: 'Registration updated successfully',
-                                data: record
-                            })];
-                    case 2:
-                        error_12 = _b.sent();
-                        console.error('Error editing registration:', error_12);
-                        return [2 /*return*/, res.status(500).json({
-                                success: false,
-                                message: 'Error editing registration'
-                            })];
-                    case 3: return [2 /*return*/];
-                }
-            });
-        });
-    };
-    StudentController.prototype.getTuitionRecordsByStudent = function (req, res) {
-        return __awaiter(this, void 0, void 0, function () {
-            var studentId, records, error_13;
+            var studentId, paymentRequest, paymentResponse, error_8;
             var _a;
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
                         _b.trys.push([0, 2, , 3]);
                         studentId = (_a = req.user) === null || _a === void 0 ? void 0 : _a.studentId;
+                        paymentRequest = req.body;
                         if (!studentId) {
-                            return [2 /*return*/, res.status(400).json({ success: false, message: 'Missing studentId in user token' })];
+                            return [2 /*return*/, res.status(400).json({
+                                    success: false,
+                                    message: 'Missing studentId in user token'
+                                })];
                         }
-                        return [4 /*yield*/, tuitionPaymentManager_1.tuitionPaymentManager.getTuitionRecordsByStudent(studentId)];
+                        // Validate payment request
+                        if (!paymentRequest.registrationId || !paymentRequest.amount || paymentRequest.amount <= 0) {
+                            return [2 /*return*/, res.status(400).json({
+                                    success: false,
+                                    message: 'Invalid payment request'
+                                })];
+                        }
+                        return [4 /*yield*/, tuitionManager_1.default.processPayment(paymentRequest)];
                     case 1:
-                        records = _b.sent();
-                        return [2 /*return*/, res.status(200).json({ success: true, data: records })];
+                        paymentResponse = _b.sent();
+                        return [2 /*return*/, res.status(200).json({
+                                success: true,
+                                data: paymentResponse,
+                                message: 'Payment processed successfully'
+                            })];
                     case 2:
-                        error_13 = _b.sent();
-                        console.error('Error getting tuition records:', error_13);
-                        return [2 /*return*/, res.status(500).json({ success: false, message: 'Internal server error' })];
+                        error_8 = _b.sent();
+                        console.error('Error making payment:', error_8);
+                        return [2 /*return*/, res.status(500).json({
+                                success: false,
+                                message: error_8.message || 'Internal server error'
+                            })];
                     case 3: return [2 /*return*/];
                 }
             });
         });
     };
-    StudentController.prototype.getPaymentReceiptsByRecord = function (req, res) {
+    StudentController.prototype.getPaymentHistory = function (req, res) {
         return __awaiter(this, void 0, void 0, function () {
-            var studentId, tuitionRecordId, receipts, error_14;
+            var studentId, semesterId, paymentHistory, error_9;
             var _a;
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
                         _b.trys.push([0, 2, , 3]);
                         studentId = (_a = req.user) === null || _a === void 0 ? void 0 : _a.studentId;
-                        tuitionRecordId = req.query.tuitionRecordId;
-                        if (!studentId || !tuitionRecordId) {
-                            return [2 /*return*/, res.status(400).json({ success: false, message: 'Missing studentId or tuitionRecordId' })];
+                        semesterId = req.query.semesterId;
+                        if (!studentId) {
+                            return [2 /*return*/, res.status(400).json({
+                                    success: false,
+                                    message: 'Missing studentId in user token'
+                                })];
                         }
-                        return [4 /*yield*/, tuitionPaymentManager_1.tuitionPaymentManager.getPaymentReceiptsByRecord(tuitionRecordId)];
+                        return [4 /*yield*/, tuitionManager_1.default.getPaymentHistory(studentId, semesterId)];
                     case 1:
-                        receipts = _b.sent();
-                        return [2 /*return*/, res.status(200).json({ success: true, data: receipts })];
+                        paymentHistory = _b.sent();
+                        return [2 /*return*/, res.status(200).json({
+                                success: true,
+                                data: paymentHistory
+                            })];
                     case 2:
-                        error_14 = _b.sent();
-                        console.error('Error getting payment receipts:', error_14);
-                        return [2 /*return*/, res.status(500).json({ success: false, message: 'Internal server error' })];
+                        error_9 = _b.sent();
+                        console.error('Error getting payment history:', error_9);
+                        return [2 /*return*/, res.status(500).json({
+                                success: false,
+                                message: 'Internal server error'
+                            })];
                     case 3: return [2 /*return*/];
                 }
             });
@@ -635,7 +453,7 @@ var StudentController = /** @class */ (function () {
     };
     StudentController.prototype.cancelRegistration = function (req, res) {
         return __awaiter(this, void 0, void 0, function () {
-            var studentId, courseId, error_15;
+            var studentId, courseId, error_10;
             var _a;
             return __generator(this, function (_b) {
                 switch (_b.label) {
@@ -646,17 +464,17 @@ var StudentController = /** @class */ (function () {
                         if (!studentId || !courseId) {
                             return [2 /*return*/, res.status(400).json({ success: false, message: 'Missing studentId or courseId' })];
                         }
-                        return [4 /*yield*/, enrollmentManager_1.default.cancelRegistration(studentId, courseId)];
+                        return [4 /*yield*/, registrationManager_1.default.cancelRegistration(studentId, courseId)];
                     case 1:
                         _b.sent();
                         return [2 /*return*/, res.status(200).json({ success: true, message: 'Registration cancelled successfully' })];
                     case 2:
-                        error_15 = _b.sent();
-                        if (error_15.message.includes('not found')) {
-                            return [2 /*return*/, res.status(404).json({ success: false, message: error_15.message })];
+                        error_10 = _b.sent();
+                        if (error_10.message.includes('not found')) {
+                            return [2 /*return*/, res.status(404).json({ success: false, message: error_10.message })];
                         }
                         else {
-                            console.error('Error cancelling registration:', error_15);
+                            console.error('Error cancelling registration:', error_10);
                             return [2 /*return*/, res.status(500).json({ success: false, message: 'Internal server error' })];
                         }
                         return [3 /*break*/, 3];

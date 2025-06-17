@@ -3,11 +3,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-// src/routes/admin.routes.ts
 var express_1 = __importDefault(require("express"));
-var userController_1 = require("../../controllers/adminController/userController");
-var maintenanceController_1 = __importDefault(require("../../controllers/adminController/maintenanceController"));
-var adminController_1 = __importDefault(require("../../controllers/adminController/adminController"));
+var userController_1 = require("../../controllers/AdminController/userController");
+var maintenanceController_1 = __importDefault(require("../../controllers/AdminController/maintenanceController"));
+var adminController_1 = __importDefault(require("../../controllers/AdminController/adminController"));
 var auth_1 = require("../../middleware/auth");
 var maintenance_1 = require("../../middleware/maintenance");
 var router = express_1.default.Router();

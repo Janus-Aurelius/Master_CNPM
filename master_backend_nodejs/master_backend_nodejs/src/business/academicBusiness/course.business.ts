@@ -12,35 +12,24 @@ const validateTimeFormat = (time: string): boolean => {
     return timeRegex.test(time);
 };
 
-const validateSchedule = (schedule: ICourse['schedule']): boolean => {
-    if (!schedule) return false;
-    
-    const { day, session, fromTo, room } = schedule;
-    if (!day || !session || !fromTo || !room) return false;
-    
-    const validDays = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'];
-    if (!validDays.includes(day)) return false;
-    
-    const [startTime, endTime] = fromTo.split('-').map((t: string) => t.trim());
-    if (!validateTimeFormat(startTime) || !validateTimeFormat(endTime)) return false;
-    
-    // Check if end time is after start time
-    const start = new Date(`2000-01-01T${startTime}`);
-    const end = new Date(`2000-01-01T${endTime}`);
-    if (end <= start) return false;
-    
-    return true;
-};
-
 export const validateAndAddCourse = async (course: ICourse): Promise<ICourse> => {
     const errors: string[] = [];
 
-    if (!validateTotalHours(course.totalHours)) {
-        errors.push('Course total hours must be between 1 and 60');
+    // Validate required fields
+    if (!course.courseId || course.courseId.trim() === '') {
+        errors.push('Course ID is required');
     }
 
-    if (!validateSchedule(course.schedule)) {
-        errors.push('Invalid schedule format');
+    if (!course.courseName || course.courseName.trim() === '') {
+        errors.push('Course name is required');
+    }
+
+    if (!course.courseTypeId || course.courseTypeId.trim() === '') {
+        errors.push('Course type ID is required');
+    }
+
+    if (!validateTotalHours(course.totalHours)) {
+        errors.push('Course total hours must be between 1 and 60');
     }
 
     if (errors.length > 0) {

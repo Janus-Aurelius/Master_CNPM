@@ -37,7 +37,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.UserController = void 0;
-var userManager_1 = require("../../business/adminBussiness/userManager");
+var userManager_1 = require("../../business/AdminBussiness/userManager");
 var errorHandler_1 = require("../../middleware/errorHandler");
 var UserController = /** @class */ (function () {
     function UserController() {

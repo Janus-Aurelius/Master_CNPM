@@ -1,3 +1,3 @@
 "use strict";
-// Consolidated Student Payment Interface - All payment and tuition related interfaces
+// Student Payment Interfaces - Based on Database Schema
 Object.defineProperty(exports, "__esModule", { value: true });

@@ -1,6 +1,7 @@
 // src/controllers/academicController/course.controller.ts
 import { Request, Response, NextFunction } from "express";
 import * as courseBusiness from "../../business/academicBusiness/course.business";
+import { AcademicStructureService } from '../../services/academicService/academicStructure.service';
 import { AppError } from '../../middleware/errorHandler';
 
 export const getCoursesHandler = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
@@ -66,5 +67,30 @@ export const deleteCourseHandler = async (req: Request, res: Response, next: Nex
         res.json({ success: true, message: 'Course deleted successfully' });
     } catch (error) {
         res.status(500).json({ success: false, message: 'Failed to delete course' });
+    }
+};
+
+// Course Type management for course forms
+export const getCourseTypesHandler = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+        const courseTypes = await AcademicStructureService.getAllCourseTypes();
+        res.json({ success: true, data: courseTypes });
+    } catch (error) {
+        console.error('Error getting course types:', error);
+        res.status(500).json({ success: false, message: 'Failed to fetch course types' });
+    }
+};
+
+export const getCourseFormData = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+        const courseTypes = await AcademicStructureService.getAllCourseTypes();
+        res.json({ 
+            success: true, 
+            data: { courseTypes },
+            message: 'Course form data fetched successfully'
+        });
+    } catch (error) {
+        console.error('Error getting course form data:', error);
+        res.status(500).json({ success: false, message: 'Failed to fetch course form data' });
     }
 };

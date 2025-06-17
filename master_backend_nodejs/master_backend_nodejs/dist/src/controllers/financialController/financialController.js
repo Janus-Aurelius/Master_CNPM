@@ -69,12 +69,416 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+var financialConfigService_1 = require("../../services/financialService/financialConfigService");
+// Import individual functions from financialManager
 var financialBusiness = __importStar(require("../../business/financialBusiness/financialManager"));
-var financialController = {
-    // Dashboard
-    getDashboard: function (req, res) {
+var FinancialController = /** @class */ (function () {
+    function FinancialController() {
+    }
+    // === PRIORITY OBJECT MANAGEMENT ===
+    FinancialController.prototype.getAllPriorityObjects = function (req, res) {
         return __awaiter(this, void 0, void 0, function () {
-            var dashboardData, error_1;
+            var priorityObjects, error_1;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        _a.trys.push([0, 2, , 3]);
+                        return [4 /*yield*/, financialConfigService_1.priorityObjectService.getAllPriorityObjects()];
+                    case 1:
+                        priorityObjects = _a.sent();
+                        res.status(200).json({
+                            success: true,
+                            data: priorityObjects
+                        });
+                        return [3 /*break*/, 3];
+                    case 2:
+                        error_1 = _a.sent();
+                        console.error('Error getting priority objects:', error_1);
+                        res.status(500).json({
+                            success: false,
+                            message: error_1.message || 'Internal server error'
+                        });
+                        return [3 /*break*/, 3];
+                    case 3: return [2 /*return*/];
+                }
+            });
+        });
+    };
+    FinancialController.prototype.getPriorityObjectById = function (req, res) {
+        return __awaiter(this, void 0, void 0, function () {
+            var id, priorityObject, error_2;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        _a.trys.push([0, 2, , 3]);
+                        id = req.params.id;
+                        return [4 /*yield*/, financialConfigService_1.priorityObjectService.getPriorityObjectById(id)];
+                    case 1:
+                        priorityObject = _a.sent();
+                        if (!priorityObject) {
+                            res.status(404).json({
+                                success: false,
+                                message: 'Priority object not found'
+                            });
+                            return [2 /*return*/];
+                        }
+                        res.status(200).json({
+                            success: true,
+                            data: priorityObject
+                        });
+                        return [3 /*break*/, 3];
+                    case 2:
+                        error_2 = _a.sent();
+                        console.error('Error getting priority object:', error_2);
+                        res.status(500).json({
+                            success: false,
+                            message: error_2.message || 'Internal server error'
+                        });
+                        return [3 /*break*/, 3];
+                    case 3: return [2 /*return*/];
+                }
+            });
+        });
+    };
+    FinancialController.prototype.createPriorityObject = function (req, res) {
+        return __awaiter(this, void 0, void 0, function () {
+            var _a, priorityName, discountAmount, newPriorityObject, error_3;
+            return __generator(this, function (_b) {
+                switch (_b.label) {
+                    case 0:
+                        _b.trys.push([0, 2, , 3]);
+                        _a = req.body, priorityName = _a.priorityName, discountAmount = _a.discountAmount;
+                        if (!priorityName || discountAmount === undefined) {
+                            res.status(400).json({
+                                success: false,
+                                message: 'Priority name and discount amount are required'
+                            });
+                            return [2 /*return*/];
+                        }
+                        return [4 /*yield*/, financialConfigService_1.priorityObjectService.createPriorityObject({
+                                priorityName: priorityName,
+                                discountAmount: parseFloat(discountAmount)
+                            })];
+                    case 1:
+                        newPriorityObject = _b.sent();
+                        res.status(201).json({
+                            success: true,
+                            data: newPriorityObject,
+                            message: 'Priority object created successfully'
+                        });
+                        return [3 /*break*/, 3];
+                    case 2:
+                        error_3 = _b.sent();
+                        console.error('Error creating priority object:', error_3);
+                        res.status(500).json({
+                            success: false,
+                            message: error_3.message || 'Internal server error'
+                        });
+                        return [3 /*break*/, 3];
+                    case 3: return [2 /*return*/];
+                }
+            });
+        });
+    };
+    FinancialController.prototype.updatePriorityObject = function (req, res) {
+        return __awaiter(this, void 0, void 0, function () {
+            var id, _a, priorityName, discountAmount, updateData, updatedPriorityObject, error_4;
+            return __generator(this, function (_b) {
+                switch (_b.label) {
+                    case 0:
+                        _b.trys.push([0, 2, , 3]);
+                        id = req.params.id;
+                        _a = req.body, priorityName = _a.priorityName, discountAmount = _a.discountAmount;
+                        updateData = {};
+                        if (priorityName !== undefined)
+                            updateData.priorityName = priorityName;
+                        if (discountAmount !== undefined)
+                            updateData.discountAmount = parseFloat(discountAmount);
+                        return [4 /*yield*/, financialConfigService_1.priorityObjectService.updatePriorityObject(id, updateData)];
+                    case 1:
+                        updatedPriorityObject = _b.sent();
+                        if (!updatedPriorityObject) {
+                            res.status(404).json({
+                                success: false,
+                                message: 'Priority object not found'
+                            });
+                            return [2 /*return*/];
+                        }
+                        res.status(200).json({
+                            success: true,
+                            data: updatedPriorityObject,
+                            message: 'Priority object updated successfully'
+                        });
+                        return [3 /*break*/, 3];
+                    case 2:
+                        error_4 = _b.sent();
+                        console.error('Error updating priority object:', error_4);
+                        res.status(500).json({
+                            success: false,
+                            message: error_4.message || 'Internal server error'
+                        });
+                        return [3 /*break*/, 3];
+                    case 3: return [2 /*return*/];
+                }
+            });
+        });
+    };
+    FinancialController.prototype.deletePriorityObject = function (req, res) {
+        return __awaiter(this, void 0, void 0, function () {
+            var id, deleted, error_5;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        _a.trys.push([0, 2, , 3]);
+                        id = req.params.id;
+                        return [4 /*yield*/, financialConfigService_1.priorityObjectService.deletePriorityObject(id)];
+                    case 1:
+                        deleted = _a.sent();
+                        if (!deleted) {
+                            res.status(404).json({
+                                success: false,
+                                message: 'Priority object not found'
+                            });
+                            return [2 /*return*/];
+                        }
+                        res.status(200).json({
+                            success: true,
+                            message: 'Priority object deleted successfully'
+                        });
+                        return [3 /*break*/, 3];
+                    case 2:
+                        error_5 = _a.sent();
+                        console.error('Error deleting priority object:', error_5);
+                        res.status(500).json({
+                            success: false,
+                            message: error_5.message || 'Internal server error'
+                        });
+                        return [3 /*break*/, 3];
+                    case 3: return [2 /*return*/];
+                }
+            });
+        });
+    };
+    // === COURSE TYPE MANAGEMENT ===
+    FinancialController.prototype.getAllCourseTypes = function (req, res) {
+        return __awaiter(this, void 0, void 0, function () {
+            var courseTypes, error_6;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        _a.trys.push([0, 2, , 3]);
+                        return [4 /*yield*/, financialConfigService_1.courseTypeService.getAllCourseTypes()];
+                    case 1:
+                        courseTypes = _a.sent();
+                        res.status(200).json({
+                            success: true,
+                            data: courseTypes
+                        });
+                        return [3 /*break*/, 3];
+                    case 2:
+                        error_6 = _a.sent();
+                        console.error('Error getting course types:', error_6);
+                        res.status(500).json({
+                            success: false,
+                            message: error_6.message || 'Internal server error'
+                        });
+                        return [3 /*break*/, 3];
+                    case 3: return [2 /*return*/];
+                }
+            });
+        });
+    };
+    FinancialController.prototype.getCourseTypeById = function (req, res) {
+        return __awaiter(this, void 0, void 0, function () {
+            var id, courseType, error_7;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        _a.trys.push([0, 2, , 3]);
+                        id = req.params.id;
+                        return [4 /*yield*/, financialConfigService_1.courseTypeService.getCourseTypeById(id)];
+                    case 1:
+                        courseType = _a.sent();
+                        if (!courseType) {
+                            res.status(404).json({
+                                success: false,
+                                message: 'Course type not found'
+                            });
+                            return [2 /*return*/];
+                        }
+                        res.status(200).json({
+                            success: true,
+                            data: courseType
+                        });
+                        return [3 /*break*/, 3];
+                    case 2:
+                        error_7 = _a.sent();
+                        console.error('Error getting course type:', error_7);
+                        res.status(500).json({
+                            success: false,
+                            message: error_7.message || 'Internal server error'
+                        });
+                        return [3 /*break*/, 3];
+                    case 3: return [2 /*return*/];
+                }
+            });
+        });
+    };
+    FinancialController.prototype.createCourseType = function (req, res) {
+        return __awaiter(this, void 0, void 0, function () {
+            var _a, courseTypeName, hoursPerCredit, pricePerCredit, newCourseType, error_8;
+            return __generator(this, function (_b) {
+                switch (_b.label) {
+                    case 0:
+                        _b.trys.push([0, 2, , 3]);
+                        _a = req.body, courseTypeName = _a.courseTypeName, hoursPerCredit = _a.hoursPerCredit, pricePerCredit = _a.pricePerCredit;
+                        if (!courseTypeName || !hoursPerCredit || !pricePerCredit) {
+                            res.status(400).json({
+                                success: false,
+                                message: 'Course type name, hours per credit, and price per credit are required'
+                            });
+                            return [2 /*return*/];
+                        }
+                        return [4 /*yield*/, financialConfigService_1.courseTypeService.createCourseType({
+                                courseTypeName: courseTypeName,
+                                hoursPerCredit: parseInt(hoursPerCredit),
+                                pricePerCredit: parseFloat(pricePerCredit)
+                            })];
+                    case 1:
+                        newCourseType = _b.sent();
+                        res.status(201).json({
+                            success: true,
+                            data: newCourseType,
+                            message: 'Course type created successfully'
+                        });
+                        return [3 /*break*/, 3];
+                    case 2:
+                        error_8 = _b.sent();
+                        console.error('Error creating course type:', error_8);
+                        res.status(500).json({
+                            success: false,
+                            message: error_8.message || 'Internal server error'
+                        });
+                        return [3 /*break*/, 3];
+                    case 3: return [2 /*return*/];
+                }
+            });
+        });
+    };
+    FinancialController.prototype.updateCourseType = function (req, res) {
+        return __awaiter(this, void 0, void 0, function () {
+            var id, _a, courseTypeName, hoursPerCredit, pricePerCredit, updateData, updatedCourseType, error_9;
+            return __generator(this, function (_b) {
+                switch (_b.label) {
+                    case 0:
+                        _b.trys.push([0, 2, , 3]);
+                        id = req.params.id;
+                        _a = req.body, courseTypeName = _a.courseTypeName, hoursPerCredit = _a.hoursPerCredit, pricePerCredit = _a.pricePerCredit;
+                        updateData = {};
+                        if (courseTypeName !== undefined)
+                            updateData.courseTypeName = courseTypeName;
+                        if (hoursPerCredit !== undefined)
+                            updateData.hoursPerCredit = parseInt(hoursPerCredit);
+                        if (pricePerCredit !== undefined)
+                            updateData.pricePerCredit = parseFloat(pricePerCredit);
+                        return [4 /*yield*/, financialConfigService_1.courseTypeService.updateCourseType(id, updateData)];
+                    case 1:
+                        updatedCourseType = _b.sent();
+                        if (!updatedCourseType) {
+                            res.status(404).json({
+                                success: false,
+                                message: 'Course type not found'
+                            });
+                            return [2 /*return*/];
+                        }
+                        res.status(200).json({
+                            success: true,
+                            data: updatedCourseType,
+                            message: 'Course type updated successfully'
+                        });
+                        return [3 /*break*/, 3];
+                    case 2:
+                        error_9 = _b.sent();
+                        console.error('Error updating course type:', error_9);
+                        res.status(500).json({
+                            success: false,
+                            message: error_9.message || 'Internal server error'
+                        });
+                        return [3 /*break*/, 3];
+                    case 3: return [2 /*return*/];
+                }
+            });
+        });
+    };
+    FinancialController.prototype.deleteCourseType = function (req, res) {
+        return __awaiter(this, void 0, void 0, function () {
+            var id, deleted, error_10;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        _a.trys.push([0, 2, , 3]);
+                        id = req.params.id;
+                        return [4 /*yield*/, financialConfigService_1.courseTypeService.deleteCourseType(id)];
+                    case 1:
+                        deleted = _a.sent();
+                        if (!deleted) {
+                            res.status(404).json({
+                                success: false,
+                                message: 'Course type not found'
+                            });
+                            return [2 /*return*/];
+                        }
+                        res.status(200).json({
+                            success: true,
+                            message: 'Course type deleted successfully'
+                        });
+                        return [3 /*break*/, 3];
+                    case 2:
+                        error_10 = _a.sent();
+                        console.error('Error deleting course type:', error_10);
+                        res.status(500).json({
+                            success: false,
+                            message: error_10.message || 'Internal server error'
+                        });
+                        return [3 /*break*/, 3];
+                    case 3: return [2 /*return*/];
+                }
+            });
+        });
+    };
+    FinancialController.prototype.getCoursesUsingType = function (req, res) {
+        return __awaiter(this, void 0, void 0, function () {
+            var id, courses, error_11;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        _a.trys.push([0, 2, , 3]);
+                        id = req.params.id;
+                        return [4 /*yield*/, financialConfigService_1.courseTypeService.getCoursesUsingType(id)];
+                    case 1:
+                        courses = _a.sent();
+                        res.status(200).json({
+                            success: true,
+                            data: courses
+                        });
+                        return [3 /*break*/, 3];
+                    case 2:
+                        error_11 = _a.sent();
+                        console.error('Error getting courses using type:', error_11);
+                        res.status(500).json({
+                            success: false,
+                            message: error_11.message || 'Internal server error'
+                        });
+                        return [3 /*break*/, 3];
+                    case 3: return [2 /*return*/];
+                }
+            });
+        });
+    };
+    // === DASHBOARD & OVERVIEW ===
+    FinancialController.prototype.getDashboard = function (req, res) {
+        return __awaiter(this, void 0, void 0, function () {
+            var dashboardData, error_12;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -85,19 +489,19 @@ var financialController = {
                         res.status(200).json(dashboardData);
                         return [3 /*break*/, 3];
                     case 2:
-                        error_1 = _a.sent();
-                        console.error('Error getting dashboard data:', error_1);
+                        error_12 = _a.sent();
+                        console.error('Error getting dashboard data:', error_12);
                         res.status(500).json({ message: 'Internal server error' });
                         return [3 /*break*/, 3];
                     case 3: return [2 /*return*/];
                 }
             });
         });
-    },
-    // Payment Status Management
-    getAllPaymentStatus: function (req, res) {
+    };
+    // === PAYMENT STATUS MANAGEMENT ===
+    FinancialController.prototype.getAllPaymentStatus = function (req, res) {
         return __awaiter(this, void 0, void 0, function () {
-            var _a, semester, faculty, course, paymentStatusData, error_2;
+            var _a, semester, faculty, course, paymentStatusData, error_13;
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
@@ -113,18 +517,18 @@ var financialController = {
                         res.status(200).json(paymentStatusData);
                         return [3 /*break*/, 3];
                     case 2:
-                        error_2 = _b.sent();
-                        console.error('Error getting payment status data:', error_2);
+                        error_13 = _b.sent();
+                        console.error('Error getting payment status data:', error_13);
                         res.status(500).json({ message: 'Internal server error' });
                         return [3 /*break*/, 3];
                     case 3: return [2 /*return*/];
                 }
             });
         });
-    },
-    getStudentPaymentStatus: function (req, res) {
+    };
+    FinancialController.prototype.getStudentPaymentStatus = function (req, res) {
         return __awaiter(this, void 0, void 0, function () {
-            var studentId, paymentStatus, error_3;
+            var studentId, paymentStatus, error_14;
             var _a;
             return __generator(this, function (_b) {
                 switch (_b.label) {
@@ -151,18 +555,18 @@ var financialController = {
                         res.status(200).json(paymentStatus);
                         return [3 /*break*/, 3];
                     case 2:
-                        error_3 = _b.sent();
-                        console.error('Error getting student payment status:', error_3);
+                        error_14 = _b.sent();
+                        console.error('Error getting student payment status:', error_14);
                         res.status(500).json({ message: 'Internal server error' });
                         return [3 /*break*/, 3];
                     case 3: return [2 /*return*/];
                 }
             });
         });
-    },
-    updatePaymentStatus: function (req, res) {
+    };
+    FinancialController.prototype.updatePaymentStatus = function (req, res) {
         return __awaiter(this, void 0, void 0, function () {
-            var studentId, paymentData, updated, error_4;
+            var studentId, paymentData, updated, error_15;
             var _a;
             return __generator(this, function (_b) {
                 switch (_b.label) {
@@ -199,19 +603,19 @@ var financialController = {
                         res.status(200).json({ message: 'Payment status updated successfully', data: updated });
                         return [3 /*break*/, 3];
                     case 2:
-                        error_4 = _b.sent();
-                        console.error('Error updating payment status:', error_4);
+                        error_15 = _b.sent();
+                        console.error('Error updating payment status:', error_15);
                         res.status(500).json({ message: 'Internal server error' });
                         return [3 /*break*/, 3];
                     case 3: return [2 /*return*/];
                 }
             });
         });
-    },
-    // Tuition Management
-    getTuitionSettings: function (req, res) {
+    };
+    // === TUITION MANAGEMENT ===
+    FinancialController.prototype.getTuitionSettings = function (req, res) {
         return __awaiter(this, void 0, void 0, function () {
-            var semester, tuitionSettings, error_5;
+            var semester, tuitionSettings, error_16;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -223,18 +627,18 @@ var financialController = {
                         res.status(200).json(tuitionSettings);
                         return [3 /*break*/, 3];
                     case 2:
-                        error_5 = _a.sent();
-                        console.error('Error getting tuition settings:', error_5);
+                        error_16 = _a.sent();
+                        console.error('Error getting tuition settings:', error_16);
                         res.status(500).json({ message: 'Internal server error' });
                         return [3 /*break*/, 3];
                     case 3: return [2 /*return*/];
                 }
             });
         });
-    },
-    createTuitionSetting: function (req, res) {
+    };
+    FinancialController.prototype.createTuitionSetting = function (req, res) {
         return __awaiter(this, void 0, void 0, function () {
-            var _a, semester, settings, result, error_6;
+            var _a, semester, settings, result, error_17;
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
@@ -246,18 +650,18 @@ var financialController = {
                         res.status(201).json(result);
                         return [3 /*break*/, 3];
                     case 2:
-                        error_6 = _b.sent();
-                        console.error('Error creating tuition setting:', error_6);
+                        error_17 = _b.sent();
+                        console.error('Error creating tuition setting:', error_17);
                         res.status(500).json({ message: 'Internal server error' });
                         return [3 /*break*/, 3];
                     case 3: return [2 /*return*/];
                 }
             });
         });
-    },
-    updateTuitionSetting: function (req, res) {
+    };
+    FinancialController.prototype.updateTuitionSetting = function (req, res) {
         return __awaiter(this, void 0, void 0, function () {
-            var id, settings, result, error_7;
+            var id, settings, result, error_18;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -270,18 +674,18 @@ var financialController = {
                         res.status(200).json(result);
                         return [3 /*break*/, 3];
                     case 2:
-                        error_7 = _a.sent();
-                        console.error('Error updating tuition setting:', error_7);
+                        error_18 = _a.sent();
+                        console.error('Error updating tuition setting:', error_18);
                         res.status(500).json({ message: 'Internal server error' });
                         return [3 /*break*/, 3];
                     case 3: return [2 /*return*/];
                 }
             });
         });
-    },
-    deleteTuitionSetting: function (req, res) {
+    };
+    FinancialController.prototype.deleteTuitionSetting = function (req, res) {
         return __awaiter(this, void 0, void 0, function () {
-            var id, error_8;
+            var id, error_19;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -293,19 +697,19 @@ var financialController = {
                         res.status(204).send();
                         return [3 /*break*/, 3];
                     case 2:
-                        error_8 = _a.sent();
-                        console.error('Error deleting tuition setting:', error_8);
+                        error_19 = _a.sent();
+                        console.error('Error deleting tuition setting:', error_19);
                         res.status(500).json({ message: 'Internal server error' });
                         return [3 /*break*/, 3];
                     case 3: return [2 /*return*/];
                 }
             });
         });
-    },
-    // Payment Receipts
-    getAllReceipts: function (req, res) {
+    };
+    // === PAYMENT RECEIPTS ===
+    FinancialController.prototype.getAllReceipts = function (req, res) {
         return __awaiter(this, void 0, void 0, function () {
-            var _a, studentId, semester, receipts, error_9;
+            var _a, studentId, semester, receipts, error_20;
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
@@ -317,18 +721,18 @@ var financialController = {
                         res.status(200).json(receipts);
                         return [3 /*break*/, 3];
                     case 2:
-                        error_9 = _b.sent();
-                        console.error('Error getting receipts:', error_9);
+                        error_20 = _b.sent();
+                        console.error('Error getting receipts:', error_20);
                         res.status(500).json({ message: 'Internal server error' });
                         return [3 /*break*/, 3];
                     case 3: return [2 /*return*/];
                 }
             });
         });
-    },
-    getReceiptById: function (req, res) {
+    };
+    FinancialController.prototype.getReceiptById = function (req, res) {
         return __awaiter(this, void 0, void 0, function () {
-            var id, receipt, error_10;
+            var id, receipt, error_21;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -344,18 +748,18 @@ var financialController = {
                         res.status(200).json(receipt);
                         return [3 /*break*/, 3];
                     case 2:
-                        error_10 = _a.sent();
-                        console.error('Error getting receipt:', error_10);
+                        error_21 = _a.sent();
+                        console.error('Error getting receipt:', error_21);
                         res.status(500).json({ message: 'Internal server error' });
                         return [3 /*break*/, 3];
                     case 3: return [2 /*return*/];
                 }
             });
         });
-    },
-    createReceipt: function (req, res) {
+    };
+    FinancialController.prototype.createReceipt = function (req, res) {
         return __awaiter(this, void 0, void 0, function () {
-            var receiptData, receipt, error_11;
+            var receiptData, receipt, error_22;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -367,19 +771,19 @@ var financialController = {
                         res.status(201).json(receipt);
                         return [3 /*break*/, 3];
                     case 2:
-                        error_11 = _a.sent();
-                        console.error('Error creating receipt:', error_11);
+                        error_22 = _a.sent();
+                        console.error('Error creating receipt:', error_22);
                         res.status(500).json({ message: 'Internal server error' });
                         return [3 /*break*/, 3];
                     case 3: return [2 /*return*/];
                 }
             });
         });
-    },
-    // Payment Audit
-    getAuditLogs: function (req, res) {
+    };
+    // === PAYMENT AUDIT ===
+    FinancialController.prototype.getAuditLogs = function (req, res) {
         return __awaiter(this, void 0, void 0, function () {
-            var _a, startDate, endDate, logs, error_12;
+            var _a, startDate, endDate, logs, error_23;
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
@@ -391,18 +795,18 @@ var financialController = {
                         res.status(200).json(logs);
                         return [3 /*break*/, 3];
                     case 2:
-                        error_12 = _b.sent();
-                        console.error('Error getting audit logs:', error_12);
+                        error_23 = _b.sent();
+                        console.error('Error getting audit logs:', error_23);
                         res.status(500).json({ message: 'Internal server error' });
                         return [3 /*break*/, 3];
                     case 3: return [2 /*return*/];
                 }
             });
         });
-    },
-    getStudentAuditLogs: function (req, res) {
+    };
+    FinancialController.prototype.getStudentAuditLogs = function (req, res) {
         return __awaiter(this, void 0, void 0, function () {
-            var studentId, semester, logs, error_13;
+            var studentId, semester, logs, error_24;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -415,19 +819,19 @@ var financialController = {
                         res.status(200).json(logs);
                         return [3 /*break*/, 3];
                     case 2:
-                        error_13 = _a.sent();
-                        console.error('Error getting student audit logs:', error_13);
+                        error_24 = _a.sent();
+                        console.error('Error getting student audit logs:', error_24);
                         res.status(500).json({ message: 'Internal server error' });
                         return [3 /*break*/, 3];
                     case 3: return [2 /*return*/];
                 }
             });
         });
-    },
-    // Unpaid Tuition Report
-    getUnpaidTuitionReport: function (req, res) {
+    };
+    // === REPORTS ===
+    FinancialController.prototype.getUnpaidTuitionReport = function (req, res) {
         return __awaiter(this, void 0, void 0, function () {
-            var _a, semester, year, financialService, report, error_14;
+            var _a, semester, year, financialService, report, error_25;
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
@@ -442,13 +846,14 @@ var financialController = {
                         res.status(200).json({ success: true, data: report });
                         return [3 /*break*/, 4];
                     case 3:
-                        error_14 = _b.sent();
-                        res.status(500).json({ success: false, message: error_14.message || 'Internal server error' });
+                        error_25 = _b.sent();
+                        res.status(500).json({ success: false, message: error_25.message || 'Internal server error' });
                         return [3 /*break*/, 4];
                     case 4: return [2 /*return*/];
                 }
             });
         });
-    }
-};
-exports.default = financialController;
+    };
+    return FinancialController;
+}());
+exports.default = new FinancialController();

@@ -1,7 +1,7 @@
 import { IStudent } from '../../models/student_related/studentInterface';
 import { db } from '../../config/database';
 
-// Helper functions to convert names to codes
+// Helper function to convert names to codes
 const convertNameToCode = async (name: string, table: string, nameColumn: string, codeColumn: string): Promise<string> => {
     if (!name || name.trim() === '') return '';
     try {
@@ -11,79 +11,126 @@ const convertNameToCode = async (name: string, table: string, nameColumn: string
         
         if (result.rows.length > 0) {
             const code = result.rows[0][codeColumn.toLowerCase()];
-            console.log(`Found code: ${code} for name: ${name}`);
+            console.log(`Found code: ${code}`);
             return code;
         } else {
-            console.warn(`No code found for ${name} in ${table}.${nameColumn}`);
-            return ''; // Return empty if not found instead of original name
+            console.log(`No code found for name: ${name}`);
+            return '';
         }
     } catch (error) {
-        console.error(`Error converting ${name} to code:`, error);
-        return ''; // Return empty if error
+        console.error(`Error converting name to code for "${name}":`, error);
+        return '';
     }
 };
 
-const getMajorCode = async (majorName: string): Promise<string> => {
-    console.log('getMajorCode called with:', majorName);
-    const result = await convertNameToCode(majorName, 'NGANHHOC', 'TenNganh', 'MaNganh');
-    console.log('getMajorCode result:', result);
-    return result;
-};
-
-const getDistrictCode = async (districtName: string): Promise<string> => {
-    console.log('getDistrictCode called with:', districtName);
-    const result = await convertNameToCode(districtName, 'HUYEN', 'TenHuyen', 'MaHuyen');
-    console.log('getDistrictCode result:', result);
-    return result;
-};
-
-const getPriorityObjectCode = async (priorityName: string): Promise<string> => {
-    console.log('getPriorityObjectCode called with:', priorityName);
-    const result = await convertNameToCode(priorityName, 'DOITUONGUUTIEN', 'TenDoiTuong', 'MaDoiTuong');
-    console.log('getPriorityObjectCode result:', result);
-    return result;
-};
-
 export const studentService = {
-    getStudents: async (): Promise<IStudent[]> => {
-        try {            const result = await db.query(`
+    getAllStudents: async (): Promise<IStudent[]> => {
+        try {
+            const result = await db.query(`
                 SELECT 
-                    sv.MaSoSinhVien, sv.HoTen, sv.NgaySinh, sv.GioiTinh, sv.QueQuan, 
-                    sv.MaHuyen, sv.MaDoiTuongUT, sv.MaNganh, sv.Email, sv.SoDienThoai, sv.Status,
-                    dt.TenDoiTuong,
-                    h.TenHuyen,
-                    t.TenTinh,
-                    nh.TenNganh,
-                    k.TenKhoa
-                FROM SINHVIEN sv
-                LEFT JOIN DOITUONGUUTIEN dt ON sv.MaDoiTuongUT = dt.MaDoiTuong
-                LEFT JOIN HUYEN h ON sv.MaHuyen = h.MaHuyen
+                    s.MaSoSinhVien as studentId,
+                    s.HoTen as fullName,
+                    s.NgaySinh as dateOfBirth,
+                    s.GioiTinh as gender,
+                    s.QueQuan as hometown,
+                    s.MaHuyen as districtId,
+                    s.MaDoiTuongUT as priorityObjectId,
+                    s.MaNganh as majorId,
+                    s.Email as email,
+                    s.SoDienThoai as phone,
+                    h.TenHuyen as districtName,
+                    t.TenTinh as provinceName,
+                    d.TenDoiTuong as priorityName,
+                    n.TenNganh as majorName,
+                    k.TenKhoa as facultyName
+                FROM SINHVIEN s
+                LEFT JOIN HUYEN h ON s.MaHuyen = h.MaHuyen
                 LEFT JOIN TINH t ON h.MaTinh = t.MaTinh
-                LEFT JOIN NGANHHOC nh ON sv.MaNganh = nh.MaNganh
-                LEFT JOIN KHOA k ON nh.MaKhoa = k.MaKhoa
-            `);            return result.rows.map(row => ({
-                studentId: row.masosinhvien,
-                fullName: row.hoten,
-                dateOfBirth: row.ngaysinh,
-                gender: row.gioitinh,
-                hometown: row.tentinh || row.quequan, // Tên tỉnh
-                districtId: row.tenhuyen || row.mahuyen, // Tên huyện  
-                priorityObjectId: row.tendoituong || row.madoituongut, // Tên đối tượng
-                majorId: row.tennganh || row.manganh, // Tên ngành
+                LEFT JOIN DOITUONGUUTIEN d ON s.MaDoiTuongUT = d.MaDoiTuong
+                LEFT JOIN NGANHHOC n ON s.MaNganh = n.MaNganh
+                LEFT JOIN KHOA k ON n.MaKhoa = k.MaKhoa
+                ORDER BY s.MaSoSinhVien
+            `);
+            
+            return result.rows.map(row => ({
+                studentId: row.studentid,
+                fullName: row.fullname,
+                dateOfBirth: row.dateofbirth,
+                gender: row.gender,
+                hometown: row.hometown,
+                districtId: row.districtid,
+                priorityObjectId: row.priorityobjectid,
+                majorId: row.majorid,
                 email: row.email || '',
-                phone: row.sodienthoai || '',
-                status: row.status === 'active' ? 'đang học' : 'thôi học',
-                faculty: row.tenkhoa || '' // Tên khoa
+                phone: row.phone || '',
+                districtName: row.districtname,
+                provinceName: row.provincename,
+                priorityName: row.priorityname,
+                majorName: row.majorname,
+                facultyName: row.facultyname
             }));
         } catch (error) {
-            console.error('Error in getStudents:', error);
+            console.error('Error fetching students:', error);
             throw new Error('Failed to fetch students');
         }
-    },    createStudent: async (student: Omit<IStudent, 'id'>): Promise<IStudent> => {
+    },
+
+    getStudentById: async (id: string): Promise<IStudent | null> => {
         try {
-            // Convert display status back to database format
-            const dbStatus = student.status === 'đang học' ? 'active' : 'inactive';
+            const result = await db.query(`
+                SELECT 
+                    s.MaSoSinhVien as studentId,
+                    s.HoTen as fullName,
+                    s.NgaySinh as dateOfBirth,
+                    s.GioiTinh as gender,
+                    s.QueQuan as hometown,
+                    s.MaHuyen as districtId,
+                    s.MaDoiTuongUT as priorityObjectId,
+                    s.MaNganh as majorId,
+                    s.Email as email,
+                    s.SoDienThoai as phone,
+                    h.TenHuyen as districtName,
+                    t.TenTinh as provinceName,
+                    d.TenDoiTuong as priorityName,
+                    n.TenNganh as majorName,
+                    k.TenKhoa as facultyName
+                FROM SINHVIEN s
+                LEFT JOIN HUYEN h ON s.MaHuyen = h.MaHuyen
+                LEFT JOIN TINH t ON h.MaTinh = t.MaTinh
+                LEFT JOIN DOITUONGUUTIEN d ON s.MaDoiTuongUT = d.MaDoiTuong
+                LEFT JOIN NGANHHOC n ON s.MaNganh = n.MaNganh
+                LEFT JOIN KHOA k ON n.MaKhoa = k.MaKhoa
+                WHERE s.MaSoSinhVien = $1
+            `, [id]);
             
+            if (result.rows.length === 0) return null;
+            
+            const row = result.rows[0];
+            return {
+                studentId: row.studentid,
+                fullName: row.fullname,
+                dateOfBirth: row.dateofbirth,
+                gender: row.gender,
+                hometown: row.hometown,
+                districtId: row.districtid,
+                priorityObjectId: row.priorityobjectid,
+                majorId: row.majorid,
+                email: row.email || '',
+                phone: row.phone || '',
+                districtName: row.districtname,
+                provinceName: row.provincename,
+                priorityName: row.priorityname,
+                majorName: row.majorname,
+                facultyName: row.facultyname
+            };
+        } catch (error) {
+            console.error('Error fetching student by ID:', error);
+            throw new Error('Failed to fetch student');
+        }
+    },
+
+    createStudent: async (student: Omit<IStudent, "studentId"> & { studentId: string }): Promise<IStudent> => {
+        try {
             console.log('Original student data:', {
                 majorId: student.majorId,
                 districtId: student.districtId,
@@ -91,19 +138,19 @@ export const studentService = {
             });
             
             // Convert names to codes
-            const majorCode = await getMajorCode(student.majorId);
-            const districtCode = await getDistrictCode(student.districtId);
-            const priorityCode = await getPriorityObjectCode(student.priorityObjectId);
+            const districtCode = await convertNameToCode(student.districtName || '', 'HUYEN', 'TenHuyen', 'MaHuyen');
+            const priorityCode = await convertNameToCode(student.priorityName || '', 'DOITUONGUUTIEN', 'TenDoiTuong', 'MaDoiTuong');
+            const majorCode = await convertNameToCode(student.majorName || '', 'NGANHHOC', 'TenNganh', 'MaNganh');
             
-            console.log('Converted codes:', {
-                majorCode,
+            console.log('Final codes:', {
                 districtCode,
-                priorityCode
+                priorityCode,
+                majorCode
             });
             
             const result = await db.query(
-                'INSERT INTO SINHVIEN (MaSoSinhVien, HoTen, NgaySinh, GioiTinh, QueQuan, MaHuyen, MaDoiTuongUT, MaNganh, Email, SoDienThoai, Status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *',
-                [student.studentId, student.fullName, student.dateOfBirth, student.gender, student.hometown, districtCode, priorityCode, majorCode, student.email, student.phone, dbStatus]
+                'INSERT INTO SINHVIEN (MaSoSinhVien, HoTen, NgaySinh, GioiTinh, QueQuan, MaHuyen, MaDoiTuongUT, MaNganh, Email, SoDienThoai) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *',
+                [student.studentId, student.fullName, student.dateOfBirth, student.gender, student.hometown, districtCode, priorityCode, majorCode, student.email, student.phone]
             );
             const row = result.rows[0];
             return {
@@ -116,30 +163,34 @@ export const studentService = {
                 priorityObjectId: row.madoituongut,
                 majorId: row.manganh,
                 email: row.email || '',
-                phone: row.sodienthoai || '',
-                status: row.status === 'active' ? 'đang học' : 'thôi học'
+                phone: row.sodienthoai || ''
             };
         } catch (error) {
             console.error('Error in createStudent:', error);
             throw new Error('Failed to create student');
         }
-    },updateStudent: async (id: string, student: IStudent): Promise<IStudent> => {
+    },
+
+    updateStudent: async (id: string, student: IStudent): Promise<IStudent> => {
         try {
-            // Convert display status back to database format
-            const dbStatus = student.status === 'đang học' ? 'active' : 'inactive';
-            
             // Convert names to codes
-            const majorCode = await getMajorCode(student.majorId);
-            const districtCode = await getDistrictCode(student.districtId);
-            const priorityCode = await getPriorityObjectCode(student.priorityObjectId);
+            const districtCode = await convertNameToCode(student.districtName || '', 'HUYEN', 'TenHuyen', 'MaHuyen');
+            const priorityCode = await convertNameToCode(student.priorityName || '', 'DOITUONGUUTIEN', 'TenDoiTuong', 'MaDoiTuong');
+            const majorCode = await convertNameToCode(student.majorName || '', 'NGANHHOC', 'TenNganh', 'MaNganh');
             
             const result = await db.query(
-                'UPDATE SINHVIEN SET HoTen = $1, NgaySinh = $2, GioiTinh = $3, QueQuan = $4, MaHuyen = $5, MaDoiTuongUT = $6, MaNganh = $7, Email = $8, SoDienThoai = $9, Status = $10 WHERE MaSoSinhVien = $11 RETURNING *',
-                [student.fullName, student.dateOfBirth, student.gender, student.hometown, districtCode, priorityCode, majorCode, student.email, student.phone, dbStatus, id]
+                `UPDATE SINHVIEN SET 
+                    HoTen = $2, NgaySinh = $3, GioiTinh = $4, QueQuan = $5, 
+                    MaHuyen = $6, MaDoiTuongUT = $7, MaNganh = $8, 
+                    Email = $9, SoDienThoai = $10
+                WHERE MaSoSinhVien = $1 RETURNING *`,
+                [id, student.fullName, student.dateOfBirth, student.gender, student.hometown, districtCode, priorityCode, majorCode, student.email, student.phone]
             );
+            
             if (result.rows.length === 0) {
                 throw new Error('Student not found');
             }
+            
             const row = result.rows[0];
             return {
                 studentId: row.masosinhvien,
@@ -151,60 +202,74 @@ export const studentService = {
                 priorityObjectId: row.madoituongut,
                 majorId: row.manganh,
                 email: row.email || '',
-                phone: row.sodienthoai || '',
-                status: row.status === 'active' ? 'đang học' : 'thôi học'
+                phone: row.sodienthoai || ''
             };
         } catch (error) {
             console.error('Error in updateStudent:', error);
-            throw error;
+            throw new Error('Failed to update student');
         }
     },
 
     deleteStudent: async (id: string): Promise<void> => {
         try {
-            const result = await db.query('DELETE FROM SINHVIEN WHERE MaSoSinhVien = $1 RETURNING *', [id]);
-            if (result.rows.length === 0) {
+            const result = await db.query('DELETE FROM SINHVIEN WHERE MaSoSinhVien = $1', [id]);
+            if (result.rowCount === 0) {
                 throw new Error('Student not found');
             }
         } catch (error) {
             console.error('Error in deleteStudent:', error);
-            throw error;
+            throw new Error('Failed to delete student');
         }
     },
 
-    searchStudents: async (query: string): Promise<IStudent[]> => {
-        try {            const result = await db.query(`
+    searchStudents: async (searchTerm: string): Promise<IStudent[]> => {
+        try {
+            const result = await db.query(`
                 SELECT 
-                    sv.MaSoSinhVien, sv.HoTen, sv.NgaySinh, sv.GioiTinh, sv.QueQuan, 
-                    sv.MaHuyen, sv.MaDoiTuongUT, sv.MaNganh, sv.Email, sv.SoDienThoai, sv.Status,
-                    dt.TenDoiTuong,
-                    h.TenHuyen,
-                    t.TenTinh,
-                    nh.TenNganh,
-                    k.TenKhoa
-                FROM SINHVIEN sv
-                LEFT JOIN DOITUONGUUTIEN dt ON sv.MaDoiTuongUT = dt.MaDoiTuong
-                LEFT JOIN HUYEN h ON sv.MaHuyen = h.MaHuyen
+                    s.MaSoSinhVien as studentId,
+                    s.HoTen as fullName,
+                    s.NgaySinh as dateOfBirth,
+                    s.GioiTinh as gender,
+                    s.QueQuan as hometown,
+                    s.MaHuyen as districtId,
+                    s.MaDoiTuongUT as priorityObjectId,
+                    s.MaNganh as majorId,
+                    s.Email as email,
+                    s.SoDienThoai as phone,
+                    h.TenHuyen as districtName,
+                    t.TenTinh as provinceName,
+                    d.TenDoiTuong as priorityName,
+                    n.TenNganh as majorName,
+                    k.TenKhoa as facultyName
+                FROM SINHVIEN s
+                LEFT JOIN HUYEN h ON s.MaHuyen = h.MaHuyen
                 LEFT JOIN TINH t ON h.MaTinh = t.MaTinh
-                LEFT JOIN NGANHHOC nh ON sv.MaNganh = nh.MaNganh
-                LEFT JOIN KHOA k ON nh.MaKhoa = k.MaKhoa
-                WHERE sv.HoTen ILIKE $1 OR sv.MaSoSinhVien ILIKE $1
-            `, [`%${query}%`]);            return result.rows.map(row => ({
-                studentId: row.masosinhvien,
-                fullName: row.hoten,
-                dateOfBirth: row.ngaysinh,
-                gender: row.gioitinh,
-                hometown: row.tentinh || row.quequan,
-                districtId: row.tenhuyen || row.mahuyen,
-                priorityObjectId: row.tendoituong || row.madoituongut,
-                majorId: row.tennganh || row.manganh, // Tên ngành
+                LEFT JOIN DOITUONGUUTIEN d ON s.MaDoiTuongUT = d.MaDoiTuong
+                LEFT JOIN NGANHHOC n ON s.MaNganh = n.MaNganh
+                LEFT JOIN KHOA k ON n.MaKhoa = k.MaKhoa
+                WHERE s.MaSoSinhVien ILIKE $1 OR s.HoTen ILIKE $1
+                ORDER BY s.MaSoSinhVien
+            `, [`%${searchTerm}%`]);
+            
+            return result.rows.map(row => ({
+                studentId: row.studentid,
+                fullName: row.fullname,
+                dateOfBirth: row.dateofbirth,
+                gender: row.gender,
+                hometown: row.hometown,
+                districtId: row.districtid,
+                priorityObjectId: row.priorityobjectid,
+                majorId: row.majorid,
                 email: row.email || '',
-                phone: row.sodienthoai || '',
-                status: row.status === 'active' ? 'đang học' : 'thôi học',
-                faculty: row.tenkhoa || '' // Tên khoa
+                phone: row.phone || '',
+                districtName: row.districtname,
+                provinceName: row.provincename,
+                priorityName: row.priorityname,
+                majorName: row.majorname,
+                facultyName: row.facultyname
             }));
         } catch (error) {
-            console.error('Error in searchStudents:', error);
+            console.error('Error searching students:', error);
             throw new Error('Failed to search students');
         }
     }

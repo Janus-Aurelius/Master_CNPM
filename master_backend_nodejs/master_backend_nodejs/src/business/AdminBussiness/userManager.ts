@@ -1,6 +1,6 @@
 import { IUser } from '../../models/user';
 import { AppError } from '../../middleware/errorHandler';
-import * as DashboardService from '../../services/adminService/dashboardService';
+import * as DashboardService from '../../services/AdminService/dashboardService';
 import { DatabaseService } from '../../services/database/databaseService';
 
 class UserManager {
@@ -136,14 +136,11 @@ class UserManager {
     async deleteUser(id: number): Promise<boolean> {
         try {
             // Start transaction
-            await DatabaseService.query('BEGIN');
-
-            try {
+            await DatabaseService.query('BEGIN');            try {
                 // Delete related records first
                 await DatabaseService.query(`
                     DELETE FROM user_sessions WHERE user_id = $1;
                     DELETE FROM audit_logs WHERE user_id = $1;
-                    DELETE FROM academic_requests WHERE student_id = (SELECT student_id FROM students WHERE user_id = $1);
                     DELETE FROM enrollments WHERE student_id = (SELECT student_id FROM students WHERE user_id = $1);
                     DELETE FROM tuition_records WHERE student_id = (SELECT student_id FROM students WHERE user_id = $1);
                     DELETE FROM payment_receipts WHERE student_id = (SELECT student_id FROM students WHERE user_id = $1);

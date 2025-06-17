@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.maintenanceMode = exports.checkMaintenance = void 0;
-var maintenanceManager_1 = require("../business/adminBussiness/maintenanceManager");
+var maintenanceManager_1 = require("../business/AdminBussiness/maintenanceManager");
 var checkMaintenance = function (req, res, next) {
     if (maintenanceManager_1.maintenanceManager.isInMaintenanceMode()) {
         var clientIP = req.ip || req.connection.remoteAddress || '';

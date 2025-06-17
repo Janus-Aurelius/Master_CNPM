@@ -1,17 +1,18 @@
-import { IOfferedSubject } from '../../models/academic_related/openCourse';
+import { IOfferedCourse } from '../../models/academic_related/openCourse';
 import { ValidationError } from '../../utils/errors/validation.error';
 import { OpenCourseService } from '../../services/courseService/openCourse.service';
 
 export class OpenCourseBusiness {
-    static async getAllCourses(): Promise<IOfferedSubject[]> {
+    static async getAllCourses(): Promise<IOfferedCourse[]> {
         return await OpenCourseService.getAllCourses();
+    }    static async getCourseById(id: number): Promise<IOfferedCourse | null> {
+        // TODO: Fix this - need to determine semesterId and courseId from the single id parameter
+        // For now, using default semester and converting id to string
+        const defaultSemester = 'HK1 2024-2025';
+        return await OpenCourseService.getCourseById(defaultSemester, id.toString());
     }
 
-    static async getCourseById(id: number): Promise<IOfferedSubject | null> {
-        return await OpenCourseService.getCourseById(id);
-    }
-
-    static async createCourse(courseData: Omit<IOfferedSubject, 'id' | 'createdAt' | 'updatedAt'>): Promise<IOfferedSubject> {
+    static async createCourse(courseData: Omit<IOfferedCourse, 'id' | 'createdAt' | 'updatedAt'>): Promise<IOfferedCourse> {
         const errors = this.validateCourseData(courseData);
         if (errors.length > 0) {
             throw new ValidationError(errors.join(', '));
@@ -21,9 +22,7 @@ export class OpenCourseBusiness {
         this.validateDates(courseData);
 
         return await OpenCourseService.createCourse(courseData);
-    }
-
-    static async updateCourse(id: number, courseData: Partial<IOfferedSubject>): Promise<IOfferedSubject> {
+    }    static async updateCourse(id: number, courseData: Partial<IOfferedCourse>): Promise<IOfferedCourse> {
         const existingCourse = await this.getCourseById(id);
         if (!existingCourse) {
             throw new ValidationError('Course not found');
@@ -36,8 +35,7 @@ export class OpenCourseBusiness {
         }
 
         // Validate dates if they are being updated
-        if (courseData.startDate || courseData.endDate || 
-            courseData.registrationStartDate || courseData.registrationEndDate) {
+        if (courseData.registrationStartDate || courseData.registrationEndDate) {
             this.validateDates(updatedData);
         }
 
@@ -47,58 +45,27 @@ export class OpenCourseBusiness {
     static async deleteCourse(id: number): Promise<void> {
         const course = await this.getCourseById(id);
         if (!course) {
-            throw new ValidationError('Course not found');
-        }
+            throw new ValidationError('Course not found');        }
 
+        // TODO: Fix this - need to determine semesterId and courseId from the single id parameter  
+        const defaultSemester = 'HK1 2024-2025';
+        await OpenCourseService.deleteCourse(defaultSemester, id.toString());    }
 
-        await OpenCourseService.deleteCourse(id);
-    }
-
-    static async getCoursesByStatus(status: IOfferedSubject['status']): Promise<IOfferedSubject[]> {
-        return await OpenCourseService.getCoursesByStatus(status);
-    }
-
-    static async getCoursesBySemester(semester: string, academicYear: string): Promise<IOfferedSubject[]> {
+    static async getCoursesBySemester(semester: string, academicYear: string): Promise<IOfferedCourse[]> {
         if (!semester || !academicYear) {
-            throw new ValidationError('Semester and academic year are required');
-        }
+            throw new ValidationError('Semester and academic year are required');        }
         return await OpenCourseService.getCoursesBySemester(semester, academicYear);
     }
 
-    static async updateCourseStatus(id: number, status: IOfferedSubject['status']): Promise<IOfferedSubject> {
-        const course = await this.getCourseById(id);
-        if (!course) {
-            throw new ValidationError('Course not found');
-        }
-
-        // Validate status transition
-        if (course.status === 'cancelled' && status !== 'cancelled') {
-            throw new ValidationError('Cannot change status of a cancelled course');
-        }
-
-        if (status === 'closed' && course.currentStudents === 0) {
-            throw new ValidationError('Cannot close a course with no registered students');
-        }
-
-        return await OpenCourseService.updateCourseStatus(id, status);
-    }
-
-    private static validateCourseData(courseData: Partial<IOfferedSubject>): string[] {
+    private static validateCourseData(courseData: Partial<IOfferedCourse>): string[] {
         const errors: string[] = [];
 
-        if (!courseData.subjectId) {
-            errors.push('Subject ID is required');
+        if (!courseData.courseId) {
+            errors.push('Course ID is required');
         }
 
         if (!courseData.semesterId) {
             errors.push('Semester ID is required');
-        }
-
-        if (courseData.schedule) {
-            const { day, session, room } = courseData.schedule;
-            if (!day || !session || !room) {
-                errors.push('Schedule must include day, session, and room');
-            }
         }
 
         if (courseData.maxStudents && courseData.maxStudents <= 0) {
@@ -115,16 +82,15 @@ export class OpenCourseBusiness {
         }
 
         return errors;
-    }
-
-    private static validateDates(courseData: Partial<IOfferedSubject>): void {
+    }    private static validateDates(courseData: Partial<IOfferedCourse>): void {
         const errors: string[] = [];
 
-        if (courseData.startDate && courseData.endDate) {
-            const start = new Date(courseData.startDate);
-            const end = new Date(courseData.endDate);
+        // Validate registration dates if provided
+        if (courseData.registrationStartDate && courseData.registrationEndDate) {
+            const start = new Date(courseData.registrationStartDate);
+            const end = new Date(courseData.registrationEndDate);
             if (end <= start) {
-                errors.push('End date must be after start date');
+                errors.push('Registration end date must be after start date');
             }
         }
 

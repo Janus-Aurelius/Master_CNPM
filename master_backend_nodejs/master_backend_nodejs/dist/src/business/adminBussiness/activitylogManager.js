@@ -70,7 +70,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.activitylogManager = void 0;
-var activityLogService = __importStar(require("../../services/adminService/activitylogService"));
+var activityLogService = __importStar(require("../../services/AdminService/activitylogService"));
 var errorHandler_1 = require("../../middleware/errorHandler");
 exports.activitylogManager = {
     getActivityLogs: function (page, size) { return __awaiter(void 0, void 0, void 0, function () {

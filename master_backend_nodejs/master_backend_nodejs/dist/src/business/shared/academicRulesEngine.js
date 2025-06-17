@@ -37,69 +37,58 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AcademicRulesEngine = void 0;
-// src/business/shared/academicRulesEngine.ts
-var subject_business_1 = require("../academicBusiness/subject.business");
 var databaseService_1 = require("../../services/database/databaseService");
 var AcademicRulesEngine = /** @class */ (function () {
     function AcademicRulesEngine() {
     }
     /**
-     * Check if student has completed all prerequisites for a course
-     */ AcademicRulesEngine.checkPrerequisites = function (studentId, courseId) {
+   * Check if student has completed all prerequisites for a course
+   */ AcademicRulesEngine.checkPrerequisites = function (studentId, courseId) {
         return __awaiter(this, void 0, void 0, function () {
-            var subjects, courseInfo, completedCourses, prerequisites, missingPrerequisites, details, _loop_1, _i, prerequisites_1, prereqCode, error_1;
+            var prerequisites, missingPrerequisites, details, _loop_1, _i, prerequisites_1, prereqCode;
             var _this = this;
             return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        _a.trys.push([0, 3, , 4]);
-                        return [4 /*yield*/, subject_business_1.SubjectBusiness.getAllSubjects()];
-                    case 1:
-                        subjects = _a.sent();
-                        courseInfo = subjects.find(function (subject) { return subject.subjectId === courseId; });
-                        if (!courseInfo) {
-                            return [2 /*return*/, {
-                                    isMet: false,
-                                    missingPrerequisites: [],
-                                    details: ["Course ".concat(courseId, " not found")]
-                                }];
+                try {
+                    // TODO: Implement course prerequisites check using course-centric model
+                    // Note: SubjectBusiness has been removed, need to implement this with CourseBusiness or direct database queries
+                    return [2 /*return*/, {
+                            isMet: true, // Temporary - always return true until implemented
+                            missingPrerequisites: [],
+                            details: ["Prerequisites check temporarily disabled - needs implementation with course-centric model"]
+                        }];
+                    prerequisites = courseInfo.prerequisiteSubjects || [];
+                    missingPrerequisites = [];
+                    details = [];
+                    _loop_1 = function (prereqCode) {
+                        var completed = completedCourses.find(function (course) {
+                            return course.courseId === prereqCode &&
+                                course.grade &&
+                                _this.isPassingGrade(course.grade);
+                        });
+                        if (!completed) {
+                            missingPrerequisites.push(prereqCode);
+                            details.push("Missing prerequisite: ".concat(prereqCode));
                         }
-                        return [4 /*yield*/, this.getStudentCompletedCourses(studentId)];
-                    case 2:
-                        completedCourses = _a.sent();
-                        prerequisites = courseInfo.prerequisiteSubjects || [];
-                        missingPrerequisites = [];
-                        details = [];
-                        _loop_1 = function (prereqCode) {
-                            var completed = completedCourses.find(function (course) {
-                                return course.courseId === prereqCode &&
-                                    course.grade &&
-                                    _this.isPassingGrade(course.grade);
-                            });
-                            if (!completed) {
-                                missingPrerequisites.push(prereqCode);
-                                details.push("Missing prerequisite: ".concat(prereqCode));
-                            }
-                        };
-                        for (_i = 0, prerequisites_1 = prerequisites; _i < prerequisites_1.length; _i++) {
-                            prereqCode = prerequisites_1[_i];
-                            _loop_1(prereqCode);
-                        }
-                        return [2 /*return*/, {
-                                isMet: missingPrerequisites.length === 0,
-                                missingPrerequisites: missingPrerequisites,
-                                details: details.length > 0 ? details : ['All prerequisites met']
-                            }];
-                    case 3:
-                        error_1 = _a.sent();
-                        console.error('Error checking prerequisites:', error_1);
-                        return [2 /*return*/, {
-                                isMet: false,
-                                missingPrerequisites: [],
-                                details: ['Error checking prerequisites']
-                            }];
-                    case 4: return [2 /*return*/];
+                    };
+                    for (_i = 0, prerequisites_1 = prerequisites; _i < prerequisites_1.length; _i++) {
+                        prereqCode = prerequisites_1[_i];
+                        _loop_1(prereqCode);
+                    }
+                    return [2 /*return*/, {
+                            isMet: missingPrerequisites.length === 0,
+                            missingPrerequisites: missingPrerequisites,
+                            details: details.length > 0 ? details : ['All prerequisites met']
+                        }];
                 }
+                catch (error) {
+                    console.error('Error checking prerequisites:', error);
+                    return [2 /*return*/, {
+                            isMet: false,
+                            missingPrerequisites: [],
+                            details: ['Error checking prerequisites']
+                        }];
+                }
+                return [2 /*return*/];
             });
         });
     };
@@ -108,7 +97,7 @@ var AcademicRulesEngine = /** @class */ (function () {
      */
     AcademicRulesEngine.checkAcademicEligibility = function (studentId_1) {
         return __awaiter(this, arguments, void 0, function (studentId, additionalCredits) {
-            var currentCredits, studentGPA, academicStanding, maxCreditsPerSemester, minGPAForRegistration, totalCreditsAfterRegistration, remainingCredits, error_2;
+            var currentCredits, studentGPA, academicStanding, maxCreditsPerSemester, minGPAForRegistration, totalCreditsAfterRegistration, remainingCredits, error_1;
             if (additionalCredits === void 0) { additionalCredits = 0; }
             return __generator(this, function (_a) {
                 switch (_a.label) {
@@ -144,8 +133,8 @@ var AcademicRulesEngine = /** @class */ (function () {
                                 }
                             }];
                     case 4:
-                        error_2 = _a.sent();
-                        console.error('Error checking academic eligibility:', error_2);
+                        error_1 = _a.sent();
+                        console.error('Error checking academic eligibility:', error_1);
                         return [2 /*return*/, {
                                 canEnroll: false,
                                 creditLimitStatus: {
@@ -170,7 +159,7 @@ var AcademicRulesEngine = /** @class */ (function () {
      */
     AcademicRulesEngine.checkScheduleConflicts = function (studentId, courseId, semester) {
         return __awaiter(this, void 0, void 0, function () {
-            var enrolledCourses, newCourseSchedule, conflictingCourses, _i, enrolledCourses_1, enrolledCourse, enrolledSchedule, error_3;
+            var enrolledCourses, newCourseSchedule, conflictingCourses, _i, enrolledCourses_1, enrolledCourse, enrolledSchedule, error_2;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -213,8 +202,8 @@ var AcademicRulesEngine = /** @class */ (function () {
                             conflictingCourses: conflictingCourses
                         }];
                     case 7:
-                        error_3 = _a.sent();
-                        console.error('Error checking schedule conflicts:', error_3);
+                        error_2 = _a.sent();
+                        console.error('Error checking schedule conflicts:', error_2);
                         return [2 /*return*/, {
                                 hasConflict: true,
                                 conflictingCourses: []
@@ -226,7 +215,7 @@ var AcademicRulesEngine = /** @class */ (function () {
     }; // Helper methods
     AcademicRulesEngine.getStudentCompletedCourses = function (studentId) {
         return __awaiter(this, void 0, void 0, function () {
-            var completedCourses, error_4;
+            var completedCourses, error_3;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -240,8 +229,8 @@ var AcademicRulesEngine = /** @class */ (function () {
                                 grade: course.grade || 'N/A'
                             }); })];
                     case 2:
-                        error_4 = _a.sent();
-                        console.error('Error fetching completed courses:', error_4);
+                        error_3 = _a.sent();
+                        console.error('Error fetching completed courses:', error_3);
                         return [2 /*return*/, []];
                     case 3: return [2 /*return*/];
                 }
@@ -250,7 +239,7 @@ var AcademicRulesEngine = /** @class */ (function () {
     };
     AcademicRulesEngine.getCurrentSemesterCredits = function (studentId) {
         return __awaiter(this, void 0, void 0, function () {
-            var currentSemester, semester, result, error_5;
+            var currentSemester, semester, result, error_4;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -264,8 +253,8 @@ var AcademicRulesEngine = /** @class */ (function () {
                         result = _a.sent();
                         return [2 /*return*/, parseInt((result === null || result === void 0 ? void 0 : result.total_credits) || '0')];
                     case 3:
-                        error_5 = _a.sent();
-                        console.error('Error fetching current semester credits:', error_5);
+                        error_4 = _a.sent();
+                        console.error('Error fetching current semester credits:', error_4);
                         return [2 /*return*/, 0];
                     case 4: return [2 /*return*/];
                 }
@@ -274,7 +263,7 @@ var AcademicRulesEngine = /** @class */ (function () {
     };
     AcademicRulesEngine.getStudentGPA = function (studentId) {
         return __awaiter(this, void 0, void 0, function () {
-            var result, error_6;
+            var result, error_5;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -284,8 +273,8 @@ var AcademicRulesEngine = /** @class */ (function () {
                         result = _a.sent();
                         return [2 /*return*/, parseFloat((result === null || result === void 0 ? void 0 : result.gpa) || '0')];
                     case 2:
-                        error_6 = _a.sent();
-                        console.error('Error fetching student GPA:', error_6);
+                        error_5 = _a.sent();
+                        console.error('Error fetching student GPA:', error_5);
                         return [2 /*return*/, 0];
                     case 3: return [2 /*return*/];
                 }
@@ -294,7 +283,7 @@ var AcademicRulesEngine = /** @class */ (function () {
     };
     AcademicRulesEngine.getAcademicStanding = function (studentId) {
         return __awaiter(this, void 0, void 0, function () {
-            var gpa, standingRules, probationThreshold, suspensionThreshold, error_7;
+            var gpa, standingRules, probationThreshold, suspensionThreshold, error_6;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -318,8 +307,8 @@ var AcademicRulesEngine = /** @class */ (function () {
                         }
                         return [3 /*break*/, 4];
                     case 3:
-                        error_7 = _a.sent();
-                        console.error('Error determining academic standing:', error_7);
+                        error_6 = _a.sent();
+                        console.error('Error determining academic standing:', error_6);
                         return [2 /*return*/, 'GOOD']; // Default to good standing on error
                     case 4: return [2 /*return*/];
                 }
@@ -328,7 +317,7 @@ var AcademicRulesEngine = /** @class */ (function () {
     };
     AcademicRulesEngine.getStudentEnrolledCourses = function (studentId, semester) {
         return __awaiter(this, void 0, void 0, function () {
-            var enrolledCourses, error_8;
+            var enrolledCourses, error_7;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -341,8 +330,8 @@ var AcademicRulesEngine = /** @class */ (function () {
                                 courseName: course.courseName
                             }); })];
                     case 2:
-                        error_8 = _a.sent();
-                        console.error('Error fetching enrolled courses:', error_8);
+                        error_7 = _a.sent();
+                        console.error('Error fetching enrolled courses:', error_7);
                         return [2 /*return*/, []];
                     case 3: return [2 /*return*/];
                 }
@@ -351,7 +340,7 @@ var AcademicRulesEngine = /** @class */ (function () {
     };
     AcademicRulesEngine.getCourseSchedule = function (courseId, semester) {
         return __awaiter(this, void 0, void 0, function () {
-            var schedule, scheduleData, parts, dayOfWeek, timeRange, _a, startTime, endTime, error_9;
+            var schedule, scheduleData, parts, dayOfWeek, timeRange, _a, startTime, endTime, error_8;
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
@@ -375,8 +364,8 @@ var AcademicRulesEngine = /** @class */ (function () {
                                 endTime: endTime || '00:00'
                             }];
                     case 2:
-                        error_9 = _b.sent();
-                        console.error('Error fetching course schedule:', error_9);
+                        error_8 = _b.sent();
+                        console.error('Error fetching course schedule:', error_8);
                         return [2 /*return*/, null];
                     case 3: return [2 /*return*/];
                 }

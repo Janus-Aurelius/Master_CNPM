@@ -40,7 +40,7 @@ exports.dashboardService = void 0;
 var databaseService_1 = require("../database/databaseService");
 exports.dashboardService = { getStudentOverview: function (studentId) {
         return __awaiter(this, void 0, void 0, function () {
-            var student, enrollmentStats, gpa, upcomingClasses, recentPayments, error_1;
+            var student, enrollmentStats, gpa, availableOpenCourses, recentPayments, error_1;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -56,9 +56,9 @@ exports.dashboardService = { getStudentOverview: function (studentId) {
                         return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("\n                SELECT COALESCE(AVG(total_grade), 0) as gpa\n                FROM grades\n                WHERE student_id = $1\n            ", [studentId])];
                     case 3:
                         gpa = _a.sent();
-                        return [4 /*yield*/, databaseService_1.DatabaseService.query("\n                SELECT \n                    c.id,\n                    s.id as subject_id,\n                    s.name as subject_name,\n                    s.lecturer,\n                    c.day,\n                    CASE \n                        WHEN c.session = '1' THEN '7:30-9:30'\n                        WHEN c.session = '2' THEN '9:30-11:30'\n                        WHEN c.session = '3' THEN '13:30-15:30'\n                        ELSE '15:30-17:30'\n                    END as time,\n                    c.room\n                FROM classes c\n                JOIN subjects s ON c.subject_id = s.id\n                JOIN enrollments e ON s.id = e.course_id\n                WHERE e.student_id = $1 \n                AND e.is_enrolled = true\n                AND c.day >= CURRENT_DATE\n                ORDER BY c.day, c.session\n                LIMIT 5\n            ", [studentId])];
+                        return [4 /*yield*/, databaseService_1.DatabaseService.query("\n                SELECT \n                    oc.id,\n                    s.id as \"courseId\",\n                    s.name as \"courseName\",\n                    s.lecturer,\n                    s.credits,\n                    oc.max_students as \"maxStudents\",\n                    oc.current_students as \"currentStudents\",\n                    oc.semester,\n                    oc.is_registration_open as \"isRegistrationOpen\"\n                FROM open_courses oc\n                JOIN subjects s ON oc.course_id = s.id\n                WHERE oc.is_registration_open = true\n                AND oc.current_students < oc.max_students\n                AND s.id NOT IN (\n                    SELECT course_id FROM enrollments \n                    WHERE student_id = $1 AND is_enrolled = true\n                )\n                ORDER BY s.name\n                LIMIT 10\n            ", [studentId])];
                     case 4:
-                        upcomingClasses = _a.sent();
+                        availableOpenCourses = _a.sent();
                         return [4 /*yield*/, databaseService_1.DatabaseService.query("\n                SELECT \n                    id,\n                    student_id as \"studentId\",\n                    amount,\n                    payment_date as \"paymentDate\",\n                    status,\n                    payment_method as \"paymentMethod\"\n                FROM payments\n                WHERE student_id = $1\n                ORDER BY payment_date DESC\n                LIMIT 5\n            ", [studentId])];
                     case 5:
                         recentPayments = _a.sent();
@@ -71,15 +71,12 @@ exports.dashboardService = { getStudentOverview: function (studentId) {
                                     hometown: student.hometown,
                                     districtId: student.districtId,
                                     priorityObjectId: student.priorityObjectId,
-                                    majorId: student.major,
-                                    email: student.email,
-                                    phone: student.phone,
-                                    status: student.status
+                                    majorId: student.major, email: student.email,
+                                    phone: student.phone
                                 },
-                                enrolledSubjects: (enrollmentStats === null || enrollmentStats === void 0 ? void 0 : enrollmentStats.enrolled_count) || 0,
-                                totalCredits: (enrollmentStats === null || enrollmentStats === void 0 ? void 0 : enrollmentStats.total_credits) || 0,
-                                gpa: (gpa === null || gpa === void 0 ? void 0 : gpa.gpa) || 0,
-                                upcomingClasses: upcomingClasses,
+                                enrolledCourses: (enrollmentStats === null || enrollmentStats === void 0 ? void 0 : enrollmentStats.enrolled_count) || 0,
+                                totalCredits: (enrollmentStats === null || enrollmentStats === void 0 ? void 0 : enrollmentStats.total_credits) || 0, gpa: (gpa === null || gpa === void 0 ? void 0 : gpa.gpa) || 0,
+                                availableOpenCourses: availableOpenCourses,
                                 recentPayments: recentPayments
                             }];
                     case 6:
@@ -92,7 +89,7 @@ exports.dashboardService = { getStudentOverview: function (studentId) {
         });
     }, getStudentSchedule: function (studentId) {
         return __awaiter(this, void 0, void 0, function () {
-            var student, currentSemester, subjects, error_2;
+            var student, currentSemester, courses, error_2;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -106,10 +103,10 @@ exports.dashboardService = { getStudentOverview: function (studentId) {
                     case 2:
                         currentSemester = _a.sent();
                         if (!currentSemester)
-                            return [2 /*return*/, null];
+                            return [2 /*return*/, null]; // Get enrolled courses with schedule
                         return [4 /*yield*/, databaseService_1.DatabaseService.query("\n                SELECT \n                    s.id,\n                    s.name,\n                    s.credits,\n                    s.lecturer,\n                    json_agg(\n                        json_build_object(\n                            'day', c.day,\n                            'time', CASE \n                                WHEN c.session = '1' THEN '7:30-9:30'\n                                WHEN c.session = '2' THEN '9:30-11:30'\n                                WHEN c.session = '3' THEN '13:30-15:30'\n                                ELSE '15:30-17:30'\n                            END,\n                            'room', c.room\n                        )\n                    ) as schedule\n                FROM subjects s\n                JOIN enrollments e ON s.id = e.course_id\n                JOIN classes c ON s.id = c.subject_id\n                WHERE e.student_id = $1 \n                AND e.semester = $2\n                AND e.is_enrolled = true\n                GROUP BY s.id, s.name, s.credits, s.lecturer\n            ", [studentId, currentSemester.semester])];
                     case 3:
-                        subjects = _a.sent();
+                        courses = _a.sent();
                         return [2 /*return*/, {
                                 student: {
                                     studentId: student.studentId,
@@ -118,14 +115,12 @@ exports.dashboardService = { getStudentOverview: function (studentId) {
                                     gender: student.gender,
                                     hometown: student.hometown,
                                     districtId: student.districtId,
-                                    priorityObjectId: student.priorityObjectId,
-                                    majorId: student.major,
+                                    priorityObjectId: student.priorityObjectId, majorId: student.major,
                                     email: student.email,
-                                    phone: student.phone,
-                                    status: student.status
+                                    phone: student.phone
                                 },
                                 semester: currentSemester.semester,
-                                subjects: subjects.map(function (s) { return ({
+                                courses: courses.map(function (s) { return ({
                                     id: s.id,
                                     name: s.name,
                                     credit: s.credits,

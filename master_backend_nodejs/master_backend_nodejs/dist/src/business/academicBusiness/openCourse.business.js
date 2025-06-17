@@ -65,9 +65,12 @@ var OpenCourseBusiness = /** @class */ (function () {
     };
     OpenCourseBusiness.getCourseById = function (id) {
         return __awaiter(this, void 0, void 0, function () {
+            var defaultSemester;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, openCourse_service_1.OpenCourseService.getCourseById(id)];
+                    case 0:
+                        defaultSemester = 'HK1 2024-2025';
+                        return [4 /*yield*/, openCourse_service_1.OpenCourseService.getCourseById(defaultSemester, id.toString())];
                     case 1: return [2 /*return*/, _a.sent()];
                 }
             });
@@ -108,8 +111,7 @@ var OpenCourseBusiness = /** @class */ (function () {
                             throw new validation_error_1.ValidationError(errors.join(', '));
                         }
                         // Validate dates if they are being updated
-                        if (courseData.startDate || courseData.endDate ||
-                            courseData.registrationStartDate || courseData.registrationEndDate) {
+                        if (courseData.registrationStartDate || courseData.registrationEndDate) {
                             this.validateDates(updatedData);
                         }
                         return [4 /*yield*/, openCourse_service_1.OpenCourseService.updateCourse(id, courseData)];
@@ -120,7 +122,7 @@ var OpenCourseBusiness = /** @class */ (function () {
     };
     OpenCourseBusiness.deleteCourse = function (id) {
         return __awaiter(this, void 0, void 0, function () {
-            var course;
+            var course, defaultSemester;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0: return [4 /*yield*/, this.getCourseById(id)];
@@ -129,20 +131,11 @@ var OpenCourseBusiness = /** @class */ (function () {
                         if (!course) {
                             throw new validation_error_1.ValidationError('Course not found');
                         }
-                        return [4 /*yield*/, openCourse_service_1.OpenCourseService.deleteCourse(id)];
+                        defaultSemester = 'HK1 2024-2025';
+                        return [4 /*yield*/, openCourse_service_1.OpenCourseService.deleteCourse(defaultSemester, id.toString())];
                     case 2:
                         _a.sent();
                         return [2 /*return*/];
-                }
-            });
-        });
-    };
-    OpenCourseBusiness.getCoursesByStatus = function (status) {
-        return __awaiter(this, void 0, void 0, function () {
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0: return [4 /*yield*/, openCourse_service_1.OpenCourseService.getCoursesByStatus(status)];
-                    case 1: return [2 /*return*/, _a.sent()];
                 }
             });
         });
@@ -161,43 +154,13 @@ var OpenCourseBusiness = /** @class */ (function () {
             });
         });
     };
-    OpenCourseBusiness.updateCourseStatus = function (id, status) {
-        return __awaiter(this, void 0, void 0, function () {
-            var course;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.getCourseById(id)];
-                    case 1:
-                        course = _a.sent();
-                        if (!course) {
-                            throw new validation_error_1.ValidationError('Course not found');
-                        }
-                        // Validate status transition
-                        if (course.status === 'cancelled' && status !== 'cancelled') {
-                            throw new validation_error_1.ValidationError('Cannot change status of a cancelled course');
-                        }
-                        if (status === 'closed' && course.currentStudents === 0) {
-                            throw new validation_error_1.ValidationError('Cannot close a course with no registered students');
-                        }
-                        return [4 /*yield*/, openCourse_service_1.OpenCourseService.updateCourseStatus(id, status)];
-                    case 2: return [2 /*return*/, _a.sent()];
-                }
-            });
-        });
-    };
     OpenCourseBusiness.validateCourseData = function (courseData) {
         var errors = [];
-        if (!courseData.subjectId) {
-            errors.push('Subject ID is required');
+        if (!courseData.courseId) {
+            errors.push('Course ID is required');
         }
         if (!courseData.semesterId) {
             errors.push('Semester ID is required');
-        }
-        if (courseData.schedule) {
-            var _a = courseData.schedule, day = _a.day, session = _a.session, room = _a.room;
-            if (!day || !session || !room) {
-                errors.push('Schedule must include day, session, and room');
-            }
         }
         if (courseData.maxStudents && courseData.maxStudents <= 0) {
             errors.push('Maximum students must be greater than 0');
@@ -213,11 +176,12 @@ var OpenCourseBusiness = /** @class */ (function () {
     };
     OpenCourseBusiness.validateDates = function (courseData) {
         var errors = [];
-        if (courseData.startDate && courseData.endDate) {
-            var start = new Date(courseData.startDate);
-            var end = new Date(courseData.endDate);
+        // Validate registration dates if provided
+        if (courseData.registrationStartDate && courseData.registrationEndDate) {
+            var start = new Date(courseData.registrationStartDate);
+            var end = new Date(courseData.registrationEndDate);
             if (end <= start) {
-                errors.push('End date must be after start date');
+                errors.push('Registration end date must be after start date');
             }
         }
         if (courseData.registrationStartDate && courseData.registrationEndDate) {

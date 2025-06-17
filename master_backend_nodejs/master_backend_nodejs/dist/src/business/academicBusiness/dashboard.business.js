@@ -109,29 +109,6 @@ var AcademicDashboardBusiness = /** @class */ (function () {
             });
         });
     };
-    AcademicDashboardBusiness.getStudentRequests = function () {
-        return __awaiter(this, arguments, void 0, function (limit) {
-            var requests, error_4;
-            if (limit === void 0) { limit = 10; }
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        _a.trys.push([0, 2, , 3]);
-                        return [4 /*yield*/, dashboard_service_1.academicDashboardService.getStudentRequests(limit)];
-                    case 1:
-                        requests = _a.sent();
-                        return [2 /*return*/, {
-                                success: true,
-                                data: requests
-                            }];
-                    case 2:
-                        error_4 = _a.sent();
-                        throw new Error('Error fetching student requests');
-                    case 3: return [2 /*return*/];
-                }
-            });
-        });
-    };
     return AcademicDashboardBusiness;
 }());
 exports.AcademicDashboardBusiness = AcademicDashboardBusiness;

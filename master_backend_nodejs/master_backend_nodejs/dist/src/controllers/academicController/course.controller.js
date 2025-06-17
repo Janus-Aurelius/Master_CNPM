@@ -69,8 +69,9 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.deleteCourseHandler = exports.updateCourseHandler = exports.createCourseHandler = exports.getCourseByIdHandler = exports.getCoursesHandler = void 0;
+exports.getCourseFormData = exports.getCourseTypesHandler = exports.deleteCourseHandler = exports.updateCourseHandler = exports.createCourseHandler = exports.getCourseByIdHandler = exports.getCoursesHandler = void 0;
 var courseBusiness = __importStar(require("../../business/academicBusiness/course.business"));
+var academicStructure_service_1 = require("../../services/academicService/academicStructure.service");
 var getCoursesHandler = function (req, res, next) { return __awaiter(void 0, void 0, void 0, function () {
     var courses, error_1;
     return __generator(this, function (_a) {
@@ -193,3 +194,50 @@ var deleteCourseHandler = function (req, res, next) { return __awaiter(void 0, v
     });
 }); };
 exports.deleteCourseHandler = deleteCourseHandler;
+// Course Type management for course forms
+var getCourseTypesHandler = function (req, res, next) { return __awaiter(void 0, void 0, void 0, function () {
+    var courseTypes, error_6;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                _a.trys.push([0, 2, , 3]);
+                return [4 /*yield*/, academicStructure_service_1.AcademicStructureService.getAllCourseTypes()];
+            case 1:
+                courseTypes = _a.sent();
+                res.json({ success: true, data: courseTypes });
+                return [3 /*break*/, 3];
+            case 2:
+                error_6 = _a.sent();
+                console.error('Error getting course types:', error_6);
+                res.status(500).json({ success: false, message: 'Failed to fetch course types' });
+                return [3 /*break*/, 3];
+            case 3: return [2 /*return*/];
+        }
+    });
+}); };
+exports.getCourseTypesHandler = getCourseTypesHandler;
+var getCourseFormData = function (req, res, next) { return __awaiter(void 0, void 0, void 0, function () {
+    var courseTypes, error_7;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                _a.trys.push([0, 2, , 3]);
+                return [4 /*yield*/, academicStructure_service_1.AcademicStructureService.getAllCourseTypes()];
+            case 1:
+                courseTypes = _a.sent();
+                res.json({
+                    success: true,
+                    data: { courseTypes: courseTypes },
+                    message: 'Course form data fetched successfully'
+                });
+                return [3 /*break*/, 3];
+            case 2:
+                error_7 = _a.sent();
+                console.error('Error getting course form data:', error_7);
+                res.status(500).json({ success: false, message: 'Failed to fetch course form data' });
+                return [3 /*break*/, 3];
+            case 3: return [2 /*return*/];
+        }
+    });
+}); };
+exports.getCourseFormData = getCourseFormData;

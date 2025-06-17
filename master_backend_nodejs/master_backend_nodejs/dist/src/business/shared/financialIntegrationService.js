@@ -39,46 +39,48 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.FinancialIntegrationService = void 0;
 // src/business/shared/financialIntegrationService.ts
 var financialService_1 = require("../../services/financialService/financialService");
-var subject_business_1 = require("../academicBusiness/subject.business");
+// import { SubjectBusiness } from '../academicBusiness/subject.business'; // Removed - using course-centric model
 var databaseService_1 = require("../../services/database/databaseService");
-var financialManager_1 = require("../financialBusiness/financialManager");
 var FinancialIntegrationService = /** @class */ (function () {
     function FinancialIntegrationService() {
     }
-    /**
-     * Calculate tuition for a specific course registration
-     */
     FinancialIntegrationService.calculateCourseTuition = function (studentId, courseId, semester) {
         return __awaiter(this, void 0, void 0, function () {
-            var subjects, subject, courseItem, error_1;
+            var courseItem, error_1;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        _a.trys.push([0, 3, , 4]);
-                        return [4 /*yield*/, subject_business_1.SubjectBusiness.getAllSubjects()];
-                    case 1:
-                        subjects = _a.sent();
-                        subject = subjects.find(function (s) { return s.subjectId === courseId; });
-                        if (!subject) {
-                            throw new Error("Subject ".concat(courseId, " not found"));
-                        }
+                        _a.trys.push([0, 2, , 3]);
                         courseItem = {
                             courseId: courseId,
-                            courseName: subject.subjectName,
-                            credits: subject.totalHours || 3,
-                            amount: 0, // Will be calculated below
+                            courseName: 'Course Name', // TODO: Get from database
+                            credits: 3, // TODO: Get from database
+                            amount: 1500000, // TODO: Calculate based on credits and rates
                             semester: semester,
-                            academicYear: '2023-2024' // Assuming a default academic year
+                            academicYear: '2023-2024' // TODO: Get from system settings
                         };
-                        return [4 /*yield*/, (0, financialManager_1.calculateTuition)(studentId, semester, [courseItem])];
-                    case 2: 
+                        return [4 /*yield*/, this.calculateTuition(studentId, semester, [courseItem])];
+                    case 1: // Legacy code commented out:
+                    // const subjects = await SubjectBusiness.getAllSubjects();
+                    // const subject = subjects.find((s: any) => s.subjectId === courseId);
+                    // if (!subject) {
+                    //     throw new Error(`Subject ${courseId} not found`);
+                    // }
+                    // Create course item
+                    // const courseItem: TuitionCourseItem = {
+                    //     courseId,
+                    //     courseName: subject.subjectName,
+                    //     credits: subject.totalHours || 3,
+                    //     unitPrice: 500000,
+                    //     totalPrice: 1500000
+                    // };
                     // Calculate tuition
                     return [2 /*return*/, _a.sent()];
-                    case 3:
+                    case 2:
                         error_1 = _a.sent();
                         console.error('Error calculating course tuition:', error_1);
                         throw error_1;
-                    case 4: return [2 /*return*/];
+                    case 3: return [2 /*return*/];
                 }
             });
         });
@@ -409,6 +411,32 @@ var FinancialIntegrationService = /** @class */ (function () {
             defaultDate.setDate(defaultDate.getDate() + 30);
             return defaultDate;
         }
+    };
+    /**
+     * Temporary method to replace the removed calculateTuition functionality
+     */
+    FinancialIntegrationService.calculateTuition = function (studentId, semester, courseItems) {
+        return __awaiter(this, void 0, void 0, function () {
+            var totalAmount;
+            return __generator(this, function (_a) {
+                totalAmount = courseItems.reduce(function (sum, item) { return sum + item.amount; }, 0);
+                return [2 /*return*/, {
+                        studentId: studentId,
+                        semester: semester,
+                        courseItems: courseItems,
+                        subtotalAmount: totalAmount,
+                        additionalFees: { total: 0, breakdown: [] },
+                        totalAmount: totalAmount,
+                        dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days from now
+                        academicYear: '2023-2024',
+                        paymentEligibility: {
+                            isEligible: true,
+                            errors: [],
+                            warnings: []
+                        }
+                    }];
+            });
+        });
     };
     return FinancialIntegrationService;
 }());

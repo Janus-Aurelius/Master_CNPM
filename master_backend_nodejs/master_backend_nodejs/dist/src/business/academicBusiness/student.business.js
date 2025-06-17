@@ -42,7 +42,7 @@ exports.studentBusiness = {
     getStudents: function () { return __awaiter(void 0, void 0, void 0, function () {
         return __generator(this, function (_a) {
             switch (_a.label) {
-                case 0: return [4 /*yield*/, student_service_1.studentService.getStudents()];
+                case 0: return [4 /*yield*/, student_service_1.studentService.getAllStudents()];
                 case 1: return [2 /*return*/, _a.sent()];
             }
         });

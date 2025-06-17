@@ -36,8 +36,8 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-var userManager_1 = require("../../business/adminBussiness/userManager");
-var activitylogManager_1 = require("../../business/adminBussiness/activitylogManager");
+var userManager_1 = require("../../business/AdminBussiness/userManager");
+var activitylogManager_1 = require("../../business/AdminBussiness/activitylogManager");
 var AdminController = /** @class */ (function () {
     function AdminController() {
     }

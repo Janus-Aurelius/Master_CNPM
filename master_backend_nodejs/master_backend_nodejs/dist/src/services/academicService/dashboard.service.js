@@ -158,26 +158,5 @@ exports.academicDashboardService = {
                 return [2 /*return*/];
             });
         });
-    },
-    getStudentRequests: function () {
-        return __awaiter(this, arguments, void 0, function (limit) {
-            var logs, error_4;
-            if (limit === void 0) { limit = 10; }
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        _a.trys.push([0, 2, , 3]);
-                        return [4 /*yield*/, databaseService_1.DatabaseService.query("\n                SELECT \n                    rl.id,\n                    rl.MaSoSinhVien as studentId,\n                    rl.TenSinhVien as studentName,\n                    rl.TenMonHoc as course,\n                    rl.LoaiYeuCau as requestType,\n                    rl.ThoiGianYeuCau as submittedDateTime\n                FROM REGISTRATION_LOG rl\n                ORDER BY rl.ThoiGianYeuCau DESC\n                LIMIT $1\n            ", [limit])];
-                    case 1:
-                        logs = _a.sent();
-                        return [2 /*return*/, logs || []];
-                    case 2:
-                        error_4 = _a.sent();
-                        console.error('Error fetching student requests:', error_4);
-                        return [2 /*return*/, []];
-                    case 3: return [2 /*return*/];
-                }
-            });
-        });
     }
 };

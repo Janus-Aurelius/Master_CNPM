@@ -206,16 +206,11 @@ class MaintenanceManager {
             // Get system metrics
             const systemMetrics = await DatabaseService.query(`
                 SELECT 
-                    COUNT(*) as total_users 
-                FROM users
+                    COUNT(*) as total_users                FROM users
                 UNION ALL
                 SELECT COUNT(*) as active_sessions 
                 FROM user_sessions 
                 WHERE expires_at > NOW()
-                UNION ALL
-                SELECT COUNT(*) as pending_requests 
-                FROM academic_requests 
-                WHERE status = 'pending'
             `);
 
             return {
@@ -225,8 +220,7 @@ class MaintenanceManager {
                 timestamp: new Date().toISOString(),
                 metrics: {
                     totalUsers: systemMetrics[0]?.total_users || 0,
-                    activeSessions: systemMetrics[1]?.active_sessions || 0,
-                    pendingRequests: systemMetrics[2]?.pending_requests || 0
+                    activeSessions: systemMetrics[1]?.active_sessions || 0
                 }
             };
         } catch (error) {

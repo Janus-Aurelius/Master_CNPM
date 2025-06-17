@@ -79,34 +79,22 @@ var validateTimeFormat = function (time) {
     var timeRegex = /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/;
     return timeRegex.test(time);
 };
-var validateSchedule = function (schedule) {
-    if (!schedule)
-        return false;
-    var day = schedule.day, session = schedule.session, fromTo = schedule.fromTo, room = schedule.room;
-    if (!day || !session || !fromTo || !room)
-        return false;
-    var validDays = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'];
-    if (!validDays.includes(day))
-        return false;
-    var _a = fromTo.split('-').map(function (t) { return t.trim(); }), startTime = _a[0], endTime = _a[1];
-    if (!validateTimeFormat(startTime) || !validateTimeFormat(endTime))
-        return false;
-    // Check if end time is after start time
-    var start = new Date("2000-01-01T".concat(startTime));
-    var end = new Date("2000-01-01T".concat(endTime));
-    if (end <= start)
-        return false;
-    return true;
-};
 var validateAndAddCourse = function (course) { return __awaiter(void 0, void 0, void 0, function () {
     var errors;
     return __generator(this, function (_a) {
         errors = [];
+        // Validate required fields
+        if (!course.courseId || course.courseId.trim() === '') {
+            errors.push('Course ID is required');
+        }
+        if (!course.courseName || course.courseName.trim() === '') {
+            errors.push('Course name is required');
+        }
+        if (!course.courseTypeId || course.courseTypeId.trim() === '') {
+            errors.push('Course type ID is required');
+        }
         if (!validateTotalHours(course.totalHours)) {
             errors.push('Course total hours must be between 1 and 60');
-        }
-        if (!validateSchedule(course.schedule)) {
-            errors.push('Invalid schedule format');
         }
         if (errors.length > 0) {
             throw new validation_error_1.ValidationError(errors.join(', '));

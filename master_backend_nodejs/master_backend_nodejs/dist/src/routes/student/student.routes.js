@@ -33,21 +33,15 @@ router.post('/subjects/register', function (req, res) {
     }
     studentController_1.default.registerSubject(req, res);
 });
-// Enrolled Subjects
-router.get('/enrolled-subjects', function (req, res) {
+// Enrolled Courses
+router.get('/enrolled-courses', function (req, res) {
     var _a;
     // Thêm studentId từ token JWT vào request params
     req.params.studentId = ((_a = req.user) === null || _a === void 0 ? void 0 : _a.id.toString()) || '';
-    studentController_1.default.getEnrolledSubjects(req, res);
-});
-router.get('/enrolled-subjects/:courseId', function (req, res) {
-    var _a;
-    // Thêm studentId từ token JWT vào params
-    req.params.studentId = ((_a = req.user) === null || _a === void 0 ? void 0 : _a.id.toString()) || '';
-    studentController_1.default.getSubjectDetails(req, res);
+    studentController_1.default.getEnrolledCourses(req, res);
 });
 // Hỗ trợ cả DELETE và POST cho việc hủy đăng ký môn học
-router.delete('/enrolled-subjects/:courseId', function (req, res) {
+router.delete('/enrolled-courses/:courseId', function (req, res) {
     var _a;
     // Xử lý DELETE request cho hủy đăng ký môn học
     req.body = {
@@ -56,58 +50,25 @@ router.delete('/enrolled-subjects/:courseId', function (req, res) {
     };
     studentController_1.default.cancelRegistration(req, res);
 });
-router.post('/enrolled-subjects/cancel', function (req, res) {
+router.post('/enrolled-courses/cancel', function (req, res) {
     // Đảm bảo studentId được thiết lập nếu chưa có
     if (!req.body.studentId && req.user) {
         req.body.studentId = req.user.id.toString();
     }
     studentController_1.default.cancelRegistration(req, res);
 });
-// Academic Request
-router.get('/academic-requests', function (req, res) {
-    var _a;
-    // Thêm studentId từ token JWT vào request params
-    req.params.studentId = ((_a = req.user) === null || _a === void 0 ? void 0 : _a.id.toString()) || '';
-    studentController_1.default.getRequestHistory(req, res);
+// Tuition Payment - NEW ROUTES
+router.get('/tuition/status', function (req, res) {
+    // Get tuition status for specific semester
+    studentController_1.default.getTuitionStatus(req, res);
 });
-router.post('/academic-requests', function (req, res) {
-    // Thêm studentId từ token JWT vào request body nếu chưa có
-    if (!req.body.studentId && req.user) {
-        req.body.studentId = req.user.id.toString();
-    }
-    studentController_1.default.createRequest(req, res);
+router.post('/tuition/payment', function (req, res) {
+    // Make a payment
+    studentController_1.default.makePayment(req, res);
 });
-// Tuition
-router.get('/tuition', function (req, res) {
-    // Thêm studentId từ token JWT vào query
-    if (req.user) {
-        req.query.studentId = req.user.id.toString();
-    }
-    studentController_1.default.getTuitionRecordsByStudent(req, res);
-});
-router.get('/tuition/history/:recordId', function (req, res) {
-    // Thêm recordId từ URL params vào query
-    req.query.tuitionRecordId = req.params.recordId;
-    studentController_1.default.getPaymentReceiptsByRecord(req, res);
-});
-router.post('/tuition/pay', function (req, res) {
-    // Đảm bảo yêu cầu thanh toán được xác thực
-    studentController_1.default.payTuition(req, res);
-});
-router.post('/tuition/confirm', function (req, res) {
-    // Đảm bảo studentId được thiết lập nếu chưa có
-    if (!req.body.studentId && req.user) {
-        req.body.studentId = req.user.id.toString();
-    }
-    studentController_1.default.confirmRegistration(req, res);
-});
-router.put('/tuition/edit', studentController_1.default.editRegistration);
-// Grades
-router.get('/grades', function (req, res) {
-    var _a;
-    // Thêm studentId từ token JWT vào params
-    req.params.studentId = ((_a = req.user) === null || _a === void 0 ? void 0 : _a.id.toString()) || '';
-    studentController_1.default.getGrades(req, res);
+router.get('/tuition/history', function (req, res) {
+    // Get payment history
+    studentController_1.default.getPaymentHistory(req, res);
 });
 // Profile
 router.put('/profile', function (req, res) {

@@ -36,22 +36,7 @@ export class AcademicDashboardController {
             res.status(200).json({ success: true, data: activities });
         } catch (error) {
             res.status(500).json({ 
-                success: false, 
-                message: 'Error fetching recent activities', 
-                error: error instanceof Error ? error.message : 'Unknown error' 
-            });
-        }
-    }
-
-    static async getStudentRequests(req: Request, res: Response) {
-        try {
-            const limit = parseInt(req.query.limit as string) || 10;
-            const requests = await AcademicDashboardBusiness.getStudentRequests(limit);
-            res.status(200).json({ success: true, data: requests });
-        } catch (error) {
-            res.status(500).json({ 
-                success: false, 
-                message: 'Error fetching student requests', 
+                success: false,                message: 'Error fetching recent activities', 
                 error: error instanceof Error ? error.message : 'Unknown error' 
             });
         }

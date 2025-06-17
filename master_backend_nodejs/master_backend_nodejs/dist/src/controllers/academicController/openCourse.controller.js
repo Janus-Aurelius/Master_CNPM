@@ -221,7 +221,7 @@ var OpenCourseController = /** @class */ (function () {
                             res.status(400).json({ error: 'Invalid status' });
                             return [2 /*return*/];
                         }
-                        return [4 /*yield*/, openCourse_business_1.OpenCourseBusiness.getCoursesByStatus(status_1)];
+                        return [4 /*yield*/, openCourse_business_1.OpenCourseBusiness.getAllCourses()];
                     case 1:
                         courses = _a.sent();
                         res.json(courses);
@@ -278,41 +278,35 @@ var OpenCourseController = /** @class */ (function () {
     };
     OpenCourseController.updateCourseStatus = function (req, res) {
         return __awaiter(this, void 0, void 0, function () {
-            var id, status_2, course, error_8;
+            var id, status_2;
             return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        _a.trys.push([0, 2, , 3]);
-                        id = parseInt(req.params.id);
-                        if (isNaN(id)) {
-                            res.status(400).json({ error: 'Invalid course ID' });
-                            return [2 /*return*/];
-                        }
-                        status_2 = req.body.status;
-                        if (!status_2 || !['open', 'closed', 'cancelled'].includes(status_2)) {
-                            res.status(400).json({ error: 'Invalid status' });
-                            return [2 /*return*/];
-                        }
-                        return [4 /*yield*/, openCourse_business_1.OpenCourseBusiness.updateCourseStatus(id, status_2)];
-                    case 1:
-                        course = _a.sent();
-                        res.json(course);
-                        return [3 /*break*/, 3];
-                    case 2:
-                        error_8 = _a.sent();
-                        logger_1.Logger.error('Error in updateCourseStatus:', error_8);
-                        if (error_8 instanceof validation_error_1.ValidationError) {
-                            res.status(400).json({ error: error_8.message });
-                        }
-                        else if (error_8 instanceof database_error_1.DatabaseError) {
-                            res.status(500).json({ error: error_8.message });
-                        }
-                        else {
-                            res.status(500).json({ error: 'Internal server error' });
-                        }
-                        return [3 /*break*/, 3];
-                    case 3: return [2 /*return*/];
+                try {
+                    id = parseInt(req.params.id);
+                    if (isNaN(id)) {
+                        res.status(400).json({ error: 'Invalid course ID' });
+                        return [2 /*return*/];
+                    }
+                    status_2 = req.body.status;
+                    if (!status_2 || !['open', 'closed', 'cancelled'].includes(status_2)) {
+                        res.status(400).json({ error: 'Invalid status' });
+                        return [2 /*return*/];
+                    }
+                    // For now, just return a simple response as status functionality is removed
+                    res.json({ message: 'Status update functionality has been removed' });
                 }
+                catch (error) {
+                    logger_1.Logger.error('Error in updateCourseStatus:', error);
+                    if (error instanceof validation_error_1.ValidationError) {
+                        res.status(400).json({ error: error.message });
+                    }
+                    else if (error instanceof database_error_1.DatabaseError) {
+                        res.status(500).json({ error: error.message });
+                    }
+                    else {
+                        res.status(500).json({ error: 'Internal server error' });
+                    }
+                }
+                return [2 /*return*/];
             });
         });
     };

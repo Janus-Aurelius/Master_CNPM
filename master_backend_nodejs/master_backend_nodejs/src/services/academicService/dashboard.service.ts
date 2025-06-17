@@ -29,15 +29,6 @@ interface CourseStatistics {
     averageEnrollmentRate: number;
 }
 
-interface StudentRequest {
-    id: string;
-    studentId: string;
-    studentName: string;
-    course: string;
-    requestType: 'register' | 'cancel';
-    submittedDateTime: string;
-}
-
 export const academicDashboardService = {
     async getDashboardStats(): Promise<AcademicDashboardStats & { totalStudents: number; registeredStudents: number }> {
         try {
@@ -106,31 +97,8 @@ export const academicDashboardService = {
     async getRecentActivities(limit: number = 5): Promise<RecentActivity[]> {
         try {
             // Tạm thời trả về mảng rỗng vì chưa có bảng recent_activities
-            return [];
-        } catch (error) {
+            return [];        } catch (error) {
             console.error('Error fetching recent activities:', error);
-            return [];
-        }
-    },
-
-    async getStudentRequests(limit: number = 10): Promise<StudentRequest[]> {
-        try {
-            // Nếu đã có bảng REGISTRATION_LOG thì dùng bảng này, nếu chưa có thì dùng CT_PHIEUDANGKY
-            const logs = await DatabaseService.query(`
-                SELECT 
-                    rl.id,
-                    rl.MaSoSinhVien as studentId,
-                    rl.TenSinhVien as studentName,
-                    rl.TenMonHoc as course,
-                    rl.LoaiYeuCau as requestType,
-                    rl.ThoiGianYeuCau as submittedDateTime
-                FROM REGISTRATION_LOG rl
-                ORDER BY rl.ThoiGianYeuCau DESC
-                LIMIT $1
-            `, [limit]);
-            return logs || [];
-        } catch (error) {
-            console.error('Error fetching student requests:', error);
             return [];
         }
     }
