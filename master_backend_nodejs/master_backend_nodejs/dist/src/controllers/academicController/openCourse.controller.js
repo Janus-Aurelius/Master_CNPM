@@ -1,4 +1,15 @@
 "use strict";
+var __assign = (this && this.__assign) || function () {
+    __assign = Object.assign || function(t) {
+        for (var s, i = 1, n = arguments.length; i < n; i++) {
+            s = arguments[i];
+            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
+                t[p] = s[p];
+        }
+        return t;
+    };
+    return __assign.apply(this, arguments);
+};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -37,10 +48,8 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.OpenCourseController = void 0;
-var openCourse_business_1 = require("../../business/academicBusiness/openCourse.business");
-var validation_error_1 = require("../../utils/errors/validation.error");
+var openCourse_service_1 = require("../../services/courseService/openCourse.service");
 var database_error_1 = require("../../utils/errors/database.error");
-var logger_1 = require("../../utils/logger");
 var OpenCourseController = /** @class */ (function () {
     function OpenCourseController() {
     }
@@ -51,14 +60,16 @@ var OpenCourseController = /** @class */ (function () {
                 switch (_a.label) {
                     case 0:
                         _a.trys.push([0, 2, , 3]);
-                        return [4 /*yield*/, openCourse_business_1.OpenCourseBusiness.getAllCourses()];
+                        console.log('Getting all open courses...');
+                        return [4 /*yield*/, openCourse_service_1.OpenCourseService.getAllCourses()];
                     case 1:
                         courses = _a.sent();
+                        console.log("Found ".concat(courses.length, " open courses"));
                         res.json(courses);
                         return [3 /*break*/, 3];
                     case 2:
                         error_1 = _a.sent();
-                        logger_1.Logger.error('Error in getAllCourses:', error_1);
+                        console.error('Error in getAllCourses:', error_1);
                         if (error_1 instanceof database_error_1.DatabaseError) {
                             res.status(500).json({ error: error_1.message });
                         }
@@ -73,19 +84,19 @@ var OpenCourseController = /** @class */ (function () {
     };
     OpenCourseController.getCourseById = function (req, res) {
         return __awaiter(this, void 0, void 0, function () {
-            var id, course, error_2;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
+            var _a, semesterId, courseId, course, error_2;
+            return __generator(this, function (_b) {
+                switch (_b.label) {
                     case 0:
-                        _a.trys.push([0, 2, , 3]);
-                        id = parseInt(req.params.id);
-                        if (isNaN(id)) {
-                            res.status(400).json({ error: 'Invalid course ID' });
+                        _b.trys.push([0, 2, , 3]);
+                        _a = req.params, semesterId = _a.semesterId, courseId = _a.courseId;
+                        if (!semesterId || !courseId) {
+                            res.status(400).json({ error: 'Missing semesterId or courseId' });
                             return [2 /*return*/];
                         }
-                        return [4 /*yield*/, openCourse_business_1.OpenCourseBusiness.getCourseById(id)];
+                        return [4 /*yield*/, openCourse_service_1.OpenCourseService.getCourseById(semesterId, courseId)];
                     case 1:
-                        course = _a.sent();
+                        course = _b.sent();
                         if (!course) {
                             res.status(404).json({ error: 'Course not found' });
                             return [2 /*return*/];
@@ -93,8 +104,8 @@ var OpenCourseController = /** @class */ (function () {
                         res.json(course);
                         return [3 /*break*/, 3];
                     case 2:
-                        error_2 = _a.sent();
-                        logger_1.Logger.error('Error in getCourseById:', error_2);
+                        error_2 = _b.sent();
+                        console.error('Error in getCourseById:', error_2);
                         if (error_2 instanceof database_error_1.DatabaseError) {
                             res.status(500).json({ error: error_2.message });
                         }
@@ -115,18 +126,15 @@ var OpenCourseController = /** @class */ (function () {
                     case 0:
                         _a.trys.push([0, 2, , 3]);
                         courseData = req.body;
-                        return [4 /*yield*/, openCourse_business_1.OpenCourseBusiness.createCourse(courseData)];
+                        return [4 /*yield*/, openCourse_service_1.OpenCourseService.createCourse(courseData)];
                     case 1:
                         course = _a.sent();
                         res.status(201).json(course);
                         return [3 /*break*/, 3];
                     case 2:
                         error_3 = _a.sent();
-                        logger_1.Logger.error('Error in createCourse:', error_3);
-                        if (error_3 instanceof validation_error_1.ValidationError) {
-                            res.status(400).json({ error: error_3.message });
-                        }
-                        else if (error_3 instanceof database_error_1.DatabaseError) {
+                        console.error('Error in createCourse:', error_3);
+                        if (error_3 instanceof database_error_1.DatabaseError) {
                             res.status(500).json({ error: error_3.message });
                         }
                         else {
@@ -140,29 +148,26 @@ var OpenCourseController = /** @class */ (function () {
     };
     OpenCourseController.updateCourse = function (req, res) {
         return __awaiter(this, void 0, void 0, function () {
-            var id, courseData, course, error_4;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
+            var _a, semesterId, courseId, courseData, course, error_4;
+            return __generator(this, function (_b) {
+                switch (_b.label) {
                     case 0:
-                        _a.trys.push([0, 2, , 3]);
-                        id = parseInt(req.params.id);
-                        if (isNaN(id)) {
-                            res.status(400).json({ error: 'Invalid course ID' });
+                        _b.trys.push([0, 2, , 3]);
+                        _a = req.params, semesterId = _a.semesterId, courseId = _a.courseId;
+                        courseData = req.body;
+                        if (!semesterId || !courseId) {
+                            res.status(400).json({ error: 'Missing semesterId or courseId' });
                             return [2 /*return*/];
                         }
-                        courseData = req.body;
-                        return [4 /*yield*/, openCourse_business_1.OpenCourseBusiness.updateCourse(id, courseData)];
+                        return [4 /*yield*/, openCourse_service_1.OpenCourseService.updateCourse(0, __assign(__assign({}, courseData), { semesterId: semesterId, courseId: courseId }))];
                     case 1:
-                        course = _a.sent();
+                        course = _b.sent();
                         res.json(course);
                         return [3 /*break*/, 3];
                     case 2:
-                        error_4 = _a.sent();
-                        logger_1.Logger.error('Error in updateCourse:', error_4);
-                        if (error_4 instanceof validation_error_1.ValidationError) {
-                            res.status(400).json({ error: error_4.message });
-                        }
-                        else if (error_4 instanceof database_error_1.DatabaseError) {
+                        error_4 = _b.sent();
+                        console.error('Error in updateCourse:', error_4);
+                        if (error_4 instanceof database_error_1.DatabaseError) {
                             res.status(500).json({ error: error_4.message });
                         }
                         else {
@@ -176,61 +181,26 @@ var OpenCourseController = /** @class */ (function () {
     };
     OpenCourseController.deleteCourse = function (req, res) {
         return __awaiter(this, void 0, void 0, function () {
-            var id, error_5;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
+            var _a, semesterId, courseId, error_5;
+            return __generator(this, function (_b) {
+                switch (_b.label) {
                     case 0:
-                        _a.trys.push([0, 2, , 3]);
-                        id = parseInt(req.params.id);
-                        if (isNaN(id)) {
-                            res.status(400).json({ error: 'Invalid course ID' });
+                        _b.trys.push([0, 2, , 3]);
+                        _a = req.params, semesterId = _a.semesterId, courseId = _a.courseId;
+                        if (!semesterId || !courseId) {
+                            res.status(400).json({ error: 'Missing semesterId or courseId' });
                             return [2 /*return*/];
                         }
-                        return [4 /*yield*/, openCourse_business_1.OpenCourseBusiness.deleteCourse(id)];
+                        return [4 /*yield*/, openCourse_service_1.OpenCourseService.deleteCourse(semesterId, courseId)];
                     case 1:
-                        _a.sent();
+                        _b.sent();
                         res.status(204).send();
                         return [3 /*break*/, 3];
                     case 2:
-                        error_5 = _a.sent();
-                        logger_1.Logger.error('Error in deleteCourse:', error_5);
-                        if (error_5 instanceof validation_error_1.ValidationError) {
-                            res.status(400).json({ error: error_5.message });
-                        }
-                        else if (error_5 instanceof database_error_1.DatabaseError) {
+                        error_5 = _b.sent();
+                        console.error('Error in deleteCourse:', error_5);
+                        if (error_5 instanceof database_error_1.DatabaseError) {
                             res.status(500).json({ error: error_5.message });
-                        }
-                        else {
-                            res.status(500).json({ error: 'Internal server error' });
-                        }
-                        return [3 /*break*/, 3];
-                    case 3: return [2 /*return*/];
-                }
-            });
-        });
-    };
-    OpenCourseController.getCoursesByStatus = function (req, res) {
-        return __awaiter(this, void 0, void 0, function () {
-            var status_1, courses, error_6;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        _a.trys.push([0, 2, , 3]);
-                        status_1 = req.params.status;
-                        if (!status_1 || !['open', 'closed', 'cancelled'].includes(status_1)) {
-                            res.status(400).json({ error: 'Invalid status' });
-                            return [2 /*return*/];
-                        }
-                        return [4 /*yield*/, openCourse_business_1.OpenCourseBusiness.getAllCourses()];
-                    case 1:
-                        courses = _a.sent();
-                        res.json(courses);
-                        return [3 /*break*/, 3];
-                    case 2:
-                        error_6 = _a.sent();
-                        logger_1.Logger.error('Error in getCoursesByStatus:', error_6);
-                        if (error_6 instanceof database_error_1.DatabaseError) {
-                            res.status(500).json({ error: error_6.message });
                         }
                         else {
                             res.status(500).json({ error: 'Internal server error' });
@@ -243,29 +213,26 @@ var OpenCourseController = /** @class */ (function () {
     };
     OpenCourseController.getCoursesBySemester = function (req, res) {
         return __awaiter(this, void 0, void 0, function () {
-            var _a, semester, academicYear, courses, error_7;
+            var _a, semester, academicYear, courses, error_6;
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
                         _b.trys.push([0, 2, , 3]);
                         _a = req.query, semester = _a.semester, academicYear = _a.academicYear;
                         if (!semester || !academicYear) {
-                            res.status(400).json({ error: 'Semester and academic year are required' });
+                            res.status(400).json({ error: 'Missing semester or academicYear' });
                             return [2 /*return*/];
                         }
-                        return [4 /*yield*/, openCourse_business_1.OpenCourseBusiness.getCoursesBySemester(semester, academicYear)];
+                        return [4 /*yield*/, openCourse_service_1.OpenCourseService.getCoursesBySemester(semester, academicYear)];
                     case 1:
                         courses = _b.sent();
                         res.json(courses);
                         return [3 /*break*/, 3];
                     case 2:
-                        error_7 = _b.sent();
-                        logger_1.Logger.error('Error in getCoursesBySemester:', error_7);
-                        if (error_7 instanceof validation_error_1.ValidationError) {
-                            res.status(400).json({ error: error_7.message });
-                        }
-                        else if (error_7 instanceof database_error_1.DatabaseError) {
-                            res.status(500).json({ error: error_7.message });
+                        error_6 = _b.sent();
+                        console.error('Error in getCoursesBySemester:', error_6);
+                        if (error_6 instanceof database_error_1.DatabaseError) {
+                            res.status(500).json({ error: error_6.message });
                         }
                         else {
                             res.status(500).json({ error: 'Internal server error' });
@@ -278,35 +245,66 @@ var OpenCourseController = /** @class */ (function () {
     };
     OpenCourseController.updateCourseStatus = function (req, res) {
         return __awaiter(this, void 0, void 0, function () {
-            var id, status_2;
+            var _a, semesterId, courseId, status_1, course, error_7;
+            return __generator(this, function (_b) {
+                switch (_b.label) {
+                    case 0:
+                        _b.trys.push([0, 2, , 3]);
+                        _a = req.params, semesterId = _a.semesterId, courseId = _a.courseId;
+                        status_1 = req.body.status;
+                        if (!semesterId || !courseId) {
+                            res.status(400).json({ error: 'Missing semesterId or courseId' });
+                            return [2 /*return*/];
+                        }
+                        return [4 /*yield*/, openCourse_service_1.OpenCourseService.getCourseById(semesterId, courseId)];
+                    case 1:
+                        course = _b.sent();
+                        if (!course) {
+                            res.status(404).json({ error: 'Course not found' });
+                            return [2 /*return*/];
+                        }
+                        res.json(course);
+                        return [3 /*break*/, 3];
+                    case 2:
+                        error_7 = _b.sent();
+                        console.error('Error in updateCourseStatus:', error_7);
+                        if (error_7 instanceof database_error_1.DatabaseError) {
+                            res.status(500).json({ error: error_7.message });
+                        }
+                        else {
+                            res.status(500).json({ error: 'Internal server error' });
+                        }
+                        return [3 /*break*/, 3];
+                    case 3: return [2 /*return*/];
+                }
+            });
+        });
+    };
+    OpenCourseController.getCoursesByStatus = function (req, res) {
+        return __awaiter(this, void 0, void 0, function () {
+            var status_2, courses, error_8;
             return __generator(this, function (_a) {
-                try {
-                    id = parseInt(req.params.id);
-                    if (isNaN(id)) {
-                        res.status(400).json({ error: 'Invalid course ID' });
-                        return [2 /*return*/];
-                    }
-                    status_2 = req.body.status;
-                    if (!status_2 || !['open', 'closed', 'cancelled'].includes(status_2)) {
-                        res.status(400).json({ error: 'Invalid status' });
-                        return [2 /*return*/];
-                    }
-                    // For now, just return a simple response as status functionality is removed
-                    res.json({ message: 'Status update functionality has been removed' });
+                switch (_a.label) {
+                    case 0:
+                        _a.trys.push([0, 2, , 3]);
+                        status_2 = req.params.status;
+                        return [4 /*yield*/, openCourse_service_1.OpenCourseService.getAllCourses()];
+                    case 1:
+                        courses = _a.sent();
+                        res.json(courses);
+                        return [3 /*break*/, 3];
+                    case 2:
+                        error_8 = _a.sent();
+                        console.error('Error in getCoursesByStatus:', error_8);
+                        if (error_8 instanceof database_error_1.DatabaseError) {
+                            res.status(500).json({ error: error_8.message });
+                        }
+                        else {
+                            res.status(500).json({ error: 'Internal server error' });
+                        }
+                        return [3 /*break*/, 3];
+                    case 3: return [2 /*return*/];
                 }
-                catch (error) {
-                    logger_1.Logger.error('Error in updateCourseStatus:', error);
-                    if (error instanceof validation_error_1.ValidationError) {
-                        res.status(400).json({ error: error.message });
-                    }
-                    else if (error instanceof database_error_1.DatabaseError) {
-                        res.status(500).json({ error: error.message });
-                    }
-                    else {
-                        res.status(500).json({ error: 'Internal server error' });
-                    }
-                }
-                return [2 /*return*/];
             });
         });
     };

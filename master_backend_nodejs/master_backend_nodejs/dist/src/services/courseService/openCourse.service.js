@@ -44,16 +44,20 @@ var OpenCourseService = /** @class */ (function () {
     }
     OpenCourseService.getAllCourses = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var query, error_1;
+            var query, result, error_1;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         _a.trys.push([0, 2, , 3]);
-                        query = "\n                SELECT \n                    dm.MaHocKy as semesterId,\n                    dm.MaMonHoc as courseId,\n                    dm.SiSoToiThieu as minStudents,\n                    dm.SiSoToiDa as maxStudents,\n                    dm.SoSVDaDangKy as currentStudents,\n                    dm.Thu as dayOfWeek,\n                    dm.TietBatDau as startPeriod,\n                    dm.TietKetThuc as endPeriod,\n                    mh.TenMonHoc as courseName,\n                    mh.MaLoaiMon as courseTypeId,\n                    lm.TenLoaiMon as courseTypeName,\n                    mh.SoTiet as totalHours,\n                    lm.SoTietMotTC as hoursPerCredit,\n                    lm.SoTienMotTC as pricePerCredit,\n                    CASE \n                        WHEN dm.SoSVDaDangKy < dm.SiSoToiDa THEN true \n                        ELSE false \n                    END as isAvailable\n                FROM DANHSACHMONHOCMO dm\n                JOIN MONHOC mh ON dm.MaMonHoc = mh.MaMonHoc\n                JOIN LOAIMON lm ON mh.MaLoaiMon = lm.MaLoaiMon\n                ORDER BY dm.MaHocKy, dm.MaMonHoc\n            ";
+                        query = "\n                SELECT \n                    dm.MaHocKy as \"semesterId\",\n                    dm.MaMonHoc as \"courseId\",\n                    dm.SiSoToiThieu as \"minStudents\",\n                    dm.SiSoToiDa as \"maxStudents\",\n                    dm.SoSVDaDangKy as \"currentStudents\",\n                    dm.Thu as \"dayOfWeek\",\n                    dm.TietBatDau as \"startPeriod\",\n                    dm.TietKetThuc as \"endPeriod\",\n                    mh.TenMonHoc as \"courseName\",\n                    mh.MaLoaiMon as \"courseTypeId\",\n                    lm.TenLoaiMon as \"courseTypeName\",\n                    mh.SoTiet as \"totalHours\",\n                    lm.SoTietMotTC as \"hoursPerCredit\",\n                    lm.SoTienMotTC as \"pricePerCredit\",\n                    CASE \n                        WHEN dm.SoSVDaDangKy < dm.SiSoToiDa THEN true \n                        ELSE false \n                    END as \"isAvailable\",\n                    k.TenKhoa as \"departmentName\",\n                    nh.TenNganh as \"majorName\",\n                    CONCAT(nh.TenNganh, ' - ', k.TenKhoa) as \"programName\"\n                FROM DANHSACHMONHOCMO dm\n                JOIN MONHOC mh ON dm.MaMonHoc = mh.MaMonHoc\n                JOIN LOAIMON lm ON mh.MaLoaiMon = lm.MaLoaiMon\n                LEFT JOIN CHUONGTRINHHOC cth ON dm.MaMonHoc = cth.MaMonHoc AND dm.MaHocKy = cth.MaHocKy\n                LEFT JOIN NGANHHOC nh ON cth.MaNganh = nh.MaNganh\n                LEFT JOIN KHOA k ON nh.MaKhoa = k.MaKhoa\n                ORDER BY dm.MaHocKy, lm.TenLoaiMon, mh.TenMonHoc\n            ";
                         return [4 /*yield*/, database_1.Database.query(query)];
-                    case 1: return [2 /*return*/, _a.sent()];
+                    case 1:
+                        result = _a.sent();
+                        console.log("Found ".concat(result.length, " open courses"));
+                        return [2 /*return*/, result];
                     case 2:
                         error_1 = _a.sent();
+                        console.error('Error in getAllCourses:', error_1);
                         throw new database_error_1.DatabaseError('Error fetching open courses');
                     case 3: return [2 /*return*/];
                 }
@@ -67,13 +71,14 @@ var OpenCourseService = /** @class */ (function () {
                 switch (_a.label) {
                     case 0:
                         _a.trys.push([0, 2, , 3]);
-                        query = "\n                SELECT \n                    dm.MaHocKy as semesterId,\n                    dm.MaMonHoc as courseId,\n                    dm.SiSoToiThieu as minStudents,\n                    dm.SiSoToiDa as maxStudents,\n                    dm.SoSVDaDangKy as currentStudents,\n                    dm.Thu as dayOfWeek,\n                    dm.TietBatDau as startPeriod,\n                    dm.TietKetThuc as endPeriod,\n                    mh.TenMonHoc as courseName,\n                    mh.MaLoaiMon as courseTypeId,\n                    lm.TenLoaiMon as courseTypeName,\n                    mh.SoTiet as totalHours,\n                    lm.SoTietMotTC as hoursPerCredit,\n                    lm.SoTienMotTC as pricePerCredit,\n                    CASE \n                        WHEN dm.SoSVDaDangKy < dm.SiSoToiDa THEN true \n                        ELSE false \n                    END as isAvailable\n                FROM DANHSACHMONHOCMO dm\n                JOIN MONHOC mh ON dm.MaMonHoc = mh.MaMonHoc\n                JOIN LOAIMON lm ON mh.MaLoaiMon = lm.MaLoaiMon\n                WHERE dm.MaHocKy = $1 AND dm.MaMonHoc = $2\n            ";
+                        query = "\n                SELECT \n                    dm.MaHocKy as \"semesterId\",\n                    dm.MaMonHoc as \"courseId\",\n                    dm.SiSoToiThieu as \"minStudents\",\n                    dm.SiSoToiDa as \"maxStudents\",\n                    dm.SoSVDaDangKy as \"currentStudents\",\n                    dm.Thu as \"dayOfWeek\",\n                    dm.TietBatDau as \"startPeriod\",\n                    dm.TietKetThuc as \"endPeriod\",\n                    mh.TenMonHoc as \"courseName\",\n                    mh.MaLoaiMon as \"courseTypeId\",\n                    lm.TenLoaiMon as \"courseTypeName\",\n                    mh.SoTiet as \"totalHours\",\n                    lm.SoTietMotTC as \"hoursPerCredit\",\n                    lm.SoTienMotTC as \"pricePerCredit\",\n                    CASE \n                        WHEN dm.SoSVDaDangKy < dm.SiSoToiDa THEN true \n                        ELSE false \n                    END as \"isAvailable\",k.TenKhoa as \"departmentName\",\n                    nh.TenNganh as \"majorName\",\n                    CONCAT(nh.TenNganh, ' - ', k.TenKhoa) as \"programName\"\n                FROM DANHSACHMONHOCMO dm\n                JOIN MONHOC mh ON dm.MaMonHoc = mh.MaMonHoc\n                JOIN LOAIMON lm ON mh.MaLoaiMon = lm.MaLoaiMon\n                LEFT JOIN CHUONGTRINHHOC cth ON dm.MaMonHoc = cth.MaMonHoc AND dm.MaHocKy = cth.MaHocKy\n                LEFT JOIN NGANHHOC nh ON cth.MaNganh = nh.MaNganh\n                LEFT JOIN KHOA k ON nh.MaKhoa = k.MaKhoa\n                WHERE dm.MaHocKy = $1 AND dm.MaMonHoc = $2\n            ";
                         return [4 /*yield*/, database_1.Database.query(query, [semesterId, courseId])];
                     case 1:
                         result = _a.sent();
                         return [2 /*return*/, result[0] || null];
                     case 2:
                         error_2 = _a.sent();
+                        console.error('Error in getCourseById:', error_2);
                         throw new database_error_1.DatabaseError('Error fetching open course by ID');
                     case 3: return [2 /*return*/];
                 }

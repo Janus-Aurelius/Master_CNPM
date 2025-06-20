@@ -292,5 +292,121 @@ export const tuitionService = {
             console.error('Error getting outstanding tuitions:', error);
             throw error;
         }
-    }
+    },
+
+    /**
+     * Get all registrations for a student
+     */
+    async getAllRegistrations(studentId: string): Promise<any[]> {
+        try {
+            const registrations = await DatabaseService.query(`
+                SELECT 
+                    pd.MaPhieuDangKy as "registrationId",
+                    pd.MaHocKy as "semesterId", 
+                    pd.MaHocKy as "semesterName",
+                    '2024' as "year",
+                    pd.NgayLap as "registrationDate",
+                    hy.ThoiHanDongHP as "dueDate",
+                    pd.SoTienDangKy as "originalAmount",
+                    pd.SoTienPhaiDong as "totalAmount",
+                    pd.SoTienDaDong as "paidAmount",
+                    pd.SoTienConLai as "remainingAmount",
+                    CASE 
+                        WHEN pd.SoTienConLai <= 0 THEN 'paid'
+                        WHEN hy.ThoiHanDongHP < CURRENT_DATE AND pd.SoTienConLai > 0 THEN 'overdue'
+                        WHEN pd.SoTienConLai > 0 THEN 'unpaid'
+                        ELSE 'pending'
+                    END as "status"
+                FROM PHIEUDANGKY pd
+                LEFT JOIN HOCKYNAMHOC hy ON pd.MaHocKy = hy.MaHocKy
+                WHERE pd.MaSoSinhVien = $1
+                ORDER BY pd.MaHocKy DESC
+            `, [studentId]);
+
+            return registrations || [];
+        } catch (error) {
+            console.error('Error getting all registrations:', error);
+            throw error;
+        }
+    },
+
+    /**
+     * Get all registration IDs for a student (for payment history)
+     */
+    async getAllRegistrationIds(studentId: string): Promise<string[]> {
+        try {
+            const registrations = await DatabaseService.query(`
+                SELECT MaPhieuDangKy as "registrationId" 
+                FROM PHIEUDANGKY 
+                WHERE MaSoSinhVien = $1
+                ORDER BY NgayLap DESC
+            `, [studentId]);
+
+            return registrations.map(reg => reg.registrationId);
+        } catch (error) {
+            console.error('Error getting registration IDs:', error);
+            throw error;
+        }
+    },
+
+    /**
+     * Get registration by student and semester
+     */
+    async getRegistrationBySemester(studentId: string, semesterId: string): Promise<any | null> {
+        try {
+            const registration = await DatabaseService.queryOne(`
+                SELECT MaPhieuDangKy as "registrationId" 
+                FROM PHIEUDANGKY 
+                WHERE MaSoSinhVien = $1 AND MaHocKy = $2
+            `, [studentId, semesterId]);
+
+            return registration;
+        } catch (error) {
+            console.error('Error getting registration by semester:', error);
+            throw error;
+        }
+    },
+
+    /**
+     * Get registration by ID for validation
+     */
+    async getRegistrationById(registrationId: string): Promise<{
+        studentId: string;
+        semesterId: string;
+        remainingAmount: number;
+    } | null> {
+        try {
+            const registration = await DatabaseService.queryOne(`
+                SELECT 
+                    MaSoSinhVien as "studentId",
+                    MaHocKy as "semesterId", 
+                    SoTienConLai as "remainingAmount"
+                FROM PHIEUDANGKY 
+                WHERE MaPhieuDangKy = $1
+            `, [registrationId]);
+
+            return registration;
+        } catch (error) {
+            console.error('Error getting registration by ID:', error);
+            throw error;
+        }
+    },
+
+    /**
+     * Map userId to studentId
+     */
+    async mapUserIdToStudentId(userId: string): Promise<string | null> {
+        try {
+            const user = await DatabaseService.queryOne(`
+                SELECT masosinhvien 
+                FROM nguoidung 
+                WHERE userid = $1
+            `, [userId]);
+
+            return user?.masosinhvien || null;
+        } catch (error) {
+            console.error('Error mapping userId to studentId:', error);
+            throw error;
+        }
+    },
 };

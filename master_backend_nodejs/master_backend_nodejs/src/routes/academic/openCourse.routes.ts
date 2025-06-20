@@ -6,17 +6,17 @@ const router = Router();
 // Get all courses
 router.get('/', OpenCourseController.getAllCourses);
 
-// Get course by ID
-router.get('/:id', OpenCourseController.getCourseById);
+// Get course by semesterId and courseId
+router.get('/:semesterId/:courseId', OpenCourseController.getCourseById);
 
 // Create new course
 router.post('/', OpenCourseController.createCourse);
 
 // Update course
-router.put('/:id', OpenCourseController.updateCourse);
+router.put('/:semesterId/:courseId', OpenCourseController.updateCourse);
 
 // Delete course
-router.delete('/:id', OpenCourseController.deleteCourse);
+router.delete('/:semesterId/:courseId', OpenCourseController.deleteCourse);
 
 // Get courses by status
 router.get('/status/:status', OpenCourseController.getCoursesByStatus);
@@ -25,6 +25,6 @@ router.get('/status/:status', OpenCourseController.getCoursesByStatus);
 router.get('/semester', OpenCourseController.getCoursesBySemester);
 
 // Update course status
-router.patch('/:id/status', OpenCourseController.updateCourseStatus);
+router.patch('/:semesterId/:courseId/status', OpenCourseController.updateCourseStatus);
 
-export default router; 
+export default router;

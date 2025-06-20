@@ -1,11 +1,10 @@
-// src/student_pages/dashboard_student.tsx
 import { ThemeLayout } from "../styles/theme_layout";
 import Box from "@mui/material/Box";
 import { TimetableGrid, TimetableSubject } from "../components/layout/datagrid/TimetableGrid";
 import { StudentPageProps } from "../types";
 import UserInfo from "../components/UserInfo";
 import { useEffect, useState } from "react";
-import { getEnrolledSubjects } from "../api_clients/studentApi";
+import { dashboardApi, convertToTimetableSubject } from "../api_clients/student/dashboardApi";
 
 const DashboardStudent = ({ user, onLogout }: StudentPageProps) => {
     const [subjects, setSubjects] = useState<TimetableSubject[]>([]);
@@ -15,10 +14,23 @@ const DashboardStudent = ({ user, onLogout }: StudentPageProps) => {
     useEffect(() => {
         if (!user || !user.id) return;
         setLoading(true);
-        setError(null);
-        getEnrolledSubjects(String(user.id))
-            .then((data) => setSubjects(data))
-            .catch((err) => setError(err.message || 'Lỗi khi tải thời khóa biểu'))
+        setError(null);        // Sử dụng dashboardApi mới để lấy thời khóa biểu
+        dashboardApi.getStudentTimetable()
+            .then((timetableData) => {
+                console.log('📅 Raw timetable data:', timetableData);
+                
+                // Convert timetable entries to TimetableSubject format
+                const timetableSubjects: TimetableSubject[] = timetableData.map(entry => 
+                    convertToTimetableSubject(entry)
+                );
+                
+                console.log('📅 Converted timetable subjects:', timetableSubjects);
+                setSubjects(timetableSubjects);
+            })
+            .catch((err) => {
+                console.error('❌ Error loading timetable:', err);
+                setError(err.message || 'Lỗi khi tải thời khóa biểu');
+            })
             .finally(() => setLoading(false));
     }, [user]);
 

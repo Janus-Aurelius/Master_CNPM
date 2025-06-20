@@ -1,23 +1,24 @@
-TRUNCATE TABLE CHUONGTRINHHOC;
-TRUNCATE TABLE DANHSACHMONHOCMO;
-TRUNCATE TABLE CT_PHIEUDANGKY;
-TRUNCATE TABLE PHIEUTHUHP;
-TRUNCATE TABLE BAOCAOSINHVIENNOHP;
-TRUNCATE TABLE PHANQUYEN;
-TRUNCATE TABLE NGUOIDUNG;
-TRUNCATE TABLE MONHOC;
-TRUNCATE TABLE PHIEUDANGKY;
-TRUNCATE TABLE CHUCNANG;
-TRUNCATE TABLE NHOMNGUOIDUNG;
-TRUNCATE TABLE LOAIMON;
-TRUNCATE TABLE SINHVIEN;
-TRUNCATE TABLE HOCKYNAMHOC;
-TRUNCATE TABLE HUYEN;
-TRUNCATE TABLE DOITUONGUUTIEN;
-TRUNCATE TABLE NGANHHOC;
-TRUNCATE TABLE TINH;
-TRUNCATE TABLE KHOA;
-TRUNCATE TABLE REGISTRATION_LOG;
+-- Clear all tables (using DELETE to avoid foreign key constraint issues)
+DELETE FROM CT_PHIEUDANGKY;
+DELETE FROM PHIEUTHUHP;
+DELETE FROM BAOCAOSINHVIENNOHP;
+DELETE FROM PHANQUYEN;
+DELETE FROM NGUOIDUNG;
+DELETE FROM PHIEUDANGKY;
+DELETE FROM SINHVIEN;
+DELETE FROM DANHSACHMONHOCMO;
+DELETE FROM CHUONGTRINHHOC;
+DELETE FROM MONHOC;
+DELETE FROM CHUCNANG;
+DELETE FROM NHOMNGUOIDUNG;
+DELETE FROM LOAIMON;
+DELETE FROM HOCKYNAMHOC;
+DELETE FROM HUYEN;
+DELETE FROM DOITUONGUUTIEN;
+DELETE FROM NGANHHOC;
+DELETE FROM TINH;
+DELETE FROM KHOA;
+DELETE FROM REGISTRATION_LOG;
 
 
 INSERT INTO TINH (MaTinh, TenTinh) VALUES
@@ -167,7 +168,12 @@ INSERT INTO MONHOC (MaMonHoc, TenMonHoc, MaLoaiMon, SoTiet) VALUES
   ('IT101', 'Nhập môn Tin học', 'LT', 30),
   ('IT103', 'Giải tích cao cấp', 'LT', 45),
   ('IT201', 'Cấu trúc dữ liệu và giải thuật', 'LT', 45),
+  ('IT202', 'Lập trình hướng đối tượng', 'LT', 45),
+  ('IT203', 'Mạng máy tính', 'LT', 45),
+  ('IT204', 'Cơ sở dữ liệu', 'LT', 45),
+  ('IT205', 'Công nghệ web', 'LT', 45),
   ('IT301', 'Kỹ thuật lập trình', 'LT', 45),
+  -- ...existing code...
   ('CE201', 'Đồ án 1', 'TH', 30),
   ('CE206', 'Đồ án 2', 'TH', 30),
   ('CE213', 'Thiết kế hệ thống số với HDL', 'LT', 30),
@@ -209,7 +215,7 @@ INSERT INTO MONHOC (MaMonHoc, TenMonHoc, MaLoaiMon, SoTiet) VALUES
   ('EE468', 'Thuật toán tối ưu cho hệ thống điện', 'LT', 30),
   ('EE480', 'Đồ án thiết kế mạch tích hợp', 'TH', 30),
   ('EE488', 'Khóa luận tốt nghiệp chuyên ngành', 'TH', 30),
-  ('IT203', 'Cơ sở dữ liệu nâng cao', 'LT', 30),
+  ('IT213', 'Cơ sở dữ liệu nâng cao', 'LT', 30),
   ('IT303', 'Đồ án Mạng và Bảo mật', 'TH', 30),
   ('IT305', 'Quản lý dự án phần mềm', 'LT', 30),
   ('IT401', 'Phân tích và thiết kế hệ thống', 'LT', 30),
@@ -302,22 +308,41 @@ INSERT INTO HOCKYNAMHOC
 INSERT INTO CHUONGTRINHHOC (MaNganh, MaMonHoc, MaHocKy, GhiChu) VALUES
   ('CNTT','GD001','HK1_2024',''),
   ('CNTT','CS101','HK1_2024',''),
-  ('CNTT','CS102','HK1_2024','');
+  ('CNTT','CS102','HK1_2024',''),
+  ('HTTT', 'IT101', 'HK1_2024', ''),    -- Tin học cơ bản (có trong DANHSACHMONHOCMO)
+  ('HTTT', 'IT201', 'HK1_2024', ''),    -- Lập trình nâng cao (có trong DANHSACHMONHOCMO)
+  ('HTTT', 'SE101', 'HK1_2024', ''),    -- Công nghệ phần mềm (có trong DANHSACHMONHOCMO)
+  ('HTTT', 'MKT101', 'HK1_2024', ''),   -- Marketing cơ bản (có trong DANHSACHMONHOCMO)
+  ('HTTT', 'BUS1125', 'HK1_2024', ''),  -- Quản trị kinh doanh (có trong DANHSACHMONHOCMO)
+  ('HTTT', 'EE442', 'HK1_2024',''),
+  ('HTTT', 'MKP301', 'HK1_2024','');
 
 -- Mở thêm môn tự chọn
-INSERT INTO DANHSACHMONHOCMO (MaHocKy, MaMonHoc, SiSoToiThieu, SiSoToiDa, SoSVDaDangKy, Thu, TietBatDau, TietKetThuc) VALUES
-  ('HK1_2024','GD002', 30, 80, 0, 2, 1, 3),
+INSERT INTO DANHSACHMONHOCMO (MaHocKy, MaMonHoc, SiSoToiThieu, SiSoToiDa, SoSVDaDangKy, Thu, TietBatDau, TietKetThuc) VALUES  -- Thêm môn học mở cho HK1_2024
+  ('HK1_2024','GD001', 30, 80, 0, 2, 1, 3),
+  ('HK1_2024','GD002', 30, 80, 0, 2, 4, 6),
+  ('HK1_2024','IT101', 30, 80, 0, 3, 1, 4),
+  ('HK1_2024','CS101', 30, 50, 0, 4, 6, 8),
+  ('HK1_2024','CS102', 30, 80, 0, 5, 1, 3),
+  ('HK1_2024','TLH025', 30, 80, 0, 5, 6, 9),
+  -- Thêm môn học có trùng lịch để test chức năng kiểm tra xung đột
+  ('HK1_2024','IT201', 30, 50, 0, 3, 1, 3),  -- Trùng với IT101 (Thứ 3, tiết 1-4 vs 1-3)
+  ('HK1_2024','IT202', 30, 50, 0, 3, 2, 5),  -- Trùng với IT101 (Thứ 3, tiết 1-4 vs 2-5)
+  ('HK1_2024','IT203', 30, 50, 0, 4, 6, 9),  -- Trùng với CS101 (Thứ 4, tiết 6-8 vs 6-9)
+  ('HK1_2024','IT204', 30, 50, 0, 5, 1, 2),  -- Trùng với CS102 (Thứ 5, tiết 1-3 vs 1-2)
+  ('HK1_2024','IT205', 30, 50, 0, 5, 7, 8),  -- Trùng với TLH025 (Thứ 5, tiết 6-9 vs 7-8)
+  -- Thêm các môn thiếu cho HK1_2024
+  ('HK1_2024','BCH058', 30, 80, 0, 6, 1, 4),
+  ('HK1_2024','LTU101', 30, 80, 0, 7, 9, 10),
+  ('HK1_2024','SS003', 30, 50, 0, 2, 6, 8),
+  ('HK1_2024','MKT101', 30, 50, 0, 3, 4, 6),
+  ('HK1_2024','SE101', 30, 80, 0, 4, 7, 9),
+  ('HK1_2024','QC101', 30, 50, 0, 5, 1, 3),
+  ('HK1_2024','BUS1125', 30, 50, 0, 6, 6, 9),
+  ('HK1_2024','LTU201', 30, 80, 0, 7, 4, 6),
+  
+  -- Môn học mở cho HK2_2024
   ('HK2_2024','DS101', 30, 50, 0, 3, 6, 8),
-  -- Thêm môn học mở cho HK1_2024
-  ('HK1_2024','BCH058', 30, 80, 0, 4, 1, 4),
-  ('HK1_2024','BUS1125', 30, 50, 0, 5, 6, 9),
-  ('HK1_2024','LTU101', 30, 80, 0, 6, 9, 10),
-  ('HK1_2024','SS003', 30, 50, 0, 7, 4, 5),
-  ('HK1_2024','IT101', 30, 80, 0, 2, 1, 5),
-  ('HK1_2024','MKT101', 30, 50, 0, 3, 6, 10),
-  ('HK1_2024','SE101', 30, 80, 0, 4, 1, 3),
-  ('HK1_2024','QC101', 30, 50, 0, 5, 6, 8),
-  -- Thêm môn học mở cho HK2_2024
   ('HK2_2024','LTU102', 30, 80, 0, 6, 9, 10),
   ('HK2_2024','SS004', 30, 50, 0, 7, 1, 4),
   ('HK2_2024','IT103', 30, 80, 0, 2, 6, 9),
@@ -327,6 +352,15 @@ INSERT INTO DANHSACHMONHOCMO (MaHocKy, MaMonHoc, SiSoToiThieu, SiSoToiDa, SoSVDa
   ('HK2_2024','SE201', 30, 80, 0, 6, 1, 3),
   ('HK2_2024','QC201', 30, 50, 0, 7, 6, 8),
   -- Thêm môn học mở cho HK1_2025
+  ('HK1_2025','GD002', 30, 80, 0, 2, 1, 3),
+  ('HK1_2025','BCH058', 30, 80, 0, 4, 1, 4),
+  ('HK1_2025','BUS1125', 30, 50, 0, 5, 6, 9),
+  ('HK1_2025','LTU101', 30, 80, 0, 6, 9, 10),
+  ('HK1_2025','SS003', 30, 50, 0, 7, 4, 5),
+  ('HK1_2025','IT101', 30, 80, 0, 2, 1, 5),
+  ('HK1_2025','MKT101', 30, 50, 0, 3, 6, 10),
+  ('HK1_2025','SE101', 30, 80, 0, 4, 1, 3),
+  ('HK1_2025','QC101', 30, 50, 0, 5, 6, 8),
   ('HK1_2025','LTU201', 30, 80, 0, 2, 9, 10),
   ('HK1_2025','SS006', 30, 50, 0, 3, 1, 4),
   ('HK1_2025','IT201', 30, 80, 0, 4, 6, 9),
@@ -865,7 +899,8 @@ INSERT INTO SINHVIEN (MaSoSinhVien, HoTen, NgaySinh, GioiTinh, QueQuan, MaHuyen,
   ('SV0547', 'Trần Thanh Hùng', '2002-11-12', 'Nữ', 'Tỉnh Phú Yên', '008', 'UT02', 'KHLDL', 'SV0547@gm.uit.edu.vn', '0890123450', '17 Đường Điện Biên Phủ, Phường 307'),
   ('SV0548', 'Hoàng Quang Long', '2000-04-25', 'Nam', 'Tỉnh Khánh Hòa', '009', 'UT01', 'KTPM', 'SV0548@gm.uit.edu.vn', '0901234561', '81 Đường Hoàng Diệu, Phường 308'),
   ('SV0549', 'Hoàng Văn Hoa', '2004-06-18', 'Nam', 'Tỉnh Ninh Thuận', '010', 'UT01', 'TTMT', 'SV0549@gm.uit.edu.vn', '0112345672', '145 Đường Lý Tự Trọng, Phường 309'),
-  ('SV0550', 'Vũ Mai Bình', '2000-04-25', 'Nam', 'Tỉnh Bình Thuận', '011', 'UT01', 'TTNT', 'SV0550@gm.uit.edu.vn', '0223456783', '209 Đường Nguyễn Trãi, Phường 310'),('SV0551', 'Trần Văn An', '2005-02-17', 'Nữ', 'Tỉnh Kon Tum', '012', 'UT02', 'HTTT', 'SV0551@gm.uit.edu.vn', '0334567894', '73 Đường Hùng Vương, Phường 311'),
+  ('SV0550', 'Vũ Mai Bình', '2000-04-25', 'Nam', 'Tỉnh Bình Thuận', '011', 'UT01', 'TTNT', 'SV0550@gm.uit.edu.vn', '0223456783', '209 Đường Nguyễn Trãi, Phường 310'),
+  ('SV0551', 'Trần Văn An', '2005-02-17', 'Nữ', 'Tỉnh Kon Tum', '012', 'UT02', 'HTTT', 'SV0551@gm.uit.edu.vn', '0334567894', '73 Đường Hùng Vương, Phường 311'),
   ('SV0552', 'Lê Ngọc Bình', '2005-07-16', 'Nam', 'Tỉnh Gia Lai', '013', 'UT02', 'HTTT', 'SV0552@gm.uit.edu.vn', '0445678905', '137 Đường Trần Khánh Dư, Phường 312'),
   ('SV0553', 'Võ Văn Dũng', '2004-02-06', 'Nam', 'Tỉnh Đắk Lắk', '014', 'UT01', 'TTNT', 'SV0553@gm.uit.edu.vn', '0556789016', '201 Đường Lê Lợi, Phường 313'),
   ('SV0554', 'Trần Thanh Long', '2002-09-15', 'Nữ', 'Tỉnh Đắk Nông', '015', 'UT02', 'KHMT', 'SV0554@gm.uit.edu.vn', '0667890127', '265 Đường Quang Trung, Phường 314'),
@@ -874,14 +909,8 @@ INSERT INTO SINHVIEN (MaSoSinhVien, HoTen, NgaySinh, GioiTinh, QueQuan, MaHuyen,
   ('SV0557', 'Huỳnh Ngọc Mai', '2003-04-28', 'Nam', 'Tỉnh Tây Ninh', '018', 'UT01', 'KHLDL', 'SV0557@gm.uit.edu.vn', '0990123450', '157 Đường Trần Hưng Đạo, Phường 317'),
   ('SV0558', 'Đặng Anh Hùng', '2001-08-22', 'Nữ', 'Tỉnh Bình Dương', '019', 'UT02', 'TMDT', 'SV0558@gm.uit.edu.vn', '0101234561', '221 Đường Lê Duẩn, Phường 318'),
   ('SV0559', 'Lê Quang Bình', '2004-12-07', 'Nam', 'Tỉnh Đồng Nai', '020', 'UT01', 'VMC', 'SV0559@gm.uit.edu.vn', '0212345672', '85 Đường Hùng Vương, Phường 319'),
-  ('SV0560', 'Vũ Thanh Linh', '2000-03-31', 'Nữ', 'Tỉnh Bà Rịa - Vũng Tàu', '021', 'UT02', 'KTPM', 'SV0560@gm.uit.edu.vn', '0323456783', '149 Đường Nguyễn Thái Học, Phường 320'),  ('SV0553', 'Lê Quang Hùng', '2004-04-27', 'Nữ', 'Tỉnh Bình Dương', '013', 'UT02', 'TTNT', 'SV0553@gm.uit.edu.vn', '0556789016', '23 Đường Lý Thường Kiệt, Phường 5'),
-  ('SV0554', 'Trần Thị Linh', '2005-06-20', 'Nam', 'Tỉnh Đồng Nai', '020', 'UT01', 'TTMT', 'SV0554@gm.uit.edu.vn', '0667890127', '78 Đường Nguyễn Văn Cừ, Phường 12'),
-  ('SV0555', 'Trần Văn Cường', '2005-11-11', 'Nam', 'Tỉnh Tây Ninh', '023', 'UT02', 'TTNT', 'SV0555@gm.uit.edu.vn', '0778901238', '156 Đường Trần Hưng Đạo, Phường 8'),
-  ('SV0556', 'Nguyễn Mai Linh', '2003-06-30', 'Nữ', 'Tỉnh Hậu Giang', '037', 'UT01', 'TTNT', 'SV0556@gm.uit.edu.vn', '0889012349', '99 Đường Lê Lai, Phường 15'),
-  ('SV0557', 'Nguyễn Hữu Long', '2004-08-21', 'Nam', 'Tỉnh An Giang', '030', 'UT01', 'VMC', 'SV0557@gm.uit.edu.vn', '0990123450', '45 Đường Hoàng Văn Thụ, Phường 20'),
-  ('SV0558', 'Huỳnh Mai An', '2001-11-14', 'Nữ', 'Tỉnh Bà Rịa - Vũng Tàu', '036', 'UT01', 'KHLDL', 'SV0558@gm.uit.edu.vn', '0101234561', '234 Đường Điện Biên Phủ, Phường 3'),
-  ('SV0559', 'Vũ Thanh Hà', '2000-02-23', 'Nữ', 'Tỉnh Long An', '014', 'UT01', 'KHLDL', 'SV0559@gm.uit.edu.vn', '0212345672', '67 Đường Pasteur, Phường 9'),
-  ('SV0560', 'Vũ Thanh Linh', '2000-03-31', 'Nữ', 'Tỉnh Bà Rịa - Vũng Tàu', '021', 'UT02', 'KTPM', 'SV0560@gm.uit.edu.vn', '0323456783', '149 Đường Nguyễn Thái Học, Phường 320'),  ('SV0561', 'Nguyễn Minh Mai', '2005-06-09', 'Nam', 'Tỉnh Long An', '022', 'UT01', 'TTNT', 'SV0561@gm.uit.edu.vn', '0434567894', '213 Đường Phan Bội Châu, Phường 321'),
+  ('SV0560', 'Vũ Thanh Linh', '2000-03-31', 'Nữ', 'Tỉnh Bà Rịa - Vũng Tàu', '021', 'UT02', 'KTPM', 'SV0560@gm.uit.edu.vn', '0323456783', '149 Đường Nguyễn Thái Học, Phường 320'),  
+  ('SV0561', 'Nguyễn Minh Mai', '2005-06-09', 'Nam', 'Tỉnh Long An', '022', 'UT01', 'TTNT', 'SV0561@gm.uit.edu.vn', '0434567894', '213 Đường Phan Bội Châu, Phường 321'),
   ('SV0562', 'Nguyễn Thị Hà', '2004-11-05', 'Nam', 'Tỉnh Tiền Giang', '023', 'UT01', 'KTMT', 'SV0562@gm.uit.edu.vn', '0545678905', '77 Đường Lê Thánh Tông, Phường 322'),
   ('SV0563', 'Hoàng Thanh Hùng', '2000-08-30', 'Nam', 'Tỉnh Bến Tre', '024', 'UT02', 'ATTT', 'SV0563@gm.uit.edu.vn', '0656789016', '141 Đường Nguyễn Huệ, Phường 323'),
   ('SV0564', 'Lê Ngọc An', '2001-12-08', 'Nữ', 'Tỉnh Trà Vinh', '025', 'UT01', 'CNTT_Nhat', 'SV0564@gm.uit.edu.vn', '0767890127', '205 Đường Bà Triệu, Phường 324'),
@@ -891,7 +920,8 @@ INSERT INTO SINHVIEN (MaSoSinhVien, HoTen, NgaySinh, GioiTinh, QueQuan, MaHuyen,
   ('SV0568', 'Phạm Văn An', '2004-08-19', 'Nữ', 'Tỉnh Kiên Giang', '029', 'UT02', 'TTMT', 'SV0568@gm.uit.edu.vn', '0201234561', '61 Đường Hoàng Diệu, Phường 328'),
   ('SV0569', 'Phan Minh Dũng', '2003-10-20', 'Nữ', 'Tỉnh Cần Thơ', '030', 'UT01', 'KHMT', 'SV0569@gm.uit.edu.vn', '0312345672', '125 Đường Lý Tự Trọng, Phường 329'),
   ('SV0570', 'Lê Anh Hùng', '2000-11-05', 'Nữ', 'Tỉnh Hậu Giang', '031', 'UT02', 'KTMT', 'SV0570@gm.uit.edu.vn', '0423456783', '189 Đường Nguyễn Trãi, Phường 330'),
-  ('SV0571', 'Nguyễn Minh Dũng', '2003-08-25', 'Nữ', 'Tỉnh Kiên Giang', '015', 'UT02', 'CNTT_Nhat', 'SV0571@gm.uit.edu.vn', '0534567894', '112 Đường Cách Mạng Tháng Tám, Phường 7'),  ('SV0572', 'Nguyễn Huy Cường', '2000-05-15', 'Nữ', 'Tỉnh Cà Mau', '033', 'UT02', 'TTMT', 'SV0572@gm.uit.edu.vn', '0645678905', '89 Đường Nguyễn Thị Minh Khai, Phường 4'),
+  ('SV0571', 'Nguyễn Minh Dũng', '2003-08-25', 'Nữ', 'Tỉnh Kiên Giang', '015', 'UT02', 'CNTT_Nhat', 'SV0571@gm.uit.edu.vn', '0534567894', '112 Đường Cách Mạng Tháng Tám, Phường 7'),  
+  ('SV0572', 'Nguyễn Huy Cường', '2000-05-15', 'Nữ', 'Tỉnh Cà Mau', '033', 'UT02', 'TTMT', 'SV0572@gm.uit.edu.vn', '0645678905', '89 Đường Nguyễn Thị Minh Khai, Phường 4'),
   ('SV0573', 'Lê Anh Linh', '2002-07-12', 'Nữ', 'Tỉnh Vĩnh Long', '017', 'UT01', 'CNTT_Nhat', 'SV0573@gm.uit.edu.vn', '0756789016', '45 Đường Lê Duẩn, Phường 11'),
   ('SV0574', 'Nguyễn Quang Hà', '2004-07-12', 'Nam', 'Tỉnh Đồng Tháp', '016', 'UT01', 'KTMT', 'SV0574@gm.uit.edu.vn', '0867890127', '123 Đường Hai Bà Trưng, Phường 2'),
   ('SV0575', 'Võ Ngọc Mai', '2003-08-23', 'Nam', 'Tỉnh Sóc Trăng', '025', 'UT02', 'CNTT_Nhat', 'SV0575@gm.uit.edu.vn', '0978901238', '67 Đường Nguyễn Huệ, Phường 6'),
@@ -901,7 +931,8 @@ INSERT INTO SINHVIEN (MaSoSinhVien, HoTen, NgaySinh, GioiTinh, QueQuan, MaHuyen,
   ('SV0579', 'Nguyễn Ngọc An', '2001-07-11', 'Nữ', 'Tỉnh Bạc Liêu', '043', 'UT02', 'VMC', 'SV0579@gm.uit.edu.vn', '0412345672', '89 Đường Nguyễn Văn Linh, Phường 18'),
   ('SV0580', 'Lê Mai Dũng', '2004-05-20', 'Nữ', 'Tỉnh Tây Ninh', '027', 'UT01', 'KTMT', 'SV0580@gm.uit.edu.vn', '0523456783', '45 Đường Phan Bội Châu, Phường 1'),
   ('SV0581', 'Vũ Văn Mai', '2004-04-14', 'Nữ', 'Tỉnh Đắk Lắk', '047', 'UT02', 'VMC', 'SV0581@gm.uit.edu.vn', '0634567894', '123 Đường Hùng Vương, Phường 10'),
-  ('SV0582', 'Trần Thanh Linh', '2004-05-20', 'Nam', 'Tỉnh Gia Lai', '024', 'UT01', 'KHLDL', 'SV0582@gm.uit.edu.vn', '0745678905', '67 Đường Quang Trung, Phường 5'),  ('SV0583', 'Phan Minh Cường', '2000-05-07', 'Nam', 'Tỉnh Bình Thuận', '032', 'UT01', 'KHMT', 'SV0583@gm.uit.edu.vn', '0856789016', '234 Đường Lý Tự Trọng, Phường 16'),
+  ('SV0582', 'Trần Thanh Linh', '2004-05-20', 'Nam', 'Tỉnh Gia Lai', '024', 'UT01', 'KHLDL', 'SV0582@gm.uit.edu.vn', '0745678905', '67 Đường Quang Trung, Phường 5'),  
+  ('SV0583', 'Phan Minh Cường', '2000-05-07', 'Nam', 'Tỉnh Bình Thuận', '032', 'UT01', 'KHMT', 'SV0583@gm.uit.edu.vn', '0856789016', '234 Đường Lý Tự Trọng, Phường 16'),
   ('SV0584', 'Huỳnh Ngọc Hà', '2004-05-27', 'Nữ', 'Tỉnh Phú Yên', '029', 'UT02', 'TMDT', 'SV0584@gm.uit.edu.vn', '0967890127', '89 Đường Nguyễn Thái Học, Phường 3'),
   ('SV0585', 'Phan Hữu Long', '2000-09-18', 'Nữ', 'Tỉnh Khánh Hòa', '028', 'UT01', 'TTNT', 'SV0585@gm.uit.edu.vn', '0178901238', '156 Đường Bạch Đằng, Phường 9'),
   ('SV0586', 'Phạm Văn Hà', '2004-07-02', 'Nữ', 'Tỉnh Ninh Thuận', '026', 'UT01', 'CNTT', 'SV0586@gm.uit.edu.vn', '0289012349', '67 Đường Yersin, Phường 12'),
@@ -916,7 +947,8 @@ INSERT INTO SINHVIEN (MaSoSinhVien, HoTen, NgaySinh, GioiTinh, QueQuan, MaHuyen,
   ('SV0595', 'Trần Văn Long', '2003-12-23', 'Nữ', 'Tỉnh Thừa Thiên Huế', '039', 'UT02', 'CNTT_Nhat', 'SV0595@gm.uit.edu.vn', '0278901238', '123 Đường Nguyễn Văn Trỗi, Phường 2'),
   ('SV0596', 'Trần Quang Mai', '2003-01-08', 'Nữ', 'Tỉnh Quảng Trị', '038', 'UT01', 'KTPM', 'SV0596@gm.uit.edu.vn', '0389012349', '78 Đường Đinh Tiên Hoàng, Phường 7'),
   ('SV0597', 'Đặng Anh Hà', '2001-07-30', 'Nữ', 'Tỉnh Quảng Bình', '037', 'UT01', 'CNTT', 'SV0597@gm.uit.edu.vn', '0490123450', '234 Đường Nguyễn Chí Thanh, Phường 15'),
-  ('SV0598', 'Hoàng Quang Hùng', '2000-06-05', 'Nam', 'Tỉnh Hà Tĩnh', '036', 'UT02', 'CNTT', 'SV0598@gm.uit.edu.vn', '0501234561', '89 Đường Hoàng Diệu, Phường 10'),  ('SV0599', 'Hoàng Huy Dũng', '2003-08-15', 'Nữ', 'Tỉnh Nghệ An', '040', 'UT01', 'KHLDL', 'SV0599@gm.uit.edu.vn', '0612345672', '156 Đường Nam Kỳ Khởi Nghĩa, Phường 13'),
+  ('SV0598', 'Hoàng Quang Hùng', '2000-06-05', 'Nam', 'Tỉnh Hà Tĩnh', '036', 'UT02', 'CNTT', 'SV0598@gm.uit.edu.vn', '0501234561', '89 Đường Hoàng Diệu, Phường 10'),  
+  ('SV0599', 'Hoàng Huy Dũng', '2003-08-15', 'Nữ', 'Tỉnh Nghệ An', '040', 'UT01', 'KHLDL', 'SV0599@gm.uit.edu.vn', '0612345672', '156 Đường Nam Kỳ Khởi Nghĩa, Phường 13'),
   ('SV0600', 'Vũ Ngọc Dũng', '2000-05-19', 'Nam', 'Tỉnh Thanh Hóa', '041', 'UT01', 'VMC', 'SV0600@gm.uit.edu.vn', '0723456783', '67 Đường Trần Huy Liệu, Phường 20');
 
 INSERT INTO SINHVIEN (MaSoSinhVien, HoTen, NgaySinh, GioiTinh, QueQuan, MaHuyen, MaDoiTuongUT, MaNganh, Email, SoDienThoai, DiaChi) VALUES
@@ -927,7 +959,8 @@ INSERT INTO SINHVIEN (MaSoSinhVien, HoTen, NgaySinh, GioiTinh, QueQuan, MaHuyen,
   ('SV0605', 'Phạm Anh Hoa', '2004-09-26', 'Nữ', 'Tỉnh Hà Nam', '046', 'UT01', 'KHMT', 'SV0605@gm.uit.edu.vn', '0378901239', '89 Đường Bà Triệu, Phường 17'),
   ('SV0606', 'Phạm Quang An', '2003-09-20', 'Nam', 'Tỉnh Hải Dương', '047', 'UT01', 'KHLDL', 'SV0606@gm.uit.edu.vn', '0489012340', '156 Đường Lê Duẩn, Phường 9'),
   ('SV0607', 'Vũ Mai Dũng', '2002-11-13', 'Nữ', 'Tỉnh Hải Phòng', '048', 'UT01', 'CNTT_Nhat', 'SV0607@gm.uit.edu.vn', '0590123451', '67 Đường Trần Phú, Phường 14'),
-  ('SV0608', 'Hoàng Thị Khánh', '2004-03-12', 'Nữ', 'Tỉnh Quảng Ninh', '001', 'UT01', 'TMDT', 'SV0608@gm.uit.edu.vn', '0601234562', '45 Đường Lý Thái Tổ, Phường 22'),  ('SV0609', 'Lê Văn Long', '2001-04-08', 'Nam', 'Tỉnh Lạng Sơn', '003', 'UT01', 'KTPM', 'SV0609@gm.uit.edu.vn', '0712345673', '123 Đường Trần Phú, Phường 7'),
+  ('SV0608', 'Hoàng Thị Khánh', '2004-03-12', 'Nữ', 'Tỉnh Quảng Ninh', '001', 'UT01', 'TMDT', 'SV0608@gm.uit.edu.vn', '0601234562', '45 Đường Lý Thái Tổ, Phường 22'),  
+  ('SV0609', 'Lê Văn Long', '2001-04-08', 'Nam', 'Tỉnh Lạng Sơn', '003', 'UT01', 'KTPM', 'SV0609@gm.uit.edu.vn', '0712345673', '123 Đường Trần Phú, Phường 7'),
   ('SV0610', 'Hoàng Minh Hoa', '2003-10-29', 'Nữ', 'Tỉnh Bắc Giang', '004', 'UT01', 'ATTT', 'SV0610@gm.uit.edu.vn', '0823456784', '78 Đường Lê Lợi, Phường 12'),
   ('SV0611', 'Nguyễn Quang Hoa', '2005-08-08', 'Nữ', 'Tỉnh Phú Thọ', '005', 'UT02', 'KHLDL', 'SV0611@gm.uit.edu.vn', '0934567895', '234 Đường Nguyễn Huệ, Phường 18'),
   ('SV0612', 'Võ Thị An', '2000-04-18', 'Nam', 'Tỉnh Vĩnh Phúc', '006', 'UT02', 'KHMT', 'SV0612@gm.uit.edu.vn', '0145678906', '45 Đường Hai Bà Trưng, Phường 3'),
@@ -939,7 +972,8 @@ INSERT INTO SINHVIEN (MaSoSinhVien, HoTen, NgaySinh, GioiTinh, QueQuan, MaHuyen,
   ('SV0618', 'Võ Minh Bình', '2004-12-13', 'Nữ', 'Tỉnh Hà Nam', '012', 'UT02', 'KHLDL', 'SV0618@gm.uit.edu.vn', '0701234562', '78 Đường Võ Văn Kiệt, Phường 8'),
   ('SV0619', 'Nguyễn Huy Cường', '2003-07-18', 'Nam', 'Tỉnh Nam Định', '013', 'UT02', 'KHLDL', 'SV0619@gm.uit.edu.vn', '0812345673', '45 Đường Pasteur, Phường 19'),
   ('SV0620', 'Lê Huy Long', '2005-06-22', 'Nam', 'Tỉnh Ninh Bình', '014', 'UT02', 'VMC', 'SV0620@gm.uit.edu.vn', '0923456784', '167 Đường Cách Mạng Tháng Tám, Phường 6'),
-  ('SV0621', 'Hoàng Huy Long', '2000-03-31', 'Nam', 'Tỉnh Thanh Hóa', '015', 'UT01', 'ATTT', 'SV0621@gm.uit.edu.vn', '0134567895', '89 Đường Nguyễn Văn Cừ, Phường 11'),  ('SV0622', 'Huỳnh Quang An', '2002-11-26', 'Nam', 'Tỉnh Nghệ An', '016', 'UT02', 'KTMT', 'SV0622@gm.uit.edu.vn', '0245678906', '234 Đường Nguyễn Du, Phường 10'),
+  ('SV0621', 'Hoàng Huy Long', '2000-03-31', 'Nam', 'Tỉnh Thanh Hóa', '015', 'UT01', 'ATTT', 'SV0621@gm.uit.edu.vn', '0134567895', '89 Đường Nguyễn Văn Cừ, Phường 11'),  
+  ('SV0622', 'Huỳnh Quang An', '2002-11-26', 'Nam', 'Tỉnh Nghệ An', '016', 'UT02', 'KTMT', 'SV0622@gm.uit.edu.vn', '0245678906', '234 Đường Nguyễn Du, Phường 10'),
   ('SV0623', 'Đặng Anh Dũng', '2005-04-21', 'Nam', 'Tỉnh Hà Tĩnh', '017', 'UT01', 'CNTT', 'SV0623@gm.uit.edu.vn', '0356789017', '67 Đường Hoàng Văn Thụ, Phường 4'),
   ('SV0624', 'Vũ Huy Bình', '2004-10-23', 'Nữ', 'Tỉnh Quảng Bình', '018', 'UT02', 'HTTT', 'SV0624@gm.uit.edu.vn', '0467890128', '123 Đường Lê Hồng Phong, Phường 16'),
   ('SV0625', 'Phạm Văn Cường', '2005-07-17', 'Nam', 'Tỉnh Quảng Trị', '019', 'UT01', 'KHMT', 'SV0625@gm.uit.edu.vn', '0578901239', '89 Đường Bà Triệu, Phường 22'),
@@ -966,7 +1000,8 @@ INSERT INTO SINHVIEN (MaSoSinhVien, HoTen, NgaySinh, GioiTinh, QueQuan, MaHuyen,
   ('SV0646', 'Vũ Quang Dũng', '2002-10-02', 'Nam', 'Tỉnh Tiền Giang', '040', 'UT02', 'KHLDL', 'SV0646@gm.uit.edu.vn', '0889012340', '78 Đường Lê Lai, Phường 16'),
   ('SV0647', 'Huỳnh Quang Linh', '2005-08-17', 'Nam', 'Tỉnh Bến Tre', '041', 'UT02', 'VMC', 'SV0647@gm.uit.edu.vn', '0990123451', '234 Đường Nguyễn Du, Phường 23'),
   ('SV0648', 'Nguyễn Huy Long', '2005-09-10', 'Nam', 'Tỉnh Trà Vinh', '042', 'UT02', 'KHMT', 'SV0648@gm.uit.edu.vn', '0101234562', '89 Đường Điện Biên Phủ, Phường 7'),
-  ('SV0649', 'Võ Huy Khánh', '2003-07-26', 'Nam', 'Tỉnh Vĩnh Long', '043', 'UT01', 'TTNT', 'SV0649@gm.uit.edu.vn', '0212345673', '67 Đường Lý Thường Kiệt, Phường 13'),  ('SV0650', 'Đặng Huy Hoa', '2000-07-11', 'Nam', 'Tỉnh Đồng Tháp', '044', 'UT02', 'TTMT', 'SV0650@gm.uit.edu.vn', '0323456784', '145 Đường Hai Bà Trưng, Phường 18'),
+  ('SV0649', 'Võ Huy Khánh', '2003-07-26', 'Nam', 'Tỉnh Vĩnh Long', '043', 'UT01', 'TTNT', 'SV0649@gm.uit.edu.vn', '0212345673', '67 Đường Lý Thường Kiệt, Phường 13'),  
+  ('SV0650', 'Đặng Huy Hoa', '2000-07-11', 'Nam', 'Tỉnh Đồng Tháp', '044', 'UT02', 'TTMT', 'SV0650@gm.uit.edu.vn', '0323456784', '145 Đường Hai Bà Trưng, Phường 18'),
   ('SV0651', 'Phạm Anh An', '2000-03-19', 'Nữ', 'Tỉnh An Giang', '045', 'UT01', 'HTTT', 'SV0651@gm.uit.edu.vn', '0434567895', '123 Đường Trần Hưng Đạo, Phường 25'),
   ('SV0652', 'Võ Minh An', '2000-06-24', 'Nữ', 'Tỉnh Kiên Giang', '046', 'UT02', 'TTNT', 'SV0652@gm.uit.edu.vn', '0545678906', '78 Đường Nguyễn Huệ, Phường 1'),
   ('SV0653', 'Võ Mai Mai', '2003-12-26', 'Nam', 'Tỉnh Cần Thơ', '047', 'UT01', 'KHMT', 'SV0653@gm.uit.edu.vn', '0656789017', '234 Đường Lê Lợi, Phường 12'),
@@ -1113,7 +1148,8 @@ INSERT INTO SINHVIEN (MaSoSinhVien, HoTen, NgaySinh, GioiTinh, QueQuan, MaHuyen,
   ('SV0798', 'Võ Ngọc Cường', '2000-10-31', 'Nữ', 'Tỉnh Ninh Thuận', '044', 'UT01', 'ATTT', 'SV0798@gm.uit.edu.vn', '0701234563', '52 Đường Nguyễn Du, Phường 3'),
   ('SV0799', 'Hoàng Văn Khánh', '2004-03-19', 'Nữ', 'Tỉnh Bình Thuận', '045', 'UT01', 'VMC', 'SV0799@gm.uit.edu.vn', '0812345674', '117 Đường Hoàng Văn Thụ, Phường 24'),  ('SV0800', 'Phạm Thanh An', '2001-06-14', 'Nam', 'Tỉnh Lâm Đồng', '046', 'UT01', 'KHLDL', 'SV0800@gm.uit.edu.vn', '0923456785', '83 Đường Pasteur, Phường 14');
 
-INSERT INTO SINHVIEN (MaSoSinhVien, HoTen, NgaySinh, GioiTinh, QueQuan, MaHuyen, MaDoiTuongUT, MaNganh, Email, SoDienThoai, DiaChi) VALUES  ('SV0801', 'Trần Minh Hà', '2000-08-07', 'Nữ', 'Tỉnh Bình Phước', '047', 'UT02', 'KTMT', 'SV0801@gm.uit.edu.vn', '1034567896', '156 Đường Trần Hưng Đạo, Phường 5'),
+INSERT INTO SINHVIEN (MaSoSinhVien, HoTen, NgaySinh, GioiTinh, QueQuan, MaHuyen, MaDoiTuongUT, MaNganh, Email, SoDienThoai, DiaChi) VALUES  
+  ('SV0801', 'Trần Minh Hà', '2000-08-07', 'Nữ', 'Tỉnh Bình Phước', '047', 'UT02', 'KTMT', 'SV0801@gm.uit.edu.vn', '1034567896', '156 Đường Trần Hưng Đạo, Phường 5'),
   ('SV0802', 'Đặng Văn Hoa', '2003-12-25', 'Nam', 'Tỉnh Tây Ninh', '048', 'UT02', 'KTPM', 'SV0802@gm.uit.edu.vn', '1145678907', '71 Đường Lê Lợi, Phường 12'),
   ('SV0803', 'Lê Mai An', '2004-05-02', 'Nữ', 'Tỉnh Bình Dương', '001', 'UT01', 'KHMT', 'SV0803@gm.uit.edu.vn', '1256789018', '234 Đường Nguyễn Huệ, Phường 8'),
   ('SV0804', 'Phan Văn Hà', '2005-10-16', 'Nữ', 'Tỉnh Đồng Nai', '002', 'UT01', 'TMDT', 'SV0804@gm.uit.edu.vn', '1367890129', '89 Đường Hai Bà Trưng, Phường 16'),
@@ -1313,15 +1349,54 @@ INSERT INTO SINHVIEN (MaSoSinhVien, HoTen, NgaySinh, GioiTinh, QueQuan, MaHuyen,
   ('SV0999', 'Hoàng Mai An', '2001-06-21', 'Nữ', 'Tỉnh Tiền Giang', '005', 'UT01', 'VMC', 'SV0999@gm.uit.edu.vn', '9812345695', '127 Đường Lý Thái Tổ, Phường 9'),
   ('SV1000', 'Hoàng Ngọc Hùng', '2002-06-29', 'Nam', 'Tỉnh Bến Tre', '006', 'UT02', 'CNTT_Nhat', 'SV1000@gm.uit.edu.vn', '9923456806', '84 Đường Trần Phú, Phường 17');
 
--- Thêm phiếu đăng ký và chi tiết đăng ký
+
 INSERT INTO PHIEUDANGKY
   (MaPhieuDangKy, NgayLap, MaSoSinhVien, MaHocKy, SoTinChiToiDa) VALUES
-  ('PD003','2024-08-12','SV0003','HK1_2024', 15),
-  ('PD004','2024-08-13','SV0004','HK1_2024', 15);
+   -- Học kỳ cũ (HK1_2024, HK2_2024)
+  ('PD001','2024-08-10','SV0001','HK1_2024', 15),
+  ('PD002','2024-08-11','SV0002','HK1_2024', 15),
+  ('PD003','2024-08-12','SV0003','HK1_2024', 18),
+  ('PD004','2024-08-13','SV0004','HK2_2024', 12),
+  ('PD005','2024-08-14','SV0005','HK2_2024', 21),
+  
+  -- Học kỳ hiện tại HK1_2025 - NHIỀU SINH VIÊN
+  ('PD006','2025-08-15','SV0006','HK1_2025', 18),
+  ('PD007','2025-08-16','SV0007','HK1_2025', 21),
+  ('PD008','2025-08-17','SV0008','HK1_2025', 24),
+  ('PD009','2025-08-18','SV0009','HK1_2025', 18),
+  ('PD010','2025-08-19','SV0010','HK1_2025', 21),
+  ('PD011','2025-08-20','SV0011','HK1_2025', 24),
+  ('PD012','2025-08-21','SV0012','HK1_2025', 18),
+  ('PD013','2025-08-22','SV0013','HK1_2025', 21),
+  ('PD014','2025-08-23','SV0014','HK1_2025', 24),
+  ('PD015','2025-08-24','SV0015','HK1_2025', 18),
+  ('PD016','2025-08-25','SV0016','HK1_2025', 21),
+  ('PD017','2025-08-26','SV0017','HK1_2025', 24),
+  ('PD018','2025-08-27','SV0018','HK1_2025', 18),
+  ('PD019','2025-08-28','SV0019','HK1_2025', 21),
+  ('PD020','2025-08-29','SV0020','HK1_2025', 24),
+  ('PD021','2025-08-30','SV0021','HK1_2025', 18),
+  ('PD022','2025-08-31','SV0022','HK1_2025', 21),
+  ('PD023','2025-09-01','SV0023','HK1_2025', 24),
+  ('PD024','2025-09-02','SV0024','HK1_2025', 18),
+  ('PD025','2025-09-03','SV0025','HK1_2025', 21),
+  ('PD026','2025-09-04','SV0026','HK1_2025', 24),
+  ('PD027','2025-09-05','SV0027','HK1_2025', 18),
+  ('PD028','2025-09-06','SV0028','HK1_2025', 21),
+  ('PD029','2025-09-07','SV0029','HK1_2025', 24),
+  ('PD030','2025-09-08','SV0030','HK1_2025', 18),
+  ('PD031','2025-09-09','SV0031','HK1_2025', 21),
+  ('PD032','2025-09-10','SV0032','HK1_2025', 24),
+  ('PD033','2025-09-11','SV0033','HK1_2025', 18),
+  ('PD034','2025-09-12','SV0034','HK1_2025', 21),
+  ('PD035','2025-09-13','SV0035','HK1_2025', 24),
+  ('PD036','2025-09-14','SV0036','HK1_2025', 18),
+  ('PD037','2025-09-15','SV0037','HK1_2025', 21),
+  ('PD038','2025-09-16','SV0038','HK1_2025', 24),
+  ('PD039','2025-09-17','SV0039','HK1_2025', 18),
+  ('PD040','2025-09-18','SV0040','HK1_2025', 21);
+  
 
-INSERT INTO CT_PHIEUDANGKY (MaPhieuDangKy, MaMonHoc) VALUES
-  ('PD003','AI001'),('PD003','AI002'),
-  ('PD004','AI301'),('PD004','AI302');
 
 INSERT INTO PHIEUTHUHP (MaPhieuThu, NgayLap, MaPhieuDangKy, SoTienDong) VALUES
   ('PT003','2024-08-18','PD003',8749995),
@@ -1332,34 +1407,311 @@ INSERT INTO BAOCAOSINHVIENNOHP (MaHocKy, MaSoSinhVien, MaPhieuDangKy) VALUES
   ('HK1_2024','SV0004','PD004');
 
 
-INSERT INTO PHIEUDANGKY
-  (MaPhieuDangKy, NgayLap, MaSoSinhVien, MaHocKy, SoTinChiToiDa) VALUES
-  ('PD001','2024-08-10','SV0001','HK1_2024', 15),
-  ('PD002','2024-08-11','SV0002','HK1_2024', 15),
-  ('PD003','2024-08-12','SV0003','HK1_2024', 18),
-  ('PD004','2024-08-13','SV0004','HK2_2024', 12),
-  ('PD005','2024-08-14','SV0005','HK2_2024', 21),
-  ('PD006','2025-01-15','SV0006','HK1_2025', 16),
-  ('PD007','2025-01-16','SV0007','HK1_2025', 14),
-  ('PD008','2025-01-17','SV0008','HK2_2025', 17);
 
 INSERT INTO CT_PHIEUDANGKY (MaPhieuDangKy, MaHocKy, MaMonHoc) VALUES
-  -- Chi tiết phiếu PD001 (HK1_2024)
-  ('PD001','HK1_2024','GD002'),('PD001','HK1_2024','IT101'),('PD001','HK1_2024','BCH058'),
-  -- Chi tiết phiếu PD002 (HK1_2024)  
-  ('PD002','HK1_2024','LTU101'),('PD002','HK1_2024','SS003'),('PD002','HK1_2024','MKT101'),
-  -- Chi tiết phiếu PD003 (HK1_2024)
-  ('PD003','HK1_2024','SE101'),('PD003','HK1_2024','QC101'),('PD003','HK1_2024','BUS1125'),
-  -- Chi tiết phiếu PD004 (HK2_2024)
-  ('PD004','HK2_2024','DS101'),('PD004','HK2_2024','LTU102'),('PD004','HK2_2024','SS004'),
-  -- Chi tiết phiếu PD005 (HK2_2024)
-  ('PD005','HK2_2024','IT103'),('PD005','HK2_2024','CE103'),('PD005','HK2_2024','EE105'),
-  -- Chi tiết phiếu PD006 (HK1_2025)
-  ('PD006','HK1_2025','LTU201'),('PD006','HK1_2025','SS006'),('PD006','HK1_2025','IT201'),
-  -- Chi tiết phiếu PD007 (HK1_2025)
-  ('PD007','HK1_2025','CE118'),('PD007','HK1_2025','EE214'),('PD007','HK1_2025','AI001'),
-  -- Chi tiết phiếu PD008 (HK2_2025)
-  ('PD008','HK2_2025','LTU202'),('PD008','HK2_2025','SS007'),('PD008','HK2_2025','IT301');
+  -- Chi tiết học kỳ cũ
+  ('PD001','HK1_2024','GD002'),
+  ('PD001','HK1_2024','IT101'),
+  ('PD001','HK1_2024','BCH058'),
+  
+  ('PD002','HK1_2024','LTU101'),
+  ('PD002','HK1_2024','SS003'),
+  ('PD002','HK1_2024','MKT101'),
+  
+  ('PD003','HK1_2024','SE101'),
+  ('PD003','HK1_2024','QC101'),
+  ('PD003','HK1_2024','BUS1125'),
+  ('PD003','HK1_2024','LTU201'),
+  
+  ('PD004','HK2_2024','DS101'),
+  ('PD004','HK2_2024','LTU102'),
+  ('PD004','HK2_2024','SS004'),
+  
+  ('PD005','HK2_2024','IT103'),
+  ('PD005','HK2_2024','CE103'),
+  ('PD005','HK2_2024','EE105'),
+  ('PD005','HK2_2024','MKT201'),
+  ('PD005','HK2_2024','SE201'),
+  
+  -- Chi tiết học kỳ hiện tại HK1_2025 - PHONG PHÚ HÔN
+  ('PD006','HK1_2025','GD002'),
+  ('PD006','HK1_2025','BCH058'),
+  ('PD006','HK1_2025','BUS1125'),
+  ('PD006','HK1_2025','LTU101'),
+  ('PD006','HK1_2025','SS003'),
+  ('PD006','HK1_2025','IT101'),
+  
+  ('PD007','HK1_2025','MKT101'),
+  ('PD007','HK1_2025','SE101'),
+  ('PD007','HK1_2025','QC101'),
+  ('PD007','HK1_2025','LTU201'),
+  ('PD007','HK1_2025','SS006'),
+  ('PD007','HK1_2025','IT201'),
+  ('PD007','HK1_2025','CE118'),
+  
+  ('PD008','HK1_2025','EE214'),
+  ('PD008','HK1_2025','AI001'),
+  ('PD008','HK1_2025','GD002'),
+  ('PD008','HK1_2025','BCH058'),
+  ('PD008','HK1_2025','BUS1125'),
+  ('PD008','HK1_2025','LTU101'),
+  ('PD008','HK1_2025','SS003'),
+  ('PD008','HK1_2025','IT101'),
+  
+  ('PD009','HK1_2025','MKT101'),
+  ('PD009','HK1_2025','SE101'),
+  ('PD009','HK1_2025','QC101'),
+  ('PD009','HK1_2025','LTU201'),
+  ('PD009','HK1_2025','SS006'),
+  ('PD009','HK1_2025','IT201'),
+  
+  ('PD010','HK1_2025','CE118'),
+  ('PD010','HK1_2025','EE214'),
+  ('PD010','HK1_2025','AI001'),
+  ('PD010','HK1_2025','GD002'),
+  ('PD010','HK1_2025','BCH058'),
+  ('PD010','HK1_2025','BUS1125'),
+  ('PD010','HK1_2025','LTU101'),
+  
+  ('PD011','HK1_2025','SS003'),
+  ('PD011','HK1_2025','IT101'),
+  ('PD011','HK1_2025','MKT101'),
+  ('PD011','HK1_2025','SE101'),
+  ('PD011','HK1_2025','QC101'),
+  ('PD011','HK1_2025','LTU201'),
+  ('PD011','HK1_2025','SS006'),
+  ('PD011','HK1_2025','IT201'),
+  
+  ('PD012','HK1_2025','CE118'),
+  ('PD012','HK1_2025','EE214'),
+  ('PD012','HK1_2025','AI001'),
+  ('PD012','HK1_2025','GD002'),
+  ('PD012','HK1_2025','BCH058'),
+  ('PD012','HK1_2025','BUS1125'),
+  
+  ('PD013','HK1_2025','LTU101'),
+  ('PD013','HK1_2025','SS003'),
+  ('PD013','HK1_2025','IT101'),
+  ('PD013','HK1_2025','MKT101'),
+  ('PD013','HK1_2025','SE101'),
+  ('PD013','HK1_2025','QC101'),
+  ('PD013','HK1_2025','LTU201'),
+  
+  ('PD014','HK1_2025','SS006'),
+  ('PD014','HK1_2025','IT201'),
+  ('PD014','HK1_2025','CE118'),
+  ('PD014','HK1_2025','EE214'),
+  ('PD014','HK1_2025','AI001'),
+  ('PD014','HK1_2025','GD002'),
+  ('PD014','HK1_2025','BCH058'),
+  ('PD014','HK1_2025','BUS1125'),
+  
+  ('PD015','HK1_2025','LTU101'),
+  ('PD015','HK1_2025','SS003'),
+  ('PD015','HK1_2025','IT101'),
+  ('PD015','HK1_2025','MKT101'),
+  ('PD015','HK1_2025','SE101'),
+  ('PD015','HK1_2025','QC101'),
+  
+  ('PD016','HK1_2025','LTU201'),
+  ('PD016','HK1_2025','SS006'),
+  ('PD016','HK1_2025','IT201'),
+  ('PD016','HK1_2025','CE118'),
+  ('PD016','HK1_2025','EE214'),
+  ('PD016','HK1_2025','AI001'),
+  ('PD016','HK1_2025','GD002'),
+  
+  ('PD017','HK1_2025','BCH058'),
+  ('PD017','HK1_2025','BUS1125'),
+  ('PD017','HK1_2025','LTU101'),
+  ('PD017','HK1_2025','SS003'),
+  ('PD017','HK1_2025','IT101'),
+  ('PD017','HK1_2025','MKT101'),
+  ('PD017','HK1_2025','SE101'),
+  ('PD017','HK1_2025','QC101'),
+  
+  ('PD018','HK1_2025','LTU201'),
+  ('PD018','HK1_2025','SS006'),
+  ('PD018','HK1_2025','IT201'),
+  ('PD018','HK1_2025','CE118'),
+  ('PD018','HK1_2025','EE214'),
+  ('PD018','HK1_2025','AI001'),
+  
+  ('PD019','HK1_2025','GD002'),
+  ('PD019','HK1_2025','BCH058'),
+  ('PD019','HK1_2025','BUS1125'),
+  ('PD019','HK1_2025','LTU101'),
+  ('PD019','HK1_2025','SS003'),
+  ('PD019','HK1_2025','IT101'),
+  ('PD019','HK1_2025','MKT101'),
+  
+  ('PD020','HK1_2025','SE101'),
+  ('PD020','HK1_2025','QC101'),
+  ('PD020','HK1_2025','LTU201'),
+  ('PD020','HK1_2025','SS006'),
+  ('PD020','HK1_2025','IT201'),
+  ('PD020','HK1_2025','CE118'),
+  ('PD020','HK1_2025','EE214'),
+  ('PD020','HK1_2025','AI001'),
+  
+  ('PD021','HK1_2025','GD002'),
+  ('PD021','HK1_2025','BCH058'),
+  ('PD021','HK1_2025','BUS1125'),
+  ('PD021','HK1_2025','LTU101'),
+  ('PD021','HK1_2025','SS003'),
+  ('PD021','HK1_2025','IT101'),
+  
+  ('PD022','HK1_2025','MKT101'),
+  ('PD022','HK1_2025','SE101'),
+  ('PD022','HK1_2025','QC101'),
+  ('PD022','HK1_2025','LTU201'),
+  ('PD022','HK1_2025','SS006'),
+  ('PD022','HK1_2025','IT201'),
+  ('PD022','HK1_2025','CE118'),
+  
+  ('PD023','HK1_2025','EE214'),
+  ('PD023','HK1_2025','AI001'),
+  ('PD023','HK1_2025','GD002'),
+  ('PD023','HK1_2025','BCH058'),
+  ('PD023','HK1_2025','BUS1125'),
+  ('PD023','HK1_2025','LTU101'),
+  ('PD023','HK1_2025','SS003'),
+  ('PD023','HK1_2025','IT101'),
+  
+  ('PD024','HK1_2025','MKT101'),
+  ('PD024','HK1_2025','SE101'),
+  ('PD024','HK1_2025','QC101'),
+  ('PD024','HK1_2025','LTU201'),
+  ('PD024','HK1_2025','SS006'),
+  ('PD024','HK1_2025','IT201'),
+  
+  ('PD025','HK1_2025','CE118'),
+  ('PD025','HK1_2025','EE214'),
+  ('PD025','HK1_2025','AI001'),
+  ('PD025','HK1_2025','GD002'),
+  ('PD025','HK1_2025','BCH058'),
+  ('PD025','HK1_2025','BUS1125'),
+  ('PD025','HK1_2025','LTU101'),
+  
+  ('PD026','HK1_2025','SS003'),
+  ('PD026','HK1_2025','IT101'),
+  ('PD026','HK1_2025','MKT101'),
+  ('PD026','HK1_2025','SE101'),
+  ('PD026','HK1_2025','QC101'),
+  ('PD026','HK1_2025','LTU201'),
+  ('PD026','HK1_2025','SS006'),
+  ('PD026','HK1_2025','IT201'),
+  
+  ('PD027','HK1_2025','CE118'),
+  ('PD027','HK1_2025','EE214'),
+  ('PD027','HK1_2025','AI001'),
+  ('PD027','HK1_2025','GD002'),
+  ('PD027','HK1_2025','BCH058'),
+  ('PD027','HK1_2025','BUS1125'),
+  
+  ('PD028','HK1_2025','LTU101'),
+  ('PD028','HK1_2025','SS003'),
+  ('PD028','HK1_2025','IT101'),
+  ('PD028','HK1_2025','MKT101'),
+  ('PD028','HK1_2025','SE101'),
+  ('PD028','HK1_2025','QC101'),
+  ('PD028','HK1_2025','LTU201'),
+  
+  ('PD029','HK1_2025','SS006'),
+  ('PD029','HK1_2025','IT201'),
+  ('PD029','HK1_2025','CE118'),
+  ('PD029','HK1_2025','EE214'),
+  ('PD029','HK1_2025','AI001'),
+  ('PD029','HK1_2025','GD002'),
+  ('PD029','HK1_2025','BCH058'),
+  ('PD029','HK1_2025','BUS1125'),
+  
+  ('PD030','HK1_2025','LTU101'),
+  ('PD030','HK1_2025','SS003'),
+  ('PD030','HK1_2025','IT101'),
+  ('PD030','HK1_2025','MKT101'),
+  ('PD030','HK1_2025','SE101'),
+  ('PD030','HK1_2025','QC101'),
+  
+  ('PD031','HK1_2025','LTU201'),
+  ('PD031','HK1_2025','SS006'),
+  ('PD031','HK1_2025','IT201'),
+  ('PD031','HK1_2025','CE118'),
+  ('PD031','HK1_2025','EE214'),
+  ('PD031','HK1_2025','AI001'),
+  ('PD031','HK1_2025','GD002'),
+  
+  ('PD032','HK1_2025','BCH058'),
+  ('PD032','HK1_2025','BUS1125'),
+  ('PD032','HK1_2025','LTU101'),
+  ('PD032','HK1_2025','SS003'),
+  ('PD032','HK1_2025','IT101'),
+  ('PD032','HK1_2025','MKT101'),
+  ('PD032','HK1_2025','SE101'),
+  ('PD032','HK1_2025','QC101'),
+  
+  ('PD033','HK1_2025','LTU201'),
+  ('PD033','HK1_2025','SS006'),
+  ('PD033','HK1_2025','IT201'),
+  ('PD033','HK1_2025','CE118'),
+  ('PD033','HK1_2025','EE214'),
+  ('PD033','HK1_2025','AI001'),
+  
+  ('PD034','HK1_2025','GD002'),
+  ('PD034','HK1_2025','BCH058'),
+  ('PD034','HK1_2025','BUS1125'),
+  ('PD034','HK1_2025','LTU101'),
+  ('PD034','HK1_2025','SS003'),
+  ('PD034','HK1_2025','IT101'),
+  ('PD034','HK1_2025','MKT101'),
+  
+  ('PD035','HK1_2025','SE101'),
+  ('PD035','HK1_2025','QC101'),
+  ('PD035','HK1_2025','LTU201'),
+  ('PD035','HK1_2025','SS006'),
+  ('PD035','HK1_2025','IT201'),
+  ('PD035','HK1_2025','CE118'),
+  ('PD035','HK1_2025','EE214'),
+  ('PD035','HK1_2025','AI001'),
+  
+  ('PD036','HK1_2025','GD002'),
+  ('PD036','HK1_2025','BCH058'),
+  ('PD036','HK1_2025','BUS1125'),
+  ('PD036','HK1_2025','LTU101'),
+  ('PD036','HK1_2025','SS003'),
+  ('PD036','HK1_2025','IT101'),
+  
+  ('PD037','HK1_2025','MKT101'),
+  ('PD037','HK1_2025','SE101'),
+  ('PD037','HK1_2025','QC101'),
+  ('PD037','HK1_2025','LTU201'),
+  ('PD037','HK1_2025','SS006'),
+  ('PD037','HK1_2025','IT201'),
+  ('PD037','HK1_2025','CE118'),
+  
+  ('PD038','HK1_2025','EE214'),
+  ('PD038','HK1_2025','AI001'),
+  ('PD038','HK1_2025','GD002'),
+  ('PD038','HK1_2025','BCH058'),
+  ('PD038','HK1_2025','BUS1125'),
+  ('PD038','HK1_2025','LTU101'),
+  ('PD038','HK1_2025','SS003'),
+  ('PD038','HK1_2025','IT101'),
+  
+  ('PD039','HK1_2025','MKT101'),
+  ('PD039','HK1_2025','SE101'),
+  ('PD039','HK1_2025','QC101'),
+  ('PD039','HK1_2025','LTU201'),
+  ('PD039','HK1_2025','SS006'),
+  ('PD039','HK1_2025','IT201'),
+  
+  ('PD040','HK1_2025','CE118'),
+  ('PD040','HK1_2025','EE214'),
+  ('PD040','HK1_2025','AI001'),
+  ('PD040','HK1_2025','GD002'),
+  ('PD040','HK1_2025','BCH058'),
+  ('PD040','HK1_2025','BUS1125'),
+  ('PD040','HK1_2025','LTU101');
 
 INSERT INTO PHIEUTHUHP (MaPhieuThu, NgayLap, MaPhieuDangKy, SoTienDong) VALUES
   ('PT001','2024-08-15','PD001',5000000),
@@ -1376,19 +1728,13 @@ INSERT INTO CHUCNANG (MaChucNang, TenChucNang, TenManHinhDuocLoad) VALUES
   ('CN04','Quản lý học phí','TuitionManagement'),
   ('CN05','Báo cáo tổng hợp','ReportDashboard');
 
-INSERT INTO NHOMNGUOIDUNG (MaNhom, TenNhom) VALUES
-  ('N4','Kế toán');
-
--- Kế toán: quản lý học phí và báo cáo
-INSERT INTO PHANQUYEN (MaNhom, MaChucNang) VALUES
-  ('N4','CN04'),
-  ('N4','CN05');
-
 
 INSERT INTO NHOMNGUOIDUNG (MaNhom, TenNhom) VALUES
   ('N1','Admin'),
   ('N2','Giảng viên'),
   ('N3','Sinh viên');
+INSERT INTO NHOMNGUOIDUNG (MaNhom, TenNhom) VALUES
+  ('N4','Kế toán');
 
 -- Admin: toàn quyền CN01–CN05
 INSERT INTO PHANQUYEN (MaNhom, MaChucNang) VALUES
@@ -1406,11 +1752,17 @@ INSERT INTO PHANQUYEN (MaNhom, MaChucNang) VALUES
 -- Sinh viên: đăng ký học phần
 INSERT INTO PHANQUYEN (MaNhom, MaChucNang) VALUES
   ('N3','CN02');
+
+-- Kế toán: quản lý học phí và báo cáo
+INSERT INTO PHANQUYEN (MaNhom, MaChucNang) VALUES
+  ('N4','CN04'),
+  ('N4','CN05');
+
 INSERT INTO NGUOIDUNG (TenDangNhap, UserID, MatKhau, MaNhom, MaSoSinhVien, TrangThai) VALUES
   ('admin','U001','123', 'N1', NULL, 'active'),
   ('giangvien','U002','123', 'N2', NULL, 'active'),
-  ('ketoan','U004','123','N4',NULL, 'active'),
-  ('sv0001','U003','123','N3','SV0001', 'active'),
+  ('ketoan','U003','123','N4',NULL, 'active'),
+  ('sv0001','U1003','123','N3','SV0001', 'active'),
   ('sv0002','U004','123','N3','SV0002', 'active'),
   ('sv0003','U005','123','N3','SV0003', 'active'),
   ('sv0004','U006','123','N3','SV0004', 'active'),
@@ -2413,7 +2765,11 @@ INSERT INTO NGUOIDUNG (TenDangNhap, UserID, MatKhau, MaNhom, MaSoSinhVien, Trang
 
 INSERT INTO REGISTRATION_LOG (MaSoSinhVien, TenSinhVien, MaMonHoc, TenMonHoc, LoaiYeuCau, ThoiGianYeuCau)
 VALUES
-('21120123', 'Nguyễn Văn A', 'CS101', 'Nhập môn Công nghệ phần mềm', 'register', '2025-05-15 08:30:15'),
-('21120456', 'Trần Thị B', 'CS102', 'Cơ sở dữ liệu', 'cancel', '2025-05-14 12:45:47'),
-('21120789', 'Lê Hoàng C', 'CS103', 'Mạng máy tính', 'register', '2025-05-13 09:12:33'),
-('21120112', 'Phạm Minh D', 'CS104', 'Trí tuệ nhân tạo', 'cancel', '2025-05-12 10:05:20');
+('SV0001', 'Hoàng Thị Khánh', 'BCH058', 'Kỹ năng truyền thông giao tiếp', 'register', '2025-05-15 08:30:15'),
+('SV0002', 'Hoàng Văn Cường', 'LTU101', 'Anh văn cơ bản 1', 'cancel', '2025-05-14 12:45:47'),
+('SV0003', 'Phạm Ngọc Hà', 'SS003', 'Tư tưởng Hồ Chí Minh', 'register', '2025-05-13 09:12:33'),
+('SV0004', 'Vũ Văn Hoa', 'BUS1125', 'Khởi nghiệp kinh doanh', 'cancel', '2025-05-12 10:05:20'),
+('SV0005', 'Nguyễn Thị Mai', 'LTU201', 'Anh văn chuyên ngành 1', 'register', '2025-05-11 14:20:30'),
+('SV0006', 'Phan Thanh Cường', 'SS007', 'Triết học Mác–Lênin', 'register', '2025-05-10 16:15:45'),
+('SV0007', 'Huỳnh Quang Linh', 'CE103', 'Vi xử lý-vi điều khiển', 'cancel', '2025-05-09 11:30:22'),
+('SV0008', 'Phan Ngọc Khánh', 'TLH025', 'Tâm lý học nhân cách', 'register', '2025-05-08 09:45:18');

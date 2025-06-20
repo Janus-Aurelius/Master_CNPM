@@ -3,17 +3,90 @@ import Sheet from '@mui/joy/Sheet';
 import Typography from '@mui/joy/Typography';
 import Table from '@mui/joy/Table';
 import { TableRow } from "@mui/material";
+import { Card, CardContent, Chip } from '@mui/material';
+
+// Component SubjectCard đơn giản chỉ hiển thị mã môn và tên môn
+const SubjectCard = ({ subject }: { subject: TimetableSubject }) => {
+    return (
+        <Card
+            sx={{
+                background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)',
+                borderRadius: '8px',
+                border: '1px solid #dee2e6',
+                height: '100%',
+                minHeight: '70px',
+                position: 'relative',
+                overflow: 'hidden',
+                cursor: 'pointer',
+                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+                '&:hover': {
+                    transform: 'translateY(-1px)',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.12)',
+                    background: 'linear-gradient(135deg, #ffffff 0%, #f1f3f4 100%)',
+                },
+            }}
+        >
+            <CardContent sx={{ 
+                p: 1, 
+                color: '#495057', 
+                height: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center',
+                alignItems: 'center',
+                textAlign: 'center',
+                '&:last-child': { pb: 1 }
+            }}>
+                {/* Mã môn học */}
+                <Chip
+                    label={subject.id}
+                    size="small"
+                    sx={{
+                        backgroundColor: '#6c757d',
+                        color: 'white',
+                        fontWeight: 'bold',
+                        fontSize: '0.75rem',
+                        height: '22px',
+                        mb: 1,
+                        '& .MuiChip-label': {
+                            px: 0.8,
+                            fontFamily: '"Inter", sans-serif',
+                            letterSpacing: '0.3px',
+                        }
+                    }}
+                />
+
+                {/* Tên môn học */}
+                <Typography
+                    sx={{
+                        fontWeight: 'bold',
+                        fontSize: '0.85rem',
+                        lineHeight: 1.3,
+                        color: '#212529',
+                        display: '-webkit-box',
+                        WebkitLineClamp: 3,
+                        WebkitBoxOrient: 'vertical',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        fontFamily: '"Inter", sans-serif',
+                        textAlign: 'center',
+                    }}
+                >
+                    {subject.name}
+                </Typography>
+            </CardContent>
+        </Card>
+    );
+};
 
 export interface TimetableSubject {
     id: string;
     name: string;
-    lecturer: string;
     day: string; // 'Thứ 2', 'Thứ 3', ...
     session: string; // '1', '2', ...
     fromTo: string; // 'Tiết 1-4'
-    room?: string;
-    startDate?: string;
-    endDate?: string;
+    credits?: number;
 }
 
 interface TimetableGridProps {
@@ -47,17 +120,51 @@ export function TimetableGrid({ subjects }: TimetableGridProps) {
             'Thứ 7': 6,
         };
         return map[day] ?? -1;
+    };    // Helper: parse fromTo để lấy start và end period
+    const parsePeriod = (fromTo: string) => {
+        // Parse "Tiết 1-3" -> {start: 1, end: 3}
+        const match = fromTo.match(/(\d+)-(\d+)/);
+        if (match) {
+            return { start: parseInt(match[1]), end: parseInt(match[2]) };
+        }
+        // Parse "Tiết 1" -> {start: 1, end: 1}  
+        const singleMatch = fromTo.match(/(\d+)/);
+        if (singleMatch) {
+            const period = parseInt(singleMatch[1]);
+            return { start: period, end: period };
+        }
+        return { start: 1, end: 1 };
     };
-    // Helper: chuyển session '1' -> 0, '2' -> 1, ...
-    const sessionToIndex = (session: string) => parseInt(session) - 1;
 
-    // Tạo ma trận thời khóa biểu
+    // Tạo ma trận thời khóa biểu với spanning
     const grid: (TimetableSubject | null)[][] = Array.from({ length: 10 }, () => Array(7).fill(null));
+    const spanInfo: { [key: string]: { rowSpan: number; isFirst: boolean } } = {};
+    
     subjects.forEach(subj => {
         const dayIdx = dayToIndex(subj.day);
-        const sessionIdx = sessionToIndex(subj.session);
-        if (dayIdx >= 1 && dayIdx <= 6 && sessionIdx >= 0 && sessionIdx < 10) {
-            grid[sessionIdx][dayIdx] = subj;
+        const { start, end } = parsePeriod(subj.fromTo);
+        const startIdx = start - 1; // Convert to 0-based index
+        const endIdx = end - 1;
+        
+        if (dayIdx >= 1 && dayIdx <= 6 && startIdx >= 0 && startIdx < 10) {
+            // Đặt subject vào ô đầu tiên
+            grid[startIdx][dayIdx] = subj;
+            
+            // Tạo span info
+            const spanKey = `${startIdx}-${dayIdx}`;
+            spanInfo[spanKey] = {
+                rowSpan: endIdx - startIdx + 1,
+                isFirst: true
+            };
+            
+            // Đánh dấu các ô tiếp theo là occupied
+            for (let i = startIdx + 1; i <= endIdx && i < 10; i++) {
+                grid[i][dayIdx] = subj; // Đặt cùng một subject
+                spanInfo[`${i}-${dayIdx}`] = {
+                    rowSpan: 0,
+                    isFirst: false
+                };
+            }
         }
     });
 
@@ -120,13 +227,15 @@ export function TimetableGrid({ subjects }: TimetableGridProps) {
                                 fontSize: '1rem',
                                 color: '#FFFFFF',
                                 borderRight: '0.0625rem solid #cccccc',
-                            },
-                            '& tbody td': {
+                            },                            '& tbody td': {
                                 textAlign: 'center',
-                                padding: '0.625rem',
+                                padding: '0.2rem',
                                 fontSize: '0.875rem',
                                 color: '#4a4a4a',
                                 backgroundColor: '#FFFFFF',
+                                verticalAlign: 'top',
+                                height: '80px',
+                                position: 'relative',
                             },
                             '& tr > *:first-child': {
                                 position: 'sticky',
@@ -176,40 +285,30 @@ export function TimetableGrid({ subjects }: TimetableGridProps) {
                                         >
                                             {timeSlot}
                                         </Typography>
-                                    </td>
-                                    {days.slice(1).map((_, colIdx) => (
-                                        <td key={colIdx}>
-                                            {grid[rowIdx][colIdx + 1] ? (
-                                                <Box
-                                                    sx={{
-                                                        backgroundColor: '#e0f7fa',
-                                                        borderRadius: '0.5rem',
-                                                        p: 1,
-                                                        minHeight: '3.5rem',
-                                                        boxShadow: '0 2px 8px rgba(0,0,0,0.07)',
-                                                        fontFamily: '"Varela Round", sans-serif',
-                                                    }}
-                                                >
-                                                    <Typography fontWeight={700} fontSize={14} mb={0.5}>
-                                                        {grid[rowIdx][colIdx + 1]?.id} - {grid[rowIdx][colIdx + 1]?.name}
-                                                    </Typography>
-                                                    <Typography fontSize={13} mb={0.5}>
-                                                        {grid[rowIdx][colIdx + 1]?.lecturer}
-                                                    </Typography>
-                                                    {grid[rowIdx][colIdx + 1]?.room && (
-                                                        <Typography fontSize={12} mb={0.5}>
-                                                            Phòng: {grid[rowIdx][colIdx + 1]?.room}
-                                                        </Typography>
-                                                    )}
-                                                    {grid[rowIdx][colIdx + 1]?.startDate && grid[rowIdx][colIdx + 1]?.endDate && (
-                                                        <Typography fontSize={12}>
-                                                            BD: {grid[rowIdx][colIdx + 1]?.startDate}<br />KT: {grid[rowIdx][colIdx + 1]?.endDate}
-                                                        </Typography>
-                                                    )}
-                                                </Box>
-                                            ) : null}
-                                        </td>
-                                    ))}
+                                    </td>                                    {days.slice(1).map((_, colIdx) => {
+                                        const spanKey = `${rowIdx}-${colIdx + 1}`;
+                                        const span = spanInfo[spanKey];
+                                        
+                                        // Skip nếu không phải ô đầu tiên của span
+                                        if (span && !span.isFirst) {
+                                            return null;
+                                        }
+                                        
+                                        return (
+                                            <td 
+                                                key={colIdx}
+                                                rowSpan={span ? span.rowSpan : 1}
+                                                style={{
+                                                    verticalAlign: 'top',
+                                                    padding: span && span.rowSpan > 1 ? '0.3rem' : '0.4rem'
+                                                }}
+                                            >
+                                                {grid[rowIdx][colIdx + 1] && span?.isFirst ? (
+                                                    <SubjectCard subject={grid[rowIdx][colIdx + 1]!} />
+                                                ) : null}
+                                            </td>
+                                        );
+                                    })}
                                 </TableRow>
                             ))}
                         </tbody>

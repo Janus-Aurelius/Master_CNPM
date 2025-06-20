@@ -341,12 +341,11 @@ class DashboardManager {
             
             // Get available courses that student hasn't enrolled yet
             const courses = await OpenCourseService.getAllCourses();
-            
-            // Filter to only show courses from current semester and available for registration
+              // Filter to only show courses from current semester and available for registration
             return courses.filter(course => 
                 course.semesterId === semester && 
                 course.currentStudents < course.maxStudents &&
-                course.isAvailable !== false
+                course.status === 'Mở'
             ).slice(0, 5); // Show top 5 available courses
             
         } catch (error) {

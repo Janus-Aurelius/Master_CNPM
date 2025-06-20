@@ -21,7 +21,9 @@ interface StyledNavItemProps {
     selected?: boolean;
 }
 
-const StyledNavItem = styled.div<StyledNavItemProps>`
+const StyledNavItem = styled.div.withConfig({
+    shouldForwardProp: (prop) => prop !== 'isLogout' && prop !== 'selected',
+})<StyledNavItemProps>`
     text-align: left;
     border-radius: 15px;
     padding: 20px 13px;

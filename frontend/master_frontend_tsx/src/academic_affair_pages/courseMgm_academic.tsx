@@ -28,7 +28,7 @@ import {
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
-import { courseApi } from '../api_clients/courseApi';
+import { courseApi } from '../api_clients/academic/courseApi';
 import { Subject } from '../types/course';
 import SearchIcon from '@mui/icons-material/Search';
 
@@ -82,7 +82,7 @@ const CourseMgmAcademic: React.FC<AcademicPageProps> = ({ user, onLogout }) => {
 
     const uniqueMaLoaiMon = useMemo(() => Array.from(new Set(subjects.map(s => s.maLoaiMon))).filter(Boolean), [subjects]);
     const uniqueSoTiet = useMemo(() => Array.from(new Set(subjects.map(s => s.soTiet))).filter(Boolean), [subjects]);
-    const uniqueCredits = useMemo(() => Array.from(new Set(subjects.map(s => parseInt(s.credits.toString(), 10)))).filter(Boolean), [subjects]);
+    const uniqueCredits = useMemo(() => Array.from(new Set(subjects.map(s => parseInt((s.credits || 0).toString(), 10)))).filter(Boolean), [subjects]);
 
     const filteredSubjects = useMemo(() => {
         return subjects.filter(subject => {
@@ -90,7 +90,7 @@ const CourseMgmAcademic: React.FC<AcademicPageProps> = ({ user, onLogout }) => {
             const matchesTenMonHoc = subject.tenMonHoc.toLowerCase().includes(searchTenMonHoc.toLowerCase());
             const matchesMaLoaiMon = maLoaiMonFilter === 'all' || subject.maLoaiMon === maLoaiMonFilter;
             const matchesSoTiet = soTietFilter === 'all' || subject.soTiet === Number(soTietFilter);
-            const matchesCredits = creditsFilter === 'all' || parseInt(subject.credits.toString(), 10) === Number(creditsFilter);
+            const matchesCredits = creditsFilter === 'all' || parseInt((subject.credits || 0).toString(), 10) === Number(creditsFilter);
             return matchesMaMonHoc && matchesTenMonHoc && matchesMaLoaiMon && matchesSoTiet && matchesCredits;
         });
     }, [subjects, searchMaMonHoc, searchTenMonHoc, maLoaiMonFilter, soTietFilter, creditsFilter]);
@@ -125,13 +125,12 @@ const CourseMgmAcademic: React.FC<AcademicPageProps> = ({ user, onLogout }) => {
 
     const handleCloseDialog = () => {
         setOpenDialog(false);
-    };
-
-    const handleUpdate = async (id: string, subject: Subject) => {
+    };    const handleUpdate = async (subject: Subject) => {
         try {
             if (!oldMaMonHoc) return;
             await courseApi.updateCourse(oldMaMonHoc, subject);
-            fetchSubjects();
+            await fetchSubjects(); // Fetch lại data
+            handleCloseDialog(); // Đóng dialog
             setSnackbar({ open: true, message: 'Cập nhật môn học thành công!', severity: 'success' });
         } catch (error: any) {
             setSnackbar({ open: true, message: error?.message || 'Có lỗi khi cập nhật môn học', severity: 'error' });
@@ -141,7 +140,8 @@ const CourseMgmAcademic: React.FC<AcademicPageProps> = ({ user, onLogout }) => {
     const handleCreate = async (subject: Subject) => {
         try {
             await courseApi.createCourse(subject);
-            fetchSubjects();
+            await fetchSubjects(); // Fetch lại data
+            handleCloseDialog(); // Đóng dialog
             setSnackbar({ open: true, message: 'Thêm môn học thành công!', severity: 'success' });
         } catch (error: any) {
             if (error?.message?.includes('Mã môn học đã tồn tại')) {
@@ -184,13 +184,14 @@ const CourseMgmAcademic: React.FC<AcademicPageProps> = ({ user, onLogout }) => {
 
     const handleCancelDelete = () => {
         setConfirmDelete({ open: false, id: null });
-    };
-
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    };    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
+        // Không xử lý trường credits vì nó được tính tự động
+        if (name === 'credits') return;
+        
         setCurrentSubject({
             ...currentSubject,
-            [name]: name === "credits" || name === "soTiet" ? Number(value) : value
+            [name]: name === "soTiet" ? Number(value) : value
         });
     };
 
@@ -788,9 +789,37 @@ const CourseMgmAcademic: React.FC<AcademicPageProps> = ({ user, onLogout }) => {
                                             backgroundColor: '#fff',
                                         }
                                     }
-                                }}
-                            />
-                        </Grid>
+                                }}                            />                        </Grid>
+                        {/* Chỉ hiển thị trường credits khi đang chỉnh sửa và set read-only */}
+                        {isEditing && (
+                            <Grid item xs={12} md={6}>
+                                <TextField
+                                    name="credits"
+                                    label="Số tín chỉ"
+                                    type="number"
+                                    fullWidth
+                                    margin="normal"
+                                    variant="outlined"
+                                    value={currentSubject.credits}
+                                    InputProps={{
+                                        readOnly: true,
+                                    }}
+                                    sx={{
+                                        '& .MuiOutlinedInput-root': {
+                                            borderRadius: '12px',
+                                            backgroundColor: '#f5f5f5',
+                                            '& input': {
+                                                color: '#666',
+                                            }
+                                        },
+                                        '& .MuiInputLabel-root': {
+                                            color: '#666',
+                                        }
+                                    }}
+                                    helperText="Được tính tự động từ số tiết và loại môn"
+                                />
+                            </Grid>
+                        )}
                     </Grid>
                 </DialogContent>
                 <DialogActions sx={{
@@ -804,12 +833,11 @@ const CourseMgmAcademic: React.FC<AcademicPageProps> = ({ user, onLogout }) => {
                 }}>
                     <Button onClick={handleCloseDialog} color="primary">
                         Hủy
-                    </Button>
-                    <Button variant="contained" color="primary" onClick={() => {
+                    </Button>                    <Button variant="contained" color="primary" onClick={async () => {
                         if (isEditing) {
-                            handleUpdate(currentSubject.maMonHoc, currentSubject);
+                            await handleUpdate(currentSubject);
                         } else {
-                            handleCreate(currentSubject);
+                            await handleCreate(currentSubject);
                         }
                     }}>
                         {isEditing ? "Cập nhật" : "Thêm mới"}

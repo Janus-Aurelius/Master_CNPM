@@ -27,16 +27,29 @@ export class AcademicDashboardController {
                 error: error instanceof Error ? error.message : 'Unknown error' 
             });
         }
-    }
-
-    static async getRecentActivities(req: Request, res: Response) {
+    }    static async getRecentActivities(req: Request, res: Response) {
         try {
             const limit = parseInt(req.query.limit as string) || 5;
             const activities = await AcademicDashboardBusiness.getRecentActivities(limit);
             res.status(200).json({ success: true, data: activities });
         } catch (error) {
             res.status(500).json({ 
-                success: false,                message: 'Error fetching recent activities', 
+                success: false,
+                message: 'Error fetching recent activities', 
+                error: error instanceof Error ? error.message : 'Unknown error' 
+            });
+        }
+    }
+
+    static async getStudentRequests(req: Request, res: Response) {
+        try {
+            const limit = parseInt(req.query.limit as string) || 10;
+            const requests = await AcademicDashboardBusiness.getStudentRequests(limit);
+            res.status(200).json({ success: true, data: requests });
+        } catch (error) {
+            res.status(500).json({ 
+                success: false,
+                message: 'Error fetching student requests', 
                 error: error instanceof Error ? error.message : 'Unknown error' 
             });
         }

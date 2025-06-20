@@ -5,43 +5,49 @@ import { IOfferedCourse } from '../../models/academic_related/openCourse';
 import { DatabaseService } from '../database/databaseService';
 
 export const dashboardService = {    async getStudentOverview(studentId: string): Promise<IStudentOverview | null> {
-        try {
-            // Get student info
+        try {            // Get student info với thông tin ngành đầy đủ từ bảng SINHVIEN
             const student = await DatabaseService.queryOne(`
                 SELECT 
-                    student_id as "studentId",
-                    name,
-                    email,
-                    phone,
-                    address,
-                    date_of_birth as "dateOfBirth",
-                    enrollment_year as "enrollmentYear",
-                    major,
-                    faculty,
-                    program,
-                    status
-                FROM students 
-                WHERE student_id = $1
+                    s.MaSoSinhVien as "studentId",
+                    s.HoTen as "name",
+                    s.Email as "email",
+                    s.SoDienThoai as "phone",
+                    s.DiaChi as "address",
+                    s.NgaySinh as "dateOfBirth",
+                    '2024' as "enrollmentYear",
+                    s.MaNganh as "major",
+                    '' as "faculty",
+                    '' as "program",
+                    'active' as "status",
+                    -- Lấy thông tin ngành từ mapping
+                    CASE 
+                        WHEN s.MaNganh = 'CNPM' THEN 'Công nghệ phần mềm'
+                        WHEN s.MaNganh = 'KHMT' THEN 'Khoa học máy tính' 
+                        WHEN s.MaNganh = 'HTTT' THEN 'Hệ thống thông tin'
+                        WHEN s.MaNganh = 'CNTT' THEN 'Công nghệ thông tin'
+                        WHEN s.MaNganh = 'TMDT' THEN 'Thương mại điện tử'
+                        WHEN s.MaNganh = 'KTPM' THEN 'Kỹ thuật phần mềm'
+                        WHEN s.MaNganh = 'VMC' THEN 'Viễn thông Multimedia'
+                        WHEN s.MaNganh = 'CNTT_Nhat' THEN 'Công nghệ thông tin (tiếng Nhật)'
+                        ELSE s.MaNganh
+                    END as "majorName"
+                FROM SINHVIEN s
+                WHERE s.MaSoSinhVien = $1
             `, [studentId]);
 
-            if (!student) return null;
-
-            // Get enrolled courses count and total credits
+            if (!student) return null;            // Get enrolled courses count and total credits từ bảng CT_PHIEUDANGKY
             const enrollmentStats = await DatabaseService.queryOne<{enrolled_count: number, total_credits: number}>(`
                 SELECT 
                     COUNT(*) as enrolled_count,
-                    SUM(s.credits) as total_credits
-                FROM enrollments e
-                JOIN subjects s ON e.course_id = s.id
-                WHERE e.student_id = $1 AND e.is_enrolled = true
+                    SUM(m.SoTiet / lm.SoTietMotTC) as total_credits
+                FROM CT_PHIEUDANGKY ct
+                JOIN MONHOC m ON ct.MaMonHoc = m.MaMonHoc
+                JOIN LOAIMON lm ON m.MaLoaiMon = lm.MaLoaiMon
+                WHERE ct.MaSoSinhVien = $1
             `, [studentId]);
 
-            // Get GPA
-            const gpa = await DatabaseService.queryOne<{gpa: number}>(`
-                SELECT COALESCE(AVG(total_grade), 0) as gpa
-                FROM grades
-                WHERE student_id = $1
-            `, [studentId]);            // Get available open courses
+            // Get GPA - tạm thời return 0 vì chưa có bảng điểm
+            const gpa = { gpa: 0 };// Get available open courses
             const availableOpenCourses = await DatabaseService.query<IOfferedCourse>(`
                 SELECT 
                     oc.id,
@@ -99,87 +105,33 @@ export const dashboardService = {    async getStudentOverview(studentId: string)
             console.error('Error getting student overview:', error);
             throw error;
         }
-    },    async getStudentSchedule(studentId: string): Promise<IStudentSchedule | null> {
+    },    // Lấy thời khóa biểu sinh viên từ CT_PHIEUDANGKY và DANHSACHMONHOCMO
+    async getStudentTimetable(studentId: string, semester: string = 'HK1_2024'): Promise<any[]> {
         try {
-            // Get student info
-            const student = await DatabaseService.queryOne(`
+            console.log(`🔵 [DashboardService] Getting timetable for student ${studentId} in semester ${semester}`);            // Lấy thời khóa biểu từ các bảng CT_PHIEUDANGKY, DANHSACHMONHOCMO, MONHOC
+            const timetableData = await DatabaseService.query(`
                 SELECT 
-                    student_id as "studentId",
-                    name,
-                    email,
-                    phone,
-                    address,
-                    date_of_birth as "dateOfBirth",
-                    enrollment_year as "enrollmentYear",
-                    major,
-                    faculty,
-                    program,
-                    status
-                FROM students 
-                WHERE student_id = $1
-            `, [studentId]);
+                    ct.MaMonHoc as "courseId",
+                    mh.TenMonHoc as "courseName",
+                    (mh.SoTiet / lm.SoTietMotTC) as "credits",
+                    ds.Thu as "dayOfWeek",
+                    ds.TietBatDau as "startPeriod",
+                    ds.TietKetThuc as "endPeriod"
+                FROM CT_PHIEUDANGKY ct
+                JOIN PHIEUDANGKY pd ON ct.MaPhieuDangKy = pd.MaPhieuDangKy
+                JOIN MONHOC mh ON ct.MaMonHoc = mh.MaMonHoc
+                JOIN LOAIMON lm ON mh.MaLoaiMon = lm.MaLoaiMon
+                JOIN DANHSACHMONHOCMO ds ON ct.MaMonHoc = ds.MaMonHoc AND ct.MaHocKy = ds.MaHocKy
+                WHERE pd.MaSoSinhVien = $1 AND ct.MaHocKy = $2
+                ORDER BY ds.Thu, ds.TietBatDau
+            `, [studentId, semester]);
 
-            if (!student) return null;
+            console.log(`✅ [DashboardService] Found ${timetableData.length} courses in timetable`);
+            console.log(`📋 [DashboardService] Timetable data:`, timetableData);
 
-            // Get current semester
-            const currentSemester = await DatabaseService.queryOne<{semester: string}>(`
-                SELECT semester 
-                FROM enrollments 
-                WHERE student_id = $1 
-                AND is_enrolled = true
-                ORDER BY semester DESC
-                LIMIT 1
-            `, [studentId]);
-
-            if (!currentSemester) return null;            // Get enrolled courses with schedule
-            const courses = await DatabaseService.query(`
-                SELECT 
-                    s.id,
-                    s.name,
-                    s.credits,
-                    s.lecturer,
-                    json_agg(
-                        json_build_object(
-                            'day', c.day,
-                            'time', CASE 
-                                WHEN c.session = '1' THEN '7:30-9:30'
-                                WHEN c.session = '2' THEN '9:30-11:30'
-                                WHEN c.session = '3' THEN '13:30-15:30'
-                                ELSE '15:30-17:30'
-                            END,
-                            'room', c.room
-                        )
-                    ) as schedule
-                FROM subjects s
-                JOIN enrollments e ON s.id = e.course_id
-                JOIN classes c ON s.id = c.subject_id
-                WHERE e.student_id = $1 
-                AND e.semester = $2
-                AND e.is_enrolled = true
-                GROUP BY s.id, s.name, s.credits, s.lecturer
-            `, [studentId, currentSemester.semester]);return {
-                student: {
-                    studentId: student.studentId,
-                    fullName: student.name,
-                    dateOfBirth: student.dateOfBirth,
-                    gender: student.gender,
-                    hometown: student.hometown,
-                    districtId: student.districtId,
-                    priorityObjectId: student.priorityObjectId,                    majorId: student.major,
-                    email: student.email,
-                    phone: student.phone
-                },
-                semester: currentSemester.semester,
-                courses: courses.map(s => ({
-                    id: s.id,
-                    name: s.name,
-                    credit: s.credits,
-                    schedule: s.schedule,
-                    lecturer: s.lecturer
-                }))
-            };
+            return timetableData;
         } catch (error) {
-            console.error('Error getting student schedule:', error);
+            console.error('❌ [DashboardService] Error getting student timetable:', error);
             throw error;
         }
     },

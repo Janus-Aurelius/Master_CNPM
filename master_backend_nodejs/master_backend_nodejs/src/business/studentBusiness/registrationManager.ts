@@ -71,11 +71,17 @@ class RegistrationManager {
 
     /**
      * Đăng ký môn học cho sinh viên
-     */
-    public async registerCourses(studentId: string, courseIds: string[], semesterId: string): Promise<IRegistrationManagerResponse> {
+     */    public async registerCourses(studentId: string, courseIds: string[], semesterId: string): Promise<IRegistrationManagerResponse> {
         try {
+            console.log('🔵 [RegistrationManager] registerCourses called with:', {
+                studentId,
+                courseIds,
+                semesterId
+            });
+            
             // Validate inputs
             if (!studentId || !courseIds || courseIds.length === 0 || !semesterId) {
+                console.log('❌ [RegistrationManager] Invalid inputs');
                 return {
                     success: false,
                     message: 'Thông tin đăng ký không đầy đủ'
@@ -83,13 +89,16 @@ class RegistrationManager {
             }
 
             // Check if semester exists
+            console.log('🔵 [RegistrationManager] Checking semester exists...');
             const semester = await DatabaseService.queryOne(`
                 SELECT MaHocKy, TrangThaiHocKy, ThoiHanDongHP
                 FROM HOCKYNAMHOC
                 WHERE MaHocKy = $1
             `, [semesterId]);
 
+            console.log('🔵 [RegistrationManager] Semester query result:', semester);
             if (!semester) {
+                console.log('❌ [RegistrationManager] Semester not found');
                 return {
                     success: false,
                     message: 'Học kỳ không tồn tại'
@@ -97,11 +106,14 @@ class RegistrationManager {
             }
 
             // Check student exists
+            console.log('🔵 [RegistrationManager] Checking student exists...');
             const student = await DatabaseService.queryOne(`
                 SELECT MaSoSinhVien FROM SINHVIEN WHERE MaSoSinhVien = $1
             `, [studentId]);
 
+            console.log('🔵 [RegistrationManager] Student query result:', student);
             if (!student) {
+                console.log('❌ [RegistrationManager] Student not found');
                 return {
                     success: false,
                     message: 'Sinh viên không tồn tại trong hệ thống'
@@ -109,12 +121,14 @@ class RegistrationManager {
             }
 
             // Perform registration
+            console.log('🔵 [RegistrationManager] Calling registrationService.registerCourses...');
             const result = await registrationService.registerCourses({
                 studentId,
                 courseIds,
                 semesterId
             });
 
+            console.log('🔵 [RegistrationManager] Registration service result:', result);
             return {
                 success: result.success,
                 message: result.message,
@@ -122,7 +136,7 @@ class RegistrationManager {
             };
 
         } catch (error) {
-            console.error('Error in registerCourses:', error);
+            console.error('❌ [RegistrationManager] Error in registerCourses:', error);
             return {
                 success: false,
                 message: 'Lỗi trong quá trình đăng ký môn học',
@@ -206,6 +220,48 @@ class RegistrationManager {
     }
 
     /**
+     * Lấy môn học theo chương trình học của sinh viên (gợi ý môn học theo ngành)
+     */
+    public async getRecommendedCourses(studentId: string, semesterId: string): Promise<IRegistrationManagerResponse> {
+        try {
+            if (!studentId || !semesterId) {
+                return {
+                    success: false,
+                    message: 'Thiếu thông tin sinh viên hoặc học kỳ'
+                };
+            }
+
+            const courses = await registrationService.getRecommendedCourses(studentId, semesterId);
+            
+            // Phân loại môn học theo thuộc ngành của sinh viên hoặc không
+            const inProgramCourses = courses.filter(course => course.isInProgram);
+            const notInProgramCourses = courses.filter(course => !course.isInProgram);
+            
+            return {
+                success: true,
+                message: `Tìm thấy ${courses.length} môn học (${inProgramCourses.length} môn thuộc ngành, ${notInProgramCourses.length} môn không thuộc ngành)`,
+                data: {
+                    all: courses,
+                    inProgram: inProgramCourses,
+                    notInProgram: notInProgramCourses,
+                    summary: {
+                        total: courses.length,
+                        inProgram: inProgramCourses.length,
+                        notInProgram: notInProgramCourses.length
+                    }
+                }
+            };
+        } catch (error) {
+            console.error('Error in getRecommendedCourses:', error);
+            return {
+                success: false,
+                message: 'Không thể lấy danh sách môn học theo chương trình',
+                error: error instanceof Error ? error.message : 'Unknown error'
+            };
+        }
+    }
+
+    /**
      * Alias methods for compatibility with controller
      */
     public async getAvailableSubjects(semesterId: string): Promise<IRegistrationManagerResponse> {
@@ -236,10 +292,31 @@ class RegistrationManager {
 
     public async registerSubject(studentId: string, courseId: string, semesterId: string): Promise<IRegistrationManagerResponse> {
         return await this.registerCourses(studentId, [courseId], semesterId);
-    }
+    }    public async getEnrolledCourses(studentId: string, semesterId?: string): Promise<IRegistrationManagerResponse> {
+        try {
+            if (!studentId) {
+                return {
+                    success: false,
+                    message: 'Mã sinh viên không được để trống'
+                };
+            }
 
-    public async getEnrolledCourses(studentId: string, semesterId?: string): Promise<IRegistrationManagerResponse> {
-        return await this.getRegisteredCourses(studentId, semesterId);
+            const semester = semesterId || 'HK1_2024';
+            const courses = await registrationService.getEnrolledCoursesWithSchedule(studentId, semester);
+            
+            return {
+                success: true,
+                message: `Sinh viên đã đăng ký ${courses.length} môn học`,
+                data: courses
+            };
+        } catch (error) {
+            console.error('Error in getEnrolledCourses:', error);
+            return {
+                success: false,
+                message: 'Không thể lấy danh sách môn học đã đăng ký',
+                error: error instanceof Error ? error.message : 'Unknown error'
+            };
+        }
     }
 
     public async cancelRegistration(studentId: string, courseId: string, semesterId?: string): Promise<IRegistrationManagerResponse> {

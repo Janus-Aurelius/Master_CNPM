@@ -42,20 +42,29 @@ export default function App() {
     console.log('App component loaded');
     const navigate = useNavigate();
     const [user, setUser] = useState<User | null>(null);
-    const [isAuthChecked, setIsAuthChecked] = useState(false);
-
-    useEffect(() => {
+    const [isAuthChecked, setIsAuthChecked] = useState(false);    useEffect(() => {
+        console.log('📱 App useEffect - Loading user from localStorage...');
         const userData = localStorage.getItem('user');
+        const token = localStorage.getItem('token');
+        
+        console.log('💾 Raw user data from localStorage:', userData);
+        console.log('🔑 Token from localStorage:', token);
+        
         if (userData) {
-            setUser(JSON.parse(userData));
+            const parsedUser = JSON.parse(userData);
+            console.log('👤 Parsed user data:', parsedUser);
+            setUser(parsedUser);
+        } else {
+            console.log('❌ No user data in localStorage');
         }
         setIsAuthChecked(true);
-    }, []);
-
-    const handleLogin = (userData: UserData) => {
+    }, []);    const handleLogin = (userData: UserData) => {
+        console.log('🔄 handleLogin called with:', userData);
         const userWithIndex = userData as User;
+        console.log('👤 Setting user state:', userWithIndex);
         setUser(userWithIndex);
         localStorage.setItem('user', JSON.stringify(userData));
+        console.log('💾 Updated localStorage user:', JSON.stringify(userData));
     };
 
     const handleLogout = () => {
@@ -97,14 +106,9 @@ export default function App() {
                         <Routes>
                             <Route index element={<StudentPage user={user} onLogout={handleLogout} />} />
                             <Route path="subjects" element={<SubjectRegistrationForm user={user} onLogout={handleLogout} />} />
-                            <Route path="academicReqMgm" element={<AcademicAffairDeptReqMgm onLogout={handleLogout}/>} />
-                            <Route path="enrolledSubjects" element={
+                            <Route path="academicReqMgm" element={<AcademicAffairDeptReqMgm onLogout={handleLogout}/>} />                            <Route path="enrolledSubjects" element={
                                 <EnrolledSubject
-                                    user={user} // Pass the user prop
-                                    handleUnenroll={(subject) => {
-                                        console.log("Unenrolling from", subject);
-                                        // Add your unenroll logic here
-                                    }}
+                                    user={user}
                                     onLogout={handleLogout}
                                 />
                             } />

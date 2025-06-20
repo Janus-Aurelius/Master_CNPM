@@ -4,15 +4,35 @@ export default interface ISemester {
     // Schema fields (mapped to Vietnamese database HOCKYNAMHOC)
     semesterId: string;         // MaHocKy (Primary Key)
     termNumber: number;         // HocKyThu (1, 2, 3 - for Fall, Spring, Summer)
+    startDate: Date;            // ThoiGianBatDau
+    endDate: Date;              // ThoiGianKetThuc
+    status: string;             // TrangThaiHocKy
+    academicYear: number;       // NamHoc
     feeDeadline: Date;          // ThoiHanDongHP
 
-    // Computed/derived fields
-    year: string;               // Extract from MaHocKy (e.g., "2024" from "2024_1")
-    academicYear: string;       // e.g., "2024-2025"
-    semesterName: string;       // e.g., "Fall 2024", "Spring 2025"
-
+    // Computed/derived fields for UI display
+    year?: string;              // Extract from academicYear (e.g., "2024")
+    academicYearDisplay?: string; // e.g., "2024-2025"
+    semesterName?: string;      // e.g., "HK1", "HK2", "HK3"
+    
     // Additional UI fields
-    startDate?: Date;           // For UI display
-    endDate?: Date;             // For UI display
     courses?: Course[];         // For UI display
+}
+
+// Interface for creating/updating semesters
+export interface ISemesterCreate {
+    semesterId: string;
+    termNumber: number;
+    startDate: Date;
+    endDate: Date;
+    status: string;
+    academicYear: number;
+    feeDeadline: Date;
+}
+
+// Interface for semester filters
+export interface ISemesterFilter {
+    academicYear?: number;
+    status?: string;
+    termNumber?: number;
 }

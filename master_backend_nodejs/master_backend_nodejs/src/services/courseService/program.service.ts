@@ -10,13 +10,18 @@ export interface Program {
     ghiChu?: string;
 }
 
-export class ProgramService {
-    static async getAllPrograms(): Promise<(Program & { thoiGianBatDau?: string, thoiGianKetThuc?: string })[]> {
+export class ProgramService {    static async getAllPrograms(): Promise<(Program & { thoiGianBatDau?: string, thoiGianKetThuc?: string, tenKhoa?: string, tenNganh?: string })[]> {
         try {
             const result = await DatabaseService.query(
-                `SELECT cth.*, hknh.thoigianbatdau, hknh.thoigianketthuc
+                `SELECT cth.*, 
+                        hknh.thoigianbatdau, 
+                        hknh.thoigianketthuc,
+                        k.tenkhoa,
+                        nh.tennganh
                  FROM chuongtrinhhoc cth
                  LEFT JOIN hockynamhoc hknh ON cth.mahocky = hknh.mahocky
+                 LEFT JOIN nganhhoc nh ON cth.manganh = nh.manganh
+                 LEFT JOIN khoa k ON nh.makhoa = k.makhoa
                  ORDER BY cth.manganh, cth.mahocky`
             );
             return result;

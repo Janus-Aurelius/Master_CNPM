@@ -4,44 +4,81 @@ import Typography from "@mui/material/Typography";
 import Snackbar from "@mui/material/Snackbar";
 import MuiAlert from "@mui/material/Alert";
 import Slide from "@mui/material/Slide";
-import { Subject, EnrolledSubjectProps } from "../types";
+import { EnrolledSubjectProps } from "../types";
 import Paper from "@mui/material/Paper";
 import { useState, useEffect } from "react";
 import { Box, Button, Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from "@mui/material";
 import UserInfo from "../components/UserInfo";
-import { getEnrolledSubjects, unenrollSubject } from "../api_clients/studentApi";
+import { enrolledSubjectApi, type EnrolledSubjectData } from "../api_clients/student/enrolledSubjectApi";
+import { enrollmentApi, parseSemesterInfo } from "../api_clients/student/enrollmentApi";
 
-export const EnrolledSubject = ({ user, handleUnenroll, onLogout }: EnrolledSubjectProps) => {
+export const EnrolledSubject = ({ user, onLogout }: Omit<EnrolledSubjectProps, 'handleUnenroll'>) => {
     const [open, setOpen] = useState(false);
-    const [subjects, setSubjects] = useState<Subject[]>([]);
+    const [subjects, setSubjects] = useState<EnrolledSubjectData[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-
-    useEffect(() => {
-        if (!user || !user.id) return;
+    const [studentInfo, setStudentInfo] = useState<{ studentId: any; name: any; major: any; majorName: any; } | null>(null);
+    const currentSemester = "HK1_2024";
+    
+    // Parse semester info
+    const semesterInfo = parseSemesterInfo(currentSemester);useEffect(() => {
+        console.log('🔄 EnrolledSubject useEffect triggered');
+        console.log('👤 User:', user);
+        
+        if (!user || !user.id) {
+            console.log('❌ No user or user.id, returning early');
+            return;
+        }
+        
+        console.log('✅ User found, starting to load enrolled subjects...');
         setLoading(true);
-        setError(null);
-        getEnrolledSubjects(String(user.id))
-            .then(setSubjects)
-            .catch((err) => setError(err.message || 'Lỗi khi tải danh sách môn học'))
-            .finally(() => setLoading(false));
-    }, [user]);
+        setError(null);        // Load cả thông tin sinh viên và môn học đã đăng ký
+        Promise.all([
+            enrollmentApi.getStudentInfo(),
+            enrolledSubjectApi.getEnrolledSubjects()
+        ])
+        .then(([studentData, enrolledSubjects]) => {
+            console.log('✅ Successfully loaded student info:', studentData);
+            console.log('✅ Successfully loaded enrolled subjects:', enrolledSubjects);
+            setStudentInfo(studentData);
+            setSubjects(enrolledSubjects);
+            setLoading(false);
+        })
+        .catch((err: any) => {
+            console.error('❌ Error loading data:', err);
+            setError(err.message || 'Không thể tải danh sách môn học đã đăng ký');
+            setLoading(false);
+        });
+    }, [user]);    const [snackbarMessage, setSnackbarMessage] = useState<string>('');
+    const [snackbarSeverity, setSnackbarSeverity] = useState<'success' | 'error'>('success');
 
     const handleClose = (_: React.SyntheticEvent | Event, reason?: string) => {
         if (reason === 'clickaway') return;
         setOpen(false);
     };
 
-    const handleUnenrollClick = async (subject: Subject) => {
+    const handleUnenrollClick = async (subject: EnrolledSubjectData) => {
         if (!user || !user.id) return;
         try {
             setLoading(true);
             setError(null);
-            await unenrollSubject(String(user.id), subject.id);
-            setSubjects(prev => prev.filter(s => s.id !== subject.id));
-            setOpen(true);
+            
+            const result = await enrolledSubjectApi.unenrollSubject(subject.id);
+            
+            if (result.success) {
+                setSubjects(prev => prev.filter(s => s.id !== subject.id));
+                setSnackbarMessage(result.message);
+                setSnackbarSeverity('success');
+                setOpen(true);
+            } else {
+                setSnackbarMessage(result.message);
+                setSnackbarSeverity('error');
+                setOpen(true);
+            }
         } catch (err: any) {
-            setError(err.message || 'Hủy đăng ký thất bại');
+            setSnackbarMessage(err.message || 'Hủy đăng ký thất bại');
+            setSnackbarSeverity('error');
+            setOpen(true);
         } finally {
             setLoading(false);
         }
@@ -81,8 +118,7 @@ export const EnrolledSubject = ({ user, handleUnenroll, onLogout }: EnrolledSubj
                         marginLeft: '0',
                         marginRight: '0.625rem',
                     }}
-                >
-                    <Typography
+                >                    <Typography
                         component="h1"
                         sx={{
                             fontWeight: "bold",
@@ -98,13 +134,39 @@ export const EnrolledSubject = ({ user, handleUnenroll, onLogout }: EnrolledSubj
                         Danh sách môn học đã đăng ký
                     </Typography>
 
+                    {/* Thông tin ngành và học kỳ */}
+                    {studentInfo && (
+                        <Box sx={{ mb: 2, p: 2, backgroundColor: '#f8f9fa', borderRadius: '0.5rem', border: '1px solid #e9ecef' }}>
+                            <Typography sx={{ fontWeight: 'bold', mb: 1, color: '#495057' }}>
+                                Ngành: {studentInfo.majorName}
+                            </Typography>
+                            <Typography sx={{ fontWeight: 'bold', color: '#495057' }}>
+                                {semesterInfo.fullName}
+                            </Typography>
+                        </Box>
+                    )}
+
+                    {loading && (
+                        <Typography sx={{ textAlign: 'center', mt: 2 }}>
+                            Đang tải danh sách môn học...
+                        </Typography>
+                    )}
+
+                    {error && (
+                        <Typography sx={{ textAlign: 'center', mt: 2, color: 'error.main' }}>
+                            {error}
+                        </Typography>
+                    )}
+
+                    {!loading && !error && (
+
                     <TableContainer component={Paper} sx={{ mt: '1.25rem', borderRadius: '0.75rem', boxShadow: '0 4px 10px rgba(0, 0, 0, 0.1)' }}>
-                        <Table>
-                        <TableHead>
+                        <Table>                        <TableHead>
                             <TableRow>
                                 <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '1.25rem', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6', boxShadow: '0 0px 0px rgba(0, 0, 0, 0.1)', width: '60px', minWidth: '60px', maxWidth: '60px' }}></TableCell>
                                 <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '1.25rem', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6', width: '120px', minWidth: '120px', maxWidth: '120px' }}>Mã lớp</TableCell>
                                 <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '1.25rem', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6', width: '240px', minWidth: '240px', maxWidth: '240px' }}>Môn học</TableCell>
+                                <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '1.25rem', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6', width: '140px', minWidth: '140px', maxWidth: '140px' }}>Loại môn</TableCell>
                                 <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '1.25rem', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6', width: '180px', minWidth: '180px', maxWidth: '180px' }}>Giảng viên</TableCell>
                                 <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '1.25rem', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6', width: '160px', minWidth: '160px', maxWidth: '160px' }}>Thời gian</TableCell>
                             </TableRow>
@@ -119,8 +181,7 @@ export const EnrolledSubject = ({ user, handleUnenroll, onLogout }: EnrolledSubj
                                         },
                                         '&:last-child td, &:last-child th': { borderBottom: 'none' }
                                     }}
-                                >
-                                    <TableCell sx={{ textAlign: 'center', fontFamily: '"Varela Round", sans-serif', width: '60px', minWidth: '60px', maxWidth: '60px' }}>
+                                >                                    <TableCell sx={{ textAlign: 'center', fontFamily: '"Varela Round", sans-serif', width: '60px', minWidth: '60px', maxWidth: '60px' }}>
                                         <Button
                                             variant="contained"
                                             color="error"
@@ -147,34 +208,33 @@ export const EnrolledSubject = ({ user, handleUnenroll, onLogout }: EnrolledSubj
                                     </TableCell>
                                     <TableCell sx={{ fontSize: '1rem', fontFamily: '"Varela Round", sans-serif', width: '120px', minWidth: '120px', maxWidth: '120px' }}>{subject.id}</TableCell>
                                     <TableCell sx={{ fontSize: '1rem', fontFamily: '"Varela Round", sans-serif', width: '240px', minWidth: '240px', maxWidth: '240px' }}>{subject.name}</TableCell>
+                                    <TableCell sx={{ fontSize: '1rem', fontFamily: '"Varela Round", sans-serif', width: '140px', minWidth: '140px', maxWidth: '140px' }}>{subject.courseType || 'Chưa xác định'}</TableCell>
                                     <TableCell sx={{ fontSize: '1rem', fontFamily: '"Varela Round", sans-serif', width: '180px', minWidth: '180px', maxWidth: '180px' }}>{subject.lecturer}</TableCell>
                                     <TableCell sx={{ fontSize: '1rem', fontFamily: '"Varela Round", sans-serif', width: '160px', minWidth: '160px', maxWidth: '160px' }}>{`${subject.day}, ${subject.fromTo}`}</TableCell>
                                 </TableRow>
                             ))}
-                        </TableBody>
-                        </Table>
+                        </TableBody>                        </Table>
                     </TableContainer>
+                    )}
                 </Paper>
-            </Box>
-
-            <Snackbar
+            </Box>            <Snackbar
                 open={open}
-                autoHideDuration={3000}
+                autoHideDuration={4000}
                 onClose={handleClose}
                 TransitionComponent={Slide}
                 anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
             >
                 <MuiAlert
                     onClose={handleClose}
-                    severity="success"
+                    severity={snackbarSeverity}
                     sx={{
                         width: '100%',
                         borderRadius: '0.125rem',
-                        backgroundColor: '#e8f5e9',
-                        color: '#2e7d32',
+                        backgroundColor: snackbarSeverity === 'success' ? '#e8f5e9' : '#ffebee',
+                        color: snackbarSeverity === 'success' ? '#2e7d32' : '#c62828',
                     }}
                 >
-                    Hủy đăng ký thành công!
+                    {snackbarMessage}
                 </MuiAlert>
             </Snackbar>
         </ThemeLayout>

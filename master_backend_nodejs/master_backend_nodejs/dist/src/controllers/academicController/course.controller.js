@@ -69,7 +69,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getCourseFormData = exports.getCourseTypesHandler = exports.deleteCourseHandler = exports.updateCourseHandler = exports.createCourseHandler = exports.getCourseByIdHandler = exports.getCoursesHandler = void 0;
+exports.getCourseTypesOnly = exports.getCourseFormData = exports.getCourseTypesHandler = exports.deleteCourseHandler = exports.updateCourseHandler = exports.createCourseHandler = exports.getCourseByIdHandler = exports.getCoursesHandler = void 0;
 var courseBusiness = __importStar(require("../../business/academicBusiness/course.business"));
 var academicStructure_service_1 = require("../../services/academicService/academicStructure.service");
 var getCoursesHandler = function (req, res, next) { return __awaiter(void 0, void 0, void 0, function () {
@@ -131,11 +131,28 @@ var createCourseHandler = function (req, res, next) { return __awaiter(void 0, v
                 return [3 /*break*/, 3];
             case 2:
                 error_3 = _a.sent();
+                console.error('Error in createCourseHandler:', error_3);
                 if (error_3.message && error_3.message.includes('Mã môn học đã tồn tại')) {
                     res.status(400).json({ success: false, message: error_3.message });
                 }
+                else if (error_3.code === '23503' && error_3.constraint === 'monhoc_maloaimon_fkey') {
+                    res.status(400).json({
+                        success: false,
+                        message: 'Mã loại môn không hợp lệ. Vui lòng kiểm tra lại.'
+                    });
+                }
+                else if (error_3.code === '23503') {
+                    // Các lỗi foreign key khác
+                    res.status(400).json({
+                        success: false,
+                        message: 'Dữ liệu không hợp lệ. Vui lòng kiểm tra lại thông tin nhập vào.'
+                    });
+                }
                 else {
-                    res.status(400).json({ success: false, message: error_3.message || 'Failed to create course' });
+                    res.status(400).json({
+                        success: false,
+                        message: error_3.message || 'Failed to create course'
+                    });
                 }
                 return [3 /*break*/, 3];
             case 3: return [2 /*return*/];
@@ -162,7 +179,27 @@ var updateCourseHandler = function (req, res, next) { return __awaiter(void 0, v
                 return [3 /*break*/, 3];
             case 2:
                 error_4 = _a.sent();
-                res.status(400).json({ success: false, message: error_4.message || 'Failed to update course' });
+                console.error('Error in updateCourseHandler:', error_4);
+                // Xử lý lỗi foreign key constraint cho mã loại môn
+                if (error_4.code === '23503' && error_4.constraint === 'monhoc_maloaimon_fkey') {
+                    res.status(400).json({
+                        success: false,
+                        message: 'Mã loại môn không hợp lệ. Vui lòng kiểm tra lại.'
+                    });
+                }
+                else if (error_4.code === '23503') {
+                    // Các lỗi foreign key khác
+                    res.status(400).json({
+                        success: false,
+                        message: 'Dữ liệu không hợp lệ. Vui lòng kiểm tra lại thông tin nhập vào.'
+                    });
+                }
+                else {
+                    res.status(500).json({
+                        success: false,
+                        message: error_4.message || 'Failed to update course'
+                    });
+                }
                 return [3 /*break*/, 3];
             case 3: return [2 /*return*/];
         }
@@ -176,18 +213,37 @@ var deleteCourseHandler = function (req, res, next) { return __awaiter(void 0, v
             case 0:
                 _a.trys.push([0, 2, , 3]);
                 id = req.params.id;
+                console.log('DELETE request received for course ID:', id);
                 return [4 /*yield*/, courseBusiness.deleteCourse(id)];
             case 1:
                 success = _a.sent();
                 if (!success) {
+                    console.log('Course not found:', id);
                     res.status(404).json({ success: false, message: 'Course not found' });
                     return [2 /*return*/];
                 }
-                res.json({ success: true, message: 'Course deleted successfully' });
+                console.log('Course deleted successfully:', id);
+                res.json({
+                    success: true,
+                    message: 'Môn học và các dữ liệu liên quan đã được xóa thành công'
+                });
                 return [3 /*break*/, 3];
             case 2:
                 error_5 = _a.sent();
-                res.status(500).json({ success: false, message: 'Failed to delete course' });
+                console.error('Error in deleteCourseHandler:', error_5);
+                // Xử lý lỗi foreign key constraint
+                if (error_5.code === '23503') {
+                    res.status(400).json({
+                        success: false,
+                        message: 'Không thể xóa môn học vì có dữ liệu liên quan trong hệ thống'
+                    });
+                }
+                else {
+                    res.status(500).json({
+                        success: false,
+                        message: error_5.message || 'Failed to delete course'
+                    });
+                }
                 return [3 /*break*/, 3];
             case 3: return [2 /*return*/];
         }
@@ -241,3 +297,29 @@ var getCourseFormData = function (req, res, next) { return __awaiter(void 0, voi
     });
 }); };
 exports.getCourseFormData = getCourseFormData;
+var getCourseTypesOnly = function (req, res, next) { return __awaiter(void 0, void 0, void 0, function () {
+    var DatabaseService, courseTypes, error_8;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                _a.trys.push([0, 2, , 3]);
+                DatabaseService = require('../../services/database/databaseService').DatabaseService;
+                return [4 /*yield*/, DatabaseService.query("\n            SELECT MaLoaiMon as \"id\", TenLoaiMon as \"name\", SoTietMotTC as \"hoursPerCredit\"\n            FROM LOAIMON \n            ORDER BY MaLoaiMon\n        ")];
+            case 1:
+                courseTypes = _a.sent();
+                res.json({
+                    success: true,
+                    data: courseTypes,
+                    message: 'Course types fetched successfully'
+                });
+                return [3 /*break*/, 3];
+            case 2:
+                error_8 = _a.sent();
+                console.error('Error getting course types:', error_8);
+                res.status(500).json({ success: false, message: 'Failed to fetch course types' });
+                return [3 /*break*/, 3];
+            case 3: return [2 /*return*/];
+        }
+    });
+}); };
+exports.getCourseTypesOnly = getCourseTypesOnly;

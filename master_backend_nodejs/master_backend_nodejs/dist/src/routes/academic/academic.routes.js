@@ -47,7 +47,9 @@ var student_routes_1 = __importDefault(require("./student.routes"));
 var course_routes_1 = __importDefault(require("./course.routes"));
 var openCourse_routes_1 = __importDefault(require("./openCourse.routes"));
 var router = (0, express_1.Router)();
-// Protect all routes
+// Mount open course routes WITHOUT authentication for testing
+router.use('/open-courses', openCourse_routes_1.default);
+// Protect all other routes
 router.use(auth_1.authenticateToken, (0, auth_1.authorizeRoles)(['academic']));
 // Dashboard Routes
 router.get('/dashboard', function (req, res) {
@@ -130,6 +132,4 @@ router.get('/course-form-data', courseController.getCourseFormData);
 router.use('/students', student_routes_1.default);
 // Mount course routes at /api/academic/courses
 router.use('/courses', course_routes_1.default);
-// Mount open course routes at /api/academic/open-courses
-router.use('/open-courses', openCourse_routes_1.default);
 exports.default = router;

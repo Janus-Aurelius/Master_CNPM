@@ -49,11 +49,11 @@ export const getCourseById = async (maMonHoc: string): Promise<any | null> => {
 
 export const createCourse = async (courseData: any): Promise<any> => {
     // Validate các trường cần thiết
-    if (!courseData.maMonHoc || !courseData.tenMonHoc || !courseData.maLoaiMon || !courseData.soTiet) {
+    if (!courseData.courseId || !courseData.courseName || !courseData.courseTypeId || !courseData.totalHours) {
         throw new Error('Missing required fields');
     }
     // Check trùng mã môn học
-    const existing = await courseService.getCourseById(courseData.maMonHoc);
+    const existing = await courseService.getCourseById(courseData.courseId);
     if (existing) {
         throw new Error('Mã môn học đã tồn tại');
     }
@@ -61,12 +61,23 @@ export const createCourse = async (courseData: any): Promise<any> => {
 };
 
 export const updateCourse = async (maMonHocCu: string, courseData: any): Promise<any> => {
-    // Xóa bản ghi cũ
-    await courseService.deleteCourse(maMonHocCu);
-    // Thêm bản ghi mới
-    return courseService.addCourse(courseData);
+    return courseService.updateCourse(maMonHocCu, courseData);
 };
 
 export const deleteCourse = async (maMonHoc: string): Promise<boolean> => {
-    return courseService.deleteCourse(maMonHoc);
+    console.log('Business layer - deleteCourse called with ID:', maMonHoc);
+    
+    // Kiểm tra xem môn học có tồn tại không
+    const existingCourse = await courseService.getCourseById(maMonHoc);
+    console.log('Existing course found:', existingCourse);
+    
+    if (!existingCourse) {
+        console.log('Course not found in database:', maMonHoc);
+        throw new Error('Môn học không tồn tại');
+    }
+    
+    // Thực hiện xóa (sẽ xóa cascade các bản ghi liên quan)
+    const result = await courseService.deleteCourse(maMonHoc);
+    console.log('Delete result:', result);
+    return result;
 };

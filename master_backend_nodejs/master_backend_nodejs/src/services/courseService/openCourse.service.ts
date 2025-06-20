@@ -2,67 +2,69 @@ import { IOfferedCourse } from '../../models/academic_related/openCourse';
 import { Database } from '../../config/database';
 import { DatabaseError } from '../../utils/errors/database.error';
 
-export class OpenCourseService {
-    static async getAllCourses(): Promise<IOfferedCourse[]> {
-        try {
-            const query = `
+export class OpenCourseService {    static async getAllCourses(): Promise<IOfferedCourse[]> {
+        try {            const query = `
                 SELECT 
-                    dm.MaHocKy as semesterId,
-                    dm.MaMonHoc as courseId,
-                    dm.SiSoToiThieu as minStudents,
-                    dm.SiSoToiDa as maxStudents,
-                    dm.SoSVDaDangKy as currentStudents,
-                    dm.Thu as dayOfWeek,
-                    dm.TietBatDau as startPeriod,
-                    dm.TietKetThuc as endPeriod,
-                    mh.TenMonHoc as courseName,
-                    mh.MaLoaiMon as courseTypeId,
-                    lm.TenLoaiMon as courseTypeName,
-                    mh.SoTiet as totalHours,
-                    lm.SoTietMotTC as hoursPerCredit,
-                    lm.SoTienMotTC as pricePerCredit,
-                    CASE 
-                        WHEN dm.SoSVDaDangKy < dm.SiSoToiDa THEN true 
-                        ELSE false 
-                    END as isAvailable
+                    dm.MaHocKy as "semesterId",
+                    dm.MaMonHoc as "courseId",
+                    dm.SiSoToiThieu as "minStudents",
+                    dm.SiSoToiDa as "maxStudents",
+                    dm.SoSVDaDangKy as "currentStudents",
+                    dm.Thu as "dayOfWeek",
+                    dm.TietBatDau as "startPeriod",
+                    dm.TietKetThuc as "endPeriod",
+                    mh.TenMonHoc as "courseName",
+                    mh.MaLoaiMon as "courseTypeId",
+                    lm.TenLoaiMon as "courseTypeName",
+                    mh.SoTiet as "totalHours",
+                    lm.SoTietMotTC as "hoursPerCredit",
+                    lm.SoTienMotTC as "pricePerCredit",                    hk.HocKyThu as "semesterNumber",
+                    hk.NamHoc as "academicYear",                    CASE 
+                        WHEN dm.SoSVDaDangKy >= dm.SiSoToiDa THEN 'Đầy'
+                        ELSE 'Mở'
+                    END as "status"
                 FROM DANHSACHMONHOCMO dm
                 JOIN MONHOC mh ON dm.MaMonHoc = mh.MaMonHoc
                 JOIN LOAIMON lm ON mh.MaLoaiMon = lm.MaLoaiMon
-                ORDER BY dm.MaHocKy, dm.MaMonHoc
+                JOIN HOCKYNAMHOC hk ON dm.MaHocKy = hk.MaHocKy
+                ORDER BY hk.NamHoc, hk.HocKyThu, lm.TenLoaiMon, mh.TenMonHoc
             `;
-            return await Database.query(query);
+            const result = await Database.query(query);
+            console.log(`Found ${result.length} open courses`);
+            return result;
         } catch (error) {
+            console.error('Error in getAllCourses:', error);
             throw new DatabaseError('Error fetching open courses');
         }
-    }    static async getCourseById(semesterId: string, courseId: string): Promise<IOfferedCourse | null> {
-        try {
-            const query = `
+    }static async getCourseById(semesterId: string, courseId: string): Promise<IOfferedCourse | null> {        try {            const query = `
                 SELECT 
-                    dm.MaHocKy as semesterId,
-                    dm.MaMonHoc as courseId,
-                    dm.SiSoToiThieu as minStudents,
-                    dm.SiSoToiDa as maxStudents,
-                    dm.SoSVDaDangKy as currentStudents,
-                    dm.Thu as dayOfWeek,
-                    dm.TietBatDau as startPeriod,
-                    dm.TietKetThuc as endPeriod,
-                    mh.TenMonHoc as courseName,
-                    mh.MaLoaiMon as courseTypeId,
-                    lm.TenLoaiMon as courseTypeName,
-                    mh.SoTiet as totalHours,
-                    lm.SoTietMotTC as hoursPerCredit,
-                    lm.SoTienMotTC as pricePerCredit,
-                    CASE 
-                        WHEN dm.SoSVDaDangKy < dm.SiSoToiDa THEN true 
-                        ELSE false 
-                    END as isAvailable
+                    dm.MaHocKy as "semesterId",
+                    dm.MaMonHoc as "courseId",
+                    dm.SiSoToiThieu as "minStudents",
+                    dm.SiSoToiDa as "maxStudents",
+                    dm.SoSVDaDangKy as "currentStudents",
+                    dm.Thu as "dayOfWeek",
+                    dm.TietBatDau as "startPeriod",
+                    dm.TietKetThuc as "endPeriod",
+                    mh.TenMonHoc as "courseName",
+                    mh.MaLoaiMon as "courseTypeId",
+                    lm.TenLoaiMon as "courseTypeName",
+                    mh.SoTiet as "totalHours",
+                    lm.SoTietMotTC as "hoursPerCredit",
+                    lm.SoTienMotTC as "pricePerCredit",                    hk.HocKyThu as "semesterNumber",
+                    hk.NamHoc as "academicYear",                    CASE 
+                        WHEN dm.SoSVDaDangKy >= dm.SiSoToiDa THEN 'Đầy'
+                        ELSE 'Mở'
+                    END as "status"
                 FROM DANHSACHMONHOCMO dm
                 JOIN MONHOC mh ON dm.MaMonHoc = mh.MaMonHoc
                 JOIN LOAIMON lm ON mh.MaLoaiMon = lm.MaLoaiMon
+                JOIN HOCKYNAMHOC hk ON dm.MaHocKy = hk.MaHocKy
                 WHERE dm.MaHocKy = $1 AND dm.MaMonHoc = $2
             `;
             const result = await Database.query(query, [semesterId, courseId]);            return result[0] || null;
         } catch (error) {
+            console.error('Error in getCourseById:', error);
             throw new DatabaseError('Error fetching open course by ID');
         }
     }
@@ -99,8 +101,7 @@ export class OpenCourseService {
         } catch (error) {
             throw new DatabaseError('Error creating open course');
         }
-    }    private static mapToIOfferedCourse(data: any): IOfferedCourse {
-        return {
+    }    private static mapToIOfferedCourse(data: any): IOfferedCourse {        return {
             semesterId: data.semesterId || data.semester_id,
             courseId: data.courseId || data.course_id,
             minStudents: data.minStudents || data.min_students,
@@ -115,7 +116,7 @@ export class OpenCourseService {
             totalHours: data.totalHours || data.total_hours,
             hoursPerCredit: data.hoursPerCredit || data.hours_per_credit,
             pricePerCredit: data.pricePerCredit || data.price_per_credit,
-            isAvailable: data.isAvailable || data.is_available,
+            semesterNumber: data.semesterNumber || data.semester_number,            academicYear: data.academicYear || data.academic_year,            status: data.status,
             registrationStartDate: data.registrationStartDate || data.registration_start_date,
             registrationEndDate: data.registrationEndDate || data.registration_end_date
         };
@@ -182,11 +183,10 @@ export class OpenCourseService {
                     lm.TenLoaiMon as courseTypeName,
                     mh.SoTiet as totalHours,
                     lm.SoTietMotTC as hoursPerCredit,
-                    lm.SoTienMotTC as pricePerCredit,
-                    CASE 
-                        WHEN dm.SoSVDaDangKy < dm.SiSoToiDa THEN true 
-                        ELSE false 
-                    END as isAvailable
+                    lm.SoTienMotTC as pricePerCredit,                    CASE 
+                        WHEN dm.SoSVDaDangKy >= dm.SiSoToiDa THEN 'Đầy'
+                        ELSE 'Mở'
+                    END as status
                 FROM DANHSACHMONHOCMO dm
                 JOIN MONHOC mh ON dm.MaMonHoc = mh.MaMonHoc
                 JOIN LOAIMON lm ON mh.MaLoaiMon = lm.MaLoaiMon

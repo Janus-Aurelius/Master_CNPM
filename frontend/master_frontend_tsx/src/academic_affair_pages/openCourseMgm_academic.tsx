@@ -1,4 +1,3 @@
-import { SelectChangeEvent } from '@mui/material/Select';
 import { useState, useEffect } from "react";
 import { ThemeLayout } from "../styles/theme_layout.tsx";
 import { User } from "../types";
@@ -8,50 +7,35 @@ import {
     Select, MenuItem, FormControl, InputLabel, IconButton,
     Dialog, DialogTitle, DialogContent, DialogActions,
     Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
-    Divider, Grid, InputAdornment, Menu, Chip
+    Divider, Grid, InputAdornment, Chip, Alert
 } from "@mui/material";
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import SearchIcon from '@mui/icons-material/Search';
-import FilterListIcon from '@mui/icons-material/FilterList';
-import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
-import { openCourseApi, OpenCourse, CourseStatus } from "../api_clients/openCourseApi";
-
-// Định nghĩa width cho các cột để dùng lại
-const columnWidths = {
-    subjectCode: 120,
-    subjectName: 200,
-    credits: 90,
-    enrolledStudents: 120,
-    minStudents: 90,
-    maxStudents: 90,
-    status: 160,
-    actions: 120,
-};
+import { openCourseApi, OpenCourse } from "../api_clients/academic/openCourseApi";
 
 interface OpenCourseMgmAcademicProps {
     user: User | null;
     onLogout: () => void;
 }
 
-interface GroupedCourses {
-    [key: string]: {
-        [fieldOfStudy: string]: OpenCourse[]
-    }
-}
+const dayOfWeekNames = ['Chủ Nhật', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
 
-export default function OpenCourseMgmAcademic({user, onLogout }: OpenCourseMgmAcademicProps) {
+export default function OpenCourseMgmAcademic({ user, onLogout }: OpenCourseMgmAcademicProps) {
     const [courses, setCourses] = useState<OpenCourse[]>([]);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-    const [selectedTerm, setSelectedTerm] = useState<string>("2023-2024-1");
-    const [statusMenuAnchor, setStatusMenuAnchor] = useState<null | HTMLElement>(null);
-    const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
+    const [error, setError] = useState<string | null>(null);    const [searchTerm, setSearchTerm] = useState("");
+    const [selectedSemester, setSelectedSemester] = useState<string>("all");
+    const [selectedAcademicYear, setSelectedAcademicYear] = useState<string>("all");
     const [openDialog, setOpenDialog] = useState(false);
     const [currentCourse, setCurrentCourse] = useState<OpenCourse | null>(null);
     const [isEditing, setIsEditing] = useState(false);
-    const [confirmDelete, setConfirmDelete] = useState<{ open: boolean; id: string | null }>({ open: false, id: null });
+    const [confirmDelete, setConfirmDelete] = useState<{ open: boolean; semesterId: string | null; courseId: string | null }>({ 
+        open: false, 
+        semesterId: null, 
+        courseId: null 
+    });
 
     useEffect(() => {
         const fetchCourses = async () => {
@@ -60,158 +44,261 @@ export default function OpenCourseMgmAcademic({user, onLogout }: OpenCourseMgmAc
                 const data = await openCourseApi.getCourses();
                 setCourses(data);
                 setError(null);
+                console.log('Fetched courses:', data);
             } catch (err) {
-                setError('Failed to fetch courses');
-                console.error(err);
+                setError('Không thể tải danh sách môn học mở');
+                console.error('Error fetching courses:', err);
             } finally {
                 setLoading(false);
             }
         };
         fetchCourses();
-    }, []);
+    }, []);    // Filter courses based on search, semester, and academic year
+    const filteredCourses = courses.filter(course => {
+        const matchesSearch = searchTerm === "" || 
+            course.courseName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            course.courseId?.toLowerCase().includes(searchTerm.toLowerCase());
+        
+        // Use semesterNumber for semester filtering
+        const matchesSemester = selectedSemester === "all" || 
+            course.semesterNumber?.toString() === selectedSemester;
+        
+        // Use academicYear for academic year filtering
+        const matchesAcademicYear = selectedAcademicYear === "all" || 
+            course.academicYear?.toString() === selectedAcademicYear;
+        
+        return matchesSearch && matchesSemester && matchesAcademicYear;
+    });
 
-    const groupCourses = (coursesToGroup = courses) => {
-        const grouped: GroupedCourses = {};
-        coursesToGroup.forEach(course => {
-            const key = `${course.academicYear}-${course.semester}`;
-            if (!grouped[key]) {
-                grouped[key] = {};
-            }
-            if (!grouped[key][course.fieldOfStudy]) {
-                grouped[key][course.fieldOfStudy] = [];
-            }
-            grouped[key][course.fieldOfStudy].push(course);
-        });
-        return grouped;
+    console.log('Total courses:', courses.length);
+    console.log('Filtered courses:', filteredCourses.length);
+    console.log('Sample course:', courses[0]);// Group courses by course type (Lý thuyết, Thực hành)
+    const groupCoursesByType = (courses: OpenCourse[]) => {
+        console.log('Grouping courses:', courses);
+        const theory = courses.filter(course => 
+            course.courseTypeName?.toLowerCase().includes('lý thuyết') ||
+            course.courseTypeName?.toLowerCase().includes('ly thuyet') ||
+            course.courseTypeName === 'LT'
+        );
+        
+        const practice = courses.filter(course => 
+            course.courseTypeName?.toLowerCase().includes('thực hành') ||
+            course.courseTypeName?.toLowerCase().includes('thuc hanh') ||
+            course.courseTypeName === 'TH'
+        );
+
+        console.log('Theory courses:', theory);
+        console.log('Practice courses:', practice);
+        return { theory, practice };
     };
 
-    const handleChangeStatus = async (courseId: string, newStatus: CourseStatus) => {
-        try {
-            const updatedCourse = await openCourseApi.updateCourseStatus(courseId, newStatus);
-            setCourses(courses.map(c => c.id === courseId ? updatedCourse : c));
-        } catch (err) {
-            setError('Failed to update course status');
-            console.error(err);
-        }
-    };
+    const { theory, practice } = groupCoursesByType(filteredCourses);    // Get unique semesters and academic years for filter dropdowns
+    const semesters = Array.from(new Set(courses.map(course => course.semesterNumber).filter(Boolean)))
+        .sort((a, b) => (a as number) - (b as number));
+    const academicYears = Array.from(new Set(courses.map(course => course.academicYear).filter(Boolean)))
+        .sort((a, b) => (a as number) - (b as number));
 
-    const handleDeleteCourse = (courseId: string) => {
-        setConfirmDelete({ open: true, id: courseId });
+    const handleDeleteCourse = (semesterId: string, courseId: string) => {
+        setConfirmDelete({ open: true, semesterId, courseId });
     };
 
     const handleConfirmDelete = async () => {
-        if (confirmDelete.id !== null) {
+        if (confirmDelete.semesterId && confirmDelete.courseId) {
             try {
-                await openCourseApi.deleteCourse(confirmDelete.id);
-                setCourses(courses.filter(c => c.id !== confirmDelete.id));
+                await openCourseApi.deleteCourse(confirmDelete.semesterId, confirmDelete.courseId);
+                setCourses(courses.filter(c => 
+                    !(c.semesterId === confirmDelete.semesterId && c.courseId === confirmDelete.courseId)
+                ));
+                setError(null);
             } catch (err) {
-                setError('Failed to delete course');
-                console.error(err);
+                setError('Không thể xóa môn học');
+                console.error('Error deleting course:', err);
             }
         }
-        setConfirmDelete({ open: false, id: null });
+        setConfirmDelete({ open: false, semesterId: null, courseId: null });
     };
 
     const handleCancelDelete = () => {
-        setConfirmDelete({ open: false, id: null });
-    };
-
-    const handleAddEditCourse = (course: OpenCourse) => {
-        setCurrentCourse(course);
-        setIsEditing(true);
-        setOpenDialog(true);
+        setConfirmDelete({ open: false, semesterId: null, courseId: null });
     };
 
     const handleOpenEditDialog = (course: OpenCourse) => {
         setCurrentCourse(course);
         setIsEditing(true);
         setOpenDialog(true);
+    };    const getStatusColor = (status?: string) => {
+        return status === 'Mở' ? 
+            { bgcolor: '#e8f5e9', color: '#2e7d32' } : 
+            { bgcolor: '#ffebee', color: '#c62828' };
+    };const formatTimeSlot = (dayOfWeek: number, startPeriod: number, endPeriod: number) => {
+        const dayName = dayOfWeekNames[dayOfWeek] || `Thứ ${dayOfWeek}`;
+        return `${dayName}, tiết ${startPeriod}-${endPeriod}`;
     };
 
-    const handleStatusChipClick = (event: React.MouseEvent<HTMLDivElement>, courseId: string) => {
-        setStatusMenuAnchor(event.currentTarget);
-        setSelectedCourseId(courseId);
-    };
-
-    const handleStatusMenuClose = () => {
-        setStatusMenuAnchor(null);
-        setSelectedCourseId(null);
-    };
-
-    const handleStatusMenuSelect = (status: CourseStatus) => {
-        if (selectedCourseId) {
-            handleChangeStatus(selectedCourseId, status);
+    const renderCourseTable = (courses: OpenCourse[], title: string) => {
+        if (courses.length === 0) {
+            return (
+                <Box sx={{ mb: 4 }}>
+                    <Typography variant="h6" sx={{ mb: 2, color: '#1a237e', fontWeight: 600 }}>
+                        {title}
+                    </Typography>
+                    <Paper sx={{ p: 3, textAlign: 'center', color: '#666' }}>
+                        Không có môn học nào
+                    </Paper>
+                </Box>
+            );
         }
-        handleStatusMenuClose();
-    };
 
-    const getStatusStyle = (status: CourseStatus) => {
-        switch (status) {
-            case CourseStatus.OPEN:
-                return { bgcolor: '#e8f5e9', color: '#2e7d32' };
-            case CourseStatus.WAITING:
-                return { bgcolor: '#fff3e0', color: '#ef6c00' };
-            case CourseStatus.CLOSED:
-                return { bgcolor: '#ffebee', color: '#c62828' };
-            default:
-                return { bgcolor: '#f5f5f5', color: '#616161' };
-        }
-    };
-
-    const renderSelectedTermData = () => {
-        const groupedCourses = groupCourses();
-        const termCourses = groupedCourses[selectedTerm] || {};
-
-        return Object.entries(termCourses).map(([fieldOfStudy, courses]) => (
-            <Box key={fieldOfStudy} sx={{ mb: 4 }}>
+        return (
+            <Box sx={{ mb: 4 }}>
                 <Typography variant="h6" sx={{ mb: 2, color: '#1a237e', fontWeight: 600 }}>
-                    {fieldOfStudy}
+                    {title} ({courses.length} môn)
                 </Typography>
-                <TableContainer component={Paper} sx={{ mb: 3, borderRadius: '12px', boxShadow: '0 4px 10px rgba(0, 0, 0, 0.1)' }}>
-                    <Table>
+                <TableContainer component={Paper} sx={{ 
+                    mb: 3, 
+                    borderRadius: '12px', 
+                    boxShadow: '0 4px 10px rgba(0, 0, 0, 0.1)',
+                    maxHeight: '600px',
+                    overflow: 'auto'
+                }}>
+                    <Table stickyHeader>
                         <TableHead>
-                            <TableRow>
-                                <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '18px', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6' }}>Mã môn học</TableCell>
-                                <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '18px', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6' }}>Tên môn học</TableCell>
-                                <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '18px', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6' }}>Số tín chỉ</TableCell>
-                                <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '18px', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6' }}>Trạng thái</TableCell>
-                                <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '18px', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6' }}>Số lượng đăng ký</TableCell>
-                                <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '18px', fontFamily: '"Varela Round", sans-serif', textAlign: 'center', backgroundColor: '#6ebab6' }}>Thao tác</TableCell>
+                            <TableRow>                                <TableCell sx={{ 
+                                    fontWeight: 'bold', 
+                                    color: '#FFFFFF', 
+                                    fontSize: '16px', 
+                                    fontFamily: '"Varela Round", sans-serif', 
+                                    backgroundColor: '#6ebab6',
+                                    minWidth: '100px'
+                                }}>
+                                    Mã môn
+                                </TableCell>
+                                <TableCell sx={{ 
+                                    fontWeight: 'bold', 
+                                    color: '#FFFFFF', 
+                                    fontSize: '16px', 
+                                    fontFamily: '"Varela Round", sans-serif', 
+                                    backgroundColor: '#6ebab6',
+                                    minWidth: '200px'
+                                }}>
+                                    Tên môn học
+                                </TableCell>
+                                <TableCell sx={{ 
+                                    fontWeight: 'bold', 
+                                    color: '#FFFFFF', 
+                                    fontSize: '16px', 
+                                    fontFamily: '"Varela Round", sans-serif', 
+                                    backgroundColor: '#6ebab6',
+                                    minWidth: '80px'
+                                }}>
+                                    Năm học
+                                </TableCell>
+                                <TableCell sx={{ 
+                                    fontWeight: 'bold', 
+                                    color: '#FFFFFF', 
+                                    fontSize: '16px', 
+                                    fontFamily: '"Varela Round", sans-serif', 
+                                    backgroundColor: '#6ebab6',
+                                    minWidth: '80px'
+                                }}>
+                                    Học kỳ
+                                </TableCell>
+                                <TableCell sx={{ 
+                                    fontWeight: 'bold', 
+                                    color: '#FFFFFF', 
+                                    fontSize: '16px', 
+                                    fontFamily: '"Varela Round", sans-serif', 
+                                    backgroundColor: '#6ebab6',
+                                    minWidth: '80px'
+                                }}>
+                                    Tín chỉ
+                                </TableCell>
+                                <TableCell sx={{ 
+                                    fontWeight: 'bold', 
+                                    color: '#FFFFFF', 
+                                    fontSize: '16px', 
+                                    fontFamily: '"Varela Round", sans-serif', 
+                                    backgroundColor: '#6ebab6',
+                                    minWidth: '150px'
+                                }}>
+                                    Thời gian
+                                </TableCell>
+                                <TableCell sx={{ 
+                                    fontWeight: 'bold', 
+                                    color: '#FFFFFF', 
+                                    fontSize: '16px', 
+                                    fontFamily: '"Varela Round", sans-serif', 
+                                    backgroundColor: '#6ebab6',
+                                    minWidth: '120px'
+                                }}>
+                                    Sỉ số
+                                </TableCell>                                <TableCell sx={{ 
+                                    fontWeight: 'bold', 
+                                    color: '#FFFFFF', 
+                                    fontSize: '16px', 
+                                    fontFamily: '"Varela Round", sans-serif', 
+                                    backgroundColor: '#6ebab6',
+                                    minWidth: '100px'
+                                }}>
+                                    Trạng thái
+                                </TableCell>
+                                <TableCell sx={{ 
+                                    fontWeight: 'bold', 
+                                    color: '#FFFFFF', 
+                                    fontSize: '16px', 
+                                    fontFamily: '"Varela Round", sans-serif', 
+                                    backgroundColor: '#6ebab6',
+                                    textAlign: 'center',
+                                    minWidth: '120px'
+                                }}>
+                                    Thao tác
+                                </TableCell>
                             </TableRow>
-                        </TableHead>
-                        <TableBody>
-                            {courses.map((course) => (
-                                <TableRow key={course.id}>
-                                    <TableCell>{course.subjectCode}</TableCell>
-                                    <TableCell>{course.subjectName}</TableCell>
-                                    <TableCell>{course.credits}</TableCell>
-                                    <TableCell>
-                                        <Chip
-                                            label={course.status}
-                                            onClick={(e) => handleStatusChipClick(e, course.id)}
-                                            sx={{
-                                                ...getStatusStyle(course.status),
-                                                cursor: 'pointer',
-                                                '&:hover': {
-                                                    opacity: 0.8
-                                                }
-                                            }}
-                                        />
+                        </TableHead>                        <TableBody>
+                            {courses.map((course, index) => (                                <TableRow key={`${course.semesterId}-${course.courseId}-${index}`} hover>
+                                    <TableCell sx={{ fontWeight: 500 }}>{course.courseId}</TableCell>
+                                    <TableCell sx={{ fontWeight: 500 }}>{course.courseName}</TableCell>
+                                    <TableCell sx={{ fontWeight: 500 }}>{course.academicYear || 'N/A'}</TableCell>
+                                    <TableCell sx={{ fontWeight: 500 }}>
+                                        {course.semesterNumber ? `Học kỳ ${course.semesterNumber}` : 'N/A'}
                                     </TableCell>
                                     <TableCell>
-                                        {course.enrolledStudents}/{course.maxStudents}
+                                        {course.totalHours && course.hoursPerCredit ? 
+                                            Math.ceil(course.totalHours / course.hoursPerCredit) : 'N/A'
+                                        }
+                                    </TableCell>
+                                    <TableCell>
+                                        {formatTimeSlot(course.dayOfWeek, course.startPeriod, course.endPeriod)}
+                                    </TableCell>
+                                    <TableCell>
+                                        <Typography variant="body2">
+                                            <strong>{course.currentStudents}</strong>/{course.maxStudents}
+                                        </Typography>
+                                        <Typography variant="caption" color="textSecondary">
+                                            (Tối thiểu: {course.minStudents})
+                                        </Typography>
+                                    </TableCell>                                    <TableCell>
+                                        <Chip
+                                            label={course.status || 'N/A'}
+                                            size="small"
+                                            sx={{
+                                                ...getStatusColor(course.status),
+                                                fontWeight: 500
+                                            }}
+                                        />
                                     </TableCell>
                                     <TableCell align="center">
                                         <IconButton
                                             size="small"
                                             onClick={() => handleOpenEditDialog(course)}
+                                            sx={{ mr: 1 }}
                                         >
                                             <EditIcon fontSize="small" />
                                         </IconButton>
                                         <IconButton
                                             size="small"
                                             color="error"
-                                            onClick={() => handleDeleteCourse(course.id)}
+                                            onClick={() => handleDeleteCourse(course.semesterId, course.courseId)}
                                         >
                                             <DeleteIcon fontSize="small" />
                                         </IconButton>
@@ -222,23 +309,16 @@ export default function OpenCourseMgmAcademic({user, onLogout }: OpenCourseMgmAc
                     </Table>
                 </TableContainer>
             </Box>
-        ));
+        );
     };
 
     if (loading) {
         return (
             <ThemeLayout role="academic" onLogout={onLogout}>
                 <UserInfo user={user} />
-                <Typography sx={{ textAlign: 'center', mt: 4 }}>Loading...</Typography>
-            </ThemeLayout>
-        );
-    }
-
-    if (error) {
-        return (
-            <ThemeLayout role="academic" onLogout={onLogout}>
-                <UserInfo user={user} />
-                <Typography color="error" sx={{ textAlign: 'center', mt: 4 }}>{error}</Typography>
+                <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '400px' }}>
+                    <Typography sx={{ textAlign: 'center', fontSize: '18px' }}>Đang tải dữ liệu...</Typography>
+                </Box>
             </ThemeLayout>
         );
     }
@@ -290,7 +370,7 @@ export default function OpenCourseMgmAcademic({user, onLogout }: OpenCourseMgmAc
                             fontFamily: "Montserrat, sans-serif",
                             fontStyle: "normal",
                             color: "rgba(33, 33, 33, 0.8)",
-                            marginBottom: '14px',
+                            marginBottom: '20px',
                             marginTop: '0px',
                             textAlign: "center",
                             fontSize: "30px",
@@ -298,286 +378,149 @@ export default function OpenCourseMgmAcademic({user, onLogout }: OpenCourseMgmAc
                     >
                         Quản lý mở lớp
                     </Typography>
-                    <Box sx={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '16px' }}>
-                        <Button
-                            variant="contained"
-                            color="primary"
-                            startIcon={<AddIcon />}
-                            onClick={() => handleAddEditCourse({
-                                id: '',
-                                subjectCode: '',
-                                subjectName: '',
-                                credits: 0,
-                                semester: '',
-                                academicYear: '',
-                                fieldOfStudy: '',
-                                status: CourseStatus.WAITING,
-                                enrolledStudents: 0,
-                                minStudents: 0,
-                                maxStudents: 0
-                            })}
-                            sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '8px' }}
-                        >
-                            Thêm lớp học
-                        </Button>
-                    </Box>
-                    {renderSelectedTermData()}
-                </Paper>
-            </Box>
 
-            {/* Status Menu */}
-            <Menu
-                anchorEl={statusMenuAnchor}
-                open={Boolean(statusMenuAnchor)}
-                onClose={handleStatusMenuClose}
-            >
-                <MenuItem onClick={() => handleStatusMenuSelect(CourseStatus.OPEN)}>
-                    Mở lớp
-                </MenuItem>
-                <MenuItem onClick={() => handleStatusMenuSelect(CourseStatus.WAITING)}>
-                    Chờ mở lớp
-                </MenuItem>
-                <MenuItem onClick={() => handleStatusMenuSelect(CourseStatus.CLOSED)}>
-                    Không mở lớp
-                </MenuItem>
-            </Menu>
-
-            {/* Course Form Dialog */}
-            <Dialog
-                open={openDialog}
-                onClose={() => setOpenDialog(false)}
-                maxWidth="md"
-                fullWidth
-                sx={{
-                    '& .MuiPaper-root': {
-                        borderRadius: '20px',
-                        background: 'rgba(255,255,255,0.98)',
-                        boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.15)',
-                        padding: 0,
-                    },
-                }}
-            >
-                <DialogTitle sx={{
-                    fontFamily: '"Monserrat", sans-serif',
-                    fontWeight: 700,
-                    fontSize: '2rem',
-                    color: '#4c4c4c',
-                    textAlign: 'center',
-                    pb: 0,
-                    pt: 3
-                }}>
-                    {isEditing ? "Chỉnh sửa lớp học" : "Thêm lớp học mới"}
-                </DialogTitle>
-                <DialogContent dividers sx={{
-                    border: 'none',
-                    px: 4,
-                    pt: 2,
-                    pb: 0,
-                    background: 'transparent',
-                }}>
-                    <Grid container spacing={2} sx={{ mt: 0.5 }}>
-                        <Grid item xs={12} md={6}>
+                    {error && (
+                        <Alert severity="error" sx={{ mb: 2 }}>
+                            {error}
+                        </Alert>
+                    )}                    {/* Search and Filter Controls */}
+                    <Grid container spacing={2} sx={{ mb: 3 }}>
+                        <Grid item xs={12} md={4}>
                             <TextField
-                                autoFocus
-                                label="Mã môn học"
                                 fullWidth
-                                value={currentCourse?.subjectCode || ''}
-                                onChange={(e) => setCurrentCourse(prev => prev ? { ...prev, subjectCode: e.target.value } : null)}
+                                placeholder="Tìm kiếm theo tên hoặc mã môn học..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                InputProps={{
+                                    startAdornment: (
+                                        <InputAdornment position="start">
+                                            <SearchIcon />
+                                        </InputAdornment>
+                                    ),
+                                }}
                                 sx={{
-                                    borderRadius: '12px',
-                                    background: '#f7faff',
-                                    '& .MuiOutlinedInput-root': { borderRadius: '12px' },
-                                    '& .MuiInputLabel-root': { fontWeight: 500 },
-                                    '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d8d8d8' },
+                                    '& .MuiOutlinedInput-root': {
+                                        borderRadius: '12px'
+                                    }
                                 }}
                             />
+                        </Grid>                        <Grid item xs={12} md={3}>
+                            <FormControl fullWidth>
+                                <InputLabel>Năm học</InputLabel>
+                                <Select
+                                    value={selectedAcademicYear}
+                                    label="Năm học"
+                                    onChange={(e) => setSelectedAcademicYear(e.target.value)}
+                                    sx={{
+                                        borderRadius: '12px'
+                                    }}
+                                >
+                                    <MenuItem value="all">Tất cả năm học</MenuItem>
+                                    {academicYears.map(year => (
+                                        <MenuItem key={year} value={year}>
+                                            {year}
+                                        </MenuItem>
+                                    ))}
+                                </Select>
+                            </FormControl>
                         </Grid>
-                        <Grid item xs={12} md={6}>
-                            <TextField
-                                label="Tên môn học"
+                        <Grid item xs={12} md={2}>
+                            <FormControl fullWidth>
+                                <InputLabel>Học kỳ</InputLabel>
+                                <Select
+                                    value={selectedSemester}
+                                    label="Học kỳ"
+                                    onChange={(e) => setSelectedSemester(e.target.value)}
+                                    sx={{
+                                        borderRadius: '12px'
+                                    }}
+                                >
+                                    <MenuItem value="all">Tất cả học kỳ</MenuItem>
+                                    {semesters.map(semester => (
+                                        <MenuItem key={semester} value={semester}>
+                                            Học kỳ {semester}
+                                        </MenuItem>
+                                    ))}
+                                </Select>
+                            </FormControl>                        </Grid>
+                    </Grid>
+                    
+                    {/* Add Course Button */}
+                    <Grid container spacing={2} sx={{ mt: 2 }}>
+                        <Grid item xs={12} md={3}>
+                            <Button
                                 fullWidth
-                                value={currentCourse?.subjectName || ''}
-                                onChange={(e) => setCurrentCourse(prev => prev ? { ...prev, subjectName: e.target.value } : null)}
-                                sx={{
-                                    borderRadius: '12px',
-                                    background: '#f7faff',
-                                    '& .MuiOutlinedInput-root': { borderRadius: '12px' },
-                                    '& .MuiInputLabel-root': { fontWeight: 500 },
-                                    '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d8d8d8' },
+                                variant="contained"
+                                startIcon={<AddIcon />}
+                                onClick={() => {
+                                    setCurrentCourse(null);
+                                    setIsEditing(false);
+                                    setOpenDialog(true);
                                 }}
-                            />
-                        </Grid>
-                        <Grid item xs={12} md={6}>
-                            <TextField
-                                label="Số tín chỉ"
-                                type="number"
-                                fullWidth
-                                value={currentCourse?.credits || 0}
-                                onChange={(e) => setCurrentCourse(prev => prev ? { ...prev, credits: Number(e.target.value) } : null)}
                                 sx={{
+                                    height: '56px',
                                     borderRadius: '12px',
-                                    background: '#f7faff',
-                                    '& .MuiOutlinedInput-root': { borderRadius: '12px' },
-                                    '& .MuiInputLabel-root': { fontWeight: 500 },
-                                    '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d8d8d8' },
+                                    backgroundColor: '#6ebab6',
+                                    '&:hover': {
+                                        backgroundColor: '#5ca9a5'
+                                    }
                                 }}
-                            />
-                        </Grid>
-                        <Grid item xs={12} md={6}>
-                            <TextField
-                                label="Học kỳ"
-                                fullWidth
-                                value={currentCourse?.semester || ''}
-                                onChange={(e) => setCurrentCourse(prev => prev ? { ...prev, semester: e.target.value } : null)}
-                                sx={{
-                                    borderRadius: '12px',
-                                    background: '#f7faff',
-                                    '& .MuiOutlinedInput-root': { borderRadius: '12px' },
-                                    '& .MuiInputLabel-root': { fontWeight: 500 },
-                                    '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d8d8d8' },
-                                }}
-                            />
-                        </Grid>
-                        <Grid item xs={12} md={6}>
-                            <TextField
-                                label="Năm học"
-                                fullWidth
-                                value={currentCourse?.academicYear || ''}
-                                onChange={(e) => setCurrentCourse(prev => prev ? { ...prev, academicYear: e.target.value } : null)}
-                                sx={{
-                                    borderRadius: '12px',
-                                    background: '#f7faff',
-                                    '& .MuiOutlinedInput-root': { borderRadius: '12px' },
-                                    '& .MuiInputLabel-root': { fontWeight: 500 },
-                                    '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d8d8d8' },
-                                }}
-                            />
-                        </Grid>
-                        <Grid item xs={12} md={6}>
-                            <TextField
-                                label="Ngành học"
-                                fullWidth
-                                value={currentCourse?.fieldOfStudy || ''}
-                                onChange={(e) => setCurrentCourse(prev => prev ? { ...prev, fieldOfStudy: e.target.value } : null)}
-                                sx={{
-                                    borderRadius: '12px',
-                                    background: '#f7faff',
-                                    '& .MuiOutlinedInput-root': { borderRadius: '12px' },
-                                    '& .MuiInputLabel-root': { fontWeight: 500 },
-                                    '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d8d8d8' },
-                                }}
-                            />
-                        </Grid>
-                        <Grid item xs={12} md={6}>
-                            <TextField
-                                label="Số lượng tối thiểu"
-                                type="number"
-                                fullWidth
-                                value={currentCourse?.minStudents || 0}
-                                onChange={(e) => setCurrentCourse(prev => prev ? { ...prev, minStudents: Number(e.target.value) } : null)}
-                                sx={{
-                                    borderRadius: '12px',
-                                    background: '#f7faff',
-                                    '& .MuiOutlinedInput-root': { borderRadius: '12px' },
-                                    '& .MuiInputLabel-root': { fontWeight: 500 },
-                                    '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d8d8d8' },
-                                }}
-                            />
-                        </Grid>
-                        <Grid item xs={12} md={6}>
-                            <TextField
-                                label="Số lượng tối đa"
-                                type="number"
-                                fullWidth
-                                value={currentCourse?.maxStudents || 0}
-                                onChange={(e) => setCurrentCourse(prev => prev ? { ...prev, maxStudents: Number(e.target.value) } : null)}
-                                sx={{
-                                    borderRadius: '12px',
-                                    background: '#f7faff',
-                                    '& .MuiOutlinedInput-root': { borderRadius: '12px' },
-                                    '& .MuiInputLabel-root': { fontWeight: 500 },
-                                    '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d8d8d8' },
-                                }}
-                            />
+                            >
+                                Thêm mới
+                            </Button>
                         </Grid>
                     </Grid>
-                </DialogContent>
-                <DialogActions sx={{
-                    px: 4,
-                    pb: 3,
-                    pt: 2,
-                    display: 'flex',
-                    justifyContent: 'flex-end',
-                    gap: 2,
-                    background: 'transparent',
-                }}>
-                    <Button onClick={() => setOpenDialog(false)} color="primary">
-                        Hủy
-                    </Button>
-                    <Button
-                        variant="contained"
-                        color="primary"
-                        onClick={async () => {
-                            if (currentCourse) {
-                                try {
-                                    if (isEditing) {
-                                        const updatedCourse = await openCourseApi.updateCourse(currentCourse.id, currentCourse);
-                                        setCourses(courses.map(c => c.id === currentCourse.id ? updatedCourse : c));
-                                    } else {
-                                        const newCourse = await openCourseApi.createCourse(currentCourse);
-                                        setCourses([...courses, newCourse]);
-                                    }
-                                    setOpenDialog(false);
-                                } catch (err) {
-                                    setError('Failed to save course');
-                                    console.error(err);
-                                }
-                            }
-                        }}
-                    >
-                        {isEditing ? "Cập nhật" : "Thêm mới"}
-                    </Button>
-                </DialogActions>
-            </Dialog>
 
-            {/* Confirm Delete Dialog */}
-            <Dialog
-                open={confirmDelete.open}
-                onClose={handleCancelDelete}
-                aria-labelledby="delete-dialog-title"
-                aria-describedby="delete-dialog-description"
-                sx={{
-                    '& .MuiPaper-root': {
-                        borderRadius: '16px',
-                    },
-                }}
-            >
-                <DialogTitle id="delete-dialog-title" sx={{ fontFamily: '"Roboto", sans-serif', fontWeight: 500 }}>
-                    Xác nhận xóa lớp học
-                </DialogTitle>
-                <DialogContent>
-                    <Typography 
-                        id="delete-dialog-description" 
-                        component="div"
-                        sx={{
-                            fontSize: '17px',
-                            color: '#5c6c7c', 
-                            textAlign: 'center',
-                            fontWeight: 400
-                        }}
+                    <Divider sx={{ mb: 3 }} />
+
+                    {/* Course Tables */}
+                    {renderCourseTable(theory, "Môn Lý thuyết")}
+                    {renderCourseTable(practice, "Môn Thực hành")}
+
+                    {/* Delete Confirmation Dialog */}
+                    <Dialog
+                        open={confirmDelete.open}
+                        onClose={handleCancelDelete}
+                        aria-labelledby="alert-dialog-title"
+                        aria-describedby="alert-dialog-description"
                     >
-                        Bạn có chắc chắn muốn xóa lớp học này không?
-                    </Typography>
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={handleCancelDelete} color="primary">
-                        Hủy
-                    </Button>
-                    <Button onClick={handleConfirmDelete} color="error" variant="contained">
-                        Xóa
-                    </Button>
-                </DialogActions>
-            </Dialog>
+                        <DialogTitle id="alert-dialog-title">
+                            Xác nhận xóa môn học
+                        </DialogTitle>
+                        <DialogContent>
+                            <Typography>
+                                Bạn có chắc chắn muốn xóa môn học này không? Hành động này không thể hoàn tác.
+                            </Typography>
+                        </DialogContent>
+                        <DialogActions>
+                            <Button onClick={handleCancelDelete}>Hủy</Button>
+                            <Button onClick={handleConfirmDelete} color="error" autoFocus>
+                                Xóa
+                            </Button>
+                        </DialogActions>
+                    </Dialog>
+
+                    {/* Add/Edit Dialog - Placeholder for now */}
+                    <Dialog
+                        open={openDialog}
+                        onClose={() => setOpenDialog(false)}
+                        maxWidth="md"
+                        fullWidth
+                    >
+                        <DialogTitle>
+                            {isEditing ? 'Chỉnh sửa môn học' : 'Thêm môn học mới'}
+                        </DialogTitle>
+                        <DialogContent>
+                            <Typography>
+                                Chức năng thêm/sửa sẽ được phát triển trong phiên bản tiếp theo.
+                            </Typography>
+                        </DialogContent>
+                        <DialogActions>
+                            <Button onClick={() => setOpenDialog(false)}>Đóng</Button>
+                        </DialogActions>
+                    </Dialog>
+                </Paper>
+            </Box>
         </ThemeLayout>
     );
 }

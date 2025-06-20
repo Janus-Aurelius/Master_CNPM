@@ -53,9 +53,8 @@ export default function LoginForm({ onLogin }: LoginFormProps) {
         event.preventDefault();
         const formData = new FormData(event.currentTarget);
         const username = formData.get('username') as string;
-        const password = formData.get('password') as string;
-
-        try {
+        const password = formData.get('password') as string;        try {
+            console.log('🔐 Sending login request...');
             const response = await fetch('http://localhost:3000/api/auth/login', {
                 method: 'POST',
                 headers: {
@@ -65,18 +64,27 @@ export default function LoginForm({ onLogin }: LoginFormProps) {
             });
 
             const data = await response.json();
+            console.log('✅ Login response:', data);
 
             if (data.success) {
+                console.log('👤 User data from backend:', data.data.user);
+                console.log('🔑 Token from backend:', data.data.token);
+                
                 // Save user data and tokens to localStorage
                 localStorage.setItem('user', JSON.stringify(data.data.user));
                 localStorage.setItem('token', data.data.token);
                 localStorage.setItem('refreshToken', data.data.refreshToken);
+
+                console.log('💾 Saved to localStorage:');
+                console.log('- User:', JSON.parse(localStorage.getItem('user') || '{}'));
+                console.log('- Token:', localStorage.getItem('token'));
 
                 if (onLogin) {
                     onLogin(data.data.user);
                     navigate(data.data.redirectUrl);
                 }
             } else {
+                console.error('❌ Login failed:', data.message);
                 alert(data.message || 'Đăng nhập thất bại');
             }
         } catch (error) {

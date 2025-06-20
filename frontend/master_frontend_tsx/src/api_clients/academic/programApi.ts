@@ -1,4 +1,4 @@
-import axiosInstance from './axios';
+import axiosInstance from '../axios';
 
 export interface ProgramSchedule {
     id: number;
@@ -8,6 +8,8 @@ export interface ProgramSchedule {
     ghiChu?: string;
     thoiGianBatDau?: string;
     thoiGianKetThuc?: string;
+    tenKhoa?: string;
+    tenNganh?: string;
 }
 
 interface ApiResponse<T> {

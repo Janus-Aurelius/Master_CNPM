@@ -16,9 +16,14 @@ export interface IOfferedCourse {
     totalHours?: number;        // from MONHOC.SoTiet
     hoursPerCredit?: number;    // from LOAIMON.SoTietMotTC
     pricePerCredit?: number;    // from LOAIMON.SoTienMotTC
+      // Academic year and semester info from HOCKYNAMHOC
+    semesterNumber?: number;    // from HOCKYNAMHOC.HocKyThu
+    academicYear?: number;      // from HOCKYNAMHOC.NamHoc
+    
+    // Status
+    status?: string;            // 'Mở' | 'Đầy'
     
     // Additional UI fields
-    isAvailable?: boolean;      // currentStudents < maxStudents
     registrationStartDate?: string;
     registrationEndDate?: string;
 }

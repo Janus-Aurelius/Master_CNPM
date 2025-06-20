@@ -18,9 +18,8 @@ const registrationValidationRules = (): ValidationChain[] => {
         body('semester')
             .isString()
             .notEmpty()
-            .withMessage('Semester is required')
-            .matches(/^HK[1-3] \d{4}-\d{4}$/)
-            .withMessage('Semester must be in format: HK1 2023-2024')
+            .withMessage('Semester is required')            .matches(/^HK[1-3]_\d{4}$/)
+            .withMessage('Semester must be in format: HK1_2024')
     ];
 };
 

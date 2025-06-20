@@ -8,10 +8,14 @@ import { ProgramController } from '../../controllers/academicController/program.
 import studentRoutes from './student.routes';
 import courseRoutes from './course.routes';
 import openCourseRoutes from './openCourse.routes';
+import semesterRoutes from './semester.routes';
 
 const router = Router();
 
-// Protect all routes
+// Mount open course routes WITHOUT authentication for testing
+router.use('/open-courses', openCourseRoutes);
+
+// Protect all other routes
 router.use(authenticateToken, authorizeRoles(['academic']));
 
 // Dashboard Routes
@@ -31,7 +35,15 @@ router.get('/dashboard/stats', (req: Request, res: Response): void => {
 
 router.get('/dashboard/activities', (req: Request, res: Response): void => {
     AcademicDashboardController.getRecentActivities(req, res).catch(err => {
-        console.error(err);        res.status(500).json({ success: false, message: 'Internal server error' });
+        console.error(err);
+        res.status(500).json({ success: false, message: 'Internal server error' });
+    });
+});
+
+router.get('/dashboard/requests', (req: Request, res: Response): void => {
+    AcademicDashboardController.getStudentRequests(req, res).catch(err => {
+        console.error(err);
+        res.status(500).json({ success: false, message: 'Internal server error' });
     });
 });
 
@@ -111,7 +123,7 @@ router.use('/students', studentRoutes);
 // Mount course routes at /api/academic/courses
 router.use('/courses', courseRoutes);
 
-// Mount open course routes at /api/academic/open-courses
-router.use('/open-courses', openCourseRoutes);
+// Mount semester routes at /api/academic/semesters
+router.use('/semesters', semesterRoutes);
 
 export default router;

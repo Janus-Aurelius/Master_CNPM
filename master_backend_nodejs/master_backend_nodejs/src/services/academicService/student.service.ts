@@ -23,8 +23,7 @@ const convertNameToCode = async (name: string, table: string, nameColumn: string
     }
 };
 
-export const studentService = {
-    getAllStudents: async (): Promise<IStudent[]> => {
+export const studentService = {    getAllStudents: async (): Promise<IStudent[]> => {
         try {
             const result = await db.query(`
                 SELECT 
@@ -38,6 +37,7 @@ export const studentService = {
                     s.MaNganh as majorId,
                     s.Email as email,
                     s.SoDienThoai as phone,
+                    s.DiaChi as address,
                     h.TenHuyen as districtName,
                     t.TenTinh as provinceName,
                     d.TenDoiTuong as priorityName,
@@ -51,8 +51,7 @@ export const studentService = {
                 LEFT JOIN KHOA k ON n.MaKhoa = k.MaKhoa
                 ORDER BY s.MaSoSinhVien
             `);
-            
-            return result.rows.map(row => ({
+              return result.rows.map(row => ({
                 studentId: row.studentid,
                 fullName: row.fullname,
                 dateOfBirth: row.dateofbirth,
@@ -63,6 +62,7 @@ export const studentService = {
                 majorId: row.majorid,
                 email: row.email || '',
                 phone: row.phone || '',
+                address: row.address || '',
                 districtName: row.districtname,
                 provinceName: row.provincename,
                 priorityName: row.priorityname,
@@ -73,9 +73,7 @@ export const studentService = {
             console.error('Error fetching students:', error);
             throw new Error('Failed to fetch students');
         }
-    },
-
-    getStudentById: async (id: string): Promise<IStudent | null> => {
+    },    getStudentById: async (id: string): Promise<IStudent | null> => {
         try {
             const result = await db.query(`
                 SELECT 
@@ -89,6 +87,7 @@ export const studentService = {
                     s.MaNganh as majorId,
                     s.Email as email,
                     s.SoDienThoai as phone,
+                    s.DiaChi as address,
                     h.TenHuyen as districtName,
                     t.TenTinh as provinceName,
                     d.TenDoiTuong as priorityName,
@@ -104,8 +103,7 @@ export const studentService = {
             `, [id]);
             
             if (result.rows.length === 0) return null;
-            
-            const row = result.rows[0];
+              const row = result.rows[0];
             return {
                 studentId: row.studentid,
                 fullName: row.fullname,
@@ -117,6 +115,7 @@ export const studentService = {
                 majorId: row.majorid,
                 email: row.email || '',
                 phone: row.phone || '',
+                address: row.address || '',
                 districtName: row.districtname,
                 provinceName: row.provincename,
                 priorityName: row.priorityname,
@@ -147,12 +146,10 @@ export const studentService = {
                 priorityCode,
                 majorCode
             });
-            
-            const result = await db.query(
-                'INSERT INTO SINHVIEN (MaSoSinhVien, HoTen, NgaySinh, GioiTinh, QueQuan, MaHuyen, MaDoiTuongUT, MaNganh, Email, SoDienThoai) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *',
-                [student.studentId, student.fullName, student.dateOfBirth, student.gender, student.hometown, districtCode, priorityCode, majorCode, student.email, student.phone]
-            );
-            const row = result.rows[0];
+              const result = await db.query(
+                'INSERT INTO SINHVIEN (MaSoSinhVien, HoTen, NgaySinh, GioiTinh, QueQuan, MaHuyen, MaDoiTuongUT, MaNganh, Email, SoDienThoai, DiaChi) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *',
+                [student.studentId, student.fullName, student.dateOfBirth, student.gender, student.hometown, districtCode, priorityCode, majorCode, student.email, student.phone, student.address || '']
+            );            const row = result.rows[0];
             return {
                 studentId: row.masosinhvien,
                 fullName: row.hoten,
@@ -163,7 +160,8 @@ export const studentService = {
                 priorityObjectId: row.madoituongut,
                 majorId: row.manganh,
                 email: row.email || '',
-                phone: row.sodienthoai || ''
+                phone: row.sodienthoai || '',
+                address: row.diachi || ''
             };
         } catch (error) {
             console.error('Error in createStudent:', error);
@@ -177,21 +175,19 @@ export const studentService = {
             const districtCode = await convertNameToCode(student.districtName || '', 'HUYEN', 'TenHuyen', 'MaHuyen');
             const priorityCode = await convertNameToCode(student.priorityName || '', 'DOITUONGUUTIEN', 'TenDoiTuong', 'MaDoiTuong');
             const majorCode = await convertNameToCode(student.majorName || '', 'NGANHHOC', 'TenNganh', 'MaNganh');
-            
-            const result = await db.query(
+              const result = await db.query(
                 `UPDATE SINHVIEN SET 
                     HoTen = $2, NgaySinh = $3, GioiTinh = $4, QueQuan = $5, 
                     MaHuyen = $6, MaDoiTuongUT = $7, MaNganh = $8, 
-                    Email = $9, SoDienThoai = $10
+                    Email = $9, SoDienThoai = $10, DiaChi = $11
                 WHERE MaSoSinhVien = $1 RETURNING *`,
-                [id, student.fullName, student.dateOfBirth, student.gender, student.hometown, districtCode, priorityCode, majorCode, student.email, student.phone]
+                [id, student.fullName, student.dateOfBirth, student.gender, student.hometown, districtCode, priorityCode, majorCode, student.email, student.phone, student.address || '']
             );
             
             if (result.rows.length === 0) {
                 throw new Error('Student not found');
             }
-            
-            const row = result.rows[0];
+              const row = result.rows[0];
             return {
                 studentId: row.masosinhvien,
                 fullName: row.hoten,
@@ -202,7 +198,8 @@ export const studentService = {
                 priorityObjectId: row.madoituongut,
                 majorId: row.manganh,
                 email: row.email || '',
-                phone: row.sodienthoai || ''
+                phone: row.sodienthoai || '',
+                address: row.diachi || ''
             };
         } catch (error) {
             console.error('Error in updateStudent:', error);
@@ -222,8 +219,7 @@ export const studentService = {
         }
     },
 
-    searchStudents: async (searchTerm: string): Promise<IStudent[]> => {
-        try {
+    searchStudents: async (searchTerm: string): Promise<IStudent[]> => {        try {
             const result = await db.query(`
                 SELECT 
                     s.MaSoSinhVien as studentId,
@@ -236,6 +232,7 @@ export const studentService = {
                     s.MaNganh as majorId,
                     s.Email as email,
                     s.SoDienThoai as phone,
+                    s.DiaChi as address,
                     h.TenHuyen as districtName,
                     t.TenTinh as provinceName,
                     d.TenDoiTuong as priorityName,
@@ -250,8 +247,7 @@ export const studentService = {
                 WHERE s.MaSoSinhVien ILIKE $1 OR s.HoTen ILIKE $1
                 ORDER BY s.MaSoSinhVien
             `, [`%${searchTerm}%`]);
-            
-            return result.rows.map(row => ({
+              return result.rows.map(row => ({
                 studentId: row.studentid,
                 fullName: row.fullname,
                 dateOfBirth: row.dateofbirth,
@@ -262,6 +258,7 @@ export const studentService = {
                 majorId: row.majorid,
                 email: row.email || '',
                 phone: row.phone || '',
+                address: row.address || '',
                 districtName: row.districtname,
                 provinceName: row.provincename,
                 priorityName: row.priorityname,

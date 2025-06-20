@@ -18,18 +18,15 @@ import {
     Table,
     TableHead,
     TableRow,
-    TableCell,
-    TableBody,
+    TableCell,    TableBody,
     TablePagination,
-    Chip,
-    Divider,
     Snackbar,
     Alert
 } from "@mui/material";
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import AddIcon from '@mui/icons-material/Add';
-import { programApi, ProgramSchedule } from "../api_clients/programApi";
+import { programApi, ProgramSchedule } from "../api_clients/academic/programApi";
 
 interface AcademicPageProps {
     user: User | null;
@@ -66,15 +63,16 @@ export default function ProgramMgmAcademic({ user, onLogout }: AcademicPageProps
     const fetchPrograms = async () => {
         try {
             setLoading(true);
-            const response = await programApi.getPrograms();
-            const formattedPrograms = response.map((program: any) => ({
+            const response = await programApi.getPrograms();            const formattedPrograms = response.map((program: any) => ({
                 id: program.id || 0,
                 maNganh: program.maNganh || program.manganh || '',
                 maMonHoc: program.maMonHoc || program.mamonhoc || '',
                 maHocKy: program.maHocKy || program.mahocky || '',
                 ghiChu: program.ghiChu || program.ghichu || '',
                 thoiGianBatDau: program.thoiGianBatDau || program.thoigianbatdau || '',
-                thoiGianKetThuc: program.thoiGianKetThuc || program.thoigianketthuc || ''
+                thoiGianKetThuc: program.thoiGianKetThuc || program.thoigianketthuc || '',
+                tenKhoa: program.tenKhoa || program.tenkhoa || '',
+                tenNganh: program.tenNganh || program.tennganh || ''
             }));
             setPrograms(formattedPrograms);
             setError(null);
@@ -240,20 +238,12 @@ export default function ProgramMgmAcademic({ user, onLogout }: AcademicPageProps
 
     const handleCancelDelete = () => {
         setConfirmDelete({ open: false, id: null });
-    };
-
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    };    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
         setCurrentProgram({
             ...currentProgram,
             [name]: value
         });
-    };
-
-    // Helper function for program type chips
-    const renderProgramTypeChip = (type: string) => {
-        const color = type === 'Chuyên ngành' ? 'primary' : 'success';
-        return <Chip size="small" label={type} color={color} sx={{ fontWeight: 500 }} />;
     };
 
     // Format date to display in dd/mm/yyyy format
@@ -356,16 +346,16 @@ export default function ProgramMgmAcademic({ user, onLogout }: AcademicPageProps
                     ) : (
                         <>
                             <TableContainer component={Paper} sx={{ mt: 2, borderRadius: '12px', boxShadow: '0 4px 10px rgba(0, 0, 0, 0.1)' }}>
-                                <Table size="medium">
-                                    <TableHead>
+                                <Table size="medium">                                    <TableHead>
                                         <TableRow>
-                                            <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '20px', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6' }}>Mã ngành</TableCell>
-                                            <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '20px', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6' }}>Mã môn học</TableCell>
-                                            <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '20px', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6' }}>Mã học kỳ</TableCell>
-                                            <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '20px', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6' }}>Thời gian bắt đầu</TableCell>
-                                            <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '20px', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6' }}>Thời gian kết thúc</TableCell>
-                                            <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '20px', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6' }}>Ghi chú</TableCell>
-                                            <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '20px', fontFamily: '"Varela Round", sans-serif', textAlign: 'center', backgroundColor: '#6ebab6' }}>Thao tác</TableCell>
+                                            <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '18px', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6' }}>Mã ngành</TableCell>
+                                            <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '18px', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6' }}>Tên ngành</TableCell>
+                                            <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '18px', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6' }}>Tên khoa</TableCell>
+                                            <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '18px', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6' }}>Mã môn học</TableCell>
+                                            <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '18px', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6' }}>Mã học kỳ</TableCell>
+                                            <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '18px', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6' }}>Thời gian</TableCell>
+                                            <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '18px', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6' }}>Ghi chú</TableCell>
+                                            <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '18px', fontFamily: '"Varela Round", sans-serif', textAlign: 'center', backgroundColor: '#6ebab6' }}>Thao tác</TableCell>
                                         </TableRow>
                                     </TableHead>
                                     <TableBody>
@@ -380,12 +370,27 @@ export default function ProgramMgmAcademic({ user, onLogout }: AcademicPageProps
                                                     },
                                                     '&:last-child td, &:last-child th': { borderBottom: 'none' }
                                                 }}
-                                            >
-                                                <TableCell sx={{ fontSize: '16px', fontFamily: '"Varela Round", sans-serif', fontWeight: 800}}>{program.maNganh}</TableCell>
+                                            >                                                <TableCell sx={{ fontSize: '16px', fontFamily: '"Varela Round", sans-serif', fontWeight: 800}}>{program.maNganh}</TableCell>
+                                                <TableCell sx={{ fontSize: '16px', fontFamily: '"Varela Round", sans-serif', fontWeight: 600, color: '#2e7d32' }}>{program.tenNganh || 'N/A'}</TableCell>
+                                                <TableCell sx={{ fontSize: '16px', fontFamily: '"Varela Round", sans-serif', fontWeight: 600, color: '#1976d2' }}>{program.tenKhoa || 'N/A'}</TableCell>
                                                 <TableCell sx={{ fontSize: '16px', fontFamily: '"Varela Round", sans-serif' }}>{program.maMonHoc}</TableCell>
                                                 <TableCell sx={{ fontSize: '16px', fontFamily: '"Varela Round", sans-serif' }}>{program.maHocKy}</TableCell>
-                                                <TableCell sx={{ fontSize: '16px', fontFamily: '"Varela Round", sans-serif' }}>{formatDate(program.thoiGianBatDau || '')}</TableCell>
-                                                <TableCell sx={{ fontSize: '16px', fontFamily: '"Varela Round", sans-serif' }}>{formatDate(program.thoiGianKetThuc || '')}</TableCell>
+                                                <TableCell sx={{ fontSize: '14px', fontFamily: '"Varela Round", sans-serif' }}>
+                                                    {program.thoiGianBatDau && program.thoiGianKetThuc ? (
+                                                        <Box>
+                                                            <Typography variant="body2" sx={{ fontSize: '13px' }}>
+                                                                <strong>Bắt đầu:</strong> {formatDate(program.thoiGianBatDau)}
+                                                            </Typography>
+                                                            <Typography variant="body2" sx={{ fontSize: '13px' }}>
+                                                                <strong>Kết thúc:</strong> {formatDate(program.thoiGianKetThuc)}
+                                                            </Typography>
+                                                        </Box>
+                                                    ) : (
+                                                        <Typography variant="body2" sx={{ fontSize: '13px', color: '#999' }}>
+                                                            Chưa có thông tin
+                                                        </Typography>
+                                                    )}
+                                                </TableCell>
                                                 <TableCell sx={{ fontSize: '16px', fontFamily: '"Varela Round", sans-serif' }}>{program.ghiChu || '-'}</TableCell>
                                                 <TableCell sx={{ textAlign: 'center' }}>
                                                     <IconButton 
@@ -466,8 +471,7 @@ export default function ProgramMgmAcademic({ user, onLogout }: AcademicPageProps
                                     '& .MuiInputLabel-root': { fontWeight: 500 },
                                     '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d8d8d8' },
                                 }}
-                            />
-                        </Grid>
+                            />                        </Grid>
                         <Grid item xs={12} md={6}>
                             <TextField
                                 name="maMonHoc"
@@ -502,11 +506,51 @@ export default function ProgramMgmAcademic({ user, onLogout }: AcademicPageProps
                                 }}
                             />
                         </Grid>
-                        <Grid item xs={12} md={6}>
+                        {isEditing && currentProgram.tenNganh && (
+                            <Grid item xs={12} md={6}>
+                                <TextField
+                                    label="Tên ngành"
+                                    fullWidth
+                                    variant="outlined"
+                                    value={currentProgram.tenNganh}
+                                    InputProps={{ readOnly: true }}
+                                    sx={{
+                                        borderRadius: '12px',
+                                        background: '#f0f8ff',
+                                        '& .MuiOutlinedInput-root': { borderRadius: '12px' },
+                                        '& .MuiInputLabel-root': { fontWeight: 500, color: '#2e7d32' },
+                                        '& .MuiOutlinedInput-notchedOutline': { borderColor: '#90caf9' },
+                                        '& .MuiInputBase-input': { color: '#2e7d32', fontWeight: 600 }
+                                    }}
+                                />
+                            </Grid>
+                        )}
+                        {isEditing && currentProgram.tenKhoa && (
+                            <Grid item xs={12} md={6}>
+                                <TextField
+                                    label="Tên khoa"
+                                    fullWidth
+                                    variant="outlined"
+                                    value={currentProgram.tenKhoa}
+                                    InputProps={{ readOnly: true }}
+                                    sx={{
+                                        borderRadius: '12px',
+                                        background: '#f0f8ff',
+                                        '& .MuiOutlinedInput-root': { borderRadius: '12px' },
+                                        '& .MuiInputLabel-root': { fontWeight: 500, color: '#1976d2' },
+                                        '& .MuiOutlinedInput-notchedOutline': { borderColor: '#90caf9' },
+                                        '& .MuiInputBase-input': { color: '#1976d2', fontWeight: 600 }
+                                    }}
+                                />
+                            </Grid>
+                        )}
+                        <Grid item xs={12} md={12}>
                             <TextField
                                 name="ghiChu"
                                 label="Ghi chú"
                                 fullWidth
+                                multiline
+                                rows={2}
                                 variant="outlined"
                                 value={currentProgram.ghiChu}
                                 onChange={handleInputChange}

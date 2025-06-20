@@ -1,4 +1,4 @@
-import axiosInstance from './axios';
+import axiosInstance from '../axios';
 
 // Add request interceptor to add token
 axiosInstance.interceptors.request.use((config: any) => {
@@ -14,14 +14,21 @@ export interface Student {
     fullName: string;
     dateOfBirth: Date | string;  // Allow both Date and string to handle API response
     gender: string;
-    hometown: string;           // Sẽ chứa tên tỉnh
-    districtId: string;         // Sẽ chứa tên huyện
-    priorityObjectId: string;   // Sẽ chứa tên đối tượng ưu tiên
-    majorId: string;            // Sẽ chứa tên ngành
+    hometown: string;           
+    districtId: string;         
+    priorityObjectId: string;   
+    majorId: string;            
     email?: string;
     phone?: string;
+    address?: string;           // Add address field
     status?: 'active' | 'inactive' | 'đang học' | 'thôi học';
-    faculty?: string;           // Tên khoa
+    
+    // Computed fields from JOINs (for display)
+    districtName?: string;     // from HUYEN.TenHuyen
+    provinceName?: string;     // from TINH.TenTinh  
+    priorityName?: string;     // from DOITUONGUUTIEN.TenDoiTuong
+    majorName?: string;        // from NGANHHOC.TenNganh
+    facultyName?: string;      // from KHOA.TenKhoa
 }
 
 interface ApiResponse<T> {

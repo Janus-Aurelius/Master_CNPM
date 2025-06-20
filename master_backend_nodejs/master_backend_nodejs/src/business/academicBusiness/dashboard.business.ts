@@ -12,28 +12,26 @@ export class AcademicDashboardBusiness {
         } catch (error) {
             throw new Error('Error fetching dashboard overview');
         }
-    }
-
-    static async getQuickStats() {
+    }    static async getQuickStats() {
         try {
             const stats = await academicDashboardService.getDashboardStats();
-            return {
-                success: true,
-                data: stats
-            };
+            return stats;
         } catch (error) {
             throw new Error('Error fetching quick stats');
         }
-    }
-
-    static async getRecentActivities(limit: number = 5) {
+    }    static async getRecentActivities(limit: number = 5) {
         try {
             const activities = await academicDashboardService.getRecentActivities(limit);
-            return {
-                success: true,
-                data: activities            };
+            return activities;
         } catch (error) {
             throw new Error('Error fetching recent activities');
+        }
+    }static async getStudentRequests(limit: number = 10) {
+        try {
+            const requests = await academicDashboardService.getStudentRequests(limit);
+            return requests;
+        } catch (error) {
+            throw new Error('Error fetching student requests');
         }
     }
 }

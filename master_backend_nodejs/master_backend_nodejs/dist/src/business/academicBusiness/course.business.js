@@ -121,10 +121,10 @@ var createCourse = function (courseData) { return __awaiter(void 0, void 0, void
         switch (_a.label) {
             case 0:
                 // Validate các trường cần thiết
-                if (!courseData.maMonHoc || !courseData.tenMonHoc || !courseData.maLoaiMon || !courseData.soTiet) {
+                if (!courseData.courseId || !courseData.courseName || !courseData.courseTypeId || !courseData.totalHours) {
                     throw new Error('Missing required fields');
                 }
-                return [4 /*yield*/, courseService.getCourseById(courseData.maMonHoc)];
+                return [4 /*yield*/, courseService.getCourseById(courseData.courseId)];
             case 1:
                 existing = _a.sent();
                 if (existing) {
@@ -137,22 +137,30 @@ var createCourse = function (courseData) { return __awaiter(void 0, void 0, void
 exports.createCourse = createCourse;
 var updateCourse = function (maMonHocCu, courseData) { return __awaiter(void 0, void 0, void 0, function () {
     return __generator(this, function (_a) {
-        switch (_a.label) {
-            case 0: 
-            // Xóa bản ghi cũ
-            return [4 /*yield*/, courseService.deleteCourse(maMonHocCu)];
-            case 1:
-                // Xóa bản ghi cũ
-                _a.sent();
-                // Thêm bản ghi mới
-                return [2 /*return*/, courseService.addCourse(courseData)];
-        }
+        return [2 /*return*/, courseService.updateCourse(maMonHocCu, courseData)];
     });
 }); };
 exports.updateCourse = updateCourse;
 var deleteCourse = function (maMonHoc) { return __awaiter(void 0, void 0, void 0, function () {
+    var existingCourse, result;
     return __generator(this, function (_a) {
-        return [2 /*return*/, courseService.deleteCourse(maMonHoc)];
+        switch (_a.label) {
+            case 0:
+                console.log('Business layer - deleteCourse called with ID:', maMonHoc);
+                return [4 /*yield*/, courseService.getCourseById(maMonHoc)];
+            case 1:
+                existingCourse = _a.sent();
+                console.log('Existing course found:', existingCourse);
+                if (!existingCourse) {
+                    console.log('Course not found in database:', maMonHoc);
+                    throw new Error('Môn học không tồn tại');
+                }
+                return [4 /*yield*/, courseService.deleteCourse(maMonHoc)];
+            case 2:
+                result = _a.sent();
+                console.log('Delete result:', result);
+                return [2 /*return*/, result];
+        }
     });
 }); };
 exports.deleteCourse = deleteCourse;

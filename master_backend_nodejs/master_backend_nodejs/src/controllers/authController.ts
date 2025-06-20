@@ -36,9 +36,8 @@ export const login = async (req: Request, res: Response) => {
     const result = await Database.query(
       'SELECT * FROM NGUOIDUNG WHERE TenDangNhap = $1',
       [username]
-    );
-
-    console.log('Database query result:', result);
+    );    console.log('Database query result:', result);
+    console.log('📋 Raw user object from DB:', JSON.stringify(result[0], null, 2));
 
     const user = result[0];
 
@@ -49,13 +48,22 @@ export const login = async (req: Request, res: Response) => {
         message: 'Tên đăng nhập không tồn tại'
       });
     }
-
-    // Check password
-    const isPasswordValid = password === user.matkhau;
+      console.log('🔍 User fields:', {
+      UserID: user.UserID || user.userid,
+      TenDangNhap: user.TenDangNhap || user.tendangnhap,
+      MaSoSinhVien: user.MaSoSinhVien || user.masosinhvien,
+      MaNhom: user.MaNhom || user.manhom
+    });
+      // Chuẩn hóa các field từ database (PostgreSQL có thể trả về lowercase)
+    const userId = user.UserID || user.userid;
+    const userUsername = user.TenDangNhap || user.tendangnhap;
+    const studentId = user.MaSoSinhVien || user.masosinhvien;
+    const groupCode = user.MaNhom || user.manhom;    // Check password (note: database column is lowercase)
+    const isPasswordValid = password === (user.MatKhau || user.matkhau);
     console.log('Password validation:', { 
       isPasswordValid, 
       providedPassword: password, 
-      storedPassword: user.matkhau 
+      storedPassword: user.MatKhau || user.matkhau 
     });
 
     if (!isPasswordValid) {
@@ -66,16 +74,14 @@ export const login = async (req: Request, res: Response) => {
       });
     }
 
-    // Map group code to role
-    const role = GROUP_TO_ROLE[user.manhom] || 'unknown';
-    console.log('Mapped role:', { groupCode: user.manhom, role });
-
-    console.log('Generating JWT tokens...');
-    // Generate JWT token
+    // Map group code to role (sử dụng field đã chuẩn hóa)
+    const role = GROUP_TO_ROLE[groupCode] || 'unknown';
+    console.log('Mapped role:', { groupCode, role });    console.log('Generating JWT tokens...');
+    // Generate JWT token (sử dụng fields đã chuẩn hóa)
     const token = jwt.sign(
       { 
-        id: user.userid,
-        username: user.tendangnhap,
+        id: userId,
+        username: userUsername,
         role: role
       },
       JWT_SECRET,
@@ -85,8 +91,8 @@ export const login = async (req: Request, res: Response) => {
     // Generate refresh token
     const refreshToken = jwt.sign(
       { 
-        id: user.userid,
-        username: user.tendangnhap,
+        id: userId,
+        username: userUsername,
         role: role
       },
       JWT_SECRET + '_refresh',
@@ -108,29 +114,32 @@ export const login = async (req: Request, res: Response) => {
       case 'financial':
         redirectUrl = '/financial';
         break;
-    }
-
-    console.log('Login successful:', { 
-      username, 
+    }    console.log('Login successful:', { 
+      username: userUsername, 
       role,
       redirectUrl 
     });
-
-    res.json({
+    
+    const responseData = {
       success: true,
       message: 'Đăng nhập thành công',
       data: {
         user: {
-          id: user.userid,
-          username: user.tendangnhap,
+          id: userId,
+          username: userUsername,
           role: role,
-          studentId: user.masosinhvien
+          studentId: studentId
         },
         token,
         refreshToken,
         redirectUrl
       }
-    });
+    };
+    
+    console.log('🎯 Backend sending response:', JSON.stringify(responseData, null, 2));
+    console.log('👤 User object being sent:', responseData.data.user);
+    
+    res.json(responseData);
 
   } catch (error) {
     console.error('=== Login Error ===');

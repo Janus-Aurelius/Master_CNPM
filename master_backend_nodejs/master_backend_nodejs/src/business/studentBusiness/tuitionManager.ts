@@ -1,5 +1,4 @@
 import { tuitionService } from '../../services/studentService/tuitionService';
-import { DatabaseService } from '../../services/database/databaseService';
 import { 
     ITuitionStatus, 
     IPaymentRequest, 
@@ -31,90 +30,189 @@ class TuitionManager {
     /**
      * Get comprehensive tuition status for a student in current semester
      * Includes business rules for payment deadlines and warnings
-     */
-    public async getStudentTuitionStatus(studentId: string, semesterId?: string): Promise<ITuitionStatus | null> {
+     */    public async getStudentTuitionStatus(studentId: string, semesterId?: string): Promise<ITuitionStatus | null> {
         try {
             if (!studentId) {
                 throw new Error('Student ID is required');
             }
 
+            // Resolve actual studentId (map userId if needed)
+            const actualStudentId = await this.resolveStudentId(studentId);
+
             // Use provided semester or get current semester
             const semester = semesterId || await this.getCurrentSemester();
             
-            const tuitionStatus = await tuitionService.getTuitionStatus(studentId, semester);
+            const tuitionStatus = await tuitionService.getTuitionStatus(actualStudentId, semester);
             if (!tuitionStatus) {
                 return null;
             }
 
             // Apply business rules for payment deadlines and warnings
             const statusWithWarnings = this.applyPaymentDeadlineRules(tuitionStatus);
-            
-            return statusWithWarnings;
 
+            return statusWithWarnings;
         } catch (error) {
-            console.error('Error in tuition manager getting status:', error);
+            console.error('Error in tuition manager getting student tuition status:', error);
             throw error;
         }
-    }    /**
-     * Process tuition payment with business validation
+    }
+
+    /**
+     * Process a payment with business validations
      */
     public async processPayment(paymentRequest: IPaymentRequest): Promise<IPaymentResponse> {
         try {
             // Validate payment request
-            this.validatePaymentRequest(paymentRequest);            // Check if payment is allowed (not overpaying, valid amount, etc.)
+            this.validatePaymentRequest(paymentRequest);
+            
+            // Additional business validation
             await this.validatePaymentAmount(paymentRequest);
 
-            // Process the payment through service
+            // Process payment through service layer
             const paymentResponse = await tuitionService.makePayment(paymentRequest);
 
-            // Apply post-payment business rules (notifications, status updates, etc.)
+            // Apply post-payment business rules
             await this.applyPostPaymentRules(paymentResponse);
 
             return paymentResponse;
-
         } catch (error) {
             console.error('Error in tuition manager processing payment:', error);
             throw error;
         }
-    }    /**
+    }
+
+    /**
      * Get payment history with business formatting
-     */
-    public async getPaymentHistory(studentId: string, semesterId?: string): Promise<IPaymentHistory[]> {
+     */    public async getPaymentHistory(studentId: string, semesterId?: string): Promise<IPaymentHistory[]> {
         try {
             if (!studentId) {
                 throw new Error('Student ID is required');
             }
 
-            const semester = semesterId || await this.getCurrentSemester();
-            
-            // First get the registration ID for this student and semester
-            const registration = await DatabaseService.queryOne(`
-                SELECT MaPhieuDangKy as "registrationId"
-                FROM PHIEUDANGKY 
-                WHERE MaSoSinhVien = $1 AND MaHocKy = $2
-            `, [studentId, semester]);
+            // Resolve actual studentId (map userId if needed)
+            const actualStudentId = await this.resolveStudentId(studentId);
 
-            if (!registration) {
-                return [];
+            if (semesterId) {
+                // Get history for specific semester using service
+                const registration = await tuitionService.getRegistrationBySemester(actualStudentId, semesterId);
+
+                if (!registration) {
+                    return [];
+                }
+
+                const history = await tuitionService.getPaymentHistory(registration.registrationId);
+                
+                // Apply business formatting and categorization
+                return this.formatPaymentHistory(history);
+            } else {
+                // Get history for all semesters using service
+                const allRegistrationIds = await tuitionService.getAllRegistrationIds(actualStudentId);
+
+                if (!allRegistrationIds || allRegistrationIds.length === 0) {
+                    return [];
+                }
+
+                // Get payment history for all registrations
+                const allHistory = [];
+                for (const regId of allRegistrationIds) {
+                    const history = await tuitionService.getPaymentHistory(regId);
+                    allHistory.push(...history);
+                }
+
+                // Sort by date and limit to 10 most recent
+                return this.formatPaymentHistory(allHistory)
+                    .sort((a, b) => new Date(b.paymentDate).getTime() - new Date(a.paymentDate).getTime())
+                    .slice(0, 10);
             }
-
-            const history = await tuitionService.getPaymentHistory(registration.registrationId);
-            
-            // Apply business formatting and categorization
-            return this.formatPaymentHistory(history);
 
         } catch (error) {
             console.error('Error in tuition manager getting payment history:', error);
+            return []; // Return empty array instead of throwing to prevent cascade errors
+        }
+    }
+
+    /**
+     * Get tuition status for all semesters of a student
+     * Returns formatted data for frontend display
+     */    public async getAllTuitionStatus(studentId: string): Promise<any[]> {
+        try {
+            if (!studentId) {
+                throw new Error('Student ID is required');
+            }
+
+            // Resolve actual studentId (map userId if needed)
+            const actualStudentId = await this.resolveStudentId(studentId);
+
+            console.log('📊 Getting all tuition status for student:', actualStudentId);
+
+            // Get all registrations using service
+            const registrations = await tuitionService.getAllRegistrations(actualStudentId);
+
+            console.log('📋 Found registrations:', registrations);            if (!registrations || registrations.length === 0) {
+                console.log('📝 No registration found for student:', actualStudentId);
+                return [];
+            }
+
+            // Get detailed info for each semester using service
+            const tuitionRecords = await Promise.all(
+                registrations.map(async (reg) => {
+                    // Get subjects for this registration using existing service method
+                    let subjects = await tuitionService.getRegisteredCoursesWithFees(reg.registrationId);
+
+                    // If no subjects found, log warning
+                    if (!subjects || subjects.length === 0) {
+                        console.warn('⚠️ No subjects found for registration:', reg.registrationId);
+                        subjects = []; // Empty array instead of mock data
+                    }
+
+                    // Apply business logic for semester name formatting
+                    const formattedSemesterName = this.formatSemesterName(reg.semesterName);
+
+                    return {
+                        id: reg.semesterId,
+                        semester: reg.semesterId,
+                        semesterName: formattedSemesterName,
+                        year: reg.year || '2024',
+                        dueDate: reg.dueDate || '2024-12-31',
+                        status: reg.status || 'unpaid',
+                        subjects: subjects.map(subject => ({
+                            id: subject.courseId,
+                            name: subject.courseName,
+                            credits: subject.credits,
+                            courseType: subject.courseType,
+                            tuition: subject.totalFee
+                        })),
+                        totalAmount: reg.totalAmount || 0,
+                        paidAmount: reg.paidAmount || 0,
+                        remainingAmount: reg.remainingAmount || (reg.totalAmount || 0),
+                        registrationDate: reg.registrationDate
+                    };
+                })
+            );
+
+            console.log('✅ Formatted tuition records:', tuitionRecords);
+            return tuitionRecords;        } catch (error) {
+            console.error('❌ Error getting all tuition status:', error);
+            
+            // Log detailed error for debugging
+            console.error('Error details:', {
+                inputStudentId: studentId,
+                errorMessage: error instanceof Error ? error.message : 'Unknown error',
+                stack: error instanceof Error ? error.stack : undefined
+            });
+            
+            // In production, should throw error instead of returning mock data
             throw error;
         }
     }
 
     /**
      * Get recent payments for dashboard (last 5 transactions)
-     */
-    public async getRecentPayments(studentId: string): Promise<IPaymentHistory[]> {
+     */    public async getRecentPayments(studentId: string): Promise<IPaymentHistory[]> {
         try {
-            const allHistory = await this.getPaymentHistory(studentId);
+            // Resolve actual studentId (map userId if needed)
+            const actualStudentId = await this.resolveStudentId(studentId);
+            const allHistory = await this.getPaymentHistory(actualStudentId);
             return allHistory.slice(0, 5); // Return only the 5 most recent
         } catch (error) {
             console.error('Error getting recent payments:', error);
@@ -124,11 +222,12 @@ class TuitionManager {
 
     /**
      * Get tuition summary for financial reporting
-     */
-    public async getTuitionSummary(studentId: string, semesterId?: string): Promise<ITuitionSummary | null> {
+     */    public async getTuitionSummary(studentId: string, semesterId?: string): Promise<ITuitionSummary | null> {
         try {
+            // Resolve actual studentId (map userId if needed)
+            const actualStudentId = await this.resolveStudentId(studentId);
             const semester = semesterId || await this.getCurrentSemester();
-            const status = await this.getStudentTuitionStatus(studentId, semester);
+            const status = await this.getStudentTuitionStatus(actualStudentId, semester);
             if (!status) {
                 return null;
             }
@@ -149,52 +248,25 @@ class TuitionManager {
             };
 
             return summary;
-
         } catch (error) {
             console.error('Error getting tuition summary:', error);
-            throw error;
-        }
-    }
-
-    /**
-     * Get tuition overview for dashboard display
-     */
-    public async getTuitionOverview(studentId: string): Promise<{
-        totalOwed: number;
-        totalPaid: number;
-        paymentStatus: PaymentStatus;
-        nextPaymentDue?: Date;
-    } | null> {
-        try {
-            const summary = await this.getTuitionSummary(studentId);
-            if (!summary) {
-                return null;
-            }
-
-            return {
-                totalOwed: summary.remainingBalance,
-                totalPaid: summary.totalPaid,
-                paymentStatus: summary.paymentStatus,
-                nextPaymentDue: summary.lastPaymentDate
-            };
-        } catch (error) {
-            console.error('Error getting tuition overview:', error);
             return null;
         }
     }
 
+    // Private helper methods
+
     /**
-     * Get current active semester
+     * Get current active semester - uses business logic instead of direct DB access
      */
     private async getCurrentSemester(): Promise<string> {
         try {
-            const currentSemester = await DatabaseService.queryOne(`
-                SELECT setting_value FROM system_settings WHERE setting_key = 'current_semester'
-            `);
-            return currentSemester?.setting_value || '2024-1';
+            // For now, return hardcoded current semester
+            // In the future, this could be moved to a system settings service
+            return 'hk1_2024';
         } catch (error) {
             console.error('Error getting current semester:', error);
-            return '2024-1'; // Fallback
+            return 'hk1_2024'; // Fallback to current semester
         }
     }
 
@@ -224,20 +296,14 @@ class TuitionManager {
         if (!request.paymentMethod) {
             throw new Error('Payment method is required');
         }
-    }    /**
+    }
+
+    /**
      * Validate payment amount against outstanding balance
      */
     private async validatePaymentAmount(request: IPaymentRequest): Promise<void> {
-        // The registrationId is in the request, so we can validate directly
-        // We can get student info from the registration if needed
-        const registration = await DatabaseService.queryOne(`
-            SELECT 
-                MaSoSinhVien as "studentId",
-                MaHocKy as "semesterId", 
-                SoTienConLai as "remainingAmount"
-            FROM PHIEUDANGKY 
-            WHERE MaPhieuDangKy = $1
-        `, [request.registrationId]);
+        // Use service layer to get registration data instead of direct DB access
+        const registration = await tuitionService.getRegistrationById(request.registrationId);
 
         if (!registration) {
             throw new Error('Registration not found');
@@ -273,6 +339,24 @@ class TuitionManager {
     }
 
     /**
+     * Business logic for formatting semester names
+     */
+    private formatSemesterName(semesterName: string): string {
+        switch (semesterName) {
+            case 'hk1_2024':
+                return 'Học kỳ 1';
+            case 'hk2_2024':
+                return 'Học kỳ 2';
+            case 'hk1_2023':
+                return 'Học kỳ 1';
+            case 'hk2_2023':
+                return 'Học kỳ 2';
+            default:
+                return semesterName;
+        }
+    }
+
+    /**
      * Calculate overall payment status
      */
     private calculateOverallPaymentStatus(status: ITuitionStatus): PaymentStatus {
@@ -286,6 +370,24 @@ class TuitionManager {
 
         // Here you could add logic to check if overdue based on dates
         return 'unpaid';
+    }
+
+    /**
+     * Helper method to resolve student ID from user ID if needed
+     */
+    private async resolveStudentId(inputId: string): Promise<string> {
+        // If inputId looks like a userId (starts with U), map it to studentId
+        if (inputId.startsWith('U')) {
+            const studentId = await tuitionService.mapUserIdToStudentId(inputId);
+            if (!studentId) {
+                throw new Error(`No student found for user ID: ${inputId}`);
+            }
+            console.log(`🔄 Mapped userId ${inputId} to studentId ${studentId}`);
+            return studentId;
+        }
+        
+        // Otherwise assume it's already a studentId
+        return inputId;
     }
 }
 

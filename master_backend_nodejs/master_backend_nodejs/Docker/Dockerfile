@@ -6,6 +6,6 @@ ENV POSTGRES_USER=postgres
 ENV POSTGRES_PASSWORD=secret
 ENV POSTGRES_DB=mydb
 
-# 4. Expose port (tùy chọn, để host connect)
+# 3. Expose port (tùy chọn, để host connect)
 EXPOSE 5432
 

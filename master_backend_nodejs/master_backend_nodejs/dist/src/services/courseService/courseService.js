@@ -39,6 +39,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.searchCourses = exports.deleteCourse = exports.updateCourse = exports.addCourse = exports.getCourseById = exports.getCourses = void 0;
 // src/services/courseService.ts
 var databaseService_1 = require("../database/databaseService");
+var database_1 = require("../../config/database");
 var getCourses = function () { return __awaiter(void 0, void 0, void 0, function () {
     var courses, error_1;
     return __generator(this, function (_a) {
@@ -64,9 +65,11 @@ var getCourseById = function (id) { return __awaiter(void 0, void 0, void 0, fun
         switch (_a.label) {
             case 0:
                 _a.trys.push([0, 2, , 3]);
+                console.log('Service - getCourseById called with ID:', id);
                 return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("\n            SELECT \n                c.MaMonHoc as \"courseId\",\n                c.TenMonHoc as \"courseName\",\n                c.MaLoaiMon as \"courseTypeId\",\n                c.SoTiet as \"totalHours\",\n                l.TenLoaiMon as \"courseTypeName\",\n                l.SoTietMotTC as \"hoursPerCredit\",\n                l.SoTienMotTC as \"pricePerCredit\",\n                ROUND(c.SoTiet::numeric / NULLIF(l.SoTietMotTC, 0), 2) as \"totalCredits\",\n                ROUND((c.SoTiet::numeric / NULLIF(l.SoTietMotTC, 0)) * l.SoTienMotTC, 2) as \"totalPrice\"\n            FROM MONHOC c\n            JOIN LOAIMON l ON c.MaLoaiMon = l.MaLoaiMon\n            WHERE c.MaMonHoc = $1\n        ", [id])];
             case 1:
                 course = _a.sent();
+                console.log('Service - getCourseById result:', course);
                 return [2 /*return*/, course];
             case 2:
                 error_2 = _a.sent();
@@ -82,7 +85,8 @@ var addCourse = function (course) { return __awaiter(void 0, void 0, void 0, fun
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
-                _a.trys.push([0, 2, , 3]);
+                _a.trys.push([0, 3, , 4]);
+                // Thêm course vào database
                 return [4 /*yield*/, databaseService_1.DatabaseService.insert('MONHOC', {
                         MaMonHoc: course.courseId,
                         TenMonHoc: course.courseName,
@@ -90,13 +94,17 @@ var addCourse = function (course) { return __awaiter(void 0, void 0, void 0, fun
                         SoTiet: course.totalHours
                     })];
             case 1:
+                // Thêm course vào database
+                _a.sent();
+                return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("\n            SELECT \n                c.MaMonHoc as \"courseId\",\n                c.TenMonHoc as \"courseName\",\n                c.MaLoaiMon as \"courseTypeId\",\n                c.SoTiet as \"totalHours\",\n                l.TenLoaiMon as \"courseTypeName\",\n                l.SoTietMotTC as \"hoursPerCredit\",\n                l.SoTienMotTC as \"pricePerCredit\",\n                ROUND(c.SoTiet::numeric / NULLIF(l.SoTietMotTC, 0), 2) as \"totalCredits\",\n                ROUND((c.SoTiet::numeric / NULLIF(l.SoTietMotTC, 0)) * l.SoTienMotTC, 2) as \"totalPrice\"\n            FROM MONHOC c\n            JOIN LOAIMON l ON c.MaLoaiMon = l.MaLoaiMon\n            WHERE c.MaMonHoc = $1\n        ", [course.courseId])];
+            case 2:
                 newCourse = _a.sent();
                 return [2 /*return*/, newCourse];
-            case 2:
+            case 3:
                 error_3 = _a.sent();
                 console.error('Error adding course:', error_3);
                 throw error_3;
-            case 3: return [2 /*return*/];
+            case 4: return [2 /*return*/];
         }
     });
 }); };
@@ -106,7 +114,7 @@ var updateCourse = function (id, courseData) { return __awaiter(void 0, void 0, 
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
-                _a.trys.push([0, 2, , 3]);
+                _a.trys.push([0, 3, , 4]);
                 updateData = {};
                 if (courseData.courseName)
                     updateData.TenMonHoc = courseData.courseName;
@@ -114,29 +122,75 @@ var updateCourse = function (id, courseData) { return __awaiter(void 0, void 0, 
                     updateData.MaLoaiMon = courseData.courseTypeId;
                 if (courseData.totalHours)
                     updateData.SoTiet = courseData.totalHours;
+                // Update course
                 return [4 /*yield*/, databaseService_1.DatabaseService.update('MONHOC', updateData, { MaMonHoc: id })];
             case 1:
+                // Update course
+                _a.sent();
+                return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("\n            SELECT \n                c.MaMonHoc as \"courseId\",\n                c.TenMonHoc as \"courseName\",\n                c.MaLoaiMon as \"courseTypeId\",\n                c.SoTiet as \"totalHours\",\n                l.TenLoaiMon as \"courseTypeName\",\n                l.SoTietMotTC as \"hoursPerCredit\",\n                l.SoTienMotTC as \"pricePerCredit\",\n                ROUND(c.SoTiet::numeric / NULLIF(l.SoTietMotTC, 0), 2) as \"totalCredits\",\n                ROUND((c.SoTiet::numeric / NULLIF(l.SoTietMotTC, 0)) * l.SoTienMotTC, 2) as \"totalPrice\"\n            FROM MONHOC c\n            JOIN LOAIMON l ON c.MaLoaiMon = l.MaLoaiMon\n            WHERE c.MaMonHoc = $1\n        ", [id])];
+            case 2:
                 updatedCourse = _a.sent();
                 return [2 /*return*/, updatedCourse];
-            case 2:
+            case 3:
                 error_4 = _a.sent();
                 console.error('Error updating course:', error_4);
                 throw error_4;
-            case 3: return [2 /*return*/];
+            case 4: return [2 /*return*/];
         }
     });
 }); };
 exports.updateCourse = updateCourse;
 var deleteCourse = function (id) { return __awaiter(void 0, void 0, void 0, function () {
-    var result, error_5;
+    var error_5;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
                 _a.trys.push([0, 2, , 3]);
-                return [4 /*yield*/, databaseService_1.DatabaseService.delete('MONHOC', { MaMonHoc: id })];
-            case 1:
-                result = _a.sent();
-                return [2 /*return*/, result > 0];
+                console.log('Service - deleteCourse called with ID:', id);
+                return [4 /*yield*/, database_1.Database.withClient(function (client) { return __awaiter(void 0, void 0, void 0, function () {
+                        var deleteCTPDKResult, deleteDSMHMOResult, deleteMainResult, success, error_6;
+                        return __generator(this, function (_a) {
+                            switch (_a.label) {
+                                case 0:
+                                    _a.trys.push([0, 6, , 8]);
+                                    return [4 /*yield*/, client.query('BEGIN')];
+                                case 1:
+                                    _a.sent();
+                                    // Bước 1: Xóa từ bảng CT_PHIEUDANGKY trước (cascade delete)
+                                    console.log('Step 1: Deleting from CT_PHIEUDANGKY...');
+                                    return [4 /*yield*/, client.query('DELETE FROM CT_PHIEUDANGKY WHERE MaMonHoc = $1', [id])];
+                                case 2:
+                                    deleteCTPDKResult = _a.sent();
+                                    console.log('Deleted CT_PHIEUDANGKY rows:', deleteCTPDKResult.rowCount);
+                                    // Bước 2: Xóa từ bảng DANHSACHMONHOCMO
+                                    console.log('Step 2: Deleting from DANHSACHMONHOCMO...');
+                                    return [4 /*yield*/, client.query('DELETE FROM DANHSACHMONHOCMO WHERE MaMonHoc = $1', [id])];
+                                case 3:
+                                    deleteDSMHMOResult = _a.sent();
+                                    console.log('Deleted DANHSACHMONHOCMO rows:', deleteDSMHMOResult.rowCount);
+                                    // Bước 3: Cuối cùng xóa từ bảng MONHOC
+                                    console.log('Step 3: Deleting from MONHOC...');
+                                    return [4 /*yield*/, client.query('DELETE FROM MONHOC WHERE MaMonHoc = $1', [id])];
+                                case 4:
+                                    deleteMainResult = _a.sent();
+                                    console.log('Deleted MONHOC rows:', deleteMainResult.rowCount);
+                                    return [4 /*yield*/, client.query('COMMIT')];
+                                case 5:
+                                    _a.sent();
+                                    success = deleteMainResult.rowCount > 0;
+                                    console.log('Final delete result:', success);
+                                    return [2 /*return*/, success];
+                                case 6:
+                                    error_6 = _a.sent();
+                                    return [4 /*yield*/, client.query('ROLLBACK')];
+                                case 7:
+                                    _a.sent();
+                                    throw error_6;
+                                case 8: return [2 /*return*/];
+                            }
+                        });
+                    }); })];
+            case 1: return [2 /*return*/, _a.sent()];
             case 2:
                 error_5 = _a.sent();
                 console.error('Error deleting course:', error_5);
@@ -147,7 +201,7 @@ var deleteCourse = function (id) { return __awaiter(void 0, void 0, void 0, func
 }); };
 exports.deleteCourse = deleteCourse;
 var searchCourses = function (query) { return __awaiter(void 0, void 0, void 0, function () {
-    var courses, error_6;
+    var courses, error_7;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -157,9 +211,9 @@ var searchCourses = function (query) { return __awaiter(void 0, void 0, void 0, 
                 courses = _a.sent();
                 return [2 /*return*/, courses];
             case 2:
-                error_6 = _a.sent();
-                console.error('Error searching courses:', error_6);
-                throw error_6;
+                error_7 = _a.sent();
+                console.error('Error searching courses:', error_7);
+                throw error_7;
             case 3: return [2 /*return*/];
         }
     });

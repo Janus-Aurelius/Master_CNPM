@@ -49,7 +49,7 @@ var ProgramService = /** @class */ (function () {
                 switch (_a.label) {
                     case 0:
                         _a.trys.push([0, 2, , 3]);
-                        return [4 /*yield*/, databaseService_1.DatabaseService.query("SELECT cth.*, hknh.thoigianbatdau, hknh.thoigianketthuc\n                 FROM chuongtrinhhoc cth\n                 LEFT JOIN hockynamhoc hknh ON cth.mahocky = hknh.mahocky\n                 ORDER BY cth.manganh, cth.mahocky")];
+                        return [4 /*yield*/, databaseService_1.DatabaseService.query("SELECT cth.*, \n                        hknh.thoigianbatdau, \n                        hknh.thoigianketthuc,\n                        k.tenkhoa,\n                        nh.tennganh\n                 FROM chuongtrinhhoc cth\n                 LEFT JOIN hockynamhoc hknh ON cth.mahocky = hknh.mahocky\n                 LEFT JOIN nganhhoc nh ON cth.manganh = nh.manganh\n                 LEFT JOIN khoa k ON nh.makhoa = k.makhoa\n                 ORDER BY cth.manganh, cth.mahocky")];
                     case 1:
                         result = _a.sent();
                         return [2 /*return*/, result];

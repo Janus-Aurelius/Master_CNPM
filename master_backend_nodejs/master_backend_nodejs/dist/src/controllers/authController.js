@@ -81,7 +81,7 @@ var login = function (req, res) { return __awaiter(void 0, void 0, void 0, funct
                             success: false,
                             message: 'Tên đăng nhập không tồn tại'
                         })];
-                }
+                } // Check password (note: database column is lowercase)
                 isPasswordValid = password === user.matkhau;
                 console.log('Password validation:', {
                     isPasswordValid: isPasswordValid,
@@ -94,7 +94,7 @@ var login = function (req, res) { return __awaiter(void 0, void 0, void 0, funct
                             success: false,
                             message: 'Mật khẩu không đúng'
                         })];
-                }
+                } // Map group code to role (note: database column is lowercase)
                 role = GROUP_TO_ROLE[user.manhom] || 'unknown';
                 console.log('Mapped role:', { groupCode: user.manhom, role: role });
                 console.log('Generating JWT tokens...');
@@ -104,8 +104,8 @@ var login = function (req, res) { return __awaiter(void 0, void 0, void 0, funct
                     role: role
                 }, JWT_SECRET, { expiresIn: JWT_EXPIRES });
                 refreshToken_1 = jsonwebtoken_1.default.sign({
-                    id: user.userid,
-                    username: user.tendangnhap,
+                    id: user.UserID,
+                    username: user.TenDangNhap,
                     role: role
                 }, JWT_SECRET + '_refresh', { expiresIn: '7d' });
                 redirectUrl = '/';
@@ -133,10 +133,10 @@ var login = function (req, res) { return __awaiter(void 0, void 0, void 0, funct
                     message: 'Đăng nhập thành công',
                     data: {
                         user: {
-                            id: user.userid,
-                            username: user.tendangnhap,
+                            id: user.UserID,
+                            username: user.TenDangNhap,
                             role: role,
-                            studentId: user.masosinhvien
+                            studentId: user.MaSoSinhVien
                         },
                         token: token,
                         refreshToken: refreshToken_1,
