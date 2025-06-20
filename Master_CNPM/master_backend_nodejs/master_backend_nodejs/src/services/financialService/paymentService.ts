@@ -83,8 +83,8 @@ export class FinancialPaymentService {
                 pd.SoTienConLai AS "sotienconlai",
                 pd.SoTienDaDong AS "sotiendadong",
                 CASE 
-                    WHEN pd.SoTienConLai = 0 THEN 'Đã nộp đủ'
-                    WHEN pd.SoTienDaDong = 0 THEN 'Chưa nộp đủ'
+                    WHEN pd.SoTienConLai <= 0 THEN 'Đã nộp đủ'
+                    WHEN pd.SoTienPhaiDong-pd.SoTienDaDong > 0 THEN 'Chưa nộp đủ'
                     ELSE 'Quá hạn'
                 END AS "status"
             FROM PHIEUDANGKY pd
@@ -198,13 +198,19 @@ export class FinancialPaymentService {
                 }
                 const maPhieuDangKy = regRes.rows[0].maphieudangky;
 
-                // 2. Thêm phiếu thu học phí (PHIEUTHUHP)
+                // 1. Lấy số lớn nhất hiện có
+                const result = await client.query('SELECT MAX(CAST(SUBSTRING(maphieuthu, 3) AS INTEGER)) as max_num FROM phieuthuhp');
+                const nextNum = (result.rows[0].max_num || 0) + 1;
+                const maPhieuThu = 'PT' + String(nextNum).padStart(3, '0');
+
+                // 2. Insert với mã này
                 const insertPaymentQuery = `
-                    INSERT INTO PHIEUTHUHP (MaPhieuDangKy, NgayLap, SoTienDong, PhuongThuc)
-                    VALUES ($1, $2, $3, $4)
-                    RETURNING MaPhieuThu
+                    INSERT INTO phieuthuhp (maphieuthu, maphieudangky, ngaylap, sotiendong, phuongthuc)
+                    VALUES ($1, $2, $3, $4, $5)
+                    RETURNING maphieuthu
                 `;
                 const paymentResult = await client.query(insertPaymentQuery, [
+                    maPhieuThu,
                     maPhieuDangKy,
                     paymentData.paymentDate,
                     paymentData.amount,

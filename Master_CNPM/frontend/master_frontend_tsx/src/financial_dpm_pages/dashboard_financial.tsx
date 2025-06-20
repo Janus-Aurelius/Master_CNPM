@@ -36,6 +36,17 @@ interface FinancialPageProps {
     onLogout: () => void;
 }
 
+function getPaymentMethodLabel(method: string) {
+    switch (method) {
+        case "cash":
+            return "Tiền mặt";
+        case "bank_transfer":
+            return "Chuyển khoản";
+        default:
+            return method;
+    }
+}
+
 export default function DashboardFinancial({ user, onLogout }: FinancialPageProps) {
     const [overview, setOverview] = useState<OverviewData | null>(null);
     const [recentPayments, setRecentPayments] = useState<RecentPayment[]>([]);
@@ -285,7 +296,7 @@ export default function DashboardFinancial({ user, onLogout }: FinancialPageProp
                                             <TableCell sx={{ fontWeight: 500, color: '#2e7d32' }}>
                                                 {Number(row.amount).toLocaleString()} VNĐ
                                             </TableCell>
-                                            <TableCell>{row.method}</TableCell>
+                                            <TableCell>{getPaymentMethodLabel(row.method)}</TableCell>
                                             <TableCell sx={{ color: '#78909c', fontWeight: 400 }}>
                                                 {new Date(row.time).toLocaleString("vi-VN")}
                                             </TableCell>

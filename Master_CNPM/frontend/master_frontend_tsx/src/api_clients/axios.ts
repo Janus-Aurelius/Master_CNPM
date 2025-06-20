@@ -1,10 +1,8 @@
 import axios from 'axios';
 
-const API_URL = 'http://localhost:3000/api';
-
-// Tạo instance axios với base URL
 const axiosInstance = axios.create({
-    baseURL: API_URL,
+    baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3000/api',
+    // withCredentials: true, // Bỏ comment nếu dùng cookie
     headers: {
         'Content-Type': 'application/json'
     }
@@ -17,7 +15,7 @@ axiosInstance.interceptors.request.use(
         console.log('Token from localStorage:', token); // Debug token
         if (token) {
             config.headers = config.headers || {};
-            config.headers.Authorization = `Bearer ${token}`;
+            config.headers['Authorization'] = `Bearer ${token}`;
             console.log('Request config:', {
                 url: config.url,
                 method: config.method,

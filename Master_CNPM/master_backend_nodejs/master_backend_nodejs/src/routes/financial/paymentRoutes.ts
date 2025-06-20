@@ -2,6 +2,7 @@
 import { Router, Request, Response } from 'express';
 import { financialPaymentController } from '../../controllers/financialController/paymentController';
 import { validatePayment } from '../../middleware/validatePayment';
+import { authenticateToken } from '../../middleware/auth';
 
 const router = Router();
 
@@ -17,6 +18,7 @@ router.get('/history/:studentId', async (req: Request, res: Response) => {
 
 // Confirm payment (with validation)
 router.post('/confirm', 
+    authenticateToken,
     validatePayment,
     async (req: Request, res: Response) => {
         await financialPaymentController.confirmPayment(req, res);

@@ -108,7 +108,7 @@ export class FinancialPaymentController {
     async confirmPayment(req: Request, res: Response) {
         try {
             const paymentData: IPaymentData = req.body;
-            const performedBy = req.user?.userId || req.body.performedBy;
+            const performedBy = req.user?.id || req.body.performedBy;
 
             // Log dữ liệu nhận vào
             console.log('[CONFIRM PAYMENT] Request body:', paymentData);

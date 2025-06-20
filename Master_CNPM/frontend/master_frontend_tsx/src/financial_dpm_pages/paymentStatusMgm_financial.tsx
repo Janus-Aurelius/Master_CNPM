@@ -10,15 +10,14 @@ import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Paper from '@mui/material/Paper';
-import Collapse from '@mui/material/Collapse';
 import IconButton from '@mui/material/IconButton';
-import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
-import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import { User } from "../types";
-import { Box, Grid, MenuItem, Select, FormControl, InputLabel, Chip, InputAdornment, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
+import { Box, Grid, MenuItem, Select, FormControl, InputLabel, Chip, InputAdornment, Dialog, DialogTitle, DialogContent, DialogActions, Divider } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import AddIcon from '@mui/icons-material/Add';
+import PersonIcon from '@mui/icons-material/Person';
+import CloseIcon from '@mui/icons-material/Close';
 import UserInfo from '../components/UserInfo';
 import { getAllPaymentStatus, submitTuitionPayment } from '../api_clients/tuitionApi.ts';
 
@@ -38,10 +37,12 @@ interface Invoice {
     faculty: string;
     year: string;
     semester: string;
+    semesterId?: string;
     status: 'Chưa nộp đủ' | 'Đã nộp đủ' | 'Quá hạn';
     paymentHistory: PaymentHistory[];
     sotienphaidong: number; // Tổng số tiền phải đóng
     sotienconlai: number;   // Số tiền còn lại
+    sotiendadong?: number;  // Số tiền đã đóng
 }
 
 interface PhieuThuHP {
@@ -74,6 +75,28 @@ interface FinancialPageProps {
 
 const statusOptions = ['Tất cả', 'Chưa nộp đủ', 'Đã nộp đủ', 'Quá hạn'];
 
+// Define the mapping between display labels and backend values
+const paymentMethodOptions = [
+    { label: "Chuyển khoản", value: "bank_transfer" },
+    { label: "Tiền mặt", value: "cash" },
+
+];
+
+function getPaymentMethodLabel(method: string) {
+    switch (method) {
+        case "bank_transfer":
+            return "Chuyển khoản";
+        case "cash":
+            return "Tiền mặt";
+        case "momo":
+            return "Momo";
+        case "vnpay":
+            return "VNPay";
+        default:
+            return method;
+    }
+}
+
 export default function PaymentStatusMgm({ user, onLogout }: FinancialPageProps) {
     const [invoices, setInvoices] = useState<Invoice[]>([]);
     const [searchQuery, setSearchQuery] = useState("");
@@ -81,13 +104,13 @@ export default function PaymentStatusMgm({ user, onLogout }: FinancialPageProps)
     const [yearFilter, setYearFilter] = useState('Tất cả');
     const [semesterFilter, setSemesterFilter] = useState('Tất cả');
     const [facultyFilter, setFacultyFilter] = useState('Tất cả');
-    const [expandedRows, setExpandedRows] = useState<{ [invoiceId: number]: boolean }>({});
-    const [openDialog, setOpenDialog] = useState(false);
-    const [selectedInvoiceId, setSelectedInvoiceId] = useState<number | null>(null);
+    const [openDetailDialog, setOpenDetailDialog] = useState(false);
+    const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
+    const [openAddPaymentDialog, setOpenAddPaymentDialog] = useState(false);
     const [newTransaction, setNewTransaction] = useState({
         date: new Date().toISOString().split('T')[0],
         amount: '',
-        method: 'Chuyển khoản'
+        method: 'bank_transfer'
     });
     const [phieuDangKyList, setPhieuDangKyList] = useState<PhieuDangKy[]>([]);
     const [phieuThuHPList, setPhieuThuHPList] = useState<PhieuThuHP[]>([]);
@@ -118,39 +141,70 @@ export default function PaymentStatusMgm({ user, onLogout }: FinancialPageProps)
         }
     };
 
-    const toggleHistory = (invoiceId: number) => {
-        setExpandedRows(prev => ({ ...prev, [invoiceId]: !prev[invoiceId] }));
+    // Mở dialog chi tiết sinh viên
+    const handleRowClick = (invoice: Invoice) => {
+        setSelectedInvoice(invoice);
+        setOpenDetailDialog(true);
     };
 
     // Thêm giao dịch, cập nhật lại sotienconlai và status
     const handleAddTransaction = async () => {
-        if (selectedInvoiceId && newTransaction.amount) {
-            const invoice = invoices.find(i => i.id === selectedInvoiceId);
-            if (!invoice) return;
-
+        if (selectedInvoice && newTransaction.amount) {
             try {
                 await submitTuitionPayment({
-                    studentId: invoice.studentId,
-                    semester: invoice.semester,
+                    studentId: selectedInvoice.studentId,
+                    semester: selectedInvoice.semesterId || selectedInvoice.semester,
                     amount: parseFloat(newTransaction.amount),
                     paymentDate: newTransaction.date,
                     paymentMethod: newTransaction.method
                 });
-                // Sau khi thành công, reload lại danh sách hóa đơn
-                // (gọi lại getAllPaymentStatus hoặc setInvoices)
-                setOpenDialog(false);
-                setSelectedInvoiceId(null);
-                // Gọi lại API lấy danh sách mới
-                // ...
+                
+                // Đóng dialog thêm thanh toán
+                setOpenAddPaymentDialog(false);
+                setNewTransaction({
+                    date: new Date().toISOString().split('T')[0],
+                    amount: '',
+                    method: 'bank_transfer'
+                });
+                
+                // Reload toàn bộ dữ liệu và cập nhật selectedInvoice
+                const semesterId = 'HK1_2024';
+                getAllPaymentStatus({ semesterId })
+                    .then((res: any) => {
+                        let newInvoices = [];
+                        if (Array.isArray(res.data)) {
+                            newInvoices = res.data;
+                        } else if (Array.isArray(res)) {
+                            newInvoices = res;
+                        } else if (Array.isArray(res.data?.data)) {
+                            newInvoices = res.data.data;
+                        }
+                        
+                        // Cập nhật danh sách invoices
+                        setInvoices(newInvoices);
+                        
+                        // Tìm và cập nhật selectedInvoice với dữ liệu mới
+                        if (selectedInvoice && newInvoices.length > 0) {
+                            const updatedSelectedInvoice = newInvoices.find(
+                                (inv: Invoice) => inv.studentId === selectedInvoice.studentId
+                            );
+                            if (updatedSelectedInvoice) {
+                                setSelectedInvoice(updatedSelectedInvoice);
+                            }
+                        }
+                    })
+                    .catch((err) => {
+                        setInvoices([]);
+                        console.error('Lỗi khi lấy danh sách hóa đơn:', err);
+                    });
             } catch (err) {
                 alert('Thêm giao dịch thất bại!');
             }
         }
     };
 
-    const openAddTransactionDialog = (invoiceId: number) => {
-        setSelectedInvoiceId(invoiceId);
-        setOpenDialog(true);
+    const openAddPaymentFromDetail = () => {
+        setOpenAddPaymentDialog(true);
     };
 
     useEffect(() => {
@@ -399,110 +453,51 @@ export default function PaymentStatusMgm({ user, onLogout }: FinancialPageProps)
                             </FormControl>
                         </Grid>
                     </Grid>
-                    <TableContainer component={Paper} sx={{ mt: 2, borderRadius: '8px', boxShadow: '0 4px 10px rgba(0, 0, 0, 0.1)', border: 'none', borderBottom: 'none', width: '100%', maxWidth: '100%', minWidth: 1100 }}>
-                        <Box sx={{ maxHeight: 'calc(100vh - 350px)', overflowY: 'auto', overflowX: 'auto' }}>
-                            <Table size="medium" stickyHeader sx={{ tableLayout: 'fixed' }}>
+                    <TableContainer component={Paper} sx={{ mt: 2, borderRadius: '8px', boxShadow: '0 4px 10px rgba(0, 0, 0, 0.1)', border: 'none', borderBottom: 'none', width: '100%' }}>
+                        <Box sx={{ maxHeight: 'calc(100vh - 350px)', overflowY: 'auto' }}>
+                            <Table size="medium" stickyHeader>
                                 <TableHead>
                                     <TableRow>
-                                        <TableCell sx={{ width: 100, backgroundColor: '#6ebab6', color: '#fff', fontWeight: 'bold', fontSize: '16px', fontFamily: '"Varela Round", sans-serif' }}></TableCell>
-                                        <TableCell sx={{ width: 180, backgroundColor: '#6ebab6', color: '#fff', fontWeight: 'bold', fontSize: '16px', fontFamily: '"Varela Round", sans-serif' }}>MSSV</TableCell>
-                                        <TableCell sx={{ width: 140, backgroundColor: '#6ebab6', color: '#fff', fontWeight: 'bold', fontSize: '16px', fontFamily: '"Varela Round", sans-serif' }}>Họ và tên</TableCell>
-                                        <TableCell sx={{ width: 140, backgroundColor: '#6ebab6', color: '#fff', fontWeight: 'bold', fontSize: '16px', fontFamily: '"Varela Round", sans-serif' }}>Khoa</TableCell>
-                                        <TableCell sx={{ width: 110, backgroundColor: '#6ebab6', color: '#fff', fontWeight: 'bold', fontSize: '16px', fontFamily: '"Varela Round", sans-serif' }}>Năm học</TableCell>
-                                        <TableCell sx={{ width: 90, backgroundColor: '#6ebab6', color: '#fff', fontWeight: 'bold', fontSize: '16px', fontFamily: '"Varela Round", sans-serif' }}>Học kỳ</TableCell>
-                                        <TableCell sx={{ width: 140, backgroundColor: '#6ebab6', color: '#fff', fontWeight: 'bold', fontSize: '16px', fontFamily: '"Varela Round", sans-serif' }}>Số tiền phải đóng</TableCell>
-                                        <TableCell sx={{ width: 140, backgroundColor: '#6ebab6', color: '#fff', fontWeight: 'bold', fontSize: '16px', fontFamily: '"Varela Round", sans-serif' }}>Số tiền đã đóng</TableCell>
-                                        <TableCell sx={{ width: 140, backgroundColor: '#6ebab6', color: '#fff', fontWeight: 'bold', fontSize: '16px', fontFamily: '"Varela Round", sans-serif' }}>Số tiền còn lại</TableCell>
-                                        <TableCell sx={{ width: 120, backgroundColor: '#6ebab6', color: '#fff', fontWeight: 'bold', fontSize: '16px', fontFamily: '"Varela Round", sans-serif' }}>Trạng thái</TableCell>
+                                        <TableCell sx={{ width: '15%', backgroundColor: '#6ebab6', color: '#fff', fontWeight: 'bold', fontSize: '16px', fontFamily: '"Varela Round", sans-serif' }}>MSSV</TableCell>
+                                        <TableCell sx={{ width: '25%', backgroundColor: '#6ebab6', color: '#fff', fontWeight: 'bold', fontSize: '16px', fontFamily: '"Varela Round", sans-serif' }}>Họ và tên</TableCell>
+                                        <TableCell sx={{ width: '20%', backgroundColor: '#6ebab6', color: '#fff', fontWeight: 'bold', fontSize: '16px', fontFamily: '"Varela Round", sans-serif' }}>Khoa</TableCell>
+                                        <TableCell sx={{ width: '15%', backgroundColor: '#6ebab6', color: '#fff', fontWeight: 'bold', fontSize: '16px', fontFamily: '"Varela Round", sans-serif' }}>Năm học</TableCell>
+                                        <TableCell sx={{ width: '10%', backgroundColor: '#6ebab6', color: '#fff', fontWeight: 'bold', fontSize: '16px', fontFamily: '"Varela Round", sans-serif' }}>Học kỳ</TableCell>
+                                        <TableCell sx={{ width: '15%', backgroundColor: '#6ebab6', color: '#fff', fontWeight: 'bold', fontSize: '16px', fontFamily: '"Varela Round", sans-serif' }}>Trạng thái</TableCell>
                                     </TableRow>
                                 </TableHead>
                                 <TableBody>
                                     {filteredInvoices.map((invoice) => (
-                                        <React.Fragment key={invoice.id}>
-                                            <TableRow
-                                                sx={{ '&:hover': { backgroundColor: '#f5f5f5', cursor: 'pointer' } }}
-                                                onClick={() => toggleHistory(invoice.id)}
-                                            >
-                                                <TableCell>
-                                                    <IconButton size="small">
-                                                        {expandedRows[invoice.id] ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
-                                                    </IconButton>
-                                                </TableCell>
-                                                <TableCell sx={{ fontWeight: 800, fontFamily: '"Varela Round", sans-serif' }}>{invoice.studentId}</TableCell>
-                                                <TableCell sx={{ fontFamily: '"Varela Round", sans-serif' }}>{invoice.studentName}</TableCell>
-                                                <TableCell sx={{ fontFamily: '"Varela Round", sans-serif' }}>{invoice.faculty}</TableCell>
-                                                <TableCell sx={{ fontFamily: '"Varela Round", sans-serif' }}>{invoice.year}</TableCell>
-                                                <TableCell sx={{ fontFamily: '"Varela Round", sans-serif' }}>{invoice.semester}</TableCell>
-                                                <TableCell sx={{ fontWeight: 700, color: '#1976d2', fontFamily: '"Varela Round", sans-serif' }}>{invoice.sotienphaidong.toLocaleString()} VNĐ</TableCell>
-                                                <TableCell sx={{ fontWeight: 700, color: invoice.sotienconlai > 0 ? '#d32f2f' : '#388e3c', fontFamily: '"Varela Round", sans-serif' }}>{invoice.sotienconlai.toLocaleString()} VNĐ</TableCell>
-                                                <TableCell>
-                                                    <Chip
-                                                        label={invoice.status}
-                                                        sx={{ bgcolor: getStatusChipColor(invoice.status).bg, color: getStatusChipColor(invoice.status).text, fontWeight: 'bold', fontFamily: '"Varela Round", sans-serif' }}
-                                                    />
-                                                </TableCell>
-                                            </TableRow>
-                                            <TableRow>
-                                                <TableCell colSpan={9} style={{ paddingBottom: 0, paddingTop: 0, border: 0 }}>
-                                                    <Collapse in={expandedRows[invoice.id]} timeout="auto" unmountOnExit>
-                                                        <Box sx={{ margin: 2, backgroundColor: '#fff', p: 3, borderRadius: 2, boxShadow: '0 2px 8px rgba(0,0,0,0.04)', border: 'none', minWidth: 400 }}>
-                                                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                                                                <Typography variant="subtitle1" gutterBottom fontWeight="bold" sx={{ color: '#2d3a4a', fontSize: 18, fontFamily: '"Varela Round", sans-serif' }}>
-                                                                    Lịch sử thanh toán
-                                                                </Typography>
-                                                                <Button
-                                                                    variant="contained"
-                                                                    size="small"
-                                                                    startIcon={<AddIcon />}
-                                                                    onClick={() => openAddTransactionDialog(invoice.id)}
-                                                                    sx={{
-                                                                        backgroundColor: '#6ebab6',
-                                                                        '&:hover': { backgroundColor: '#5ba9a5' },
-                                                                        borderRadius: '8px',
-                                                                        fontFamily: '"Varela Round", sans-serif',
-                                                                        textTransform: 'none',
-                                                                        fontSize: '12px'
-                                                                    }}
-                                                                >
-                                                                    Thêm giao dịch
-                                                                </Button>
-                                                            </Box>
-                                                            <Box sx={{ borderBottom: '1px solid #f0f0f0', mb: 2 }} />
-                                                            {invoice.paymentHistory.length === 0 ? (
-                                                                <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic', fontSize: 15, fontFamily: '"Varela Round", sans-serif' }}>
-                                                                    Chưa có giao dịch thanh toán nào.
-                                                                </Typography>
-                                                            ) : (
-                                                                <Table size="small" sx={{ background: '#fafbfc', borderRadius: 1, boxShadow: '0 1px 4px rgba(0,0,0,0.03)', overflow: 'hidden', minWidth: 350 }}>
-                                                                    <TableHead>
-                                                                        <TableRow sx={{ background: '#f5f7fa' }}>
-                                                                            <TableCell sx={{ fontWeight: 700, color: '#4a5a6a', fontSize: 15, fontFamily: '"Varela Round", sans-serif' }}>ID</TableCell>
-                                                                            <TableCell sx={{ fontWeight: 700, color: '#4a5a6a', fontSize: 15, fontFamily: '"Varela Round", sans-serif' }}>Ngày</TableCell>
-                                                                            <TableCell sx={{ fontWeight: 700, color: '#4a5a6a', fontSize: 15, fontFamily: '"Varela Round", sans-serif' }}>Số tiền</TableCell>
-                                                                            <TableCell sx={{ fontWeight: 700, color: '#4a5a6a', fontSize: 15, fontFamily: '"Varela Round", sans-serif' }}>Phương thức</TableCell>
-                                                                        </TableRow>
-                                                                    </TableHead>
-                                                                    <TableBody>
-                                                                        {invoice.paymentHistory.map((payment) => (
-                                                                            <TableRow key={payment.id} sx={{ '&:hover': { background: '#f0f4f8' } }}>
-                                                                                <TableCell sx={{ fontSize: 14, fontFamily: '"Varela Round", sans-serif' }}>{payment.id}</TableCell>
-                                                                                <TableCell sx={{ fontSize: 14, fontFamily: '"Varela Round", sans-serif' }}>{payment.date}</TableCell>
-                                                                                <TableCell sx={{ fontSize: 14, fontFamily: '"Varela Round", sans-serif' }}>{payment.amount.toLocaleString()} VNĐ</TableCell>
-                                                                                <TableCell sx={{ fontSize: 14, fontFamily: '"Varela Round", sans-serif' }}>{payment.method}</TableCell>
-                                                                            </TableRow>
-                                                                        ))}
-                                                                    </TableBody>
-                                                                </Table>
-                                                            )}
-                                                        </Box>
-                                                    </Collapse>
-                                                </TableCell>
-                                            </TableRow>
-                                        </React.Fragment>
+                                        <TableRow
+                                            key={invoice.id}
+                                            sx={{ 
+                                                '&:hover': { backgroundColor: '#f5f5f5', cursor: 'pointer' },
+                                                cursor: 'pointer'
+                                            }}
+                                            onClick={() => handleRowClick(invoice)}
+                                        >
+                                            <TableCell sx={{ fontWeight: 800, fontFamily: '"Varela Round", sans-serif', width: '15%' }}>{invoice.studentId}</TableCell>
+                                            <TableCell sx={{ fontFamily: '"Varela Round", sans-serif', width: '25%' }}>{invoice.studentName}</TableCell>
+                                            <TableCell sx={{ fontFamily: '"Varela Round", sans-serif', width: '20%' }}>{invoice.faculty}</TableCell>
+                                            <TableCell sx={{ fontFamily: '"Varela Round", sans-serif', width: '15%' }}>{invoice.year}</TableCell>
+                                            <TableCell sx={{ fontFamily: '"Varela Round", sans-serif', width: '10%' }}>{invoice.semester}</TableCell>
+                                            <TableCell sx={{ width: '15%' }}>
+                                                <Chip
+                                                    label={invoice.status}
+                                                    sx={{ 
+                                                        bgcolor: getStatusChipColor(invoice.status).bg, 
+                                                        color: getStatusChipColor(invoice.status).text, 
+                                                        fontWeight: 'bold', 
+                                                        fontFamily: '"Varela Round", sans-serif',
+                                                        fontSize: '12px'
+                                                    }}
+                                                />
+                                            </TableCell>
+                                        </TableRow>
                                     ))}
                                     {filteredInvoices.length === 0 && (
                                         <TableRow>
-                                            <TableCell colSpan={9} align="center" sx={{ py: 3 }}>
+                                            <TableCell colSpan={6} align="center" sx={{ py: 3 }}>
                                                 <Typography variant="body1" color="text.secondary" sx={{ fontFamily: '"Varela Round", sans-serif' }}>
                                                     Không tìm thấy sinh viên nào phù hợp với điều kiện tìm kiếm
                                                 </Typography>
@@ -513,11 +508,302 @@ export default function PaymentStatusMgm({ user, onLogout }: FinancialPageProps)
                             </Table>
                         </Box>
                     </TableContainer>
-                    {/* Add Transaction Dialog */}
+
+                    {/* Student Detail Dialog */}
                     <Dialog
-                        open={openDialog}
-                        onClose={() => setOpenDialog(false)}
+                        open={openDetailDialog}
+                        onClose={() => setOpenDetailDialog(false)}
                         maxWidth="md"
+                        fullWidth
+                        sx={{
+                            '& .MuiPaper-root': {
+                                borderRadius: '20px',
+                                background: 'rgba(255,255,255,0.98)',
+                                boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.15)',
+                                padding: 0,
+                                minHeight: '400px',
+                                maxHeight: '80vh',
+                            },
+                        }}
+                    >
+                        <DialogTitle sx={{
+                            fontFamily: '"Montserrat", sans-serif',
+                            fontWeight: 700,
+                            fontSize: '1.5rem',
+                            color: '#4c4c4c',
+                            textAlign: 'center',
+                            pb: 1,
+                            pt: 2,
+                            position: 'relative'
+                        }}>
+                            Thông tin sinh viên
+                            <IconButton
+                                onClick={() => setOpenDetailDialog(false)}
+                                sx={{
+                                    position: 'absolute',
+                                    right: 8,
+                                    top: 8,
+                                    color: '#999',
+                                }}
+                            >
+                                <CloseIcon />
+                            </IconButton>
+                        </DialogTitle>
+                        <DialogContent dividers sx={{
+                            border: 'none',
+                            px: 3,
+                            pt: 1,
+                            pb: 0,
+                            background: 'transparent',
+                        }}>
+                            {selectedInvoice && (
+                                <Box>
+                                    {/* Student Info Header */}
+                                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2, p: 1.5, backgroundColor: '#f7faff', borderRadius: '12px' }}>
+                                        <Box sx={{ 
+                                            width: 50, 
+                                            height: 50, 
+                                            borderRadius: '50%', 
+                                            backgroundColor: '#6ebab6', 
+                                            display: 'flex', 
+                                            alignItems: 'center', 
+                                            justifyContent: 'center',
+                                            mr: 2
+                                        }}>
+                                            <PersonIcon sx={{ color: 'white', fontSize: '25px' }} />
+                                        </Box>
+                                        <Box>
+                                            <Typography variant="h6" sx={{ fontFamily: '"Varela Round", sans-serif', fontWeight: 600, color: '#2d3a4a', fontSize: '1.1rem' }}>
+                                                {selectedInvoice.studentName}
+                                            </Typography>
+                                            <Typography variant="body2" sx={{ fontFamily: '"Varela Round", sans-serif', color: '#666' }}>
+                                                MSSV: {selectedInvoice.studentId}
+                                            </Typography>
+                                            <Chip
+                                                label="Đang học"
+                                                size="small"
+                                                sx={{ 
+                                                    backgroundColor: '#d4edda', 
+                                                    color: '#155724',
+                                                    fontFamily: '"Varela Round", sans-serif',
+                                                    fontSize: '11px',
+                                                    mt: 0.5,
+                                                    height: '20px'
+                                                }}
+                                            />
+                                        </Box>
+                                    </Box>
+
+                                    {/* Student Details Grid - Compact */}
+                                    <Grid container spacing={2} sx={{ mb: 2 }}>
+                                        <Grid item xs={12} md={3}>
+                                            <Typography variant="body2" sx={{ fontFamily: '"Varela Round", sans-serif', mb: 0.5, fontSize: '16px' }}>
+                                                <strong>Khoa:</strong> {selectedInvoice.faculty}
+                                            </Typography>
+                                        </Grid>
+                                        <Grid item xs={12} md={3}>
+                                            <Typography variant="body2" sx={{ fontFamily: '"Varela Round", sans-serif', mb: 0.5, fontSize: '16x' }}>
+                                                <strong>Năm học:</strong> {selectedInvoice.year}
+                                            </Typography>
+                                        </Grid>
+                                        <Grid item xs={12} md={3}>
+                                            <Typography variant="body2" sx={{ fontFamily: '"Varela Round", sans-serif', mb: 0.5, fontSize: '16px' }}>
+                                                <strong>Học kỳ:</strong> {selectedInvoice.semester}
+                                            </Typography>
+                                        </Grid>
+                                        <Grid item xs={12} md={3}>
+                                            <Typography variant="body2" sx={{ fontFamily: '"Varela Round", sans-serif', mb: 0.5, fontSize: '16px' }}>
+                                                <strong>Trạng thái:</strong><br />
+                                                <Chip
+                                                    label={selectedInvoice.status}
+                                                    size="small"
+                                                    sx={{ 
+                                                        bgcolor: getStatusChipColor(selectedInvoice.status).bg, 
+                                                        color: getStatusChipColor(selectedInvoice.status).text, 
+                                                        fontWeight: 'bold', 
+                                                        fontFamily: '"Varela Round", sans-serif',
+                                                        fontSize: '16px',
+                                                        height: '20px'
+                                                    }}
+                                                />
+                                            </Typography>
+                                        </Grid>
+                                    </Grid>
+
+                                    <Divider sx={{ my: 1.5 }} />
+
+                                    {/* Payment Summary - Compact */}
+                                    <Box sx={{ mb: 2, p: 1.5, backgroundColor: '#f7faff', borderRadius: '12px' }}>
+                                        <Typography variant="h6" sx={{ fontFamily: '"Varela Round", sans-serif', fontWeight: 600, color: '#2d3a4a', mb: 1.5, fontSize: '1.1rem' }}>
+                                             Thông tin học phí
+                                        </Typography>
+                                        <Grid container spacing={2}>
+                                            <Grid item xs={4}>
+                                                <Typography variant="body2" sx={{ fontFamily: '"Varela Round", sans-serif', color: '#666', mb: 0.5, fontSize: '12px' }}>
+                                                    Số tiền phải đóng
+                                                </Typography>
+                                                <Typography variant="h6" sx={{ fontFamily: '"Varela Round", sans-serif', fontWeight: 700, color: '#1976d2', fontSize: '1rem' }}>
+                                                    {selectedInvoice.sotienphaidong.toLocaleString()} VNĐ
+                                                </Typography>
+                                            </Grid>
+                                            <Grid item xs={4}>
+                                                <Typography variant="body2" sx={{ fontFamily: '"Varela Round", sans-serif', color: '#666', mb: 0.5, fontSize: '12px' }}>
+                                                    Số tiền đã đóng
+                                                </Typography>
+                                                <Typography variant="h6" sx={{ fontFamily: '"Varela Round", sans-serif', fontWeight: 700, color: '#388e3c', fontSize: '1rem' }}>
+                                                    {(selectedInvoice.sotiendadong || (selectedInvoice.sotienphaidong - selectedInvoice.sotienconlai)).toLocaleString()} VNĐ
+                                                </Typography>
+                                            </Grid>
+                                            <Grid item xs={4}>
+                                                <Typography variant="body2" sx={{ fontFamily: '"Varela Round", sans-serif', color: '#666', mb: 0.5, fontSize: '12px' }}>
+                                                    Số tiền còn lại
+                                                </Typography>
+                                                <Typography variant="h6" sx={{ fontFamily: '"Varela Round", sans-serif', fontWeight: 700, color: selectedInvoice.sotienconlai > 0 ? '#d32f2f' : '#388e3c', fontSize: '1rem' }}>
+                                                    {selectedInvoice.sotienconlai.toLocaleString()} VNĐ
+                                                </Typography>
+                                            </Grid>
+                                        </Grid>
+                                    </Box>
+
+                                    {/* Payment History - More Compact */}
+                                    <Box sx={{ mb: 1 }}>
+                                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                                            <Typography variant="h6" sx={{ fontFamily: '"Varela Round", sans-serif', fontWeight: 600, color: '#2d3a4a', fontSize: '1.1rem' }}>
+                                                📋 Lịch sử thanh toán
+                                            </Typography>
+                                            <Button
+                                                variant="contained"
+                                                size="small"
+                                                startIcon={<AddIcon />}
+                                                onClick={openAddPaymentFromDetail}
+                                                sx={{
+                                                    backgroundColor: '#6ebab6',
+                                                    '&:hover': { backgroundColor: '#5ba9a5' },
+                                                    borderRadius: '8px',
+                                                    fontFamily: '"Varela Round", sans-serif',
+                                                    textTransform: 'none',
+                                                    fontSize: '13px',
+                                                    height: '32px'
+                                                }}
+                                            >
+                                                Thêm thanh toán
+                                            </Button>
+                                        </Box>
+                                        
+                                        {selectedInvoice.paymentHistory.length === 0 ? (
+                                            <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic', fontSize: 13, fontFamily: '"Varela Round", sans-serif', textAlign: 'center', py: 2 }}>
+                                                Chưa có giao dịch thanh toán nào.
+                                            </Typography>
+                                        ) : (
+                                            <Box 
+                                                sx={{ 
+                                                    height: `${selectedInvoice.paymentHistory.length * 40 + 50}px`,
+                                                    border: '1px solid #e0e0e0',
+                                                    borderRadius: '8px',
+                                                    overflow: 'hidden',
+                                                }}
+                                            >
+                                                <TableContainer 
+                                                    component={Paper} 
+                                                    sx={{ 
+                                                        height: '100%',
+                                                        borderRadius: '8px', 
+                                                        boxShadow: 'none',
+                                                        overflow: 'hidden'
+                                                    }}
+                                                >
+                                                    <Table size="small">
+                                                        <TableHead>
+                                                            <TableRow>
+                                                                <TableCell sx={{ 
+                                                                    fontWeight: 700, 
+                                                                    color: '#4a5a6a', 
+                                                                    fontSize: 12, 
+                                                                    fontFamily: '"Varela Round", sans-serif', 
+                                                                    backgroundColor: '#f5f7fa', 
+                                                                    p: 1,
+                                                                    borderBottom: '2px solid #e0e0e0'
+                                                                }}>ID</TableCell>
+                                                                <TableCell sx={{ 
+                                                                    fontWeight: 700, 
+                                                                    color: '#4a5a6a', 
+                                                                    fontSize: 12, 
+                                                                    fontFamily: '"Varela Round", sans-serif', 
+                                                                    backgroundColor: '#f5f7fa', 
+                                                                    p: 1,
+                                                                    borderBottom: '2px solid #e0e0e0'
+                                                                }}>Ngày</TableCell>
+                                                                <TableCell sx={{ 
+                                                                    fontWeight: 700, 
+                                                                    color: '#4a5a6a', 
+                                                                    fontSize: 12, 
+                                                                    fontFamily: '"Varela Round", sans-serif', 
+                                                                    backgroundColor: '#f5f7fa', 
+                                                                    p: 1,
+                                                                    borderBottom: '2px solid #e0e0e0'
+                                                                }}>Số tiền</TableCell>
+                                                                <TableCell sx={{ 
+                                                                    fontWeight: 700, 
+                                                                    color: '#4a5a6a', 
+                                                                    fontSize: 12, 
+                                                                    fontFamily: '"Varela Round", sans-serif', 
+                                                                    backgroundColor: '#f5f7fa', 
+                                                                    p: 1,
+                                                                    borderBottom: '2px solid #e0e0e0'
+                                                                }}>Phương thức</TableCell>
+                                                            </TableRow>
+                                                        </TableHead>
+                                                        <TableBody>
+                                                            {selectedInvoice.paymentHistory.map((payment) => (
+                                                                <TableRow key={payment.id} sx={{ 
+                                                                    '&:hover': { background: '#f0f4f8' },
+                                                                    borderBottom: '1px solid #f0f0f0'
+                                                                }}>
+                                                                    <TableCell sx={{ fontSize: 12, fontFamily: '"Varela Round", sans-serif', p: 1 }}>{payment.id}</TableCell>
+                                                                    <TableCell sx={{ fontSize: 12, fontFamily: '"Varela Round", sans-serif', p: 1 }}>{payment.date}</TableCell>
+                                                                    <TableCell sx={{ fontSize: 12, fontFamily: '"Varela Round", sans-serif', fontWeight: 600, p: 1 }}>{payment.amount.toLocaleString()} VNĐ</TableCell>
+                                                                    <TableCell sx={{ fontSize: 12, fontFamily: '"Varela Round", sans-serif', p: 1 }}>{getPaymentMethodLabel(payment.method)}</TableCell>
+                                                                </TableRow>
+                                                            ))}
+                                                        </TableBody>
+                                                    </Table>
+                                                </TableContainer>
+                                            </Box>
+                                        )}
+                                    </Box>
+                                </Box>
+                            )}
+                        </DialogContent>
+                        <DialogActions sx={{
+                            px: 3,
+                            pb: 2,
+                            pt: 1,
+                            display: 'flex',
+                            justifyContent: 'center',
+                            background: 'transparent',
+                        }}>
+                            <Button
+                                onClick={() => setOpenDetailDialog(false)}
+                                variant="contained"
+                                sx={{
+                                    fontFamily: '"Varela Round", sans-serif',
+                                    backgroundColor: '#6ebab6',
+                                    '&:hover': { backgroundColor: '#5ba9a5' },
+                                    borderRadius: '8px',
+                                    px: 3,
+                                    height: '36px'
+                                }}
+                            >
+                                Đóng
+                            </Button>
+                        </DialogActions>
+                    </Dialog>
+
+                    {/* Add Payment Dialog */}
+                    <Dialog
+                        open={openAddPaymentDialog}
+                        onClose={() => setOpenAddPaymentDialog(false)}
+                        maxWidth="sm"
                         fullWidth
                         sx={{
                             '& .MuiPaper-root': {
@@ -529,9 +815,9 @@ export default function PaymentStatusMgm({ user, onLogout }: FinancialPageProps)
                         }}
                     >
                         <DialogTitle sx={{
-                            fontFamily: '"Monserrat", sans-serif',
+                            fontFamily: '"Montserrat", sans-serif',
                             fontWeight: 700,
-                            fontSize: '2rem',
+                            fontSize: '1.5rem',
                             color: '#4c4c4c',
                             textAlign: 'center',
                             pb: 0,
@@ -625,8 +911,11 @@ export default function PaymentStatusMgm({ user, onLogout }: FinancialPageProps)
                                                 },
                                             }}
                                         >
-                                            <MenuItem value="Chuyển khoản" sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>Chuyển khoản</MenuItem>
-                                            <MenuItem value="Tiền mặt" sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>Tiền mặt</MenuItem>
+                                            {paymentMethodOptions.map(option => (
+                                                <MenuItem key={option.value} value={option.value} sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>
+                                                    {option.label}
+                                                </MenuItem>
+                                            ))}
                                         </Select>
                                     </FormControl>
                                 </Grid>
@@ -642,7 +931,7 @@ export default function PaymentStatusMgm({ user, onLogout }: FinancialPageProps)
                             background: 'transparent',
                         }}>
                             <Button
-                                onClick={() => setOpenDialog(false)}
+                                onClick={() => setOpenAddPaymentDialog(false)}
                                 color="primary"
                                 sx={{ fontFamily: '"Varela Round", sans-serif' }}
                             >
@@ -653,7 +942,9 @@ export default function PaymentStatusMgm({ user, onLogout }: FinancialPageProps)
                                 variant="contained"
                                 color="primary"
                                 sx={{
-                                    fontFamily: '"Varela Round", sans-serif'
+                                    fontFamily: '"Varela Round", sans-serif',
+                                    backgroundColor: '#6ebab6',
+                                    '&:hover': { backgroundColor: '#5ba9a5' }
                                 }}
                             >
                                 Thêm giao dịch
