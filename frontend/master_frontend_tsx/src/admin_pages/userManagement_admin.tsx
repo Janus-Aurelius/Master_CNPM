@@ -32,7 +32,10 @@ import {
     CardContent,
     Alert,
     Snackbar,
-    Divider
+    Divider,
+    Pagination,
+    CircularProgress,
+    Autocomplete
 } from "@mui/material";
 import { SelectChangeEvent } from '@mui/material/Select';
 import { User } from "../types";
@@ -67,6 +70,15 @@ const columnWidths = {
     actions: 120,
 };
 
+const departmentMap = {
+    'Công nghệ phần mềm': 'KTPM',
+    'Hệ thống thông tin': 'HTTT',
+    'Khoa học máy tính': 'KHMT',
+    'Kỹ thuật máy tính': 'KTMT',
+    'Truyền thông & Mạng máy tính': 'TTMT',
+    'An toàn thông tin': 'ATTT'
+};
+
 export default function UserManagement({user, onLogout}: UserManagementProps) {
     const [tabValue, setTabValue] = useState(0);
     const [searchTerm, setSearchTerm] = useState("");
@@ -82,30 +94,36 @@ export default function UserManagement({user, onLogout}: UserManagementProps) {
     const [snackbarMessage, setSnackbarMessage] = useState("");
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [userToDelete, setUserToDelete] = useState<any>(null);
+    const [page, setPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const [isLoading, setIsLoading] = useState(false);
+    const [searchResults, setSearchResults] = useState<AdminUser[]>([]);
+    const [isSearching, setIsSearching] = useState(false);
+    const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null);
+
+    const fetchUsers = async () => {
+        try {
+            setIsLoading(true);
+            const response = await userAdminApi.getUsers(page, 10, filterRole);
+            console.log('Frontend received data:', response); // Debug log
+            setUsers(response.users);
+            setTotalPages(response.totalPages);
+            setError(null);
+        } catch (err) {
+            console.error("Error fetching users:", err);
+            setError("Không thể tải dữ liệu người dùng");
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     useEffect(() => {
-        const fetchData = async () => {
-            try {
-                setLoading(true);
-                const [userList, roleList] = await Promise.all([
-                    userAdminApi.getUsers(),
-                    userAdminApi.getRoles()
-                ]);
-                setUsers(userList);
-                setRoles(roleList);
-                setError(null);
-            } catch (err) {
-                setError("Không thể tải dữ liệu người dùng hoặc vai trò từ server.");
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchData();
-    }, []);
+        fetchUsers();
+    }, [page, filterRole]);
 
     const filteredUsers = users.filter(user => {
-        const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            user.email.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesSearch = (user.name?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
+            (user.studentid?.toLowerCase() || "").includes(searchTerm.toLowerCase());
         const matchesRole = filterRole === "all" || user.role === filterRole;
         return matchesSearch && matchesRole;
     });
@@ -118,8 +136,8 @@ export default function UserManagement({user, onLogout}: UserManagementProps) {
         setDialogType("add");
         setCurrentUser({
             name: "",
-            email: "",
-            role: "student",
+            studentId: "",
+            role: "N3",
             status: "active",
             department: ""
         });
@@ -156,22 +174,36 @@ export default function UserManagement({user, onLogout}: UserManagementProps) {
 
     const handleSaveUser = async () => {
         try {
+            setIsLoading(true);
             if (dialogType === "add") {
-                const newUser = await userAdminApi.createUser(currentUser);
-                setUsers([...users, newUser]);
-                showSnackbar("Người dùng mới đã được tạo thành công");
+                await userAdminApi.createUser({
+                    ...currentUser,
+                    studentId: currentUser.studentid,
+                });
             } else if (dialogType === "edit") {
-                const updatedUser = await userAdminApi.updateUser(currentUser.id, currentUser);
-                setUsers(users.map(u => u.id === updatedUser.id ? updatedUser : u));
-                showSnackbar("Thông tin người dùng đã được cập nhật");
+                const majorId = departmentMap[currentUser.department as keyof typeof departmentMap];
+                await userAdminApi.updateUser(currentUser.id, {
+                    ...currentUser,
+                    department: majorId,
+                });
             }
+            await fetchUsers();
             handleCloseDialog();
+            showSnackbar("Thao tác thành công");
         } catch (err) {
-            setError("Lưu người dùng thất bại.");
+            console.error("Error:", err);
+            if (typeof err === "object" && err !== null && "response" in err) {
+                // @ts-ignore
+                setError(err.response?.data?.message || "Có lỗi xảy ra");
+            } else {
+                setError("Có lỗi xảy ra");
+            }
+        } finally {
+            setIsLoading(false);
         }
     };
 
-    const handleDeleteUser = async (userId: number) => {
+    const handleDeleteUser = async (userId: string) => {
         try {
             await userAdminApi.deleteUser(userId);
             setUsers(users.filter(user => user.id !== userId));
@@ -204,19 +236,63 @@ export default function UserManagement({user, onLogout}: UserManagementProps) {
         setSnackbarOpen(false);
     };
 
-    if (loading) {
+    const handleSearch = async (value: string) => {
+        if (searchTimeout) {
+            clearTimeout(searchTimeout);
+        }
+
+        if (!value.trim()) {
+            setSearchResults([]);
+            setSearchTerm(""); // Reset search term
+            try {
+                setIsLoading(true);
+                const response = await userAdminApi.getUsers(page, 10, filterRole);
+                setUsers(response.users);
+                setTotalPages(response.totalPages);
+            } catch (err) {
+                console.error("Error fetching users:", err);
+                setError("Không thể tải dữ liệu người dùng");
+            } finally {
+                setIsLoading(false);
+            }
+            return;
+        }
+
+        const timeout = setTimeout(async () => {
+            try {
+                setIsSearching(true);
+                const filteredResults = users.filter(user => 
+                    user.name.toLowerCase().includes(value.toLowerCase()) ||
+                    user.studentid.toLowerCase().includes(value.toLowerCase())
+                );
+                setSearchResults(filteredResults);
+            } catch (error) {
+                console.error('Error searching users:', error);
+                setError('Lỗi khi tìm kiếm người dùng');
+            } finally {
+                setIsSearching(false);
+            }
+        }, 300);
+
+        setSearchTimeout(timeout);
+    };
+
+    if (isLoading) {
         return (
             <ThemeLayout role="admin" onLogout={onLogout}>
-                <UserInfo user={user} />
-                <Typography sx={{ textAlign: 'center', mt: 4 }}>Đang tải dữ liệu...</Typography>
+                <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+                    <CircularProgress />
+                </Box>
             </ThemeLayout>
         );
     }
+
     if (error) {
         return (
             <ThemeLayout role="admin" onLogout={onLogout}>
-                <UserInfo user={user} />
-                <Typography color="error" sx={{ textAlign: 'center', mt: 4 }}>{error}</Typography>
+                <Alert severity="error" sx={{ mt: 4 }}>
+                    {error}
+                </Alert>
             </ThemeLayout>
         );
     }
@@ -275,24 +351,70 @@ export default function UserManagement({user, onLogout}: UserManagementProps) {
                             <Grid container spacing={2} alignItems="center" sx={{ mb: 2 }}>
                                 <Grid item xs={12} md={8.5}>
                                     <Box sx={{ display: 'flex', gap: 1 }}>
-                                        <TextField
-                                            fullWidth
-                                            placeholder="Tìm kiếm người dùng..."
-                                            variant="outlined"
-                                            size="small"
-                                            value={searchTerm}
-                                            onChange={(e) => setSearchTerm(e.target.value)}
-                                            InputProps={{
-                                                startAdornment: (
-                                                    <InputAdornment position="start">
-                                                        <SearchIcon />
-                                                    </InputAdornment>
-                                                ),
+                                        <Autocomplete
+                                            freeSolo
+                                            options={searchResults.length > 0 ? searchResults : users}
+                                            getOptionLabel={(option) => 
+                                                typeof option === 'string' ? option : option.name
+                                            }
+                                            filterOptions={(x) => x}
+                                            loading={isSearching}
+                                            onInputChange={(_, newValue) => {
+                                                handleSearch(newValue);
                                             }}
+                                            onChange={(_, newValue) => {
+                                                if (typeof newValue === 'object' && newValue) {
+                                                    setSearchTerm(newValue.name);
+                                                }
+                                            }}
+                                            renderInput={(params) => (
+                                                <TextField
+                                                    {...params}
+                                                    fullWidth
+                                                    placeholder="Tìm kiếm người dùng..."
+                                                    variant="outlined"
+                                                    size="small"
+                                                    InputProps={{
+                                                        ...params.InputProps,
+                                                        startAdornment: (
+                                                            <>
+                                                                <InputAdornment position="start">
+                                                                    <SearchIcon />
+                                                                </InputAdornment>
+                                                                {params.InputProps.startAdornment}
+                                                            </>
+                                                        ),
+                                                        endAdornment: (
+                                                            <>
+                                                                {isSearching ? (
+                                                                    <CircularProgress color="inherit" size={20} />
+                                                                ) : null}
+                                                                {params.InputProps.endAdornment}
+                                                            </>
+                                                        ),
+                                                    }}
+                                                    sx={{
+                                                        fontFamily: '"Varela Round", sans-serif',
+                                                        '& .MuiOutlinedInput-root': {
+                                                            borderRadius: '9px',
+                                                        },
+                                                    }}
+                                                />
+                                            )}
+                                            renderOption={(props, option) => (
+                                                <li {...props}>
+                                                    <Box>
+                                                        <Typography variant="body1">{option.name}</Typography>
+                                                        <Typography variant="caption" color="text.secondary">
+                                                            {option.studentid} - {option.department}
+                                                        </Typography>
+                                                    </Box>
+                                                </li>
+                                            )}
                                             sx={{
-                                                fontFamily: '"Varela Round", sans-serif',
-                                                '& .MuiOutlinedInput-root': {
-                                                    borderRadius: '9px',
+                                                width: '100%',
+                                                '& .MuiAutocomplete-listbox': {
+                                                    maxHeight: '200px',
                                                 },
                                             }}
                                         />
@@ -337,11 +459,11 @@ export default function UserManagement({user, onLogout}: UserManagementProps) {
                                                     },
                                                 }}
                                             >
-                                                <MenuItem value="all" sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>Tất cả</MenuItem>
-                                                <MenuItem value="student" sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>Sinh viên</MenuItem>
-                                                <MenuItem value="academic" sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>Phòng đào tạo</MenuItem>
-                                                <MenuItem value="financial" sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>Phòng tài chính</MenuItem>
-                                                <MenuItem value="admin" sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>Quản trị viên</MenuItem>
+                                                <MenuItem value="all">Tất cả</MenuItem>
+                                                <MenuItem value="N3">Sinh viên</MenuItem>
+                                                <MenuItem value="N2">Phòng đào tạo</MenuItem>
+                                                <MenuItem value="N4">Phòng tài chính</MenuItem>
+                                                <MenuItem value="N1">Quản trị viên</MenuItem>
                                             </Select>
                                         </FormControl>
                                     </Box>
@@ -364,11 +486,10 @@ export default function UserManagement({user, onLogout}: UserManagementProps) {
                                     boxShadow: '0 4px 10px rgba(0, 0, 0, 0.1)', 
                                     border: '1px solid #e0e0e0', 
                                     width: '100%', 
-                                    maxWidth: '100%', 
-                                    minWidth: 1100,
+                                    maxWidth: 950,
+                                    minWidth: 700,
                                     maxHeight: 'calc(100vh - 350px)',
-                                    height: 'auto',
-                                    overflowY: 'auto',
+                                    overflowX: 'auto',
                                     '&::-webkit-scrollbar': {
                                         width: '6px'
                                     },
@@ -381,12 +502,12 @@ export default function UserManagement({user, onLogout}: UserManagementProps) {
                                 <Table stickyHeader size="small" sx={{ tableLayout: 'fixed' }}>
                                     <TableHead>
                                         <TableRow>
-                                            <TableCell sx={{ minWidth: columnWidths.name, height: '50px', fontWeight: 'bold', color: '#FFFFFF', fontSize: '16px', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6' }}>Họ tên</TableCell>
-                                            <TableCell sx={{ minWidth: columnWidths.email, height: '50px', fontWeight: 'bold', color: '#FFFFFF', fontSize: '16px', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6' }}>Email</TableCell>
-                                            <TableCell sx={{ minWidth: columnWidths.role, height: '50px', fontWeight: 'bold', color: '#FFFFFF', fontSize: '16px', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6' }}>Vai trò</TableCell>
-                                            <TableCell sx={{ minWidth: columnWidths.department, height: '50px', fontWeight: 'bold', color: '#FFFFFF', fontSize: '16px', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6' }}>Phòng ban</TableCell>
-                                            <TableCell sx={{ minWidth: columnWidths.status, height: '50px', fontWeight: 'bold', color: '#FFFFFF', fontSize: '16px', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6' }}>Trạng thái</TableCell>
-                                            <TableCell sx={{ minWidth: columnWidths.actions, height: '50px', fontWeight: 'bold', color: '#FFFFFF', fontSize: '16px', fontFamily: '"Varela Round", sans-serif', textAlign: 'center', backgroundColor: '#6ebab6' }}>Thao tác</TableCell>
+                                            <TableCell>Họ tên</TableCell>
+                                            <TableCell>Mã số sinh viên</TableCell>
+                                            <TableCell>Vai trò</TableCell>
+                                            <TableCell>Khoa/Phòng ban</TableCell>
+                                            <TableCell>Trạng thái</TableCell>
+                                            <TableCell>Thao tác</TableCell>
                                         </TableRow>
                                     </TableHead>
                                     <TableBody>
@@ -402,24 +523,22 @@ export default function UserManagement({user, onLogout}: UserManagementProps) {
                                                     key={user.id}
                                                     sx={{ '&:hover': { backgroundColor: '#f5f5f5' }, '&:last-child td, &:last-child th': { borderBottom: 'none' } }}
                                                 >
-                                                    <TableCell sx={{ minWidth: columnWidths.name, height: '50px', fontSize: '14px', fontFamily: '"Varela Round", sans-serif', fontWeight: 800 }}>{user.name}</TableCell>
-                                                    <TableCell sx={{ minWidth: columnWidths.email, height: '50px', fontSize: '14px', fontFamily: '"Varela Round", sans-serif' }}>{user.email}</TableCell>
-                                                    <TableCell sx={{ minWidth: columnWidths.role, height: '50px', fontSize: '14px', fontFamily: '"Varela Round", sans-serif' }}>
-                                                        {user.role === 'student' && 'Sinh viên'}
-                                                        {user.role === 'academic' && 'Phòng đào tạo'}
-                                                        {user.role === 'financial' && 'Phòng tài chính'}
-                                                        {user.role === 'admin' && 'Quản trị viên'}
+                                                    <TableCell sx={{ minWidth: 120, height: '50px', fontSize: '14px', fontFamily: '"Varela Round", sans-serif', fontWeight: 800 }}>{user.name}</TableCell>
+                                                    <TableCell sx={{ minWidth: 160, height: '50px', fontSize: '14px', fontFamily: '"Varela Round", sans-serif' }}>{user.studentid}</TableCell>
+                                                    <TableCell sx={{ minWidth: 110, height: '50px', fontSize: '14px', fontFamily: '"Varela Round", sans-serif' }}>
+                                                        {user.role === 'N3' && 'Sinh viên'}
+                                                        {user.role === 'N2' && 'Phòng đào tạo'}
+                                                        {user.role === 'N4' && 'Phòng tài chính'}
+                                                        {user.role === 'N1' && 'Quản trị viên'}
                                                     </TableCell>
-                                                    <TableCell sx={{ minWidth: columnWidths.department, height: '50px', fontSize: '14px', fontFamily: '"Varela Round", sans-serif' }}>{user.department}</TableCell>
-                                                    <TableCell sx={{ minWidth: columnWidths.status, height: '50px', fontSize: '14px', fontFamily: '"Varela Round", sans-serif' }}>
+                                                    <TableCell sx={{ minWidth: 140, height: '50px', fontSize: '14px', fontFamily: '"Varela Round", sans-serif' }}>{user.department}</TableCell>
+                                                    <TableCell sx={{ minWidth: 100, height: '50px', fontSize: '14px', fontFamily: '"Varela Round", sans-serif' }}>
                                                         <Box
                                                             sx={{
                                                                 display: 'inline-block',
                                                                 px: 2,
                                                                 py: 1,
                                                                 borderRadius: '20px',
-                                                                fontWeight: 700,
-                                                                fontSize: '14px',
                                                                 ...(user.status === 'active' ? 
                                                                     { bgcolor: '#e0f7fa', color: '#00838f' } : 
                                                                     { bgcolor: '#ffebee', color: '#c62828' })
@@ -428,7 +547,7 @@ export default function UserManagement({user, onLogout}: UserManagementProps) {
                                                             {user.status === 'active' ? 'Hoạt động' : 'Vô hiệu'}
                                                         </Box>
                                                     </TableCell>
-                                                    <TableCell align="center" sx={{ minWidth: columnWidths.actions, height: '50px', fontSize: '14px', fontFamily: '"Varela Round", sans-serif' }}>
+                                                    <TableCell align="center" sx={{ minWidth: 90, height: '50px', fontSize: '14px', fontFamily: '"Varela Round", sans-serif' }}>
                                                         <IconButton size="small" onClick={() => handleOpenEditDialog(user)}>
                                                             <EditIcon fontSize="small" />
                                                         </IconButton>
@@ -441,6 +560,12 @@ export default function UserManagement({user, onLogout}: UserManagementProps) {
                                         )}
                                     </TableBody>
                                 </Table>
+                                <Pagination
+                                    count={totalPages}
+                                    page={page}
+                                    onChange={(_e, value) => setPage(value)}
+                                    sx={{ mt: 2, display: 'flex', justifyContent: 'center' }}
+                                />
                             </TableContainer>
                         </Box>
                     )}
@@ -497,11 +622,11 @@ export default function UserManagement({user, onLogout}: UserManagementProps) {
                                 </Grid>
                                 <Grid item xs={12}>
                                     <TextField
-                                        label="Email"
+                                        label="Mã số sinh viên"
                                         fullWidth
-                                        type="email"
-                                        value={currentUser?.email || ''}
-                                        onChange={(e) => setCurrentUser({...currentUser, email: e.target.value})}
+                                        value={currentUser?.studentid || ''}
+                                        disabled={dialogType === "edit"}
+                                        onChange={(e) => setCurrentUser({...currentUser, studentid: e.target.value})}
                                         sx={{
                                             borderRadius: '12px',
                                             background: '#f7faff',
@@ -513,98 +638,40 @@ export default function UserManagement({user, onLogout}: UserManagementProps) {
                                 </Grid>
                                 <Grid item xs={12} md={6}>
                                     <FormControl fullWidth sx={{ background: '#f7faff', borderRadius: '12px' }}>
-                                        <InputLabel sx={{ fontWeight: 500 }}>Vai trò</InputLabel>                                <Select
-                                    value={currentUser?.role || 'student'}
-                                    label="Vai trò"
-                                    onChange={(e: SelectChangeEvent) => setCurrentUser({...currentUser, role: e.target.value})}
-                                            sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '12px', '& .MuiOutlinedInput-notchedOutline': { borderRadius: '12px', borderColor: '#d8d8d8' } }}
-                                            MenuProps={{
-                                                PaperProps: {
-                                                    elevation: 4,
-                                                    sx: {
-                                                        borderRadius: 3,
-                                                        minWidth: 200,
-                                                        boxShadow: '0 4px 24px 0 rgba(0,0,0,0.10)',
-                                                        p: 1,
-                                                    },
-                                                },
-                                                MenuListProps: {
-                                                    sx: {
-                                                        display: 'flex',
-                                                        flexDirection: 'column',
-                                                        gap: 0.5,
-                                                        fontFamily: '"Varela Round", sans-serif',
-                                                        borderRadius: 3,
-                                                        p: 0,
-                                                    },
-                                                },
-                                            }}
+                                        <InputLabel sx={{ fontWeight: 500 }}>Vai trò</InputLabel>
+                                        <Select
+                                            value={currentUser?.role || 'N3'}
+                                            disabled
+                                            label="Vai trò"
+                                            onChange={(e: SelectChangeEvent) => setCurrentUser({...currentUser, role: e.target.value})}
                                         >
-                                            <MenuItem value="student" sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>Sinh viên</MenuItem>
-                                            <MenuItem value="academic" sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>Phòng đào tạo</MenuItem>
-                                            <MenuItem value="financial" sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>Phòng tài chính</MenuItem>
-                                            <MenuItem value="admin" sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>Quản trị viên</MenuItem>
+                                            <MenuItem value="N3">Sinh viên</MenuItem>
+                                            <MenuItem value="N2">Phòng đào tạo</MenuItem>
+                                            <MenuItem value="N4">Phòng tài chính</MenuItem>
+                                            <MenuItem value="N1">Quản trị viên</MenuItem>
                                         </Select>
                                     </FormControl>
                                 </Grid>
                                 <Grid item xs={12} md={6}>
                                     <FormControl fullWidth sx={{ background: '#f7faff', borderRadius: '12px' }}>
-                                        <InputLabel sx={{ fontWeight: 500 }}>Trạng thái</InputLabel>                                <Select
-                                    value={currentUser?.status || 'active'}
-                                    label="Trạng thái"
-                                    onChange={(e: SelectChangeEvent) => setCurrentUser({...currentUser, status: e.target.value})}
-                                            sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '12px', '& .MuiOutlinedInput-notchedOutline': { borderRadius: '12px', borderColor: '#d8d8d8' } }}
-                                            MenuProps={{
-                                                PaperProps: {
-                                                    elevation: 4,
-                                                    sx: {
-                                                        borderRadius: 3,
-                                                        minWidth: 200,
-                                                        boxShadow: '0 4px 24px 0 rgba(0,0,0,0.10)',
-                                                        p: 1,
-                                                    },
-                                                },
-                                                MenuListProps: {
-                                                    sx: {
-                                                        display: 'flex',
-                                                        flexDirection: 'column',
-                                                        gap: 0.5,
-                                                        fontFamily: '"Varela Round", sans-serif',
-                                                        borderRadius: 3,
-                                                        p: 0,
-                                                    },
-                                                },
-                                            }}
+                                        <InputLabel sx={{ fontWeight: 500 }}>Trạng thái</InputLabel>
+                                        <Select
+                                            value={currentUser?.status || 'active'}
+                                            label="Trạng thái"
+                                            onChange={(e: SelectChangeEvent) => setCurrentUser({...currentUser, status: e.target.value})}
                                         >
-                                            <MenuItem value="active" sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>Hoạt động</MenuItem>
-                                            <MenuItem value="inactive" sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>Vô hiệu</MenuItem>
+                                            <MenuItem value="active">Hoạt động</MenuItem>
+                                            <MenuItem value="inactive">Vô hiệu</MenuItem>
                                         </Select>
                                     </FormControl>
                                 </Grid>
-                                <Grid item xs={12}>
-                                    <TextField
-                                        label="Phòng ban"
-                                        fullWidth
-                                        value={currentUser?.department || ''}
-                                        onChange={(e) => setCurrentUser({...currentUser, department: e.target.value})}
-                                        sx={{
-                                            borderRadius: '12px',
-                                            background: '#f7faff',
-                                            '& .MuiOutlinedInput-root': { borderRadius: '12px' },
-                                            '& .MuiInputLabel-root': { fontWeight: 500 },
-                                            '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d8d8d8' },
-                                        }}
-                                    />
-                                </Grid>
-                                {dialogType === "add" && (
+                                {currentUser?.role === 'N3' && (
                                     <Grid item xs={12}>
                                         <TextField
-                                            label="Mật khẩu mặc định"
+                                            label="Khoa"
                                             fullWidth
-                                            type="password"
-                                            value="123456" // Default password
-                                            disabled
-                                            helperText="Mật khẩu mặc định: 123456"
+                                            value={currentUser?.department || ''}
+                                            onChange={(e) => setCurrentUser({...currentUser, department: e.target.value})}
                                             sx={{
                                                 borderRadius: '12px',
                                                 background: '#f7faff',

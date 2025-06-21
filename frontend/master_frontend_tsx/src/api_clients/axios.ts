@@ -1,10 +1,8 @@
 import axios from 'axios';
 
-const API_URL = 'http://localhost:3000/api';
-
-// Tạo instance axios với base URL
 const axiosInstance = axios.create({
-    baseURL: API_URL,
+    baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3000/api',
+    // withCredentials: true, // Bỏ comment nếu dùng cookie
     headers: {
         'Content-Type': 'application/json'
     }
@@ -14,18 +12,27 @@ const axiosInstance = axios.create({
 axiosInstance.interceptors.request.use(
     (config) => {
         const token = localStorage.getItem('token');
-        console.log('Token from localStorage:', token); // Debug token
+        console.log('🔍 [Axios Request Debug]');
+        console.log('  Token from localStorage:', token);
+        console.log('  Original URL:', config.url);
+        console.log('  Original params:', config.params);
+        console.log('  Original query string:', config.url?.includes('?') ? config.url.split('?')[1] : 'none');
+        
         if (token) {
             config.headers = config.headers || {};
-            config.headers.Authorization = `Bearer ${token}`;
-            console.log('Request config:', {
-                url: config.url,
-                method: config.method,
-                headers: config.headers
-            }); // Debug full request config
+            config.headers['Authorization'] = `Bearer ${token}`;
         } else {
-            console.warn('No token found in localStorage'); // Warning if no token
+            console.warn('No token found in localStorage');
         }
+
+        // Check if any auto-injection of user params is happening
+        console.log('  Final config before send:', {
+            url: config.url,
+            method: config.method,
+            params: config.params,
+            headers: config.headers
+        });
+        
         return config;
     },
     (error) => {
@@ -33,4 +40,4 @@ axiosInstance.interceptors.request.use(
     }
 );
 
-export default axiosInstance; 
+export default axiosInstance;

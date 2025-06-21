@@ -87,6 +87,20 @@ export class MaintenanceController {
             next(error);
         }
     }
+
+    async toggleMaintenance(req: Request, res: Response, next: NextFunction) {
+        try {
+            const { enable } = req.body;
+            if (enable) {
+                await maintenanceManager.enable("Máy chủ đang bảo trì");
+            } else {
+                await maintenanceManager.disable();
+            }
+            res.status(200).json({ maintenanceMode: enable });
+        } catch (error) {
+            next(error);
+        }
+    }
 }
 
 export default new MaintenanceController(); 

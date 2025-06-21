@@ -1,5 +1,5 @@
 -- Clear all tables (using DELETE to avoid foreign key constraint issues)
-DELETE FROM SYSTEM_SETTINGS;
+DELETE FROM ACADEMIC_SETTINGS;
 DELETE FROM CT_PHIEUDANGKY;
 DELETE FROM PHIEUTHUHP;
 DELETE FROM PHANQUYEN;
@@ -829,8 +829,6 @@ INSERT INTO PHIEUDANGKY (MaPhieuDangKy, NgayLap, MaSoSinhVien, MaHocKy) VALUES
   ('PD298','2024-01-15','SV0098','HK2_2023'),
   ('PD299','2024-01-15','SV0099','HK2_2023'),
   ('PD300','2024-01-15','SV0100','HK2_2023');
-
-
 
 INSERT INTO CT_PHIEUDANGKY (MaPhieuDangKy, MaHocKy, MaMonHoc) VALUES
   -- Chi tiết đăng ký cho HK1_2024 (PD001-PD100)
@@ -1899,7 +1897,7 @@ INSERT INTO PHIEUTHUHP (MaPhieuThu, NgayLap, MaPhieuDangKy, SoTienDong) VALUES
   ('PT325','2024-04-15','PD280',0);
 -- 20% sinh viên chưa đóng (20 sinh viên: SV0081-SV0100) - không có phiếu thu
 
-INSERT INTO SYSTEM_SETTINGS (id, current_semester) VALUES (1, 'HK1_2024');
+INSERT INTO ACADEMIC_SETTINGS (id, current_semester) VALUES (1, 'HK1_2024');
 
 
 
@@ -2046,16 +2044,6 @@ INSERT INTO NGUOIDUNG (TenDangNhap, UserID, MatKhau, MaNhom, MaSoSinhVien, Trang
   ('sv0100','U102','123','N3','SV0100', 'active');
 
 
-INSERT INTO REGISTRATION_LOG (MaSoSinhVien, TenSinhVien, MaMonHoc, TenMonHoc, LoaiYeuCau, ThoiGianYeuCau)
-VALUES
-('SV0001', 'Hoàng Thị Khánh', 'BCH058', 'Kỹ năng truyền thông giao tiếp', 'register', '2025-05-15 08:30:15'),
-('SV0002', 'Hoàng Văn Cường', 'LTU101', 'Anh văn cơ bản 1', 'cancel', '2025-05-14 12:45:47'),
-('SV0003', 'Phạm Ngọc Hà', 'SS003', 'Tư tưởng Hồ Chí Minh', 'register', '2025-05-13 09:12:33'),
-('SV0004', 'Vũ Văn Hoa', 'BUS1125', 'Khởi nghiệp kinh doanh', 'cancel', '2025-05-12 10:05:20'),
-('SV0005', 'Nguyễn Thị Mai', 'LTU201', 'Anh văn chuyên ngành 1', 'register', '2025-05-11 14:20:30'),
-('SV0006', 'Phan Thanh Cường', 'SS007', 'Triết học Mác–Lênin', 'register', '2025-05-10 16:15:45'),
-('SV0007', 'Huỳnh Quang Linh', 'CE103', 'Vi xử lý-vi điều khiển', 'cancel', '2025-05-09 11:30:22'),
-('SV0008', 'Phan Ngọc Khánh', 'TLH025', 'Tâm lý học nhân cách', 'register', '2025-05-08 09:45:18');
 
 -- Cập nhật lại MaDoiTuongUT cho 100 sinh viên theo tỉ lệ yêu cầu
 -- 10% sinh viên thuộc UT01 (SV0001-SV0010)

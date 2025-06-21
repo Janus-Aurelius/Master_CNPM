@@ -1,12 +1,35 @@
 import { Request, Response, NextFunction } from 'express';
 import { userManager } from '../../business/AdminBussiness/userManager';
-import { activitylogManager } from '../../business/AdminBussiness/activitylogManager';
+import { auditlogManager } from '../../business/AdminBussiness/auditlogManager';
+import { dashboardAdminManager } from '../../business/AdminBussiness/dashboardManager';
 
-class AdminController {async getActivityLog(req: Request, res: Response, next: NextFunction) {
+
+class AdminController {
+    async getAuditLog(req: Request, res: Response, next: NextFunction) {
         try {
             const page = parseInt(req.query.page as string) || 1;
             const size = parseInt(req.query.size as string) || 10;
-            const result = await activitylogManager.getActivityLogs(page, size);
+            
+            const result = await auditlogManager.getAuditLogs(page, size);
+            
+            res.status(200).json({
+                success: true,
+                data: result.logs,
+                total: result.total,
+                page: result.page,
+                size: result.size
+            });
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    async getRecentActivities(req: Request, res: Response, next: NextFunction) {
+        try {
+            const limit = parseInt(req.query.limit as string) || 5;
+            
+            const result = await auditlogManager.getRecentActivities(limit);
+            
             res.status(200).json({
                 success: true,
                 data: result
@@ -17,7 +40,7 @@ class AdminController {async getActivityLog(req: Request, res: Response, next: N
     }
     async getDashboard(req: Request, res: Response, next: NextFunction) {
         try {
-            const stats = await userManager.getDashboardStats();
+            const stats = await dashboardAdminManager.getDashboardStats();
             res.status(200).json({
                 success: true,
                 data: stats
@@ -25,7 +48,8 @@ class AdminController {async getActivityLog(req: Request, res: Response, next: N
         } catch (error) {
             next(error);
         }
-    }    async getUserManagement(req: Request, res: Response, next: NextFunction) {
+    }
+    async getUserManagement(req: Request, res: Response, next: NextFunction) {
         try {
             const { search, role, page, size } = req.query;
             const { users: userList, total, page: currentPage, totalPages } = await userManager.getAllUsers();
@@ -77,4 +101,4 @@ class AdminController {async getActivityLog(req: Request, res: Response, next: N
     
 }
 
-export default new AdminController(); 
+export const adminController = new AdminController(); 

@@ -1,34 +1,14 @@
 import {ThemeLayout} from "../styles/theme_layout.tsx";
 import Typography from "@mui/material/Typography";
 import {User} from "../types";
-import { useState } from "react";
-import { Box, Paper, Button, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, IconButton, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Grid, Chip, Select, MenuItem, InputLabel, FormControl, OutlinedInput, Checkbox, ListItemText, Snackbar, Alert } from "@mui/material";
+import { useState, useEffect } from "react";
+import { Box, Paper, Button, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, IconButton, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Grid, Snackbar, Alert, CircularProgress } from "@mui/material";
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
 import UserInfo from '../components/UserInfo';
 import SearchIcon from '@mui/icons-material/Search';
-
-const priorityGroupTypes = [
-    "Người dân tộc thiểu số",
-    "Anh hùng Lực lượng vũ trang", 
-    "Thương binh",
-    "Con liệt sĩ",
-    "Con thương binh",
-    "Người nhiễm chất độc hóa học",
-    "Người khuyết tật",
-    "Hộ nghèo",
-    "Vùng đặc biệt khó khăn",
-    "Xã biên giới – hải đảo"
-];
-
-interface PriorityGroup {
-    id: number;
-    name: string;
-    type: string;
-    discount: number; // %
-    description: string;
-}
+import { financialApi, convertApiToComponentFormat, convertComponentToApiFormat, type PriorityGroup, type CourseType } from '../api_clients/financial/financialApi';
 
 interface FinancialPageProps {
     user: User | null;
@@ -36,22 +16,12 @@ interface FinancialPageProps {
 }
 
 export default function TuitionAdjustment({ user, onLogout }: FinancialPageProps) {
-    const [perCreditFee, setPerCreditFee] = useState(350000);
-    const [editFee, setEditFee] = useState(false);
-    const [feeInput, setFeeInput] = useState(perCreditFee);
+    const [editFee, setEditFee] = useState<{ [key: string]: boolean }>({});
+    const [feeInput, setFeeInput] = useState<{ [key: string]: number }>({});
+    const [loading, setLoading] = useState(true);
+    const [courseTypes, setCourseTypes] = useState<CourseType[]>([]);
     
-    const [targetGroups, setTargetGroups] = useState<PriorityGroup[]>(
-        [
-            { id: 1, name: "Người dân tộc thiểu số", type: "Đối tượng dân tộc", discount: 70, description: "Giảm 70% học phí cho sinh viên người dân tộc thiểu số" },
-            { id: 2, name: "Anh hùng Lực lượng vũ trang", type: "Đối tượng chính sách", discount: 100, description: "Miễn 100% học phí cho anh hùng lực lượng vũ trang" },
-            { id: 3, name: "Thương binh", type: "Đối tượng chính sách", discount: 100, description: "Miễn 100% học phí cho thương binh" },
-            { id: 4, name: "Con liệt sĩ", type: "Đối tượng chính sách", discount: 100, description: "Miễn 100% học phí cho con liệt sĩ" },
-            { id: 5, name: "Con thương binh", type: "Đối tượng chính sách", discount: 50, description: "Giảm 50% học phí cho con thương binh" },
-            { id: 6, name: "Người khuyết tật", type: "Đối tượng xã hội", discount: 70, description: "Giảm 70% học phí cho người khuyết tật" },
-            { id: 7, name: "Hộ nghèo", type: "Đối tượng xã hội", discount: 70, description: "Giảm 70% học phí cho hộ nghèo" },
-            { id: 8, name: "Vùng đặc biệt khó khăn", type: "Đối tượng khu vực", discount: 70, description: "Giảm 70% học phí cho vùng đặc biệt khó khăn" },
-        ]
-    );
+    const [targetGroups, setTargetGroups] = useState<PriorityGroup[]>([]);
     const [openDialog, setOpenDialog] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const [currentTargetGroup, setCurrentTargetGroup] = useState<PriorityGroup>({ id: 0, name: '', type: '', discount: 0, description: '' });
@@ -59,13 +29,92 @@ export default function TuitionAdjustment({ user, onLogout }: FinancialPageProps
     const [confirmDelete, setConfirmDelete] = useState<{ open: boolean, id: number | null }>({ open: false, id: null });
     const [search, setSearch] = useState("");
 
-    // Fee edit handlers
-    const handleEditFee = () => { setEditFee(true); setFeeInput(perCreditFee); };
-    const handleCancelFee = () => { setEditFee(false); setFeeInput(perCreditFee); };
-    const handleSaveFee = () => {
-        setPerCreditFee(feeInput);
-        setEditFee(false);
-        setSnackbar({ open: true, message: 'Cập nhật thành công!', severity: 'success' });
+    // Load data from API on component mount
+    useEffect(() => {
+        loadData();
+    }, []);    const loadData = async () => {
+        try {
+            setLoading(true);
+            console.log('🔄 Starting to load data...');
+            
+            // Check token
+            const token = localStorage.getItem('token');
+            console.log('📝 Current token:', token ? 'exists' : 'missing');
+            
+            // Load priority objects
+            console.log('📊 Calling getPriorityObjects API...');
+            const priorityData = await financialApi.getPriorityObjects();
+            console.log('✅ Priority data received:', priorityData);
+            
+            const formattedPriorityData = convertApiToComponentFormat(priorityData);
+            console.log('🔄 Formatted priority data:', formattedPriorityData);
+            setTargetGroups(formattedPriorityData);
+              // Load course types for fee information
+            console.log('📚 Calling getCourseTypes API...');
+            const courseTypeData = await financialApi.getCourseTypes();
+            console.log('✅ Course type data received:', courseTypeData);
+            setCourseTypes(courseTypeData);
+            
+            // Initialize fee inputs for each course type
+            const initialEditState: { [key: string]: boolean } = {};
+            const initialFeeInput: { [key: string]: number } = {};
+            
+            courseTypeData.forEach(courseType => {
+                initialEditState[courseType.courseTypeId] = false;
+                initialFeeInput[courseType.courseTypeId] = courseType.pricePerCredit;
+            });
+              setEditFee(initialEditState);
+            setFeeInput(initialFeeInput);
+            
+        } catch (error) {
+            console.error('Error loading data:', error);
+            setSnackbar({ 
+                open: true, 
+                message: 'Lỗi khi tải dữ liệu từ server', 
+                severity: 'error' 
+            });
+        } finally {
+            setLoading(false);
+        }
+    };    // Fee edit handlers - updated for multiple course types
+    const handleEditFee = (courseTypeId: string) => {
+        setEditFee(prev => ({ ...prev, [courseTypeId]: true }));
+    };
+    
+    const handleCancelFee = (courseTypeId: string) => {
+        setEditFee(prev => ({ ...prev, [courseTypeId]: false }));
+        // Reset to original value
+        const originalCourseType = courseTypes.find(ct => ct.courseTypeId === courseTypeId);
+        if (originalCourseType) {
+            setFeeInput(prev => ({ ...prev, [courseTypeId]: originalCourseType.pricePerCredit }));
+        }
+    };
+    
+    const handleSaveFee = async (courseTypeId: string) => {
+        try {
+            const newPrice = feeInput[courseTypeId];
+            if (newPrice && newPrice > 0) {
+                const result = await financialApi.updateCourseTypePrice(courseTypeId, newPrice);
+                if (result.success) {
+                    // Update course types state
+                    setCourseTypes(prev => prev.map(ct => 
+                        ct.courseTypeId === courseTypeId 
+                            ? { ...ct, pricePerCredit: newPrice }
+                            : ct
+                    ));
+                    setEditFee(prev => ({ ...prev, [courseTypeId]: false }));
+                    setSnackbar({ open: true, message: 'Cập nhật thành công!', severity: 'success' });
+                } else {
+                    setSnackbar({ open: true, message: result.message || 'Cập nhật thất bại', severity: 'error' });
+                }
+            }
+        } catch (error) {
+            setSnackbar({ open: true, message: 'Lỗi khi cập nhật học phí', severity: 'error' });
+        }
+    };
+    
+    const handleFeeInputChange = (courseTypeId: string, value: number) => {
+        setFeeInput(prev => ({ ...prev, [courseTypeId]: value }));
     };
 
     // Target group handlers    
@@ -83,24 +132,75 @@ export default function TuitionAdjustment({ user, onLogout }: FinancialPageProps
         setConfirmDelete({ open: true, id });
     };
     const handleDialogClose = () => setOpenDialog(false);
-    const handleDialogSave = () => {
+    
+    const handleDialogSave = async () => {
         if (!currentTargetGroup.name.trim() || currentTargetGroup.discount < 0 || currentTargetGroup.discount > 100) {
             setSnackbar({ open: true, message: 'Vui lòng nhập hợp lệ.', severity: 'error' });
             return;
         }
-        if (isEditing) {
-            setTargetGroups(targetGroups.map(g => g.id === currentTargetGroup.id ? currentTargetGroup : g));
-            setSnackbar({ open: true, message: 'Cập nhật thành công!', severity: 'success' });
-        } else {
-            setTargetGroups([...targetGroups, { ...currentTargetGroup, id: Date.now() }]);
-            setSnackbar({ open: true, message: 'Thêm mới thành công!', severity: 'success' });
+        
+        try {
+            if (isEditing) {
+                // Update existing priority object
+                const apiData = convertComponentToApiFormat(currentTargetGroup);
+                const result = await financialApi.updatePriorityObject(apiData.priorityId, {
+                    priorityName: apiData.priorityName,
+                    discountAmount: apiData.discountAmount
+                });
+                
+                if (result.success) {
+                    setTargetGroups(targetGroups.map(g => g.id === currentTargetGroup.id ? currentTargetGroup : g));
+                    setSnackbar({ open: true, message: 'Cập nhật thành công!', severity: 'success' });
+                } else {
+                    setSnackbar({ open: true, message: result.message || 'Cập nhật thất bại', severity: 'error' });
+                }
+            } else {
+                // Create new priority object
+                const newId = Math.max(...targetGroups.map(g => g.id), 0) + 1;
+                const newGroup = { ...currentTargetGroup, id: newId };
+                const apiData = convertComponentToApiFormat(newGroup);
+                
+                const result = await financialApi.createPriorityObject(apiData);
+                
+                if (result.success) {
+                    setTargetGroups([...targetGroups, newGroup]);
+                    setSnackbar({ open: true, message: 'Thêm mới thành công!', severity: 'success' });
+                } else {
+                    setSnackbar({ open: true, message: result.message || 'Thêm mới thất bại', severity: 'error' });
+                }
+            }
+            setOpenDialog(false);
+        } catch (error) {
+            setSnackbar({ 
+                open: true, 
+                message: 'Lỗi khi lưu dữ liệu', 
+                severity: 'error' 
+            });
         }
-        setOpenDialog(false);
     };
-    const handleConfirmDelete = () => {
+    
+    const handleConfirmDelete = async () => {
         if (confirmDelete.id !== null) {
-            setTargetGroups(targetGroups.filter(g => g.id !== confirmDelete.id));
-            setSnackbar({ open: true, message: 'Đã xóa đối tượng ưu tiên.', severity: 'success' });
+            try {
+                const groupToDelete = targetGroups.find(g => g.id === confirmDelete.id);
+                if (groupToDelete) {
+                    const apiData = convertComponentToApiFormat(groupToDelete);
+                    const result = await financialApi.deletePriorityObject(apiData.priorityId);
+                    
+                    if (result.success) {
+                        setTargetGroups(targetGroups.filter(g => g.id !== confirmDelete.id));
+                        setSnackbar({ open: true, message: 'Đã xóa đối tượng ưu tiên.', severity: 'success' });
+                    } else {
+                        setSnackbar({ open: true, message: result.message || 'Xóa thất bại', severity: 'error' });
+                    }
+                }
+            } catch (error) {
+                setSnackbar({ 
+                    open: true, 
+                    message: 'Lỗi khi xóa dữ liệu', 
+                    severity: 'error' 
+                });
+            }
         }
         setConfirmDelete({ open: false, id: null });
     };
@@ -111,6 +211,17 @@ export default function TuitionAdjustment({ user, onLogout }: FinancialPageProps
         g.name.toLowerCase().includes(search.toLowerCase()) ||
         g.description.toLowerCase().includes(search.toLowerCase())
     );
+
+    if (loading) {
+        return (
+            <ThemeLayout role="financial" onLogout={onLogout}>
+                <UserInfo user={user} />
+                <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
+                    <CircularProgress size={60} />
+                </Box>
+            </ThemeLayout>
+        );
+    }
 
     return (
         <ThemeLayout role="financial" onLogout={onLogout}>
@@ -152,28 +263,67 @@ export default function TuitionAdjustment({ user, onLogout }: FinancialPageProps
                         }}
                     >
                         Quản lý học phí
-                    </Typography>
-                    {/* Per-credit fee section */}
-                    <Box sx={{ mb: 3, display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
-                        <Typography variant="h6" sx={{ fontWeight: 600, color: '#1976d2', fontFamily: 'Varela Round, sans-serif', minWidth: 170 }}>Học phí mỗi tín chỉ:</Typography>
-                        {editFee ? (
-                            <>
-                                <TextField
-                                    type="number"
-                                    value={feeInput}
-                                    onChange={e => setFeeInput(Number(e.target.value))}
-                                    size="small"
-                                    sx={{ width: 120 }}
-                                    inputProps={{ min: 0, step: 1000 }}
-                                />
-                                <Button variant="contained" color="primary" onClick={handleSaveFee} sx={{ ml: 1, minWidth: 70 }}>Lưu</Button>
-                                <Button variant="outlined" onClick={handleCancelFee} sx={{ minWidth: 70 }}>Hủy</Button>
-                            </>
-                        ) : (
-                            <>
-                                <Typography variant="h6" sx={{ color: '#2e7d32', fontWeight: 700, minWidth: 120 }}>{perCreditFee.toLocaleString()} VNĐ</Typography>
-                                <Button variant="outlined" startIcon={<EditIcon />} onClick={handleEditFee} sx={{ fontFamily: 'Varela Round, sans-serif', borderRadius: '20px', minWidth: 120 }}>Chỉnh sửa</Button>
-                            </>
+                    </Typography>                    {/* Per-credit fee section - Updated for multiple course types */}
+                    <Box sx={{ mb: 3 }}>
+                        <Typography variant="h6" sx={{ fontWeight: 600, color: '#1976d2', fontFamily: 'Varela Round, sans-serif', mb: 2 }}>
+                            Học phí theo loại môn học:
+                        </Typography>
+                        
+                        {courseTypes.map((courseType) => (
+                            <Box key={courseType.courseTypeId} sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap', p: 2, backgroundColor: '#f8f9fa', borderRadius: '8px' }}>
+                                <Typography variant="body1" sx={{ fontWeight: 600, color: '#333', fontFamily: 'Varela Round, sans-serif', minWidth: 200 }}>
+                                    {courseType.courseTypeName} ({courseType.hoursPerCredit}h/TC):
+                                </Typography>
+                                {editFee[courseType.courseTypeId] ? (
+                                    <>
+                                        <TextField
+                                            type="number"
+                                            value={feeInput[courseType.courseTypeId] || 0}
+                                            onChange={e => handleFeeInputChange(courseType.courseTypeId, Number(e.target.value))}
+                                            size="small"
+                                            sx={{ width: 140 }}
+                                            inputProps={{ min: 0, step: 1000 }}
+                                        />
+                                        <Button 
+                                            variant="contained" 
+                                            color="primary" 
+                                            onClick={() => handleSaveFee(courseType.courseTypeId)} 
+                                            sx={{ ml: 1, minWidth: 70 }}
+                                        >
+                                            Lưu
+                                        </Button>
+                                        <Button 
+                                            variant="outlined" 
+                                            onClick={() => handleCancelFee(courseType.courseTypeId)} 
+                                            sx={{ minWidth: 70 }}
+                                        >
+                                            Hủy
+                                        </Button>
+                                    </>
+                                ) : (
+                                    <>
+                                        <Typography variant="h6" sx={{ color: '#2e7d32', fontWeight: 700, minWidth: 140 }}>
+                                            {courseType.pricePerCredit.toLocaleString()} VNĐ
+                                        </Typography>
+                                        <Button 
+                                            variant="outlined" 
+                                            startIcon={<EditIcon />} 
+                                            onClick={() => handleEditFee(courseType.courseTypeId)} 
+                                            sx={{ fontFamily: 'Varela Round, sans-serif', borderRadius: '20px', minWidth: 120 }}
+                                        >
+                                            Chỉnh sửa
+                                        </Button>
+                                    </>
+                                )}
+                            </Box>
+                        ))}
+                        
+                        {courseTypes.length === 0 && !loading && (
+                            <Box sx={{ p: 2, backgroundColor: '#f8f9fa', borderRadius: '8px', textAlign: 'center' }}>
+                                <Typography color="text.secondary" sx={{ fontFamily: 'Varela Round, sans-serif' }}>
+                                    Không tìm thấy loại môn học nào
+                                </Typography>
+                            </Box>
                         )}
                     </Box>
                     {/* Priority group table */}
@@ -211,13 +361,15 @@ export default function TuitionAdjustment({ user, onLogout }: FinancialPageProps
                                             <TableCell sx={{ width: 60, fontFamily: 'Varela Round, sans-serif', fontSize: '1rem' }}>{group.discount}%</TableCell>
                                             <TableCell align="center" sx={{ width: 120, fontFamily: 'Varela Round, sans-serif' }}>
                                                 <IconButton onClick={() => handleOpenEdit(group)} sx={{ fontFamily: 'Varela Round, sans-serif' }}><EditIcon /></IconButton>
-                                                <IconButton color="error" onClick={() => { setConfirmDelete({ open: true, id: group.id }); }} sx={{ fontFamily: 'Varela Round, sans-serif' }}><DeleteIcon /></IconButton>
+                                                <IconButton color="error" onClick={() => handleDelete(group.id)} sx={{ fontFamily: 'Varela Round, sans-serif' }}><DeleteIcon /></IconButton>
                                             </TableCell>
                                         </TableRow>
                                     ))}
                                     {filteredGroups.length === 0 && (
                                         <TableRow sx={{ '&:last-child td, &:last-child th': { borderBottom: 'none' } }}>
-                                            <TableCell colSpan={3} align="center" sx={{ fontFamily: 'Varela Round, sans-serif' }}>Không tìm thấy đối tượng phù hợp.</TableCell>
+                                            <TableCell colSpan={3} align="center" sx={{ fontFamily: 'Varela Round, sans-serif' }}>
+                                                {loading ? 'Đang tải...' : 'Không tìm thấy đối tượng phù hợp.'}
+                                            </TableCell>
                                         </TableRow>
                                     )}
                                 </TableBody>

@@ -14,10 +14,11 @@ import HomeOutlined from '@mui/icons-material/HomeOutlined';
 import MonetizationOnOutlined from '@mui/icons-material/MonetizationOnOutlined';
 import ListAltOutlined from '@mui/icons-material/ListAltOutlined';
 import ExitToAppOutlined from '@mui/icons-material/ExitToAppOutlined';
+import { financialDashboardApi } from "../../../api_clients/financialDashboardApi";
 
 interface StyledNavItemProps {
     sx?: React.CSSProperties;
-    isLogout?: boolean;
+    islogout?: boolean;
     selected?: boolean;
 }
 
@@ -31,11 +32,11 @@ const StyledNavItem = styled.div.withConfig({
     font-family: "Varela Round", sans-serif;
     font-weight: 600;
     font-style: normal;
-    background-color: ${(props) => (props.isLogout ? 'transparent' : 'transparent')};
+    background-color: ${(props) => (props.islogout ? 'transparent' : 'transparent')};
     color: ${(props) => 
         props.selected 
             ? '#2f6bff' 
-            : props.isLogout 
+            : props.islogout 
                 ? '#879db0' 
                 : '#879db0'};
     transition: all 0.25s ease; 
@@ -55,12 +56,12 @@ const StyledNavItem = styled.div.withConfig({
         color: ${(props) => 
             props.selected 
                 ? '#879db0' 
-                : props.isLogout 
+                : props.islogout 
                     ? '#879db0' 
                     : '#879db0'} !important;
     }
     &:hover {
-        ${(props) => props.isLogout 
+        ${(props) => props.islogout 
             ? `
                 color: red;
                 background-color: transparent;
@@ -86,18 +87,18 @@ interface NavItemProps {
     onClick?: (e: React.MouseEvent) => void;
     selected?: boolean;
     icon: React.ReactElement;
-    isLogout?: boolean; 
+    islogout?: boolean; 
 }
 
-const NavItem = ({ to, children, sx, onClick, selected, icon, isLogout }: NavItemProps) => (
+const NavItem = ({ to, children, sx, onClick, selected, icon, islogout }: NavItemProps) => (
     <Link to={to} style={{ textDecoration: 'none' }} onClick={onClick}>
-        <StyledNavItem sx={sx} selected={selected} isLogout={isLogout}>
-            {isLogout 
+        <StyledNavItem sx={sx} selected={selected} islogout={islogout}>
+            {islogout 
                 ? <ExitToAppOutlined style={{ marginRight: '8px', color: 'darkgrey' }} />
                 : React.isValidElement(icon) 
                     ? React.cloneElement(icon as React.ReactElement<any>, { style: { color: selected ? '#2f6bff' : '#5686ff' } }) 
                     : null}
-            <span style={{ marginLeft: isLogout ? '0' : '8px' }}>{children}</span>
+            <span style={{ marginLeft: islogout ? '0' : '8px' }}>{children}</span>
         </StyledNavItem>
     </Link>
 );
@@ -110,9 +111,11 @@ export const FinancialDeptSidebarContent = ({ onLogout }: FinancialDeptSidebarCo
     const location = useLocation();
     const [selectedPath, setSelectedPath] = useState(location.pathname);
     const [openDialog, setOpenDialog] = useState(false);
+    const [data, setData] = useState<any>(null);
 
     useEffect(() => {
         setSelectedPath(location.pathname);
+        financialDashboardApi.getOverview().then(setData);
     }, [location.pathname]);
 
     const handleLogoutClick = (e: React.MouseEvent) => {
@@ -176,7 +179,7 @@ export const FinancialDeptSidebarContent = ({ onLogout }: FinancialDeptSidebarCo
                     sx={{ color: 'darkgrey', padding: '0px 0px' }}
                     to="/login"
                     onClick={handleLogoutClick}
-                    isLogout
+                    islogout={true}
                     icon={<ExitToAppOutlined />}
                 >
                     Đăng xuất

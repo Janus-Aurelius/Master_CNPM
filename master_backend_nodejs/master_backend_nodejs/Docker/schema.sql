@@ -1,8 +1,7 @@
 -- ======================================================
 -- DROP existing tables (in reverse-dependency order)
 -- ======================================================
-DROP TABLE IF EXISTS BAOCAOSINHVIENNOHP;
-DROP TABLE IF EXISTS SYSTEM_SETTINGS;
+DROP TABLE IF EXISTS ACADEMIC_SETTINGS;
 DROP TABLE IF EXISTS PHIEUTHUHP;
 DROP TABLE IF EXISTS CT_PHIEUDANGKY;
 DROP TABLE IF EXISTS PHIEUDANGKY;
@@ -156,6 +155,7 @@ CREATE TABLE PHIEUTHUHP (
     NgayLap DATE,
     MaPhieuDangKy VARCHAR NOT NULL,
     SoTienDong DECIMAL,
+    PhuongThuc VARCHAR(50) DEFAULT 'Chuyển Khoản',
     FOREIGN KEY (MaPhieuDangKy) REFERENCES PHIEUDANGKY(MaPhieuDangKy)
 );
 
@@ -203,11 +203,35 @@ CREATE TABLE REGISTRATION_LOG (
     ThoiGianYeuCau TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE SYSTEM_SETTINGS (
+CREATE TABLE ACADEMIC_SETTINGS (
     id INTEGER PRIMARY KEY DEFAULT 1,
     current_semester VARCHAR NOT NULL,
     FOREIGN KEY (current_semester) REFERENCES HOCKYNAMHOC(MaHocKy),
     CONSTRAINT single_record_only CHECK (id = 1)
+);
+-- ======================================================
+-- Audit & Activity Logs
+-- ======================================================
+CREATE TABLE AUDIT_LOGS (
+    id SERIAL PRIMARY KEY,
+    user_id VARCHAR(20) NOT NULL,
+    action_type VARCHAR(50) NOT NULL,
+    status VARCHAR(50) NOT NULL DEFAULT 'thất bại',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    ip_address VARCHAR(45),
+    user_agent TEXT
+    -- FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- Index for better query performance
+CREATE INDEX idx_audit_logs_user_id ON AUDIT_LOGS(user_id);
+CREATE INDEX idx_audit_logs_created_at ON AUDIT_LOGS(created_at);
+
+CREATE TABLE system_settings (
+    setting_key VARCHAR PRIMARY KEY,
+    setting_value TEXT,
+    setting_type VARCHAR(20),
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 -- ======================================================
 -- all done

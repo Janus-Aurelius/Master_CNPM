@@ -8,27 +8,44 @@ export class FinancialPaymentController {
 
     constructor() {
         this.paymentBusiness = new FinancialPaymentBusiness();
-    }
-
-    /**
+    }    /**
      * GET /api/financial/payment/status
      * Get payment status list for a semester
-     */
-    async getPaymentStatusList(req: Request, res: Response) {
+     */    async getPaymentStatusList(req: Request, res: Response) {
         try {
             const { semesterId, paymentStatus, studentId, page, limit } = req.query;
 
+            console.log('[getPaymentStatusList] req.user:', req.user);
+            console.log('[getPaymentStatusList] req.query before processing:', req.query);
+            
             if (!semesterId) {
                 return res.status(400).json({
                     success: false,
                     message: 'Semester ID is required'
                 });
-            }            const filters = {
+            }
+
+            // For financial staff, ignore studentId filter to show all students
+            // Only use studentId filter if explicitly passed and user is not financial staff
+            let finalStudentId: string | undefined = undefined;
+            
+            if (req.user?.role === 'financial') {
+                // Financial staff should see all students, ignore auto-injected studentId
+                console.log('[getPaymentStatusList] Financial staff detected, ignoring studentId filter');
+                finalStudentId = undefined;
+            } else if (studentId && typeof studentId === 'string') {
+                // For other roles, use studentId if provided
+                finalStudentId = studentId;
+            }
+
+            const filters = {
                 paymentStatus: paymentStatus as 'paid' | 'unpaid' | 'not_opened',
-                studentId: studentId as string,
+                studentId: finalStudentId,
                 page: page ? parseInt(page as string) : 1,
                 limit: limit ? parseInt(limit as string) : 50
             };
+
+            console.log('[getPaymentStatusList] Final filters after role check:', filters);
 
             const result = await this.paymentBusiness.getPaymentStatusList(
                 semesterId as string,
@@ -106,7 +123,11 @@ export class FinancialPaymentController {
     async confirmPayment(req: Request, res: Response) {
         try {
             const paymentData: IPaymentData = req.body;
-            const performedBy = req.user?.userId || req.body.performedBy;
+            const performedBy = req.user?.id || req.body.performedBy;
+
+            // Log dữ liệu nhận vào
+            console.log('[CONFIRM PAYMENT] Request body:', paymentData);
+            console.log('[CONFIRM PAYMENT] Performed by:', performedBy);
 
             if (!performedBy) {
                 return res.status(401).json({
@@ -115,10 +136,15 @@ export class FinancialPaymentController {
                 });
             }
 
-            const result = await this.paymentBusiness.confirmPayment(paymentData, performedBy);            if (result.success) {
+            const result = await this.paymentBusiness.confirmPayment(paymentData, performedBy);
+
+            // Log kết quả trả về từ business/service
+            console.log('[CONFIRM PAYMENT] Result:', result);
+
+            if (result.success) {
                 res.status(201).json({
                     success: true,
-                    data: 'data' in result ? result.data : { paymentId: result.paymentId },
+                    data: { paymentId: result.paymentId },
                     message: result.message
                 });
             } else {
@@ -129,6 +155,7 @@ export class FinancialPaymentController {
             }
 
         } catch (error: any) {
+            console.error('[CONFIRM PAYMENT] Error:', error);
             res.status(500).json({
                 success: false,
                 message: 'Internal server error',
@@ -231,6 +258,35 @@ export class FinancialPaymentController {
             };
 
             const result = await this.paymentBusiness.getPaymentStatistics(filters);
+
+            if (result.success) {
+                res.json({
+                    success: true,
+                    data: result.data
+                });
+            } else {
+                res.status(400).json({
+                    success: false,
+                    message: result.message
+                });
+            }
+
+        } catch (error: any) {
+            res.status(500).json({
+                success: false,
+                message: 'Internal server error',
+                error: error?.message
+            });
+        }
+    }
+
+    /**
+     * GET /api/financial/payment/available-semesters
+     * Get list of semesters that have payment data
+     */
+    async getAvailableSemesters(req: Request, res: Response) {
+        try {
+            const result = await this.paymentBusiness.getAvailableSemesters();
 
             if (result.success) {
                 res.json({

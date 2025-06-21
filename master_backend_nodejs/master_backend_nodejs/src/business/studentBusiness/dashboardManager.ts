@@ -42,11 +42,7 @@ class DashboardManager {
             const recentPayments = await this.getRecentPayments(studentId);
 
             // Get current semester
-            const currentSemester = await DatabaseService.queryOne(`
-                SELECT setting_value FROM system_settings WHERE setting_key = 'current_semester'
-            `);
-
-            const semester = currentSemester?.setting_value || '2024-1';            // Build comprehensive dashboard overview
+            const semester = await DatabaseService.getCurrentSemester();// Build comprehensive dashboard overview
             const dashboardData: IStudentOverview = {
                 student: {
                     studentId: student.student_id,
@@ -118,14 +114,13 @@ class DashboardManager {
 
     /**
      * Get student's upcoming classes for the next 2 days
-     */
-    private async getUpcomingClasses(studentId: string) {
+     */    private async getUpcomingClasses(studentId: string) {
         try {
             const currentSemester = await DatabaseService.queryOne(`
-                SELECT setting_value FROM system_settings WHERE setting_key = 'current_semester'
+                SELECT current_semester FROM ACADEMIC_SETTINGS WHERE id = 1
             `);
             
-            const semester = currentSemester?.setting_value || '2024-1';
+            const semester = currentSemester?.current_semester || '2024-1';
 
             const classes = await DatabaseService.query(`
                 SELECT 
@@ -329,15 +324,14 @@ class DashboardManager {
 
     /**
      * Get available open courses for student registration
-     */
-    private async getAvailableOpenCourses(studentId: string) {
+     */    private async getAvailableOpenCourses(studentId: string) {
         try {
             // Get current semester
             const currentSemester = await DatabaseService.queryOne(`
-                SELECT setting_value FROM system_settings WHERE setting_key = 'current_semester'
+                SELECT current_semester FROM ACADEMIC_SETTINGS WHERE id = 1
             `);
             
-            const semester = currentSemester?.setting_value || '2024-1';
+            const semester = currentSemester?.current_semester || '2024-1';
             
             // Get available courses that student hasn't enrolled yet
             const courses = await OpenCourseService.getAllCourses();

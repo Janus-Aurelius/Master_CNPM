@@ -28,10 +28,9 @@ export class FinancialPaymentBusiness {
             // Calculate offset from page
             const page = filters?.page || 1;
             const limit = filters?.limit || 50;
-            const offset = (page - 1) * limit;
-
-            const result = await this.paymentService.getPaymentStatusList(semesterId, {
-                ...filters,
+            const offset = (page - 1) * limit;            const result = await this.paymentService.getPaymentStatusList(semesterId, {
+                paymentStatus: filters?.paymentStatus,
+                studentId: filters?.studentId,
                 offset,
                 limit
             });
@@ -98,100 +97,23 @@ export class FinancialPaymentBusiness {
     /**
      * Confirm payment with validation and business rules
      */
-    async confirmPayment(paymentData: IPaymentData, performedBy: string) {
-        try {
-            // Validate required fields
-            if (!paymentData.studentId) {
-                return {
-                    success: false,
-                    message: 'Student ID is required'
-                };
-            }
-
-            if (!paymentData.semester) {
-                return {
-                    success: false,
-                    message: 'Semester is required'
-                };
-            }
-
-            if (!paymentData.amount || paymentData.amount <= 0) {
-                return {
-                    success: false,
-                    message: 'Payment amount must be greater than 0'
-                };
-            }
-
-            if (!paymentData.paymentMethod) {
-                return {
-                    success: false,
-                    message: 'Payment method is required'
-                };
-            }
-
-            if (!performedBy) {
-                return {
-                    success: false,
-                    message: 'Performer information is required'
-                };
-            }
-
-            // Check if student exists and has outstanding balance
-            const paymentsList = await this.paymentService.getPaymentStatusList(paymentData.semester, {
-                studentId: paymentData.studentId,
-                limit: 1
-            });
-
-            if (paymentsList.total === 0) {
-                return {
-                    success: false,
-                    message: 'Student not found in this semester'
-                };
-            }
-
-            const studentStatus = paymentsList.data[0];
-            if (studentStatus.remainingAmount <= 0) {
-                return {
-                    success: false,
-                    message: 'Student has no outstanding balance'
-                };
-            }
-
-            if (paymentData.amount > studentStatus.remainingAmount) {
-                return {
-                    success: false,
-                    message: `Payment amount cannot exceed outstanding balance (${studentStatus.remainingAmount})`
-                };
-            }
-
-            // Process payment
-            const result = await this.paymentService.confirmPayment(paymentData, performedBy);
-
-            if (result.success) {
-                // Get updated status
-                const updatedStatus = await this.paymentService.getPaymentStatusList(paymentData.semester, {
-                    studentId: paymentData.studentId,
-                    limit: 1
-                });
-
-                return {
-                    success: true,
-                    data: {
-                        paymentId: result.paymentId,
-                        updatedStatus: updatedStatus.data[0] || null
-                    },
-                    message: result.message
-                };
-            }
-
-            return result;
-
-        } catch (error: any) {
+    async confirmPayment(paymentData: IPaymentData, createdBy: string) {
+        // 1. Validate dữ liệu đầu vào
+        if (!paymentData.studentId || !paymentData.semester || !paymentData.amount || !paymentData.paymentMethod) {
             return {
                 success: false,
-                message: `Failed to confirm payment: ${error?.message || 'Unknown error'}`
+                message: 'Missing required payment data'
             };
         }
+        if (paymentData.amount <= 0) {
+            return {
+                success: false,
+                message: 'Payment amount must be greater than 0'
+            };
+        }
+
+        // 2. Gọi service để thực hiện nghiệp vụ
+        return await this.paymentService.confirmPayment(paymentData, createdBy);
     }
 
     /**
@@ -359,6 +281,26 @@ export class FinancialPaymentBusiness {
             return {
                 success: false,
                 message: `Failed to get payment statistics: ${error?.message || 'Unknown error'}`
+            };
+        }
+    }
+
+    /**
+     * Get available semesters that have student registrations
+     */
+    async getAvailableSemesters() {
+        try {
+            const result = await this.paymentService.getAvailableSemesters();
+
+            return {
+                success: true,
+                data: result
+            };
+
+        } catch (error: any) {
+            return {
+                success: false,
+                message: `Failed to get available semesters: ${error?.message || 'Unknown error'}`
             };
         }
     }

@@ -150,30 +150,31 @@ export class DatabaseService {
                 limit
             };
         });
-    }
-
-    /**
-     * Get current semester from SYSTEM_SETTINGS
+    }    /**
+     * Get current semester from ACADEMIC_SETTINGS
      * This replaces hardcoded semester values throughout the application
      */
     static async getCurrentSemester(): Promise<string> {
         try {
             const result = await this.queryOne<{ current_semester: string }>(
-                'SELECT current_semester FROM SYSTEM_SETTINGS LIMIT 1'
+                'SELECT current_semester FROM ACADEMIC_SETTINGS LIMIT 1'
             );
             
             // Fallback to default if no setting found
             return result?.current_semester || 'HK1_2024';
         } catch (error) {
-            console.warn('Unable to fetch current semester from SYSTEM_SETTINGS, using fallback:', error);
+            console.warn('Unable to fetch current semester from ACADEMIC_SETTINGS, using fallback:', error);
             return 'HK1_2024'; // Fallback value
         }
-    }    /**
-     * Update current semester in SYSTEM_SETTINGS
+    }
+
+    /**
+     * Update current semester in ACADEMIC_SETTINGS
      * Should only be called by academic department
-     */    static async updateCurrentSemester(semesterId: string): Promise<void> {
+     */
+    static async updateCurrentSemester(semesterId: string): Promise<void> {
         await this.query(
-            'UPDATE SYSTEM_SETTINGS SET current_semester = $1 WHERE id = 1',
+            'UPDATE ACADEMIC_SETTINGS SET current_semester = $1 WHERE id = 1',
             [semesterId]
         );
     }

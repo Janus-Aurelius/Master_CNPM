@@ -288,17 +288,16 @@ class TuitionManager {
                     new Date(status.paymentHistory
                         .sort((a, b) => new Date(b.paymentDate).getTime() - new Date(a.paymentDate).getTime())[0]
                         .paymentDate) : undefined
-            };
-
-            return summary;
+            };            return summary;
         } catch (error) {
             console.error('Error getting tuition summary:', error);
             return null;
-        }    }
+        }
+    }
 
     // Private helper methods
     /**
-     * Get current active semester - uses SYSTEM_SETTINGS
+     * Get current active semester - uses ACADEMIC_SETTINGS
      */
     private async getCurrentSemester(): Promise<string> {
         try {

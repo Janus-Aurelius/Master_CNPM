@@ -1,12 +1,27 @@
 import { Request, Response, NextFunction } from 'express';
 import { maintenanceManager } from '../business/AdminBussiness/maintenanceManager';
+import { Database } from '../config/database';
 
-export const checkMaintenance = (req: Request, res: Response, next: NextFunction) => {
+export const checkMaintenance = async (req: Request, res: Response, next: NextFunction) => {
     if (maintenanceManager.isInMaintenanceMode()) {
         const clientIP = req.ip || req.connection.remoteAddress || '';
         
-        // Cho phép admin truy cập trong chế độ bảo trì
-        if (req.user && req.user.role === 'admin') {
+        // Nếu là route đăng nhập, kiểm tra username có phải admin không
+        if (req.path === '/login' && req.method === 'POST') {
+            const { username } = req.body;
+            if (username) {
+                const result = await Database.query(
+                    'SELECT manhom FROM NGUOIDUNG WHERE TenDangNhap = $1',
+                    [username]
+                );
+                
+                if (result[0]?.manhom === 'N1') {
+                    return next();
+                }
+            }
+        }
+        // Cho phép admin đã đăng nhập truy cập
+        else if (req.user && req.user.role === 'admin') {
             return next();
         }
 

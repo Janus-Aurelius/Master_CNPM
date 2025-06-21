@@ -40,7 +40,8 @@ export interface ICourseDetail {
 export interface IPaymentHistory {
     paymentId: string;          // MaPhieuThu
     paymentDate: Date;          // NgayLap
-    amount: number;             // SoTienDong
+    amount: number;     
+    method : string 
     registrationId: string;     // MaPhieuDangKy
 }
 

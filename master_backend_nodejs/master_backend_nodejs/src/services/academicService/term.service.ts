@@ -98,8 +98,7 @@ export const semesterService = {
         const client = await db.connect();
         
         try {
-            await client.query('BEGIN');
-              // If changing status to "Đang diễn ra", update current semester in SYSTEM_SETTINGS
+            await client.query('BEGIN');              // If changing status to "Đang diễn ra", update current semester in ACADEMIC_SETTINGS
             // and change any other "Đang diễn ra" semester to "Đóng"
             if (semester.status === 'Đang diễn ra') {
                 console.log(`🔄 Setting semester ${id} as current (Đang diễn ra)`);
@@ -112,12 +111,12 @@ export const semesterService = {
                 );
                 console.log(`📝 Closed ${closeResult.rowCount} other active semesters`);
                 
-                // Update SYSTEM_SETTINGS to reflect new current semester
+                // Update ACADEMIC_SETTINGS to reflect new current semester
                 const systemResult = await client.query(
-                    `UPDATE SYSTEM_SETTINGS SET current_semester = $1 WHERE id = 1`,
+                    `UPDATE ACADEMIC_SETTINGS SET current_semester = $1 WHERE id = 1`,
                     [id]
                 );
-                console.log(`⚙️ Updated SYSTEM_SETTINGS: ${systemResult.rowCount} rows affected`);
+                console.log(`⚙️ Updated ACADEMIC_SETTINGS: ${systemResult.rowCount} rows affected`);
             }
             
             // Prevent changing from "Đang diễn ra" to other status
@@ -329,7 +328,7 @@ export const semesterService = {
                 
                 await DatabaseService.transaction(queries);
                 
-                // 3. Update SYSTEM_SETTINGS to point to new current semester
+                // 3. Update ACADEMIC_SETTINGS to point to new current semester
                 await DatabaseService.updateCurrentSemester(semesterId);
             } else {
                 // Simple status update for other statuses

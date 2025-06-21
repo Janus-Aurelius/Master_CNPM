@@ -1,27 +1,16 @@
 // src/routes/financial/dashboardRoutes.ts
-import { Router, Request, Response } from 'express';
+import { Router } from 'express';
 import { financialDashboardController } from '../../controllers/financialController/dashboardController';
+import { authenticateToken } from '../../middleware/auth';
 
 const router = Router();
 
-// Dashboard overview
-router.get('/overview', async (req: Request, res: Response) => {
-    await financialDashboardController.getDashboardOverview(req, res);
-});
+// Apply authentication middleware
+router.use(authenticateToken);
 
-// Semester comparison
-router.get('/comparison', async (req: Request, res: Response) => {
-    await financialDashboardController.getSemesterComparison(req, res);
-});
-
-// Payment analytics
-router.get('/analytics', async (req: Request, res: Response) => {
-    await financialDashboardController.getPaymentAnalytics(req, res);
-});
-
-// Export dashboard data
-router.get('/export', async (req: Request, res: Response) => {
-    await financialDashboardController.exportDashboardData(req, res);
-});
+// Routes
+router.get('/overview', financialDashboardController.getOverview.bind(financialDashboardController));
+router.get('/recent-payments', financialDashboardController.getRecentPayments.bind(financialDashboardController));
+router.get('/faculty-stats', financialDashboardController.getFacultyStats.bind(financialDashboardController));
 
 export default router;

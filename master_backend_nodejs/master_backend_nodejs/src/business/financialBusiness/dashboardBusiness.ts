@@ -7,99 +7,58 @@ export class FinancialDashboardBusiness {
     constructor() {
         this.dashboardService = new FinancialDashboardService();
     }    /**
-     * Get dashboard overview with validation
+     * Get dashboard overview with enhanced calculation validation
      */
     async getDashboardOverview(semesterId?: string) {
         try {
-            // Get basic stats
-            const stats = await this.dashboardService.getDashboardStats(semesterId);
+            const stats = await this.dashboardService.getDashboardStatsEnhanced(semesterId);
             
-            // Get overdue payments
-            const overduePayments = await this.dashboardService.getOverduePayments(semesterId);
-
-            // Calculate additional metrics from overview data
-            const overview = stats.overview;
-            const totalStudents = overview?.total_students || 0;
-            const paidStudents = overview?.paid_students || 0;
-            const paymentRate = totalStudents > 0 ? (paidStudents / totalStudents * 100) : 0;
+            // Calculate percentages and format data using dynamic calculation results
+            const totalStudents = stats.overview.total_students || 0;
+            const paidStudents = stats.overview.paid_students || 0;
+            const unpaidStudents = stats.overview.unpaid_students || 0;
             
-            const totalTuition = parseFloat(overview?.total_tuition || '0');
-            const totalCollected = parseFloat(overview?.total_collected || '0');
-            const collectionRate = totalTuition > 0 ? (totalCollected / totalTuition * 100) : 0;
-
             return {
                 success: true,
                 data: {
+                    semester: stats.semester,
                     overview: {
                         totalStudents,
-                        paidStudents: overview?.paid_students || 0,
-                        partialStudents: overview?.partial_students || 0,
-                        unpaidStudents: overview?.unpaid_students || 0,
-                        paymentRate: Math.round(paymentRate * 100) / 100,
-                        collectionRate: Math.round(collectionRate * 100) / 100
+                        paidStudents,
+                        unpaidStudents,
+                        paymentRate: totalStudents ? (paidStudents / totalStudents) * 100 : 0,
                     },
                     financial: {
-                        totalTuition,
-                        totalCollected,
-                        totalOutstanding: parseFloat(overview?.total_outstanding || '0')
+                        totalTuition: stats.overview.total_tuition || 0,
+                        totalCollected: stats.overview.total_collected || 0,
+                        totalOutstanding: stats.overview.total_outstanding || 0
                     },
-                    trends: stats.monthlyTrends || [],
-                    facultyStats: stats.facultyStats || [],
-                    overduePayments: overduePayments || []
+                    monthlyTrends: stats.monthlyTrends,
+                    facultyStats: stats.facultyStats
                 }
             };
-
         } catch (error: any) {
             return {
                 success: false,
-                message: `Failed to get dashboard overview: ${error?.message || 'Unknown error'}`
+                message: `Error processing dashboard overview data: ${error?.message || 'Unknown error'}`
             };
         }
-    }    /**
+    }/**
      * Get semester comparison data
      */
-    async getSemesterComparison(currentSemesterId: string, previousSemesterId: string) {
+    async getSemesterComparison() {
         try {
-            const [currentStats, previousStats] = await Promise.all([
-                this.dashboardService.getDashboardStats(currentSemesterId),
-                this.dashboardService.getDashboardStats(previousSemesterId)
-            ]);
-
-            const currentOverview = currentStats.overview;
-            const previousOverview = previousStats.overview;
-            
-            const currentTotal = parseFloat(currentOverview?.total_collected || '0');
-            const previousTotal = parseFloat(previousOverview?.total_collected || '0');
-            
-            const growth = previousTotal > 0 ? 
-                ((currentTotal - previousTotal) / previousTotal * 100) : 0;
-
+            const data = await this.dashboardService.getSemesterComparisonData();
             return {
-                success: true,
-                data: {
-                    current: {
-                        semesterId: currentSemesterId,
-                        totalStudents: currentOverview?.total_students || 0,
-                        totalCollected: currentTotal,
-                        paymentRate: currentOverview?.total_students > 0 ? 
-                            (currentOverview.paid_students / currentOverview.total_students * 100) : 0
-                    },
-                    previous: {
-                        semesterId: previousSemesterId,
-                        totalStudents: previousOverview?.total_students || 0,
-                        totalCollected: previousTotal,
-                        paymentRate: previousOverview?.total_students > 0 ? 
-                            (previousOverview.paid_students / previousOverview.total_students * 100) : 0
-                    },
-                    growth: Math.round(growth * 100) / 100
-                }
+                semesters: data.map(item => ({
+                    semesterId: item.semester_id,
+                    semesterName: item.semester_name,
+                    totalCollected: item.total_collected,
+                    collectionRate: item.collection_rate
+                }))
             };
-
-        } catch (error: any) {
-            return {
-                success: false,
-                message: `Failed to get semester comparison: ${error?.message || 'Unknown error'}`
-            };
+        } catch (error) {
+            throw new Error('Error processing semester comparison data');
         }
     }    /**
      * Get payment analytics with date range
@@ -167,6 +126,81 @@ export class FinancialDashboardBusiness {
                 success: false,
                 message: `Failed to export dashboard data: ${error?.message || 'Unknown error'}`
             };
+        }
+    }
+
+    async getOverduePayments(semesterId?: string) {
+        try {
+            const rawData = await this.dashboardService.getOverduePayments(semesterId);
+
+            // Process and categorize overdue payments
+            const processedData = rawData.map(payment => ({
+                registrationId: payment.MaPhieuDangKy,
+                studentId: payment.MaSoSinhVien,
+                studentName: payment.student_name,
+                amountDue: parseFloat(payment.SoTienPhaiDong),
+                amountPaid: parseFloat(payment.SoTienDaDong),
+                remainingAmount: parseFloat(payment.SoTienConLai),
+                dueDate: payment.due_date,
+                daysOverdue: Math.floor(
+                    (new Date().getTime() - new Date(payment.due_date).getTime()) / 
+                    (1000 * 60 * 60 * 24)
+                ),
+                status: this.getPaymentStatus(
+                    parseFloat(payment.SoTienPhaiDong),
+                    parseFloat(payment.SoTienDaDong)
+                )
+            }));
+
+            // Sort by days overdue and remaining amount
+            processedData.sort((a, b) => 
+                b.daysOverdue - a.daysOverdue || 
+                b.remainingAmount - a.remainingAmount
+            );
+
+            return {
+                success: true,
+                data: {
+                    overduePayments: processedData,
+                    summary: {
+                        totalOverdue: processedData.length,
+                        totalAmount: processedData.reduce((sum, p) => sum + p.remainingAmount, 0),
+                        averageOverdueDays: Math.round(
+                            processedData.reduce((sum, p) => sum + p.daysOverdue, 0) / 
+                            processedData.length
+                        )
+                    }
+                }
+            };
+        } catch (error: any) {
+            return {
+                success: false,
+                message: `Failed to get overdue payments: ${error.message}`
+            };
+        }
+    }
+
+    private getPaymentStatus(totalAmount: number, paidAmount: number): string {
+        const paymentRatio = paidAmount / totalAmount;
+        if (paymentRatio === 0) return 'unpaid';
+        if (paymentRatio < 1) return 'partial';
+        return 'paid';
+    }
+
+    async getFacultyStats() {
+        try {
+            const stats = await this.dashboardService.getFacultyStats();
+            return {
+                facultyStats: stats.map(item => ({
+                    facultyId: item.faculty_id,
+                    facultyName: item.faculty_name,
+                    totalStudents: item.total_students,
+                    paidStudents: item.paid_students,
+                    paymentRate: item.payment_rate
+                }))
+            };
+        } catch (error) {
+            throw new Error('Error processing faculty statistics');
         }
     }
 }

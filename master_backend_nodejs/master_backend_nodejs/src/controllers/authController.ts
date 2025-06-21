@@ -1,10 +1,11 @@
 // Auth Controller for master_cnpm database
 import { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
-import { getUserByEmail, getUserById, verifyPassword, blacklistToken, isTokenBlacklisted } from '../services/userService';
+import { getUserByEmail, getUserById, verifyPassword, blacklistToken, isTokenBlacklisted } from '../services/AdminService/userService';
 import bcrypt from 'bcrypt';
 import { Database } from '../config/database';
 import { config } from '../config';
+import { maintenanceManager } from '../business/AdminBussiness/maintenanceManager';
 
 const JWT_SECRET = config.jwtSecret;
 const JWT_EXPIRES = '24h';
@@ -22,6 +23,23 @@ export const login = async (req: Request, res: Response) => {
     console.log('=== Login Request ===');
     console.log('Request body:', req.body);
     const { username, password } = req.body;
+
+    // Kiểm tra maintenance mode
+    if (maintenanceManager.isInMaintenanceMode()) {
+      // Kiểm tra xem user có phải admin không
+      const result = await Database.query(
+        'SELECT * FROM NGUOIDUNG WHERE TenDangNhap = $1',
+        [username]
+      );
+      
+      const user = result[0];
+      if (!user || user.manhom !== 'N1') {
+        return res.status(503).json({
+          success: false,
+          message: 'Hệ thống đang trong quá trình bảo trì. Chỉ admin mới có thể đăng nhập.'
+        });
+      }
+    }
 
     if (!username || !password) {
       console.log('Missing username or password');
@@ -57,8 +75,17 @@ export const login = async (req: Request, res: Response) => {
       // Chuẩn hóa các field từ database (PostgreSQL có thể trả về lowercase)
     const userId = user.UserID || user.userid;
     const userUsername = user.TenDangNhap || user.tendangnhap;
-    const studentId = user.MaSoSinhVien || user.masosinhvien;
-    const groupCode = user.MaNhom || user.manhom;    // Check password (note: database column is lowercase)
+    const studentId = user.MaSoSinhVien || user.masosinhvien;    const groupCode = user.MaNhom || user.manhom;
+
+    // Check account status first
+    if ((user.TrangThai || user.trangthai) !== 'active') {
+      return res.status(403).json({
+        success: false,
+        message: 'Tài khoản đã bị vô hiệu hóa'
+      });
+    }
+
+    // Check password (note: database column can be uppercase or lowercase)
     const isPasswordValid = password === (user.MatKhau || user.matkhau);
     console.log('Password validation:', { 
       isPasswordValid, 
@@ -197,7 +224,7 @@ export const refreshToken = async (req: Request, res: Response) => {
 
     const newToken = jwt.sign(
       { 
-        id: user.id, 
+        id: user.userId, 
         email: user.email, 
         role: user.role
       },
@@ -233,7 +260,7 @@ export const me = async (req: Request, res: Response) => {
     res.json({
       success: true,
       user: {
-        id: user.id,
+        id: user.userId,
         email: user.email,
         name: user.name,
         role: user.role,

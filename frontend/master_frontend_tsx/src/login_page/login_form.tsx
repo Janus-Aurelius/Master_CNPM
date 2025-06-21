@@ -66,6 +66,12 @@ export default function LoginForm({ onLogin }: LoginFormProps) {
             const data = await response.json();
             console.log('✅ Login response:', data);
 
+            if (response.status === 503) {
+                // Hiển thị thông báo bảo trì
+                alert(data.message || 'Hệ thống đang bảo trì');
+                return;
+            }
+
             if (data.success) {
                 console.log('👤 User data from backend:', data.data.user);
                 console.log('🔑 Token from backend:', data.data.token);

@@ -11,164 +11,239 @@ export class FinancialPaymentService {
         studentId?: string;
         offset?: number;
         limit?: number;
+        semesterId?: string;
     }): Promise<{ data: any[], total: number }> {
-        let whereClause = 'WHERE pd.MaHocKy = $1';
+        console.log('[getPaymentStatusList] semesterId:', semesterId);
+        console.log('[getPaymentStatusList] filters:', filters);        // Base where clause - always filter by semester first (your approach)
+        let whereClause = 'WHERE pd.mahocky = $1';
         const params: any[] = [semesterId];
-        let paramIndex = 2;        // Add payment status filter - simplified to only 3 states
-        if (filters?.paymentStatus) {
-            switch (filters.paymentStatus) {
-                case 'paid':
-                    whereClause += ` AND pd.SoTienConLai = 0`;
-                    break;
-                case 'unpaid':
-                    // Số tiền còn lại > 0 (bao gồm cả partial payment trước đây)
-                    whereClause += ` AND pd.SoTienConLai > 0`;
-                    break;
-                case 'not_opened':
-                    // Logic cho học kỳ chưa mở - có thể cần bổ sung logic riêng
-                    whereClause += ` AND 1=0`; // Tạm thời không có kết quả cho trường hợp này
-                    break;
-            }
-        }
+        let paramIndex = 2;
 
-        // Add student ID filter
+        // Add student ID filter if provided
         if (filters?.studentId) {
-            whereClause += ` AND pd.MaSoSinhVien LIKE $${paramIndex}`;
+            whereClause += ` AND pd.masosinhvien LIKE $${paramIndex}`;
             params.push(`%${filters.studentId}%`);
             paramIndex++;
-        }
-
-        // Get total count
+        }        // Get total count
         const countQuery = `
             SELECT COUNT(*) as total
             FROM PHIEUDANGKY pd
-            JOIN HOCKYNAMHOC hk ON pd.MaHocKy = hk.MaHocKy
+            JOIN HOCKYNAMHOC hk ON pd.mahocky = hk.mahocky
             ${whereClause}
         `;
         const countResult = await DatabaseService.queryOne(countQuery, params);
         const total = countResult?.total || 0;
 
-        // Get paginated data
+        // Get paginated data with dynamic calculation using your logic
         const offset = filters?.offset || 0;
         const limit = filters?.limit || 50;
           const dataQuery = `
             SELECT 
-                pd.MaSoSinhVien,
-                sv.HoTen,
-                pd.MaHocKy,
-                pd.SoTienConLai,                hk.HanDongHocPhi,
-                CASE 
-                    WHEN pd.SoTienConLai = 0 THEN 'paid'
-                    ELSE 'unpaid'
-                END as payment_status
-            FROM PHIEUDANGKY pd
-            JOIN HOCKYNAMHOC hk ON pd.MaHocKy = hk.MaHocKy
-            JOIN SINHVIEN sv ON pd.MaSoSinhVien = sv.MaSoSinhVien
+                pd.masosinhvien AS "studentId",
+                sv.hoten AS "studentName",
+                k.tenkhoa AS "faculty", 
+                nh.tennganh AS "major",
+                hk.namhoc AS "year",
+                CONCAT('Học kỳ ', hk.hockythu) AS "semester",
+                pd.mahocky AS "semesterId",
+                hk.thoihandonghp AS "dueDate",
+                
+                -- SoTienPhaiDong calculation using your formula
+                COALESCE(
+                    (SELECT SUM(
+                        (mh.sotiet::decimal / lm.sotietmottc) * lm.sotienmottc * (1 - COALESCE(dt.mucgiamhocphi, 0))
+                    )
+                    FROM ct_phieudangky ct
+                    JOIN monhoc mh ON ct.mamonhoc = mh.mamonhoc
+                    JOIN loaimon lm ON mh.maloaimon = lm.maloaimon
+                    JOIN sinhvien sv2 ON pd.masosinhvien = sv2.masosinhvien
+                    JOIN doituonguutien dt ON sv2.madoituongut = dt.madoituong
+                    WHERE ct.maphieudangky = pd.maphieudangky), 0
+                ) AS "totalAmount",
+                
+                -- SoTienDaDong calculation using your formula  
+                COALESCE(
+                    (SELECT SUM(pt.sotiendong) 
+                     FROM phieuthuhp pt 
+                     WHERE pt.maphieudangky = pd.maphieudangky), 0
+                ) AS "paidAmount"
+                
+            FROM phieudangky pd
+            JOIN sinhvien sv ON pd.masosinhvien = sv.masosinhvien
+            JOIN nganhhoc nh ON sv.manganh = nh.manganh
+            JOIN khoa k ON nh.makhoa = k.makhoa
+            JOIN hockynamhoc hk ON pd.mahocky = hk.mahocky
             ${whereClause}
-            ORDER BY pd.MaSoSinhVien
+            ORDER BY pd.masosinhvien
             LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
         `;
         params.push(limit, offset);
 
-        const data = await DatabaseService.query(dataQuery, params);
-        
+        console.log('[getPaymentStatusList] SQL:', dataQuery);
+        console.log('[getPaymentStatusList] params:', params);
+
+        const data = await DatabaseService.query(dataQuery, params);        
+        // Log dữ liệu từ DB để debug
+        console.log('[getPaymentStatusList] Raw DB data:', data);
+
+        // Map data với calculated values và filter theo payment status
+        const mappedData = await Promise.all(data.map(async (row) => {
+            const totalAmount = parseFloat(row.totalAmount) || 0;
+            const paidAmount = parseFloat(row.paidAmount) || 0;
+            const remainingAmount = totalAmount - paidAmount;
+            
+            // Determine payment status using your logic
+            let paymentStatus = 'unpaid';
+            if (remainingAmount <= 0) {
+                paymentStatus = 'paid';
+            } else if (row.dueDate && new Date(row.dueDate) < new Date()) {
+                paymentStatus = 'overdue';
+            }
+            
+            // Get payment history for each student
+            const paymentHistory = await this.getPaymentHistory(row.studentId, row.semesterId);
+            
+            return {
+                id: row.studentId,
+                studentId: row.studentId,
+                studentName: row.studentName,
+                faculty: row.faculty,
+                major: row.major,
+                year: row.year,
+                semester: row.semester,
+                semesterId: row.semesterId,
+                totalAmount,
+                paidAmount,
+                remainingAmount,
+                dueDate: row.dueDate,
+                paymentStatus,
+                paymentHistory: paymentHistory.map(p => ({
+                    id: p.paymentId,
+                    date: p.paymentDate,
+                    amount: p.amount,
+                    method: p.method || ''
+                })),
+                isOverdue: paymentStatus === 'overdue'
+            };
+        }));
+
+        // Filter by payment status if specified
+        let filteredData = mappedData;
+        if (filters?.paymentStatus) {
+            filteredData = mappedData.filter(item => {
+                switch (filters.paymentStatus) {
+                    case 'paid':
+                        return item.paymentStatus === 'paid';
+                    case 'unpaid':
+                        return item.paymentStatus === 'unpaid' || item.paymentStatus === 'overdue';
+                    case 'not_opened':
+                        // Logic for semester not opened yet - check semester status
+                        return false; // Implement logic based on semester state
+                    default:
+                        return true;
+                }
+            });
+        }
+
+        console.log('[getPaymentStatusList] Final mapped data:', filteredData);
+
         return {
-            data: data.map(row => ({
-                studentId: row.MaSoSinhVien,
-                studentName: row.HoTen,
-                semesterId: row.MaHocKy,
-                totalAmount: parseFloat(row.SoTienConLai), // Dùng SoTienConLai làm tổng tiền
-                paidAmount: 0, // Không có cột SoTienDaDong nữa
-                remainingAmount: parseFloat(row.SoTienConLai),
-                dueDate: row.HanDongHocPhi,
-                paymentStatus: row.payment_status
-            })),
+            data: filteredData,
             total: parseInt(total)
         };
     }
 
     /**
      * Get payment history for a specific student
-     */
-    async getPaymentHistory(studentId: string, semesterId?: string): Promise<IPaymentHistory[]> {
-        let whereClause = 'WHERE pt.MaSoSinhVien = $1';
-        const params: any[] = [studentId];
-
-        if (semesterId) {
-            whereClause += ' AND pt.MaHocKy = $2';
-            params.push(semesterId);
-        }
-
+     */    async getPaymentHistory(studentId: string, semesterId?: string): Promise<IPaymentHistory[]> {
         const query = `
             SELECT 
-                pt.MaPhieuThu as payment_id,
-                pt.NgayLap as payment_date,
-                pt.SoTienDong as amount,
-                pt.MaPhieuDangKy as registration_id
-            FROM PHIEUTHUHP pt
-            ${whereClause}
-            ORDER BY pt.NgayLap DESC
+                pt.maphieuthu as payment_id,
+                pt.ngaylap as payment_date,
+                pt.sotiendong as amount,
+                pt.phuongthuc as method,
+                pd.masosinhvien as student_id
+            FROM phieuthuhp pt
+            JOIN phieudangky pd ON pt.maphieudangky = pd.maphieudangky
+            WHERE pd.masosinhvien = $1
+            ${semesterId ? 'AND pd.mahocky = $2' : ''}
+            ORDER BY pt.ngaylap DESC
         `;
+        const params: any[] = [studentId];
+        if (semesterId) {
+            params.push(semesterId);
+        }
 
         const result = await DatabaseService.query(query, params);
         
         return result.map(row => ({
             paymentId: row.payment_id,
-            paymentDate: row.payment_date,
+            paymentDate: row.payment_date instanceof Date
+                ? row.payment_date.toISOString().split('T')[0]
+                : (typeof row.payment_date === 'string' && row.payment_date.includes('T')
+                    ? row.payment_date.split('T')[0]
+                    : row.payment_date),
             amount: parseFloat(row.amount),
-            registrationId: row.registration_id
+            method: row.method,
+            registrationId : row.registration_id
         }));
     }
 
     /**
-     * Confirm a payment (update payment status)
+     * Thêm phiếu thu học phí và cập nhật phiếu đăng ký
      */
     async confirmPayment(paymentData: IPaymentData, createdBy: string): Promise<{ success: boolean, paymentId?: string, message?: string }> {
         return Database.withClient(async (client) => {
             try {
                 await client.query('BEGIN');
 
-                // Insert new payment record
-                const insertPaymentQuery = `
-                    INSERT INTO PHIEUTHUHP (
-                        MaSoSinhVien, MaHocKy, SoTienDong, NgayLap, 
-                        PhuongThucThanhToan, GhiChu, TrangThai, NguoiTao, NgayTao
-                    ) VALUES ($1, $2, $3, $4, $5, $6, 'confirmed', $7, CURRENT_TIMESTAMP)
-                    RETURNING MaPhieuThu
-                `;
-                
-                const paymentResult = await client.query(insertPaymentQuery, [
-                    paymentData.studentId,
-                    paymentData.semester,
-                    paymentData.amount,
-                    paymentData.paymentDate,
-                    paymentData.paymentMethod,
-                    paymentData.notes,
-                    createdBy
-                ]);
+                // 1. Lấy MaPhieuDangKy từ PHIEUDANGKY
+                const regRes = await client.query(
+                    `SELECT MaPhieuDangKy FROM PHIEUDANGKY WHERE MaSoSinhVien = $1 AND MaHocKy = $2`,
+                    [paymentData.studentId, paymentData.semester]
+                );
+                if (!regRes.rows.length) {
+                    throw new Error('Không tìm thấy phiếu đăng ký');
+                }
+                const maPhieuDangKy = regRes.rows[0].maphieudangky;
 
-                const paymentId = paymentResult.rows[0].MaPhieuThu;                // Update registration payment status
-                const updateRegistrationQuery = `
-                    UPDATE PHIEUDANGKY 
-                    SET 
-                        SoTienConLai = SoTienConLai - $1
-                    WHERE MaSoSinhVien = $2 AND MaHocKy = $3
+                // 1. Lấy số lớn nhất hiện có
+                const result = await client.query('SELECT MAX(CAST(SUBSTRING(maphieuthu, 3) AS INTEGER)) as max_num FROM phieuthuhp');
+                const nextNum = (result.rows[0].max_num || 0) + 1;
+                const maPhieuThu = 'PT' + String(nextNum).padStart(3, '0');
+
+                // 2. Insert với mã này
+                const insertPaymentQuery = `
+                    INSERT INTO phieuthuhp (maphieuthu, maphieudangky, ngaylap, sotiendong, phuongthuc)
+                    VALUES ($1, $2, $3, $4, $5)
+                    RETURNING maphieuthu
                 `;
-                
+                const paymentResult = await client.query(insertPaymentQuery, [
+                    maPhieuThu,
+                    maPhieuDangKy,
+                    paymentData.paymentDate,
+                    paymentData.amount,
+                    paymentData.paymentMethod                ]);
+                const paymentId = paymentResult.rows[0].maphieuthu;
+
+                // 3. Update PHIEUDANGKY - using your logic: only update SoTienConLai
+                // SoTienDaDong is calculated dynamically, not stored
+                const updateRegistrationQuery = `
+                    UPDATE PHIEUDANGKY
+                    SET SoTienConLai = SoTienConLai - $1
+                    WHERE MaPhieuDangKy = $2
+                `;
                 await client.query(updateRegistrationQuery, [
                     paymentData.amount,
-                    paymentData.studentId,
-                    paymentData.semester
+                    maPhieuDangKy
                 ]);
 
                 await client.query('COMMIT');
-
                 return {
                     success: true,
-                    paymentId: paymentId,
+                    paymentId,
                     message: 'Payment confirmed successfully'
                 };
-
             } catch (error: any) {
                 await client.query('ROLLBACK');
                 return {
@@ -276,6 +351,9 @@ export class FinancialPaymentService {
         `;
         params.push(limit, offset);
 
+        console.log('[getPaymentAudit] SQL:', dataQuery);
+        console.log('[getPaymentAudit] params:', params);
+
         const data = await DatabaseService.query(dataQuery, params);
         
         return {
@@ -293,5 +371,25 @@ export class FinancialPaymentService {
             })),
             total: parseInt(total)
         };
+    }    /**
+     * Get list of semesters that have registration data
+     */
+    async getAvailableSemesters(): Promise<Array<{semesterId: string, count: number}>> {
+        const query = `
+            SELECT 
+                pd.mahocky as semester_id,
+                COUNT(*) as student_count
+            FROM phieudangky pd
+            GROUP BY pd.mahocky
+            HAVING COUNT(*) > 0
+            ORDER BY pd.mahocky DESC
+        `;
+
+        const result = await DatabaseService.query(query);
+        
+        return result.map(row => ({
+            semesterId: row.semester_id,
+            count: parseInt(row.student_count)
+        }));
     }
 }
