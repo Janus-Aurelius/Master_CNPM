@@ -2,7 +2,7 @@ import { ThemeLayout } from "../styles/theme_layout";
 import { User } from "../types";
 import { useState, useEffect } from "react";
 import UserInfo from "../components/UserInfo";
-import { semesterApi, Semester } from "../api_clients/academic/semesterApi";
+import { semesterApi } from "../api_clients/academic/semesterApi";
 import {
     Button,
     Dialog,
@@ -63,69 +63,149 @@ export default function TermMgmAcademic({ user, onLogout }: AcademicPageProps) {
         academicYear: new Date().getFullYear(),
         termNumber: 1,
         feeDeadline: ""
-    });
-    const [isEditing, setIsEditing] = useState(false);
+    });    const [isEditing, setIsEditing] = useState(false);
     const [confirmDelete, setConfirmDelete] = useState<{ open: boolean; id: string | null }>({ open: false, id: null });
-    const [yearFilter, setYearFilter] = useState("all");
-    const [filteredTerms, setFilteredTerms] = useState<AcademicTerm[]>([]);
+    const [yearFilter, setYearFilter] = useState("all");    const [filteredTerms, setFilteredTerms] = useState<AcademicTerm[]>([]);
 
-    // Fetch semesters on component mount
-    useEffect(() => {
-        const fetchSemesters = async () => {
-            try {
-                setLoading(true);
-                const apiSemesters = await semesterApi.getSemesters();
+    // Validation states
+    const [validationErrors, setValidationErrors] = useState<{
+        startDate?: string;
+        endDate?: string;
+        feeDeadline?: string;
+        general?: string;
+    }>({});
+
+    // Function to fetch semesters from API
+    const fetchSemesters = async () => {
+        try {
+            setLoading(true);
+            const apiSemesters = await semesterApi.getSemesters();
+            
+            // Convert API data to frontend format
+            const convertedTerms: AcademicTerm[] = apiSemesters.map(semester => ({
+                id: semester.semesterId,
+                year: `${semester.academicYear}-${semester.academicYear + 1}`,
+                semester: `HK${semester.termNumber}`,
+                startDate: new Date(semester.startDate).toISOString().split('T')[0],
+                endDate: new Date(semester.endDate).toISOString().split('T')[0],
+                status: semester.status,
+                academicYear: semester.academicYear,
+                termNumber: semester.termNumber,
+                feeDeadline: new Date(semester.feeDeadline).toISOString().split('T')[0]
+            }));
+
+            // Sort by year and semester
+            convertedTerms.sort((a, b) => {
+                const yearCompare = b.year.localeCompare(a.year);
+                if (yearCompare !== 0) return yearCompare;
                 
-                // Convert API data to frontend format
-                const convertedTerms: AcademicTerm[] = apiSemesters.map(semester => ({
-                    id: semester.semesterId,
-                    year: `${semester.academicYear}-${semester.academicYear + 1}`,
-                    semester: `HK${semester.termNumber}`,
-                    startDate: new Date(semester.startDate).toISOString().split('T')[0],
-                    endDate: new Date(semester.endDate).toISOString().split('T')[0],
-                    status: semester.status,
-                    academicYear: semester.academicYear,
-                    termNumber: semester.termNumber,
-                    feeDeadline: new Date(semester.feeDeadline).toISOString().split('T')[0]
-                }));
+                const semesterOrder = { 'HK3': 3, 'HK2': 2, 'HK1': 1 };
+                return semesterOrder[b.semester as keyof typeof semesterOrder] - semesterOrder[a.semester as keyof typeof semesterOrder];
+            });
 
-                // Sort by year and semester
-                convertedTerms.sort((a, b) => {
-                    const yearCompare = b.year.localeCompare(a.year);
-                    if (yearCompare !== 0) return yearCompare;
-                    
-                    const semesterOrder = { 'HK3': 3, 'HK2': 2, 'HK1': 1 };
-                    return semesterOrder[b.semester as keyof typeof semesterOrder] - semesterOrder[a.semester as keyof typeof semesterOrder];
-                });
-
-                setTerms(convertedTerms);
-                setError(null);
-            } catch (err) {
-                setError('Không thể tải danh sách học kỳ');
-                console.error('Error fetching semesters:', err);
-            } finally {
-                setLoading(false);
-            }
-        };
-
+            setTerms(convertedTerms);
+            setError(null);
+        } catch (err) {
+            setError('Không thể tải danh sách học kỳ');
+            console.error('Error fetching semesters:', err);
+        } finally {
+            setLoading(false);
+        }
+    };    // Fetch semesters on component mount
+    useEffect(() => {
         fetchSemesters();
-    }, []);
+    }, []);    // Date validation function
+    const validateDates = () => {
+        const errors: {
+            startDate?: string;
+            endDate?: string;
+            feeDeadline?: string;
+            general?: string;
+        } = {};
+
+        if (!currentTerm.startDate || !currentTerm.endDate || !currentTerm.feeDeadline) {
+            errors.general = 'Vui lòng điền đầy đủ thông tin ngày tháng';
+            setValidationErrors(errors);
+            return false;
+        }        const startDate = new Date(currentTerm.startDate);
+        const endDate = new Date(currentTerm.endDate);
+        const feeDeadline = new Date(currentTerm.feeDeadline);
+        
+        // Reset hours to avoid timezone issues
+        startDate.setHours(0, 0, 0, 0);
+        endDate.setHours(0, 0, 0, 0);
+        feeDeadline.setHours(0, 0, 0, 0);
+        
+        // Define semester date ranges based on term number
+        let allowedStartDate: Date;
+        let allowedEndDate: Date;
+        
+        if (currentTerm.termNumber === 1) {
+            // Học kỳ 1: 1/8/{năm} - 15/12/{năm}
+            allowedStartDate = new Date(currentTerm.academicYear, 7, 1); // August 1st
+            allowedEndDate = new Date(currentTerm.academicYear, 11, 15); // December 15th
+        } else {
+            // Học kỳ 2: 30/5/{năm+1} - chưa có ngày kết thúc cụ thể, tạm thời đặt đến 30/5/{năm+1}
+            allowedStartDate = new Date(currentTerm.academicYear + 1, 0, 1); // January 1st next year
+            allowedEndDate = new Date(currentTerm.academicYear + 1, 4, 30); // May 30th next year
+        }
+        
+        allowedStartDate.setHours(0, 0, 0, 0);
+        allowedEndDate.setHours(23, 59, 59, 999);
+
+        // Rule 1: Start date must be before end date
+        if (startDate >= endDate) {
+            errors.startDate = 'Ngày bắt đầu phải trước ngày kết thúc';
+            errors.endDate = 'Ngày kết thúc phải sau ngày bắt đầu';
+        }
+
+        // Rule 2: Fee deadline must be between start and end date (only if dates are valid)
+        if (startDate < endDate && (feeDeadline < startDate || feeDeadline > endDate)) {
+            errors.feeDeadline = 'Hạn đóng học phí phải nằm trong khoảng thời gian học kỳ';
+        }        // Rule 3: Start date must be within allowed range for the semester
+        if (startDate < allowedStartDate || startDate > allowedEndDate) {
+            const termName = currentTerm.termNumber === 1 ? 'Học kỳ 1' : 'Học kỳ 2';
+            const startStr = `${allowedStartDate.getDate()}/${allowedStartDate.getMonth() + 1}/${allowedStartDate.getFullYear()}`;
+            const endStr = `${allowedEndDate.getDate()}/${allowedEndDate.getMonth() + 1}/${allowedEndDate.getFullYear()}`;
+            errors.startDate = `${termName} phải trong khoảng ${startStr} - ${endStr}`;
+        }
+        
+        // Rule 4: End date must be within allowed range for the semester
+        if (endDate < allowedStartDate || endDate > allowedEndDate) {
+            const termName = currentTerm.termNumber === 1 ? 'Học kỳ 1' : 'Học kỳ 2';
+            const startStr = `${allowedStartDate.getDate()}/${allowedStartDate.getMonth() + 1}/${allowedStartDate.getFullYear()}`;
+            const endStr = `${allowedEndDate.getDate()}/${allowedEndDate.getMonth() + 1}/${allowedEndDate.getFullYear()}`;
+            errors.endDate = `${termName} phải trong khoảng ${startStr} - ${endStr}`;
+        }
+
+        setValidationErrors(errors);
+        return Object.keys(errors).length === 0;
+    };
 
     // Extract unique years for filter
-    const uniqueYears = Array.from(new Set(terms.map(t => t.year)));
-
-    // Filter terms based on year filter
+    const uniqueYears = Array.from(new Set(terms.map(t => t.year)));    // Filter terms based on year filter
     useEffect(() => {
         if (yearFilter === "all") {
             setFilteredTerms(terms);
         } else {
             setFilteredTerms(terms.filter(term => term.year === yearFilter));
         }
-    }, [terms, yearFilter]);    const handleOpenDialog = (edit: boolean = false, term?: AcademicTerm) => {
-        setIsEditing(edit);
-        if (edit && term) {
-            setCurrentTerm(term);
+    }, [terms, yearFilter]);
+
+    // Validate dates whenever they change (but don't show all errors until form submission)
+    useEffect(() => {
+        // Only run validation if we have some date values to avoid showing errors on initial load
+        if (currentTerm.startDate && currentTerm.endDate && currentTerm.feeDeadline) {
+            validateDates();
         } else {
+            // Clear validation errors if fields are empty
+            setValidationErrors({});
+        }
+    }, [currentTerm.startDate, currentTerm.endDate, currentTerm.feeDeadline, currentTerm.academicYear]);const handleOpenDialog = (edit: boolean = false, term?: AcademicTerm) => {
+        setIsEditing(edit);
+        setValidationErrors({}); // Clear validation errors
+        if (edit && term) {
+            setCurrentTerm(term);        } else {
             // Generate new semester ID
             const currentYear = new Date().getFullYear();
             const nextId = `${currentYear}_1`; // Default to first semester
@@ -135,7 +215,7 @@ export default function TermMgmAcademic({ user, onLogout }: AcademicPageProps) {
                 semester: "HK1",
                 startDate: "",
                 endDate: "",
-                status: "Chưa diễn ra",
+                status: "Đóng", // Auto set to closed for new semesters
                 academicYear: currentYear,
                 termNumber: 1,
                 feeDeadline: ""
@@ -148,9 +228,8 @@ export default function TermMgmAcademic({ user, onLogout }: AcademicPageProps) {
         setOpenDialog(false);
     };    const handleSaveTerm = async () => {
         try {
-            // Validate required fields
-            if (!currentTerm.startDate || !currentTerm.endDate || !currentTerm.feeDeadline) {
-                setError('Vui lòng điền đầy đủ thông tin');
+            // Validate dates first
+            if (!validateDates()) {
                 return;
             }
 
@@ -160,77 +239,63 @@ export default function TermMgmAcademic({ user, onLogout }: AcademicPageProps) {
                 semesterId = `${currentTerm.academicYear}_${currentTerm.termNumber}`;
             }
 
-            // Convert to API format
-            const semesterData: Semester = {
+            // Convert to API format - when editing, only send editable fields
+            const semesterData: any = {
                 semesterId: semesterId,
-                termNumber: currentTerm.termNumber,
                 startDate: new Date(currentTerm.startDate),
                 endDate: new Date(currentTerm.endDate),
-                status: currentTerm.status,
-                academicYear: currentTerm.academicYear,
                 feeDeadline: new Date(currentTerm.feeDeadline)
             };
 
             if (isEditing) {
+                // Include status when editing
+                semesterData.status = currentTerm.status;
+            } else {
+                // For new semesters, include all fields (status will be auto-set to "Đóng" by backend)
+                semesterData.termNumber = currentTerm.termNumber;
+                semesterData.academicYear = currentTerm.academicYear;
+                semesterData.status = 'Đóng'; // This will be enforced by backend anyway
+            }            if (isEditing) {
                 // Update existing semester
-                const updatedSemester = await semesterApi.updateSemester(currentTerm.id, semesterData);
+                await semesterApi.updateSemester(currentTerm.id, semesterData);
                 
-                // Convert back to frontend format
-                const updatedTerm: AcademicTerm = {
-                    id: updatedSemester.semesterId,
-                    year: `${updatedSemester.academicYear}-${updatedSemester.academicYear + 1}`,
-                    semester: `HK${updatedSemester.termNumber}`,
-                    startDate: new Date(updatedSemester.startDate).toISOString().split('T')[0],
-                    endDate: new Date(updatedSemester.endDate).toISOString().split('T')[0],
-                    status: updatedSemester.status,
-                    academicYear: updatedSemester.academicYear,
-                    termNumber: updatedSemester.termNumber,
-                    feeDeadline: new Date(updatedSemester.feeDeadline).toISOString().split('T')[0]
-                };
-
-                setTerms(terms.map(t => t.id === currentTerm.id ? updatedTerm : t));
+                // Refresh data from server to ensure all updates are reflected
+                await fetchSemesters();
             } else {
                 // Create new semester
-                const newSemester = await semesterApi.createSemester(semesterData);
+                await semesterApi.createSemester(semesterData);
                 
-                // Convert back to frontend format
-                const newTerm: AcademicTerm = {
-                    id: newSemester.semesterId,
-                    year: `${newSemester.academicYear}-${newSemester.academicYear + 1}`,
-                    semester: `HK${newSemester.termNumber}`,
-                    startDate: new Date(newSemester.startDate).toISOString().split('T')[0],
-                    endDate: new Date(newSemester.endDate).toISOString().split('T')[0],
-                    status: newSemester.status,
-                    academicYear: newSemester.academicYear,
-                    termNumber: newSemester.termNumber,
-                    feeDeadline: new Date(newSemester.feeDeadline).toISOString().split('T')[0]
-                };
-
-                setTerms([...terms, newTerm]);
+                // Refresh data from server
+                await fetchSemesters();
             }
 
             setError(null);
+            setValidationErrors({});
             handleCloseDialog();
-        } catch (err) {
+        } catch (err: any) {
             console.error('Error saving semester:', err);
-            setError(isEditing ? 'Không thể cập nhật học kỳ' : 'Không thể tạo học kỳ mới');
+            const errorMessage = err.response?.data?.message || err.message || 
+                (isEditing ? 'Không thể cập nhật học kỳ' : 'Không thể tạo học kỳ mới');
+            setError(errorMessage);
         }
-    };    const handleDeleteTerm = (id: string) => {
+    };const handleDeleteTerm = (id: string) => {
         setConfirmDelete({ open: true, id });
-    };
-
-    const handleConfirmDelete = async () => {
+    };    const handleConfirmDelete = async () => {
         if (confirmDelete.id !== null) {
             try {
                 await semesterApi.deleteSemester(confirmDelete.id);
                 setTerms(terms.filter(t => t.id !== confirmDelete.id));
                 setError(null);
-            } catch (err) {
+                setConfirmDelete({ open: false, id: null }); // Close dialog only on success
+            } catch (err: any) {
                 console.error('Error deleting semester:', err);
-                setError('Không thể xóa học kỳ');
+                const errorMessage = err.response?.data?.message || err.message || 'Không thể xóa học kỳ';
+                setError(errorMessage);
+                setConfirmDelete({ open: false, id: null }); // Close dialog even on error but show error message
             }
+        } else {
+            setConfirmDelete({ open: false, id: null });
         }
-        setConfirmDelete({ open: false, id: null });
     };
 
     const handleCancelDelete = () => {
@@ -261,6 +326,15 @@ export default function TermMgmAcademic({ user, onLogout }: AcademicPageProps) {
                 [name]: value
             });
         }
+
+        // Only clear the error for the specific field being edited
+        if (name === 'startDate' || name === 'endDate' || name === 'feeDeadline') {
+            setValidationErrors(prev => ({
+                ...prev,
+                [name]: undefined, // Clear error for this specific field
+                general: undefined // Clear general error when user starts fixing things
+            }));
+        }
     };
 
     const handleSelectChange = (e: any) => {
@@ -281,14 +355,12 @@ export default function TermMgmAcademic({ user, onLogout }: AcademicPageProps) {
                 [name]: value
             });
         }
-    };
-
-    // Helper function for status chips
+    };    // Helper function for status chips
     const getStatusChipColor = (status: string) => {
         switch (status) {
             case 'Đang diễn ra': return 'success';
-            case 'Đã kết thúc': return 'default';
             case 'Chưa diễn ra': return 'info';
+            case 'Đóng': return 'warning';
             default: return 'default';
         }
     };
@@ -516,8 +588,17 @@ export default function TermMgmAcademic({ user, onLogout }: AcademicPageProps) {
                     px: 4,
                     pt: 2,
                     pb: 0,
-                    background: 'transparent',
-                }}>                    <Grid container spacing={2} sx={{ mt: 0.5 }}>
+                    background: 'transparent',                }}>                    <Grid container spacing={2} sx={{ mt: 0.5 }}>
+                        
+                        {/* General validation error */}
+                        {validationErrors.general && (
+                            <Grid item xs={12}>
+                                <Alert severity="error" sx={{ borderRadius: '8px' }}>
+                                    {validationErrors.general}
+                                </Alert>
+                            </Grid>
+                        )}
+                        
                         <Grid item xs={12} md={6}>
                             <TextField
                                 name="academicYear"
@@ -530,9 +611,10 @@ export default function TermMgmAcademic({ user, onLogout }: AcademicPageProps) {
                                 placeholder="Ví dụ: 2024"
                                 value={currentTerm.academicYear}
                                 onChange={handleInputChange}
+                                disabled={isEditing} // Disable when editing
                                 sx={{
                                     borderRadius: '12px',
-                                    background: '#f7faff',
+                                    background: isEditing ? '#f0f0f0' : '#f7faff',
                                     '& .MuiOutlinedInput-root': { borderRadius: '12px' },
                                     '& .MuiInputLabel-root': { fontWeight: 500 },
                                     '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d8d8d8' },
@@ -540,7 +622,10 @@ export default function TermMgmAcademic({ user, onLogout }: AcademicPageProps) {
                             />
                         </Grid>
                         <Grid item xs={12} md={6}>
-                            <FormControl fullWidth margin="normal" sx={{ background: '#f7faff', borderRadius: '12px' }}>
+                            <FormControl fullWidth margin="normal" sx={{ 
+                                background: isEditing ? '#f0f0f0' : '#f7faff', 
+                                borderRadius: '12px' 
+                            }}>
                                 <InputLabel id="semester-select-label" sx={{ fontWeight: 500 }}>Học kỳ</InputLabel>
                                 <Select
                                     labelId="semester-select-label"
@@ -548,6 +633,7 @@ export default function TermMgmAcademic({ user, onLogout }: AcademicPageProps) {
                                     value={currentTerm.termNumber}
                                     label="Học kỳ"
                                     onChange={handleSelectChange}
+                                    disabled={isEditing} // Disable when editing
                                     sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '12px', '& .MuiOutlinedInput-notchedOutline': { borderRadius: '12px', borderColor: '#d8d8d8' } }}
                                     MenuProps={{
                                         PaperProps: {
@@ -569,15 +655,12 @@ export default function TermMgmAcademic({ user, onLogout }: AcademicPageProps) {
                                                 p: 0,
                                             },
                                         },
-                                    }}
-                                >
+                                    }}                                >
                                     <MenuItem value={1} sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>Học kỳ 1</MenuItem>
                                     <MenuItem value={2} sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>Học kỳ 2</MenuItem>
-                                    <MenuItem value={3} sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>Học kỳ Hè</MenuItem>
                                 </Select>
                             </FormControl>
-                        </Grid>
-                        <Grid item xs={12} md={6}>
+                        </Grid>                        <Grid item xs={12} md={6}>
                             <TextField
                                 name="startDate"
                                 label="Ngày bắt đầu học kỳ"
@@ -589,16 +672,18 @@ export default function TermMgmAcademic({ user, onLogout }: AcademicPageProps) {
                                 InputLabelProps={{ shrink: true }}
                                 value={currentTerm.startDate}
                                 onChange={handleInputChange}
+                                error={!!validationErrors.startDate}
+                                helperText={validationErrors.startDate || `HK1: 1/8/${currentTerm.academicYear} - 15/12/${currentTerm.academicYear}, HK2: 1/1/${currentTerm.academicYear + 1} - 30/5/${currentTerm.academicYear + 1}`}
                                 sx={{
                                     borderRadius: '12px',
                                     background: '#f7faff',
                                     '& .MuiOutlinedInput-root': { borderRadius: '12px' },
                                     '& .MuiInputLabel-root': { fontWeight: 500 },
                                     '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d8d8d8' },
+                                    '& .MuiFormHelperText-root': { fontSize: '0.75rem', lineHeight: 1.2 }
                                 }}
                             />
-                        </Grid>
-                        <Grid item xs={12} md={6}>
+                        </Grid>                        <Grid item xs={12} md={6}>
                             <TextField
                                 name="endDate"
                                 label="Ngày kết thúc học kỳ"
@@ -610,16 +695,18 @@ export default function TermMgmAcademic({ user, onLogout }: AcademicPageProps) {
                                 InputLabelProps={{ shrink: true }}
                                 value={currentTerm.endDate}
                                 onChange={handleInputChange}
+                                error={!!validationErrors.endDate}
+                                helperText={validationErrors.endDate || `HK1: 1/8/${currentTerm.academicYear} - 15/12/${currentTerm.academicYear}, HK2: 1/1/${currentTerm.academicYear + 1} - 30/5/${currentTerm.academicYear + 1}`}
                                 sx={{
                                     borderRadius: '12px',
                                     background: '#f7faff',
                                     '& .MuiOutlinedInput-root': { borderRadius: '12px' },
                                     '& .MuiInputLabel-root': { fontWeight: 500 },
                                     '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d8d8d8' },
+                                    '& .MuiFormHelperText-root': { fontSize: '0.75rem', lineHeight: 1.2 }
                                 }}
                             />
-                        </Grid>
-                        <Grid item xs={12} md={6}>
+                        </Grid>                        <Grid item xs={12} md={6}>
                             <TextField
                                 name="feeDeadline"
                                 label="Thời hạn đóng học phí"
@@ -631,53 +718,55 @@ export default function TermMgmAcademic({ user, onLogout }: AcademicPageProps) {
                                 InputLabelProps={{ shrink: true }}
                                 value={currentTerm.feeDeadline}
                                 onChange={handleInputChange}
+                                error={!!validationErrors.feeDeadline}
+                                helperText={validationErrors.feeDeadline || "Phải nằm trong khoảng thời gian từ ngày bắt đầu đến ngày kết thúc học kỳ"}
                                 sx={{
                                     borderRadius: '12px',
                                     background: '#f7faff',
                                     '& .MuiOutlinedInput-root': { borderRadius: '12px' },
                                     '& .MuiInputLabel-root': { fontWeight: 500 },
                                     '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d8d8d8' },
+                                    '& .MuiFormHelperText-root': { fontSize: '0.75rem', lineHeight: 1.2 }
                                 }}
-                            />
-                        </Grid>
-                        <Grid item xs={12} md={6}>
-                            <FormControl fullWidth margin="normal" sx={{ background: '#f7faff', borderRadius: '12px' }}>
-                                <InputLabel id="status-select-label" sx={{ fontWeight: 500 }}>Trạng thái</InputLabel>
-                                <Select
-                                    labelId="status-select-label"
-                                    name="status"
-                                    value={currentTerm.status}
-                                    label="Trạng thái"
-                                    onChange={handleSelectChange}
-                                    sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '12px', '& .MuiOutlinedInput-notchedOutline': { borderRadius: '12px', borderColor: '#d8d8d8' } }}
-                                    MenuProps={{
-                                        PaperProps: {
-                                            elevation: 4,
-                                            sx: {
-                                                borderRadius: 3,
-                                                minWidth: 200,
-                                                boxShadow: '0 4px 24px 0 rgba(0,0,0,0.10)',
-                                                p: 1,
+                            />                        </Grid>
+                        {/* Only show status field when editing */}
+                        {isEditing && (
+                            <Grid item xs={12} md={6}>
+                                <FormControl fullWidth margin="normal" sx={{ background: '#f7faff', borderRadius: '12px' }}>
+                                    <InputLabel id="status-select-label" sx={{ fontWeight: 500 }}>Trạng thái</InputLabel>
+                                    <Select
+                                        labelId="status-select-label"
+                                        name="status"
+                                        value={currentTerm.status}
+                                        label="Trạng thái"
+                                        onChange={handleSelectChange}
+                                        sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '12px', '& .MuiOutlinedInput-notchedOutline': { borderRadius: '12px', borderColor: '#d8d8d8' } }}
+                                        MenuProps={{
+                                            PaperProps: {
+                                                elevation: 4,
+                                                sx: {
+                                                    borderRadius: 3,
+                                                    minWidth: 200,
+                                                    boxShadow: '0 4px 24px 0 rgba(0,0,0,0.10)',
+                                                    p: 1,
+                                                },
                                             },
-                                        },
-                                        MenuListProps: {
-                                            sx: {
-                                                display: 'flex',
-                                                flexDirection: 'column',
-                                                gap: 0.5,
-                                                fontFamily: '"Varela Round", sans-serif',
-                                                borderRadius: 3,
-                                                p: 0,
-                                            },
-                                        },
-                                    }}
-                                >
-                                    <MenuItem value="Chưa diễn ra" sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>Chưa diễn ra</MenuItem>
-                                    <MenuItem value="Đang diễn ra" sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>Đang diễn ra</MenuItem>
-                                    <MenuItem value="Đã kết thúc" sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>Đã kết thúc</MenuItem>
-                                </Select>
-                            </FormControl>
-                        </Grid>
+                                            MenuListProps: {
+                                                sx: {
+                                                    display: 'flex',
+                                                    flexDirection: 'column',
+                                                    gap: 0.5,
+                                                    fontFamily: '"Varela Round", sans-serif',
+                                                    borderRadius: 3,
+                                                    p: 0,
+                                                },
+                                            },                                        }}                                    >
+                                        <MenuItem value="Đóng" sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>Đóng</MenuItem>
+                                        <MenuItem value="Đang diễn ra" sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>Đang diễn ra</MenuItem>
+                                    </Select>
+                                </FormControl>
+                            </Grid>
+                        )}
                     </Grid>
                 </DialogContent>
                 <DialogActions sx={{

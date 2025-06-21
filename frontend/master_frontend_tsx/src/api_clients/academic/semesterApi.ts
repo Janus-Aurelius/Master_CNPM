@@ -86,5 +86,13 @@ export const semesterApi = {
             throw new Error(data?.message || 'No data received from server');
         }
         return data.data || [];
-    }
+    },
+
+    getCurrentSemester: async (): Promise<Semester> => {
+        const { data } = await axiosInstance.get<ApiResponse<Semester>>('/academic/semesters/current');
+        if (!data || !data.success) {
+            throw new Error(data?.message || 'Failed to fetch current semester');
+        }
+        return data.data;
+    },
 };

@@ -152,4 +152,9 @@ router.get('/subjects/recommended', (req: Request, res: Response) => {
     studentController.getRecommendedSubjects(req, res);
 });
 
+// Get current semester
+router.get('/current-semester', (req: Request, res: Response) => {
+    studentController.getCurrentSemester(req, res);
+});
+
 export default router;

@@ -6,10 +6,10 @@ export interface Faculty {
 }
 
 export interface Major {
-    majorId: string;      // MaNganh  
-    majorName: string;    // TenNganh
-    facultyId: string;    // MaKhoa
-    facultyName?: string; // computed from JOIN
+    maNganh: string;      // MaNganh  
+    tenNganh: string;     // TenNganh
+    maKhoa: string;       // MaKhoa
+    tenKhoa?: string;     // computed from JOIN
 }
 
 export interface CourseType {
@@ -20,19 +20,19 @@ export interface CourseType {
 }
 
 export interface District {
-    districtId: string;   // MaHuyen
-    districtName: string; // TenHuyen
-    provinceId: string;   // MaTinh
-    provinceName?: string; // computed from JOIN
+    maHuyen: string;   // MaHuyen
+    tenHuyen: string; // TenHuyen
+    maTinh: string;   // MaTinh
+    tenTinh?: string; // computed from JOIN
 }
 
 export interface Province {
-    provinceId: string;   // MaTinh
-    provinceName: string; // TenTinh
+    maTinh: string;   // MaTinh
+    tenTinh: string; // TenTinh
 }
 
 export interface PriorityGroup {
-    priorityId: string;        // MaDoiTuong
-    priorityName: string;      // TenDoiTuong
-    feeDiscountAmount: number; // MucGiamHocPhi
+    maDoiTuong: string;        // MaDoiTuong
+    tenDoiTuong: string;      // TenDoiTuong
+    mucGiamHocPhi: number; // MucGiamHocPhi
 }

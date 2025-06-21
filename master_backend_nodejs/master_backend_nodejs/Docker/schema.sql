@@ -2,6 +2,7 @@
 -- DROP existing tables (in reverse-dependency order)
 -- ======================================================
 DROP TABLE IF EXISTS BAOCAOSINHVIENNOHP;
+DROP TABLE IF EXISTS SYSTEM_SETTINGS;
 DROP TABLE IF EXISTS PHIEUTHUHP;
 DROP TABLE IF EXISTS CT_PHIEUDANGKY;
 DROP TABLE IF EXISTS PHIEUDANGKY;
@@ -132,12 +133,9 @@ CREATE TABLE SINHVIEN (
 
 CREATE TABLE PHIEUDANGKY (
     MaPhieuDangKy VARCHAR PRIMARY KEY,
-    NgayLap DATE DEFAULT CURRENT_DATE,
+    NgayLap DATE,
     MaSoSinhVien VARCHAR NOT NULL,
     MaHocKy VARCHAR NOT NULL,
-    SoTienDangKy DECIMAL DEFAULT 0,
-    SoTienPhaiDong DECIMAL DEFAULT 0,
-    SoTienDaDong DECIMAL DEFAULT 0,
     SoTienConLai DECIMAL DEFAULT 0,
     SoTinChiToiDa INT DEFAULT 30,
     FOREIGN KEY (MaSoSinhVien) REFERENCES SINHVIEN(MaSoSinhVien),
@@ -161,15 +159,6 @@ CREATE TABLE PHIEUTHUHP (
     FOREIGN KEY (MaPhieuDangKy) REFERENCES PHIEUDANGKY(MaPhieuDangKy)
 );
 
-CREATE TABLE BAOCAOSINHVIENNOHP (
-    MaHocKy VARCHAR NOT NULL,
-    MaSoSinhVien VARCHAR NOT NULL,
-    MaPhieuDangKy VARCHAR NOT NULL,
-    PRIMARY KEY (MaHocKy, MaSoSinhVien, MaPhieuDangKy),
-    FOREIGN KEY (MaHocKy) REFERENCES HOCKYNAMHOC(MaHocKy),
-    FOREIGN KEY (MaSoSinhVien) REFERENCES SINHVIEN(MaSoSinhVien),
-    FOREIGN KEY (MaPhieuDangKy) REFERENCES PHIEUDANGKY(MaPhieuDangKy)
-);
 
 -- ======================================================
 -- User & authorization
@@ -212,6 +201,13 @@ CREATE TABLE REGISTRATION_LOG (
     TenMonHoc VARCHAR(100) NOT NULL,
     LoaiYeuCau VARCHAR(10) NOT NULL CHECK (LoaiYeuCau IN ('register', 'cancel')),
     ThoiGianYeuCau TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE SYSTEM_SETTINGS (
+    id INTEGER PRIMARY KEY DEFAULT 1,
+    current_semester VARCHAR NOT NULL,
+    FOREIGN KEY (current_semester) REFERENCES HOCKYNAMHOC(MaHocKy),
+    CONSTRAINT single_record_only CHECK (id = 1)
 );
 -- ======================================================
 -- all done

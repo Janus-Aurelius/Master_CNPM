@@ -7,7 +7,8 @@ import {
     Select, MenuItem, FormControl, InputLabel, IconButton,
     Dialog, DialogTitle, DialogContent, DialogActions,
     Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
-    Divider, Grid, InputAdornment, Chip, Alert
+    Divider, Grid, InputAdornment, Chip, Alert,
+    Snackbar
 } from "@mui/material";
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
@@ -25,7 +26,8 @@ const dayOfWeekNames = ['Chủ Nhật', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 
 export default function OpenCourseMgmAcademic({ user, onLogout }: OpenCourseMgmAcademicProps) {
     const [courses, setCourses] = useState<OpenCourse[]>([]);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);    const [searchTerm, setSearchTerm] = useState("");
+    const [error, setError] = useState<string | null>(null);
+    const [searchTerm, setSearchTerm] = useState("");
     const [selectedSemester, setSelectedSemester] = useState<string>("all");
     const [selectedAcademicYear, setSelectedAcademicYear] = useState<string>("all");
     const [openDialog, setOpenDialog] = useState(false);
@@ -37,42 +39,81 @@ export default function OpenCourseMgmAcademic({ user, onLogout }: OpenCourseMgmA
         courseId: null 
     });
 
-    useEffect(() => {
-        const fetchCourses = async () => {
+    // Snackbar state for showing messages
+    const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
+        open: false,
+        message: '',
+        severity: 'success'
+    });
+
+    // Form states
+    const [availableSemesters, setAvailableSemesters] = useState<Array<{id: string, name: string, semesterNumber: number, academicYear: number}>>([]);
+    const [availableCourses, setAvailableCourses] = useState<Array<{courseId: string, courseName: string, courseTypeId: string, courseTypeName: string, totalHours: number}>>([]);
+    const [formData, setFormData] = useState({
+        semesterId: '',
+        courseId: '',
+        minStudents: 25,
+        maxStudents: 50,
+        dayOfWeek: 2, // Thứ 2
+        startPeriod: 1,
+        endPeriod: 3
+    });    useEffect(() => {
+        const fetchData = async () => {
             try {
                 setLoading(true);
-                const data = await openCourseApi.getCourses();
-                setCourses(data);
+                const [coursesData, semestersData, availableCoursesData] = await Promise.all([
+                    openCourseApi.getCourses(),
+                    openCourseApi.getSemesters(),
+                    openCourseApi.getAvailableCourses()
+                ]);                setCourses(coursesData);
+                // Map semesters data to correct format
+                console.log('Raw semesters data:', semestersData);
+                const mappedSemesters = semestersData.map((semester: any) => {
+                    console.log('Mapping semester:', semester);
+                    return {
+                        id: semester.semesterId,
+                        name: `Học kỳ ${semester.termNumber || semester.semesterNumber || 'N/A'}`,
+                        semesterNumber: semester.termNumber || semester.semesterNumber,
+                        academicYear: semester.academicYear
+                    };
+                });
+                console.log('Mapped semesters:', mappedSemesters);
+                setAvailableSemesters(mappedSemesters);
+                setAvailableCourses(availableCoursesData);
                 setError(null);
-                console.log('Fetched courses:', data);
-            } catch (err) {
-                setError('Không thể tải danh sách môn học mở');
-                console.error('Error fetching courses:', err);
+                console.log('Fetched courses:', coursesData);
+                console.log('Fetched semesters:', semestersData);
+                console.log('Fetched available courses:', availableCoursesData);
+            } catch (err: any) {
+                console.error('Error fetching data:', err);
+                const errorMessage = err?.response?.data?.message || 'Không thể tải dữ liệu';
+                setError(errorMessage);
+                setSnackbar({ open: true, message: errorMessage, severity: 'error' });
             } finally {
                 setLoading(false);
             }
         };
-        fetchCourses();
-    }, []);    // Filter courses based on search, semester, and academic year
+        fetchData();
+    }, []);// Filter courses based on search, semester, and academic year
     const filteredCourses = courses.filter(course => {
         const matchesSearch = searchTerm === "" || 
             course.courseName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
             course.courseId?.toLowerCase().includes(searchTerm.toLowerCase());
         
-        // Use semesterNumber for semester filtering
+        // Use semesterNumber for semester filtering - convert both to string for comparison
         const matchesSemester = selectedSemester === "all" || 
-            course.semesterNumber?.toString() === selectedSemester;
+            String(course.semesterNumber) === String(selectedSemester);
         
-        // Use academicYear for academic year filtering
+        // Use academicYear for academic year filtering - convert both to string for comparison
         const matchesAcademicYear = selectedAcademicYear === "all" || 
-            course.academicYear?.toString() === selectedAcademicYear;
+            String(course.academicYear) === String(selectedAcademicYear);
         
         return matchesSearch && matchesSemester && matchesAcademicYear;
-    });
-
-    console.log('Total courses:', courses.length);
+    });    console.log('Total courses:', courses.length);
     console.log('Filtered courses:', filteredCourses.length);
-    console.log('Sample course:', courses[0]);// Group courses by course type (Lý thuyết, Thực hành)
+    console.log('Sample course:', courses[0]);
+    console.log('Selected semester:', selectedSemester);
+    console.log('Selected academic year:', selectedAcademicYear);// Group courses by course type (Lý thuyết, Thực hành)
     const groupCoursesByType = (courses: OpenCourse[]) => {
         console.log('Grouping courses:', courses);
         const theory = courses.filter(course => 
@@ -98,7 +139,8 @@ export default function OpenCourseMgmAcademic({ user, onLogout }: OpenCourseMgmA
     const academicYears = Array.from(new Set(courses.map(course => course.academicYear).filter(Boolean)))
         .sort((a, b) => (a as number) - (b as number));
 
-    const handleDeleteCourse = (semesterId: string, courseId: string) => {
+    console.log('Available semesters:', semesters);
+    console.log('Available academic years:', academicYears);    const handleDeleteCourse = (semesterId: string, courseId: string) => {
         setConfirmDelete({ open: true, semesterId, courseId });
     };
 
@@ -109,10 +151,13 @@ export default function OpenCourseMgmAcademic({ user, onLogout }: OpenCourseMgmA
                 setCourses(courses.filter(c => 
                     !(c.semesterId === confirmDelete.semesterId && c.courseId === confirmDelete.courseId)
                 ));
+                setSnackbar({ open: true, message: 'Xóa môn học thành công', severity: 'success' });
                 setError(null);
-            } catch (err) {
-                setError('Không thể xóa môn học');
+            } catch (err: any) {
                 console.error('Error deleting course:', err);
+                const errorMessage = err?.response?.data?.message || 'Không thể xóa môn học';
+                setError(errorMessage);
+                setSnackbar({ open: true, message: errorMessage, severity: 'error' });
             }
         }
         setConfirmDelete({ open: false, semesterId: null, courseId: null });
@@ -122,11 +167,117 @@ export default function OpenCourseMgmAcademic({ user, onLogout }: OpenCourseMgmA
         setConfirmDelete({ open: false, semesterId: null, courseId: null });
     };
 
+    const handleOpenAddDialog = () => {
+        setFormData({
+            semesterId: '',
+            courseId: '',
+            minStudents: 25,
+            maxStudents: 50,
+            dayOfWeek: 2,
+            startPeriod: 1,
+            endPeriod: 3
+        });
+        setCurrentCourse(null);
+        setIsEditing(false);
+        setOpenDialog(true);
+    };
+
     const handleOpenEditDialog = (course: OpenCourse) => {
+        setFormData({
+            semesterId: course.semesterId,
+            courseId: course.courseId,
+            minStudents: course.minStudents,
+            maxStudents: course.maxStudents,
+            dayOfWeek: course.dayOfWeek,
+            startPeriod: course.startPeriod,
+            endPeriod: course.endPeriod
+        });
         setCurrentCourse(course);
         setIsEditing(true);
         setOpenDialog(true);
-    };    const getStatusColor = (status?: string) => {
+    };
+
+    const handleCloseDialog = () => {
+        setOpenDialog(false);
+        setCurrentCourse(null);
+        setFormData({
+            semesterId: '',
+            courseId: '',
+            minStudents: 25,
+            maxStudents: 50,
+            dayOfWeek: 2,
+            startPeriod: 1,
+            endPeriod: 3
+        });
+    };
+
+    const handleFormSubmit = async () => {
+        try {
+            if (isEditing && currentCourse) {
+                // Update course
+                const updateData: Partial<OpenCourse> = {
+                    minStudents: formData.minStudents,
+                    maxStudents: formData.maxStudents
+                };
+
+                // Only include time fields if no registrations (business logic will handle this)
+                if (formData.dayOfWeek !== currentCourse.dayOfWeek ||
+                    formData.startPeriod !== currentCourse.startPeriod ||
+                    formData.endPeriod !== currentCourse.endPeriod) {
+                    updateData.dayOfWeek = formData.dayOfWeek;
+                    updateData.startPeriod = formData.startPeriod;
+                    updateData.endPeriod = formData.endPeriod;
+                }
+
+                const updatedCourse = await openCourseApi.updateCourse(
+                    currentCourse.semesterId,
+                    currentCourse.courseId,
+                    updateData
+                );
+                
+                // Update courses list
+                setCourses(courses.map(c => 
+                    c.semesterId === currentCourse.semesterId && c.courseId === currentCourse.courseId 
+                        ? { ...c, ...updatedCourse } 
+                        : c
+                ));
+                setSnackbar({ open: true, message: 'Cập nhật môn học thành công', severity: 'success' });            } else {
+                // Create new course
+                await openCourseApi.createCourse({
+                    semesterId: formData.semesterId,
+                    courseId: formData.courseId,
+                    minStudents: formData.minStudents,
+                    maxStudents: formData.maxStudents,
+                    dayOfWeek: formData.dayOfWeek,
+                    startPeriod: formData.startPeriod,
+                    endPeriod: formData.endPeriod
+                });
+                
+                // Reload data to get the new course with all joined fields
+                const updatedCourses = await openCourseApi.getCourses();
+                setCourses(updatedCourses);
+                setSnackbar({ open: true, message: 'Thêm môn học thành công', severity: 'success' });
+            }
+            
+            handleCloseDialog();
+        } catch (err: any) {
+            console.error('Error saving course:', err);
+            const errorMessage = err?.response?.data?.message || 'Không thể lưu môn học';
+            setSnackbar({ open: true, message: errorMessage, severity: 'error' });
+        }
+    };
+
+    // Form validation function
+    const isFormValid = () => {
+        if (!formData.semesterId || !formData.courseId) return false;
+        if (formData.minStudents < 1 || formData.maxStudents < formData.minStudents) return false;
+        if (formData.dayOfWeek < 1 || formData.dayOfWeek > 7) return false;        if (formData.startPeriod < 1 || formData.startPeriod > 10 || 
+            formData.endPeriod < 1 || formData.endPeriod > 10) return false;
+        if (formData.startPeriod >= formData.endPeriod) return false;
+        return true;
+    };
+
+    const getStatusColor = (status?: string) => {
         return status === 'Mở' ? 
             { bgcolor: '#e8f5e9', color: '#2e7d32' } : 
             { bgcolor: '#ffebee', color: '#c62828' };
@@ -447,16 +598,11 @@ export default function OpenCourseMgmAcademic({ user, onLogout }: OpenCourseMgmA
                     
                     {/* Add Course Button */}
                     <Grid container spacing={2} sx={{ mt: 2 }}>
-                        <Grid item xs={12} md={3}>
-                            <Button
+                        <Grid item xs={12} md={3}>                            <Button
                                 fullWidth
                                 variant="contained"
                                 startIcon={<AddIcon />}
-                                onClick={() => {
-                                    setCurrentCourse(null);
-                                    setIsEditing(false);
-                                    setOpenDialog(true);
-                                }}
+                                onClick={handleOpenAddDialog}
                                 sx={{
                                     height: '56px',
                                     borderRadius: '12px',
@@ -498,27 +644,176 @@ export default function OpenCourseMgmAcademic({ user, onLogout }: OpenCourseMgmA
                                 Xóa
                             </Button>
                         </DialogActions>
-                    </Dialog>
-
-                    {/* Add/Edit Dialog - Placeholder for now */}
+                    </Dialog>                    {/* Add/Edit Dialog */}
                     <Dialog
                         open={openDialog}
-                        onClose={() => setOpenDialog(false)}
+                        onClose={handleCloseDialog}
                         maxWidth="md"
                         fullWidth
                     >
                         <DialogTitle>
-                            {isEditing ? 'Chỉnh sửa môn học' : 'Thêm môn học mới'}
+                            {isEditing ? 'Chỉnh sửa môn học' : 'Thêm môn học mở'}
                         </DialogTitle>
                         <DialogContent>
-                            <Typography>
-                                Chức năng thêm/sửa sẽ được phát triển trong phiên bản tiếp theo.
-                            </Typography>
+                            <Box sx={{ pt: 2 }}>
+                                <Grid container spacing={3}>
+                                    {/* Semester Selection */}
+                                    <Grid item xs={12} md={6}>
+                                        <FormControl fullWidth required>
+                                            <InputLabel>Học kỳ</InputLabel>
+                                            <Select
+                                                value={formData.semesterId}
+                                                label="Học kỳ"
+                                                onChange={(e) => setFormData({...formData, semesterId: e.target.value})}
+                                                disabled={isEditing}
+                                            >                                                {availableSemesters.map(semester => (
+                                                    <MenuItem key={semester.id} value={semester.id}>
+                                                        Học kỳ {semester.semesterNumber} - {semester.academicYear}
+                                                    </MenuItem>
+                                                ))}
+                                            </Select>
+                                        </FormControl>
+                                    </Grid>
+
+                                    {/* Course Selection */}
+                                    <Grid item xs={12} md={6}>
+                                        <FormControl fullWidth required>
+                                            <InputLabel>Môn học</InputLabel>
+                                            <Select
+                                                value={formData.courseId}
+                                                label="Môn học"
+                                                onChange={(e) => setFormData({...formData, courseId: e.target.value})}
+                                                disabled={isEditing}
+                                            >
+                                                {availableCourses.map(course => (
+                                                    <MenuItem key={course.courseId} value={course.courseId}>
+                                                        {course.courseId} - {course.courseName} ({course.courseTypeName})
+                                                    </MenuItem>
+                                                ))}
+                                            </Select>
+                                        </FormControl>
+                                    </Grid>
+
+                                    {/* Min Students */}
+                                    <Grid item xs={12} md={4}>
+                                        <TextField
+                                            fullWidth
+                                            label="Số SV tối thiểu"
+                                            type="number"
+                                            value={formData.minStudents}
+                                            onChange={(e) => setFormData({...formData, minStudents: parseInt(e.target.value) || 0})}
+                                            required
+                                            inputProps={{ min: 1 }}
+                                        />
+                                    </Grid>
+
+                                    {/* Max Students */}
+                                    <Grid item xs={12} md={4}>
+                                        <TextField
+                                            fullWidth
+                                            label="Số SV tối đa"
+                                            type="number"
+                                            value={formData.maxStudents}
+                                            onChange={(e) => setFormData({...formData, maxStudents: parseInt(e.target.value) || 0})}
+                                            required
+                                            inputProps={{ min: formData.minStudents }}
+                                        />
+                                    </Grid>
+
+                                    {/* Day of Week */}
+                                    <Grid item xs={12} md={4}>
+                                        <FormControl fullWidth required>
+                                            <InputLabel>Thứ</InputLabel>                                            <Select
+                                                value={formData.dayOfWeek}
+                                                label="Thứ"
+                                                onChange={(e) => setFormData({...formData, dayOfWeek: parseInt(e.target.value as string)})}
+                                                disabled={isEditing && Boolean(currentCourse?.currentStudents && currentCourse.currentStudents > 0)}
+                                            >
+                                                {dayOfWeekNames.slice(1).map((day, index) => (
+                                                    <MenuItem key={index + 1} value={index + 1}>
+                                                        {day}
+                                                    </MenuItem>
+                                                ))}
+                                            </Select>
+                                        </FormControl>
+                                    </Grid>
+
+                                    {/* Start Period */}
+                                    <Grid item xs={12} md={6}>
+                                        <FormControl fullWidth required>
+                                            <InputLabel>Tiết bắt đầu</InputLabel>                                            <Select
+                                                value={formData.startPeriod}
+                                                label="Tiết bắt đầu"
+                                                onChange={(e) => setFormData({...formData, startPeriod: parseInt(e.target.value as string)})}
+                                                disabled={isEditing && Boolean(currentCourse?.currentStudents && currentCourse.currentStudents > 0)}
+                                            >
+                                                {Array.from({length: 10}, (_, i) => i + 1).map(period => (
+                                                    <MenuItem key={period} value={period}>
+                                                        Tiết {period}
+                                                    </MenuItem>
+                                                ))}
+                                            </Select>
+                                        </FormControl>
+                                    </Grid>
+
+                                    {/* End Period */}
+                                    <Grid item xs={12} md={6}>
+                                        <FormControl fullWidth required>
+                                            <InputLabel>Tiết kết thúc</InputLabel>                                            <Select
+                                                value={formData.endPeriod}
+                                                label="Tiết kết thúc"
+                                                onChange={(e) => setFormData({...formData, endPeriod: parseInt(e.target.value as string)})}
+                                                disabled={isEditing && Boolean(currentCourse?.currentStudents && currentCourse.currentStudents > 0)}
+                                            >
+                                                {Array.from({length: 10}, (_, i) => i + 1)
+                                                    .filter(period => period > formData.startPeriod)
+                                                    .map(period => (
+                                                        <MenuItem key={period} value={period}>
+                                                            Tiết {period}
+                                                        </MenuItem>
+                                                    ))}
+                                            </Select>
+                                        </FormControl>
+                                    </Grid>
+
+                                    {/* Show restrictions for editing */}
+                                    {isEditing && currentCourse?.currentStudents && currentCourse.currentStudents > 0 && (
+                                        <Grid item xs={12}>
+                                            <Alert severity="info">
+                                                Môn học này đã có {currentCourse.currentStudents} sinh viên đăng ký. 
+                                                Chỉ có thể sửa số sinh viên tối thiểu và tối đa.
+                                            </Alert>
+                                        </Grid>
+                                    )}
+                                </Grid>
+                            </Box>
                         </DialogContent>
                         <DialogActions>
-                            <Button onClick={() => setOpenDialog(false)}>Đóng</Button>
+                            <Button onClick={handleCloseDialog}>Hủy</Button>
+                            <Button 
+                                onClick={handleFormSubmit} 
+                                variant="contained"
+                                disabled={!isFormValid()}
+                            >
+                                {isEditing ? 'Cập nhật' : 'Thêm mới'}
+                            </Button>
                         </DialogActions>
                     </Dialog>
+
+                    {/* Snackbar for notifications */}
+                    <Snackbar
+                        open={snackbar.open}
+                        autoHideDuration={6000}
+                        onClose={() => setSnackbar({...snackbar, open: false})}
+                    >
+                        <Alert 
+                            onClose={() => setSnackbar({...snackbar, open: false})} 
+                            severity={snackbar.severity}
+                            sx={{ width: '100%' }}
+                        >
+                            {snackbar.message}
+                        </Alert>
+                    </Snackbar>
                 </Paper>
             </Box>
         </ThemeLayout>

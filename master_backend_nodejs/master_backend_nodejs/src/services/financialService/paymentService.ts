@@ -6,31 +6,27 @@ import { IPaymentHistory, IPaymentData } from '../../models/student_related/stud
 export class FinancialPaymentService {
     /**
      * Get payment status for all students in a semester
-     */
-    async getPaymentStatusList(semesterId: string, filters?: {
-        paymentStatus?: 'paid' | 'partial' | 'unpaid' | 'overdue';
+     */    async getPaymentStatusList(semesterId: string, filters?: {
+        paymentStatus?: 'paid' | 'unpaid' | 'not_opened';
         studentId?: string;
         offset?: number;
         limit?: number;
     }): Promise<{ data: any[], total: number }> {
         let whereClause = 'WHERE pd.MaHocKy = $1';
         const params: any[] = [semesterId];
-        let paramIndex = 2;
-
-        // Add payment status filter
+        let paramIndex = 2;        // Add payment status filter - simplified to only 3 states
         if (filters?.paymentStatus) {
             switch (filters.paymentStatus) {
                 case 'paid':
                     whereClause += ` AND pd.SoTienConLai = 0`;
                     break;
-                case 'partial':
-                    whereClause += ` AND pd.SoTienConLai > 0 AND pd.SoTienDaDong > 0`;
-                    break;
                 case 'unpaid':
-                    whereClause += ` AND pd.SoTienDaDong = 0`;
+                    // Số tiền còn lại > 0 (bao gồm cả partial payment trước đây)
+                    whereClause += ` AND pd.SoTienConLai > 0`;
                     break;
-                case 'overdue':
-                    whereClause += ` AND pd.SoTienConLai > 0 AND hk.HanDongHocPhi < CURRENT_DATE`;
+                case 'not_opened':
+                    // Logic cho học kỳ chưa mở - có thể cần bổ sung logic riêng
+                    whereClause += ` AND 1=0`; // Tạm thời không có kết quả cho trường hợp này
                     break;
             }
         }
@@ -55,25 +51,16 @@ export class FinancialPaymentService {
         // Get paginated data
         const offset = filters?.offset || 0;
         const limit = filters?.limit || 50;
-        
-        const dataQuery = `
+          const dataQuery = `
             SELECT 
                 pd.MaSoSinhVien,
                 sv.HoTen,
                 pd.MaHocKy,
-                pd.SoTienPhaiDong,
-                pd.SoTienDaDong,
-                pd.SoTienConLai,
-                hk.HanDongHocPhi,
+                pd.SoTienConLai,                hk.HanDongHocPhi,
                 CASE 
                     WHEN pd.SoTienConLai = 0 THEN 'paid'
-                    WHEN pd.SoTienConLai > 0 AND pd.SoTienDaDong > 0 THEN 'partial'
-                    WHEN pd.SoTienDaDong = 0 THEN 'unpaid'
-                END as payment_status,
-                CASE 
-                    WHEN pd.SoTienConLai > 0 AND hk.HanDongHocPhi < CURRENT_DATE THEN true
-                    ELSE false
-                END as is_overdue
+                    ELSE 'unpaid'
+                END as payment_status
             FROM PHIEUDANGKY pd
             JOIN HOCKYNAMHOC hk ON pd.MaHocKy = hk.MaHocKy
             JOIN SINHVIEN sv ON pd.MaSoSinhVien = sv.MaSoSinhVien
@@ -90,12 +77,11 @@ export class FinancialPaymentService {
                 studentId: row.MaSoSinhVien,
                 studentName: row.HoTen,
                 semesterId: row.MaHocKy,
-                totalAmount: parseFloat(row.SoTienPhaiDong),
-                paidAmount: parseFloat(row.SoTienDaDong),
+                totalAmount: parseFloat(row.SoTienConLai), // Dùng SoTienConLai làm tổng tiền
+                paidAmount: 0, // Không có cột SoTienDaDong nữa
                 remainingAmount: parseFloat(row.SoTienConLai),
                 dueDate: row.HanDongHocPhi,
-                paymentStatus: row.payment_status,
-                isOverdue: row.is_overdue
+                paymentStatus: row.payment_status
             })),
             total: parseInt(total)
         };
@@ -161,15 +147,11 @@ export class FinancialPaymentService {
                     createdBy
                 ]);
 
-                const paymentId = paymentResult.rows[0].MaPhieuThu;
-
-                // Update registration payment status
+                const paymentId = paymentResult.rows[0].MaPhieuThu;                // Update registration payment status
                 const updateRegistrationQuery = `
                     UPDATE PHIEUDANGKY 
                     SET 
-                        SoTienDaDong = SoTienDaDong + $1,
-                        SoTienConLai = SoTienPhaiDong - (SoTienDaDong + $1),
-                        NgayCapNhat = CURRENT_TIMESTAMP
+                        SoTienConLai = SoTienConLai - $1
                     WHERE MaSoSinhVien = $2 AND MaHocKy = $3
                 `;
                 

@@ -37,12 +37,11 @@ export const registrationService = {
             console.error('Error getting registered courses:', error);
             throw error;
         }
-    },
-
-    // Lấy danh sách môn học đã đăng ký với thông tin chi tiết từ DANHSACHMONHOCMO
-    async getEnrolledCoursesWithSchedule(studentId: string, semesterId: string = 'HK1_2024'): Promise<any[]> {
+    },    // Lấy danh sách môn học đã đăng ký với thông tin chi tiết từ DANHSACHMONHOCMO
+    async getEnrolledCoursesWithSchedule(studentId: string, semesterId?: string): Promise<any[]> {
         try {
-            console.log('🔍 [RegistrationService] Getting enrolled courses with schedule for student:', studentId, 'semester:', semesterId);
+            // Get current semester if not provided
+            const actualSemesterId = semesterId || await DatabaseService.getCurrentSemester();            console.log('🔍 [RegistrationService] Getting enrolled courses with schedule for student:', studentId, 'semester:', actualSemesterId);
             
             // Kiểm tra xem có cần convert từ User ID sang Student ID không
             let actualStudentId = studentId;
@@ -60,7 +59,21 @@ export const registrationService = {
                     console.log('❌ [RegistrationService] Could not find mapping for User ID:', studentId);
                     return [];
                 }
-            }            const enrolledCourses = await DatabaseService.query(`
+            }
+            
+            // Debug: Check all related tables
+            const debugPhieuDangKy = await DatabaseService.query(`
+                SELECT * FROM PHIEUDANGKY WHERE MaSoSinhVien = $1
+            `, [actualStudentId]);
+            console.log('🔍 [Debug] PHIEUDANGKY records for student:', debugPhieuDangKy);
+            
+            const debugCtPhieuDangKy = await DatabaseService.query(`
+                SELECT ct.*, pd.MaSoSinhVien 
+                FROM CT_PHIEUDANGKY ct 
+                JOIN PHIEUDANGKY pd ON ct.MaPhieuDangKy = pd.MaPhieuDangKy 
+                WHERE pd.MaSoSinhVien = $1
+            `, [actualStudentId]);
+            console.log('🔍 [Debug] CT_PHIEUDANGKY records for student:', debugCtPhieuDangKy);const enrolledCourses = await DatabaseService.query(`
                 SELECT 
                     ct.MaPhieuDangKy as "registrationId",
                     ct.MaMonHoc as "courseId",
@@ -77,13 +90,13 @@ export const registrationService = {
                 FROM CT_PHIEUDANGKY ct
                 JOIN PHIEUDANGKY pd ON ct.MaPhieuDangKy = pd.MaPhieuDangKy
                 JOIN MONHOC mh ON ct.MaMonHoc = mh.MaMonHoc
-                JOIN LOAIMON lm ON mh.MaLoaiMon = lm.MaLoaiMon
-                LEFT JOIN DANHSACHMONHOCMO dsmhm ON ct.MaMonHoc = dsmhm.MaMonHoc AND ct.MaHocKy = dsmhm.MaHocKy
+                JOIN LOAIMON lm ON mh.MaLoaiMon = lm.MaLoaiMon                LEFT JOIN DANHSACHMONHOCMO dsmhm ON ct.MaMonHoc = dsmhm.MaMonHoc AND ct.MaHocKy = dsmhm.MaHocKy
                 WHERE pd.MaSoSinhVien = $1 AND pd.MaHocKy = $2
-                ORDER BY ct.MaMonHoc
-            `, [actualStudentId, semesterId]);
+                ORDER BY ct.MaMonHoc            `, [actualStudentId, actualSemesterId]);
 
+            console.log('🔍 [RegistrationService] Query parameters:', { actualStudentId, actualSemesterId });
             console.log('✅ [RegistrationService] Found enrolled courses:', enrolledCourses.length);
+            console.log('📋 [RegistrationService] Enrolled courses data:', enrolledCourses);
               return enrolledCourses.map(course => ({
                 id: course.courseId,
                 courseId: course.courseId,
@@ -180,69 +193,81 @@ export const registrationService = {
             // Nếu chưa có, tạo phiếu đăng ký mới
             if (!registration) {
                 console.log(`🔵 [RegistrationService] Creating new registration for student ${studentId}`);
-                const newRegistrationId = `PDK_${studentId}_${semesterId}`;
-                await DatabaseService.query(`
-                    INSERT INTO PHIEUDANGKY (MaPhieuDangKy, NgayLap, MaSoSinhVien, MaHocKy, SoTienDangKy, SoTienPhaiDong, SoTienDaDong, SoTinChiToiDa)
-                    VALUES ($1, NOW(), $2, $3, 0, 0, 0, 24)
+                const newRegistrationId = `PDK_${studentId}_${semesterId}`;                await DatabaseService.query(`
+                    INSERT INTO PHIEUDANGKY (MaPhieuDangKy, NgayLap, MaSoSinhVien, MaHocKy, SoTienConLai, SoTinChiToiDa)
+                    VALUES ($1, NOW(), $2, $3, 0, 24)
                 `, [newRegistrationId, studentId, semesterId]);
-                registration = { MaPhieuDangKy: newRegistrationId };
+                registration = { maphieudangky: newRegistrationId, MaPhieuDangKy: newRegistrationId };
                 console.log(`✅ [RegistrationService] Created new registration with ID: ${newRegistrationId}`);
             }            // Kiểm tra đã đăng ký môn này chưa
             console.log(`🔵 [RegistrationService] Checking if course ${courseId} is already registered`);
+            const registrationId = registration.maphieudangky || registration.MaPhieuDangKy;
+            console.log(`🔵 [RegistrationService] Using registration ID:`, registrationId);
+            
             const existingDetail = await DatabaseService.queryOne(`
                 SELECT MaPhieuDangKy 
                 FROM CT_PHIEUDANGKY 
                 WHERE MaPhieuDangKy = $1 AND MaMonHoc = $2
-            `, [registration.MaPhieuDangKy, courseId]);
+            `, [registrationId, courseId]);
 
             console.log(`🔵 [RegistrationService] Existing detail:`, existingDetail);
             if (existingDetail) {
                 console.log(`❌ [RegistrationService] Course ${courseId} is already registered`);
                 throw new Error('Bạn đã đăng ký môn học này rồi!');
-            }
-
-            // Kiểm tra trùng lịch học
+            }            // Kiểm tra trùng lịch học
             console.log(`🔵 [RegistrationService] Checking schedule conflicts for course ${courseId}`);
             const newCourseSchedule = await DatabaseService.queryOne(`
-                SELECT Thu, TietBatDau, TietKetThuc, MaMonHoc
+                SELECT Thu as "thu", TietBatDau as "tietBatDau", TietKetThuc as "tietKetThuc", MaMonHoc as "maMonHoc"
                 FROM DANHSACHMONHOCMO
                 WHERE MaHocKy = $1 AND MaMonHoc = $2
             `, [semesterId, courseId]);
 
             if (newCourseSchedule) {
+                console.log(`🔵 [RegistrationService] New course schedule:`, newCourseSchedule);
+                
                 // Lấy tất cả môn học đã đăng ký của sinh viên trong kỳ này
+                console.log(`🔍 [RegistrationService] Query for registered courses with params: registrationId=${registrationId}, semesterId=${semesterId}`);
                 const registeredCourses = await DatabaseService.query(`
-                    SELECT ds.Thu, ds.TietBatDau, ds.TietKetThuc, ds.MaMonHoc, mh.TenMonHoc
+                    SELECT ds.Thu as "thu", ds.TietBatDau as "tietBatDau", ds.TietKetThuc as "tietKetThuc", 
+                           ds.MaMonHoc as "maMonHoc", mh.TenMonHoc as "tenMonHoc"
                     FROM CT_PHIEUDANGKY ct
                     JOIN DANHSACHMONHOCMO ds ON ct.MaMonHoc = ds.MaMonHoc AND ct.MaHocKy = ds.MaHocKy
                     JOIN MONHOC mh ON ds.MaMonHoc = mh.MaMonHoc
                     WHERE ct.MaPhieuDangKy = $1 AND ct.MaHocKy = $2
-                `, [registration.MaPhieuDangKy, semesterId]);
+                `, [registrationId, semesterId]);
+
+                console.log(`🔵 [RegistrationService] Already registered courses:`, registeredCourses);
 
                 // Kiểm tra xung đột lịch học
                 for (const existingCourse of registeredCourses) {
-                    if (existingCourse.Thu === newCourseSchedule.Thu) {
+                    console.log(`🔍 [RegistrationService] Checking conflict: New(Thu=${newCourseSchedule.thu}, ${newCourseSchedule.tietBatDau}-${newCourseSchedule.tietKetThuc}) vs Existing(Thu=${existingCourse.thu}, ${existingCourse.tietBatDau}-${existingCourse.tietKetThuc})`);
+                    
+                    if (existingCourse.thu === newCourseSchedule.thu) {
                         // Kiểm tra trùng tiết học
-                        const newStart = newCourseSchedule.TietBatDau;
-                        const newEnd = newCourseSchedule.TietKetThuc;
-                        const existingStart = existingCourse.TietBatDau;
-                        const existingEnd = existingCourse.TietKetThuc;
+                        const newStart = newCourseSchedule.tietBatDau;
+                        const newEnd = newCourseSchedule.tietKetThuc;
+                        const existingStart = existingCourse.tietBatDau;
+                        const existingEnd = existingCourse.tietKetThuc;
 
-                        // Kiểm tra overlap: (start1 <= end2) && (start2 <= end1)
-                        if (newStart <= existingEnd && existingStart <= newEnd) {
-                            console.log(`❌ [RegistrationService] Schedule conflict detected with course ${existingCourse.MaMonHoc}`);
-                            throw new Error(`Trùng lịch học với môn ${existingCourse.TenMonHoc} (Thứ ${existingCourse.Thu}, tiết ${existingStart}-${existingEnd})`);
+                        // Kiểm tra overlap: có bất kỳ tiết nào trùng không
+                        // Overlap xảy ra khi các khoảng thời gian giao nhau
+                        // [newStart, newEnd] và [existingStart, existingEnd] giao nhau khi:
+                        // newStart <= existingEnd && existingStart <= newEnd
+                        console.log(`🔍 [RegistrationService] Conflict check details: newStart=${newStart}, newEnd=${newEnd}, existingStart=${existingStart}, existingEnd=${existingEnd}`);
+                          if (newStart <= existingEnd && existingStart <= newEnd) {
+                            console.log(`❌ [RegistrationService] Schedule conflict detected with course ${existingCourse.maMonHoc}`);
+                            throw new Error(`Không thể đăng ký vì trùng lịch học với môn "${existingCourse.tenMonHoc}" (Thứ ${existingCourse.thu}, tiết ${existingStart}-${existingEnd})`);
+                        } else {
+                            console.log(`✅ [RegistrationService] No conflict with course ${existingCourse.maMonHoc}`);
                         }
                     }
                 }
-            }
-
-            // Thêm môn học vào chi tiết phiếu đăng ký
+            }            // Thêm môn học vào chi tiết phiếu đăng ký
             console.log(`🔵 [RegistrationService] Adding course ${courseId} to registration details`);
             await DatabaseService.query(`
                 INSERT INTO CT_PHIEUDANGKY (MaPhieuDangKy, MaHocKy, MaMonHoc)
                 VALUES ($1, $2, $3)
-            `, [registration.MaPhieuDangKy, semesterId, courseId]);            
+            `, [registrationId, semesterId, courseId]);
             
             console.log(`✅ [RegistrationService] Successfully added course to registration details`);
             
@@ -253,68 +278,95 @@ export const registrationService = {
                 FROM MONHOC mh
                 JOIN LOAIMON lm ON mh.MaLoaiMon = lm.MaLoaiMon
                 WHERE mh.MaMonHoc = $1
-            `, [courseId]);
-
-            if (courseInfo) {
-                const courseFee = courseInfo.SoTienMotTC * (courseInfo.SoTiet / courseInfo.SoTietMotTC || 1);
-                await DatabaseService.query(`
-                    UPDATE PHIEUDANGKY 
-                    SET SoTienDangKy = SoTienDangKy + $1,
-                        SoTienPhaiDong = SoTienPhaiDong + $1
-                    WHERE MaPhieuDangKy = $2
-                `, [courseFee, registration.MaPhieuDangKy]);
-            }
-
-            // Log đăng ký
+            `, [courseId]);            if (courseInfo) {
+                const courseFee = courseInfo.sotienmottc || courseInfo.SoTienMotTC * ((courseInfo.sotiet || courseInfo.SoTiet) / (courseInfo.sotietmottc || courseInfo.SoTietMotTC) || 1);
+                
+                // Schema chỉ có SoTienConLai, không có SoTienDangKy/SoTienPhaiDong
+                // Tạm thời skip việc update số tiền, chỉ log
+                console.log(`💰 [RegistrationService] Course fee calculated: ${courseFee} for course ${courseId}`);
+                
+                // Nếu cần update SoTienConLai, uncomment dòng dưới:
+                // await DatabaseService.query(`UPDATE PHIEUDANGKY SET SoTienConLai = SoTienConLai - $1 WHERE MaPhieuDangKy = $2`, [courseFee, registrationId]);
+            }            // Log đăng ký
             const student = await DatabaseService.queryOne(
-                `SELECT HoTen FROM SINHVIEN WHERE MaSoSinhVien = $1`, [studentId]
+                `SELECT HoTen as "studentName" FROM SINHVIEN WHERE MaSoSinhVien = $1`, [studentId]
             );
             const course = await DatabaseService.queryOne(
-                `SELECT TenMonHoc FROM MONHOC WHERE MaMonHoc = $1`, [courseId]
+                `SELECT TenMonHoc as "courseName" FROM MONHOC WHERE MaMonHoc = $1`, [courseId]
             );
+
+            console.log(`🔍 [RegistrationService] Log data - Student:`, student, `Course:`, course);
 
             await DatabaseService.query(
                 `INSERT INTO REGISTRATION_LOG (MaSoSinhVien, TenSinhVien, MaMonHoc, TenMonHoc, LoaiYeuCau)
                  VALUES ($1, $2, $3, $4, 'register')`,
-                [studentId, student?.HoTen || '', courseId, course?.TenMonHoc || '']
+                [studentId, student?.studentName || 'Unknown Student', courseId, course?.courseName || 'Unknown Course']
             );
 
             return true;
         } catch (error) {
             console.error('Error registering course:', error);
             throw error;
-        }
-    },
+        }    },
 
     // Hủy đăng ký môn học
-    async cancelCourseRegistration(studentId: string, courseId: string, semesterId: string): Promise<boolean> {        try {
-            // Tìm phiếu đăng ký của sinh viên trong học kỳ
+    async cancelCourseRegistration(studentId: string, courseId: string, semesterId: string): Promise<boolean> {
+        try {
+            console.log(`🔍 [RegistrationService] Cancelling registration: Student=${studentId}, Course=${courseId}, Semester=${semesterId}`);            // Tìm phiếu đăng ký của sinh viên trong học kỳ
             const registration = await DatabaseService.queryOne(`
-                SELECT MaPhieuDangKy 
+                SELECT MaPhieuDangKy as "registrationId"
                 FROM PHIEUDANGKY 
                 WHERE MaSoSinhVien = $1 AND MaHocKy = $2
             `, [studentId, semesterId]);
 
+            console.log(`🔍 [RegistrationService] Found registration:`, registration);
+
             if (!registration) {
                 throw new Error('Không tìm thấy phiếu đăng ký');
             }
+
+            const registrationId = registration.registrationId;
+            console.log(`🔍 [RegistrationService] Using registration ID: ${registrationId}`);
 
             // Kiểm tra môn học có trong chi tiết phiếu đăng ký không
             const registrationDetail = await DatabaseService.queryOne(`
                 SELECT MaPhieuDangKy
                 FROM CT_PHIEUDANGKY
                 WHERE MaPhieuDangKy = $1 AND MaMonHoc = $2
-            `, [registration.MaPhieuDangKy, courseId]);
+            `, [registrationId, courseId]);
+
+            console.log(`🔍 [RegistrationService] Found registration detail:`, registrationDetail);
 
             if (!registrationDetail) {
                 throw new Error('Sinh viên chưa đăng ký môn học này');
-            }
-
-            // Xóa môn học khỏi chi tiết phiếu đăng ký
+            }            // Xóa môn học khỏi chi tiết phiếu đăng ký
             await DatabaseService.query(`
                 DELETE FROM CT_PHIEUDANGKY
                 WHERE MaPhieuDangKy = $1 AND MaMonHoc = $2
-            `, [registration.MaPhieuDangKy, courseId]);            // Cập nhật lại số tiền trong phiếu đăng ký
+            `, [registrationId, courseId]);
+
+            console.log(`✅ [RegistrationService] Successfully deleted course ${courseId} from registration ${registrationId}`);
+
+            // Kiểm tra xem còn môn học nào trong phiếu đăng ký không
+            const remainingCourses = await DatabaseService.queryOne(`
+                SELECT COUNT(*) as count
+                FROM CT_PHIEUDANGKY
+                WHERE MaPhieuDangKy = $1
+            `, [registrationId]);
+
+            console.log(`🔍 [RegistrationService] Remaining courses in registration: ${remainingCourses?.count || 0}`);
+
+            // Nếu không còn môn học nào, có thể xóa luôn phiếu đăng ký (tùy business logic)
+            // Tạm thời comment để giữ lại phiếu đăng ký trống
+            /*
+            if (remainingCourses?.count === 0) {
+                await DatabaseService.query(`
+                    DELETE FROM PHIEUDANGKY
+                    WHERE MaPhieuDangKy = $1
+                `, [registrationId]);
+                console.log(`🗑️ [RegistrationService] Deleted empty registration ${registrationId}`);
+            }
+            */// Cập nhật lại số tiền trong phiếu đăng ký
             const courseInfo = await DatabaseService.queryOne(`
                 SELECT lm.SoTienMotTC, mh.SoTiet, lm.SoTietMotTC
                 FROM MONHOC mh
@@ -323,48 +375,44 @@ export const registrationService = {
             `, [courseId]);
 
             if (courseInfo) {
-                const courseFee = courseInfo.SoTienMotTC * (courseInfo.SoTiet / courseInfo.SoTietMotTC || 1);
-                await DatabaseService.query(`
-                    UPDATE PHIEUDANGKY 
-                    SET SoTienDangKy = SoTienDangKy - $1,
-                        SoTienPhaiDong = SoTienPhaiDong - $1
-                    WHERE MaPhieuDangKy = $2
-                `, [courseFee, registration.MaPhieuDangKy]);
-            }
-
-            // Log hủy đăng ký
+                const courseFee = courseInfo.SoTienMotTC * (courseInfo.SoTiet / courseInfo.SoTietMotTC || 1);                // Schema chỉ có SoTienConLai, skip update số tiền tạm thời
+                console.log(`💰 [RegistrationService] Course fee to refund: ${courseFee} for course ${courseId}`);
+                
+                // Nếu cần update SoTienConLai, uncomment dòng dưới:
+                // await DatabaseService.query(`UPDATE PHIEUDANGKY SET SoTienConLai = SoTienConLai + $1 WHERE MaPhieuDangKy = $2`, [courseFee, registrationId]);
+            }            // Log hủy đăng ký
             const student = await DatabaseService.queryOne(
-                `SELECT HoTen FROM SINHVIEN WHERE MaSoSinhVien = $1`, [studentId]
+                `SELECT HoTen as "studentName" FROM SINHVIEN WHERE MaSoSinhVien = $1`, [studentId]
             );
             const course = await DatabaseService.queryOne(
-                `SELECT TenMonHoc FROM MONHOC WHERE MaMonHoc = $1`, [courseId]
+                `SELECT TenMonHoc as "courseName" FROM MONHOC WHERE MaMonHoc = $1`, [courseId]
             );
+
+            console.log(`🔍 [RegistrationService] Log data - Student:`, student, `Course:`, course);
 
             await DatabaseService.query(
                 `INSERT INTO REGISTRATION_LOG (MaSoSinhVien, TenSinhVien, MaMonHoc, TenMonHoc, LoaiYeuCau)
                  VALUES ($1, $2, $3, $4, 'cancel')`,
-                [studentId, student?.HoTen || '', courseId, course?.TenMonHoc || '']
+                [studentId, student?.studentName || 'Unknown Student', courseId, course?.courseName || 'Unknown Course']
             );
 
-            return true;        } catch (error) {
+            console.log(`✅ [RegistrationService] Successfully cancelled registration for course ${courseId} (${course?.courseName || 'Unknown'}) for student ${studentId}`);
+
+            return true;} catch (error) {
             console.error('Error canceling course registration:', error);
             throw error;
         }
     },
 
     // Lấy lịch sử đăng ký của sinh viên
-    async getRegistrationHistory(studentId: string): Promise<IRegistration[]> {
-        try {
+    async getRegistrationHistory(studentId: string): Promise<IRegistration[]> {        try {
             const registrations = await DatabaseService.query(`
                 SELECT 
                     pd.MaPhieuDangKy as "registrationId",
                     pd.NgayLap as "registrationDate",
                     pd.MaSoSinhVien as "studentId",
                     pd.MaHocKy as "semesterId",
-                    pd.SoTienDangKy as "registrationAmount",
-                    pd.SoTienPhaiDong as "requiredAmount",
-                    pd.SoTienDaDong as "paidAmount",
-                    (pd.SoTienPhaiDong - pd.SoTienDaDong) as "remainingAmount",
+                    pd.SoTienConLai as "remainingAmount",
                     pd.SoTinChiToiDa as "maxCredits"
                 FROM PHIEUDANGKY pd
                 WHERE pd.MaSoSinhVien = $1
@@ -434,14 +482,27 @@ export const registrationService = {
                     console.log(`✅ [RegistrationService] Successfully registered course ${courseId}`);
                 } catch (error) {
                     console.error(`❌ [RegistrationService] Failed to register course ${courseId}:`, error);
-                    results.push({ courseId, success: false, message: error instanceof Error ? error.message : 'Lỗi không xác định' });
+                    const errorMessage = error instanceof Error ? error.message : 'Lỗi không xác định';
+                    results.push({ courseId, success: false, message: errorMessage });
                     failCount++;
                 }
             }
 
+            // Nếu chỉ đăng ký 1 môn và thất bại, trả về thông báo lỗi cụ thể
+            if (courseIds.length === 1 && failCount === 1) {
+                const failedResult = results[0];
+                return {
+                    success: false,
+                    message: failedResult.message,
+                    details: results
+                };
+            }
+
             const result = {
                 success: successCount > 0,
-                message: `Đăng ký thành công ${successCount}/${courseIds.length} môn học`,
+                message: failCount > 0 ? 
+                    `Đăng ký thành công ${successCount}/${courseIds.length} môn học. ${failCount} môn thất bại.` :
+                    `Đăng ký thành công ${successCount}/${courseIds.length} môn học`,
                 details: results
             };
             
@@ -464,13 +525,9 @@ export const registrationService = {
             const registration = await DatabaseService.queryOne(`
                 SELECT 
                     pd.MaPhieuDangKy as "registrationId",
-                    pd.NgayLap as "registrationDate",
-                    pd.MaSoSinhVien as "studentId",
+                    pd.NgayLap as "registrationDate",                    pd.MaSoSinhVien as "studentId",
                     pd.MaHocKy as "semesterId",
-                    pd.SoTienDangKy as "registrationAmount",
-                    pd.SoTienPhaiDong as "requiredAmount",
-                    pd.SoTienDaDong as "paidAmount",
-                    (pd.SoTienPhaiDong - pd.SoTienDaDong) as "remainingAmount",
+                    pd.SoTienConLai as "remainingAmount",
                     pd.SoTinChiToiDa as "maxCredits"
                 FROM PHIEUDANGKY pd
                 WHERE pd.MaSoSinhVien = $1 AND pd.MaHocKy = $2

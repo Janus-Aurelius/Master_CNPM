@@ -25,28 +25,37 @@ export const programApi = {
             throw new Error(data?.message || 'No data received from server');
         }
         return data.data || [];
-    },
-
-    createProgram: async (program: Omit<ProgramSchedule, 'id'>): Promise<ProgramSchedule> => {
-        const { data } = await axiosInstance.post<ApiResponse<ProgramSchedule>>(`/academic/programsMgm`, program);
-        if (!data || !data.success) {
-            throw new Error(data?.message || 'Failed to create program');
+    },    createProgram: async (program: Omit<ProgramSchedule, 'id'>): Promise<ProgramSchedule> => {
+        try {
+            const { data } = await axiosInstance.post<ApiResponse<ProgramSchedule>>(`/academic/programsMgm`, program);
+            if (!data || !data.success) {
+                throw new Error(data?.message || 'Failed to create program');
+            }
+            return data.data;
+        } catch (error) {
+            // Re-throw axios errors as-is to preserve response structure
+            throw error;
         }
-        return data.data;
-    },
-
-    updateProgram: async (maNganh: string, maMonHoc: string, maHocKy: string, program: Partial<ProgramSchedule>): Promise<ProgramSchedule> => {
-        const { data } = await axiosInstance.put<ApiResponse<ProgramSchedule>>(`/academic/programsMgm/${maNganh}/${maMonHoc}/${maHocKy}`, program);
-        if (!data || !data.success) {
-            throw new Error(data?.message || 'Failed to update program');
+    },    updateProgram: async (maNganh: string, maMonHoc: string, maHocKy: string, program: Partial<ProgramSchedule>): Promise<ProgramSchedule> => {
+        try {
+            const { data } = await axiosInstance.put<ApiResponse<ProgramSchedule>>(`/academic/programsMgm/${maNganh}/${maMonHoc}/${maHocKy}`, program);
+            if (!data || !data.success) {
+                throw new Error(data?.message || 'Failed to update program');
+            }
+            return data.data;
+        } catch (error) {
+            // Re-throw axios errors as-is to preserve response structure
+            throw error;
         }
-        return data.data;
-    },
-
-    deleteProgram: async (maNganh: string, maMonHoc: string, maHocKy: string): Promise<void> => {
-        const { data } = await axiosInstance.delete<ApiResponse<void>>(`/academic/programsMgm/${maNganh}/${maMonHoc}/${maHocKy}`);
-        if (!data || !data.success) {
-            throw new Error(data?.message || 'Failed to delete program');
+    },    deleteProgram: async (maNganh: string, maMonHoc: string, maHocKy: string): Promise<void> => {
+        try {
+            const { data } = await axiosInstance.delete<ApiResponse<void>>(`/academic/programsMgm/${maNganh}/${maMonHoc}/${maHocKy}`);
+            if (!data || !data.success) {
+                throw new Error(data?.message || 'Failed to delete program');
+            }
+        } catch (error) {
+            // Re-throw axios errors as-is to preserve response structure
+            throw error;
         }
     },
 

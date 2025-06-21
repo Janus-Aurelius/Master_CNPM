@@ -30,46 +30,56 @@ export const courseApi = {
             throw new Error(data?.message || 'Failed to fetch course types');
         }
         return data.data || [];
-    },createCourse: async (subject: Subject): Promise<Subject> => {
-        // Map frontend Subject to backend format (không gửi credits vì tự tính)
-        const backendData = {
-            courseId: subject.maMonHoc,
-            courseName: subject.tenMonHoc,
-            courseTypeId: subject.maLoaiMon,
-            totalHours: subject.soTiet
-        };
-        const { data } = await axiosInstance.post<ApiResponse<any>>('/academic/courses', backendData);
-        if (!data || !data.success) {
-            throw new Error(data?.message || 'Failed to create course');
+    },    createCourse: async (subject: Subject): Promise<Subject> => {
+        try {
+            // Map frontend Subject to backend format (không gửi credits vì tự tính)
+            const backendData = {
+                courseId: subject.maMonHoc,
+                courseName: subject.tenMonHoc,
+                courseTypeId: subject.maLoaiMon,
+                totalHours: subject.soTiet
+            };
+            const { data } = await axiosInstance.post<ApiResponse<any>>('/academic/courses', backendData);
+            if (!data || !data.success) {
+                throw new Error(data?.message || 'Failed to create course');
+            }
+            // Map response back to frontend format
+            return {
+                maMonHoc: data.data.courseId || subject.maMonHoc,
+                tenMonHoc: data.data.courseName || subject.tenMonHoc,
+                maLoaiMon: data.data.courseTypeId || subject.maLoaiMon,
+                soTiet: data.data.totalHours || subject.soTiet,
+                credits: data.data.totalCredits || 0 // Credits được tính từ backend
+            };
+        } catch (error) {
+            // Re-throw axios errors as-is to preserve response structure
+            throw error;
         }
-        // Map response back to frontend format
-        return {
-            maMonHoc: data.data.courseId || subject.maMonHoc,
-            tenMonHoc: data.data.courseName || subject.tenMonHoc,
-            maLoaiMon: data.data.courseTypeId || subject.maLoaiMon,
-            soTiet: data.data.totalHours || subject.soTiet,
-            credits: data.data.totalCredits || 0 // Credits được tính từ backend
-        };
     },    updateCourse: async (id: string, subject: Subject): Promise<Subject> => {
-        // Map frontend Subject to backend format (không gửi credits vì tự tính)
-        const backendData = {
-            courseName: subject.tenMonHoc,
-            courseTypeId: subject.maLoaiMon,
-            totalHours: subject.soTiet
-        };
-        const { data } = await axiosInstance.put<ApiResponse<any>>(`/academic/courses/${id}`, backendData);
-        if (!data || !data.success) {
-            throw new Error(data?.message || 'Failed to update course');
+        try {
+            // Map frontend Subject to backend format (không gửi credits vì tự tính)
+            const backendData = {
+                courseName: subject.tenMonHoc,
+                courseTypeId: subject.maLoaiMon,
+                totalHours: subject.soTiet
+            };
+            const { data } = await axiosInstance.put<ApiResponse<any>>(`/academic/courses/${id}`, backendData);
+            if (!data || !data.success) {
+                throw new Error(data?.message || 'Failed to update course');
+            }
+            // Map response back to frontend format
+            return {
+                maMonHoc: data.data.courseId || subject.maMonHoc,
+                tenMonHoc: data.data.courseName || subject.tenMonHoc,
+                maLoaiMon: data.data.courseTypeId || subject.maLoaiMon,
+                soTiet: data.data.totalHours || subject.soTiet,
+                credits: data.data.totalCredits || 0 // Credits được tính lại từ backend
+            };
+        } catch (error) {
+            // Re-throw axios errors as-is to preserve response structure
+            throw error;
         }
-        // Map response back to frontend format
-        return {
-            maMonHoc: data.data.courseId || subject.maMonHoc,
-            tenMonHoc: data.data.courseName || subject.tenMonHoc,
-            maLoaiMon: data.data.courseTypeId || subject.maLoaiMon,
-            soTiet: data.data.totalHours || subject.soTiet,
-            credits: data.data.totalCredits || 0 // Credits được tính lại từ backend
-        };
-    },    deleteCourse: async (id: string): Promise<void> => {
+    },deleteCourse: async (id: string): Promise<void> => {
         console.log('Deleting course with ID:', id);
         console.log('API endpoint:', `/academic/courses/${id}`);
         console.log('Token:', localStorage.getItem('token'));

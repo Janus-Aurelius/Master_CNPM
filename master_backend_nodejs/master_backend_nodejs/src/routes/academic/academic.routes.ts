@@ -97,6 +97,13 @@ router.get('/provinces', (req: Request, res: Response): void => {
     });
 });
 
+router.get('/districts/province/:provinceId', (req: Request, res: Response): void => {
+    studentController.getDistrictsByProvince(req, res).catch(err => {
+        console.error(err);
+        res.status(500).json({ success: false, message: 'Internal server error' });
+    });
+});
+
 router.get('/priority-groups', (req: Request, res: Response): void => {
     studentController.getPriorityGroups(req, res).catch(err => {
         console.error(err);

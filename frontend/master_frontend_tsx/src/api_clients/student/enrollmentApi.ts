@@ -92,23 +92,25 @@ const mapCourseToSubject = (course: any): AvailableSubject => {
     };
 };
 
-export const enrollmentApi = {// Lấy danh sách môn học có thể đăng ký cho sinh viên cụ thể
-    getAvailableSubjects: async (semester: string = 'HK1_2024'): Promise<AvailableSubject[]> => {
+export const enrollmentApi = {
+    // Lấy danh sách môn học có thể đăng ký cho sinh viên cụ thể
+    getAvailableSubjects: async (semester?: string): Promise<AvailableSubject[]> => {
         try {
             const user = JSON.parse(localStorage.getItem('user') || '{}');
             console.log('🔍 Getting available subjects for student:', user.studentId);
-            console.log('📅 Semester:', semester);
+            console.log('📅 Semester:', semester || 'current (from backend)');
             console.log('🔗 Making request to:', '/student/subjects');
             
             if (!user.studentId) {
                 throw new Error('Không tìm thấy thông tin sinh viên. Vui lòng đăng nhập lại.');
             }
-              const response = await axiosInstance.get<ApiResponse<any[]>>('/student/subjects', {
-                params: { 
-                    semester,
-                    studentId: user.studentId  // Đảm bảo gửi studentId
-                }
-            });
+
+            const params: any = { studentId: user.studentId };
+            if (semester) {
+                params.semester = semester;
+            }
+
+            const response = await axiosInstance.get<ApiResponse<any[]>>('/student/subjects', { params });
             console.log('✅ Available subjects response:', response.data);
             
             if (!response.data || !response.data.success) {
@@ -136,10 +138,14 @@ export const enrollmentApi = {// Lấy danh sách môn học có thể đăng k�
             return [];
         }
     },    // Tìm kiếm môn học
-    searchSubjects: async (query: string, semester: string = 'HK1_2024'): Promise<AvailableSubject[]> => {        try {
-            const response = await axiosInstance.get<ApiResponse<any[]>>('/student/subjects/search', {
-                params: { query, semester }
-            });
+    searchSubjects: async (query: string, semester?: string): Promise<AvailableSubject[]> => {
+        try {
+            const params: any = { query };
+            if (semester) {
+                params.semester = semester;
+            }
+            
+            const response = await axiosInstance.get<ApiResponse<any[]>>('/student/subjects/search', { params });
             console.log('Search subjects response:', response.data);
             
             if (!response.data || !response.data.success) {
@@ -154,7 +160,7 @@ export const enrollmentApi = {// Lấy danh sách môn học có thể đăng k�
             return [];
         }
     },    // Đăng ký môn học cho sinh viên cụ thể
-    registerSubject: async (courseId: string, semester: string = 'HK1_2024'): Promise<{ success: boolean; message: string }> => {
+    registerSubject: async (courseId: string, semester?: string): Promise<{ success: boolean; message: string }> => {
         try {
             const user = JSON.parse(localStorage.getItem('user') || '{}');
             console.log('📝 Registering subject for student:', user.studentId);
@@ -164,11 +170,15 @@ export const enrollmentApi = {// Lấy danh sách môn học có thể đăng k�
                 throw new Error('Không tìm thấy thông tin sinh viên. Vui lòng đăng nhập lại.');
             }
             
-            const response = await axiosInstance.post<ApiResponse<any>>('/student/subjects/register', {
+            const requestBody: any = {
                 courseId,
-                semester,
-                studentId: user.studentId  // Đảm bảo gửi studentId
-            });
+                studentId: user.studentId
+            };
+            if (semester) {
+                requestBody.semester = semester;
+            }
+            
+            const response = await axiosInstance.post<ApiResponse<any>>('/student/subjects/register', requestBody);
             console.log('✅ Register subject response:', response.data);
             
             if (!response.data || !response.data.success) {
@@ -202,22 +212,22 @@ export const enrollmentApi = {// Lấy danh sách môn học có thể đăng k�
             }
         }
     },    // Lấy danh sách môn học đã đăng ký cho sinh viên cụ thể
-    getEnrolledSubjects: async (semester: string = 'HK1_2024'): Promise<EnrolledSubjectData[]> => {
+    getEnrolledSubjects: async (semester?: string): Promise<EnrolledSubjectData[]> => {
         try {
             const user = JSON.parse(localStorage.getItem('user') || '{}');
             console.log('📋 Getting enrolled subjects for student:', user.studentId);
-            console.log('📅 Semester:', semester);
+            console.log('📅 Semester:', semester || 'current (from backend)');
             
             if (!user.studentId) {
                 throw new Error('Không tìm thấy thông tin sinh viên. Vui lòng đăng nhập lại.');
             }
+
+            const params: any = { studentId: user.studentId };
+            if (semester) {
+                params.semester = semester;
+            }
             
-            const response = await axiosInstance.get<ApiResponse<any[]>>('/student/enrolled-courses', {
-                params: { 
-                    semester,
-                    studentId: user.studentId  // Đảm bảo gửi studentId
-                }
-            });
+            const response = await axiosInstance.get<ApiResponse<any[]>>('/student/enrolled-courses', { params });
             console.log('✅ Enrolled subjects response:', response.data);
             
             if (!response.data || !response.data.success) {
@@ -371,10 +381,31 @@ export const enrollmentApi = {// Lấy danh sách môn học có thể đăng k�
             
             throw new Error('Không thể lấy thông tin sinh viên. Vui lòng đăng nhập lại.');
         }
-    },// API để lấy môn học phân loại theo chương trình
-    getClassifiedSubjects: async (semesterId = 'HK1_2024') => {
+    },    // API để lấy học kỳ hiện tại
+    getCurrentSemester: async (): Promise<string> => {
         try {
-            console.log('🎯 [enrollmentApi] Getting classified subjects for semester:', semesterId);
+            console.log('📅 [enrollmentApi] Getting current semester...');
+            
+            const response = await axiosInstance.get<ApiResponse<{ currentSemester: string }>>('/student/current-semester');
+            console.log('✅ [enrollmentApi] Current semester response:', response.data);
+            
+            if (!response.data || !response.data.success) {
+                throw new Error(response.data?.message || 'Failed to fetch current semester');
+            }
+            
+            return response.data.data.currentSemester;
+        } catch (error: any) {
+            console.error('❌ [enrollmentApi] Error getting current semester:', error);
+            // Fallback to default semester
+            console.log('🔄 [enrollmentApi] Using fallback semester: HK1_2024');
+            return 'HK1_2024';
+        }
+    },
+
+    // API để lấy môn học phân loại theo chương trình
+    getClassifiedSubjects: async (semesterId?: string) => {
+        try {
+            console.log('🎯 [enrollmentApi] Getting classified subjects for semester:', semesterId || 'current (from backend)');
             
             // Lấy studentId từ localStorage
             const user = JSON.parse(localStorage.getItem('user') || '{}');
@@ -382,15 +413,13 @@ export const enrollmentApi = {// Lấy danh sách môn học có thể đăng k�
             
             if (!user.studentId) {
                 throw new Error('Không tìm thấy thông tin sinh viên. Vui lòng đăng nhập lại.');
+            }            const params: any = { studentId: user.studentId };
+            if (semesterId) {
+                params.semester = semesterId;
             }
             
             // Sử dụng API phân loại môn học mới
-            const response = await axiosInstance.get('/student/subjects/classified', {
-                params: { 
-                    semester: semesterId,
-                    studentId: user.studentId  // Đảm bảo gửi studentId
-                }
-            });
+            const response = await axiosInstance.get('/student/subjects/classified', { params });
             
             console.log('🔍 [enrollmentApi] Full response from /student/subjects/classified:', response);
             console.log('🔍 [enrollmentApi] Response data:', response.data);
@@ -484,6 +513,7 @@ export const getAvailableSubjects = enrollmentApi.getAvailableSubjects;
 export const registerSubject = enrollmentApi.registerSubject;
 export const getEnrolledSubjects = enrollmentApi.getEnrolledSubjects;
 export const unenrollSubject = enrollmentApi.unenrollSubject;
+export const getCurrentSemester = enrollmentApi.getCurrentSemester;
 export { parseSemesterInfo };
 
 // Default export

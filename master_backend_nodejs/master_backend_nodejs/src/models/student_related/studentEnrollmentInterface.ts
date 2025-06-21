@@ -4,11 +4,16 @@ export interface IRegistration {
     registrationDate: Date;     // ngayLap
     studentId: string;          // maSoSinhVien
     semesterId: string;         // maHocKy
-    registrationAmount: number; // soTienDangKy
-    requiredAmount: number;     // soTienPhaiDong
-    paidAmount: number;         // soTienDaDong
-    remainingAmount: number;    // soTienConLai
+    remainingAmount: number;    // soTienConLai - Only field for money in new schema
     maxCredits: number;         // soTinChiToiDa
+}
+
+// Enhanced registration with calculated amounts for tuition service
+export interface IEnhancedRegistration extends IRegistration {
+    registrationAmount: number; // Calculated from courses
+    requiredAmount: number;     // After discount
+    paidAmount: number;         // From payment history
+    // remainingAmount: number; // Already in base interface
 }
 
 export interface IRegistrationDetail {

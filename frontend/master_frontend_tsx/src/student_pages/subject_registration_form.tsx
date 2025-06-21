@@ -28,7 +28,7 @@ const SubjectRegistrationForm = ({ user, onLogout }: { user: { id?: string; name
     const [enrolledSubjectIds, setEnrolledSubjectIds] = useState<Set<string>>(new Set());    const [studentInfo, setStudentInfo] = useState<{ studentId: any; name: any; major: any; majorName: any; } | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const currentSemester = "HK1_2024";
+    const [currentSemester, setCurrentSemester] = useState<string>(""); // Loaded from API
     
     // Parse semester info
     const semesterInfo = parseSemesterInfo(currentSemester);useEffect(() => {
@@ -39,26 +39,37 @@ const SubjectRegistrationForm = ({ user, onLogout }: { user: { id?: string; name
             console.log('❌ No user or user.id, returning early');
             return;
         }
-        
+
         console.log('✅ User found, starting to load data...');
         setLoading(true);
-        setError(null);
-          // Load cả thông tin sinh viên và môn học
+        setError(null);        // Load student info, classified subjects, enrolled subjects, and current semester
         Promise.all([
             enrollmentApi.getStudentInfo(),
-            enrollmentApi.getClassifiedSubjects(currentSemester)
-        ])        .then(([studentData, subjectsData]) => {
+            enrollmentApi.getClassifiedSubjects(), // No semester parameter - backend uses current
+            enrollmentApi.getEnrolledSubjects(), // Load enrolled subjects to show status
+            enrollmentApi.getCurrentSemester() // Load current semester from backend
+        ])
+        .then(([studentData, subjectsData, enrolledData, currentSemesterData]) => {
             console.log('✅ Successfully loaded student info:', studentData);
             console.log('✅ Successfully loaded classified subjects:', subjectsData);
+            console.log('✅ Successfully loaded enrolled subjects:', enrolledData);
+            console.log('📅 Successfully loaded current semester:', currentSemesterData);
             console.log('🔍 Required subjects:', subjectsData.required);
             console.log('🔍 Elective subjects:', subjectsData.elective);
             console.log('🔍 Summary:', subjectsData.summary);
             
             setStudentInfo(studentData);
+            setCurrentSemester(currentSemesterData); // Update current semester
             setRequiredSubjects(subjectsData.required || []);
             setElectiveSubjects(subjectsData.elective || []);
             setFilteredRequiredSubjects(subjectsData.required || []);
             setFilteredElectiveSubjects(subjectsData.elective || []);
+            
+            // Set enrolled subjects from backend
+            const enrolledIds = new Set(enrolledData.map((subject: any) => subject.courseId || subject.id));
+            setEnrolledSubjectIds(enrolledIds);
+            console.log('📋 Enrolled subject IDs:', Array.from(enrolledIds));
+            
             setLoading(false);
         })
         .catch((err) => {
@@ -66,15 +77,13 @@ const SubjectRegistrationForm = ({ user, onLogout }: { user: { id?: string; name
             setError(err.message || 'Lỗi khi tải dữ liệu');
             setLoading(false);
         });
-    }, [user]);    const [snackbarMessage, setSnackbarMessage] = useState<string>('');
+    }, [user]);const [snackbarMessage, setSnackbarMessage] = useState<string>('');
     const [snackbarSeverity, setSnackbarSeverity] = useState<'success' | 'error' | 'warning'>('success');
 
     const handleClose = (_: React.SyntheticEvent | Event, reason?: string) => {
         if (reason === 'clickaway') return;
         setOpen(false);
-    };
-
-    const handleEnroll = async (subject: Subject) => {
+    };    const handleEnroll = async (subject: Subject) => {
         if (!user || !user.id) return;
         try {
             setLoading(true);
@@ -89,11 +98,14 @@ const SubjectRegistrationForm = ({ user, onLogout }: { user: { id?: string; name
                 // Thêm vào danh sách đã đăng ký
                 setEnrolledSubjectIds(prev => new Set([...prev, subject.id]));
             } else {
-                setSnackbarMessage(result.message);
+                // Show error message from backend (including conflict messages)
+                setSnackbarMessage(result.message || 'Đăng ký môn học thất bại');
                 setSnackbarSeverity('error');
                 setOpen(true);
             }
         } catch (err: any) {
+            // Handle network errors or unexpected errors
+            console.error('❌ Error during enrollment:', err);
             setSnackbarMessage(err.message || 'Đăng ký môn học thất bại');
             setSnackbarSeverity('error');
             setOpen(true);

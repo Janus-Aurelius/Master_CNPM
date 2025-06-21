@@ -172,6 +172,33 @@ export const studentController = {
         }
     },
 
+    getDistrictsByProvince: async (req: Request, res: Response) => {
+        try {
+            const { provinceId } = req.params;
+            if (!provinceId) {
+                return res.status(400).json({
+                    success: false,
+                    data: null,
+                    error: 'Province ID is required'
+                });
+            }
+
+            const districts = await AcademicStructureService.getDistrictsByProvince(provinceId);
+            res.json({
+                success: true,
+                data: districts,
+                message: 'Districts fetched successfully'
+            });
+        } catch (error) {
+            console.error('Error getting districts by province:', error);
+            res.status(500).json({ 
+                success: false,
+                data: null,
+                error: 'Failed to fetch districts by province' 
+            });
+        }
+    },
+
     getPriorityGroups: async (req: Request, res: Response) => {
         try {
             const priorityGroups = await AcademicStructureService.getAllPriorityGroups();

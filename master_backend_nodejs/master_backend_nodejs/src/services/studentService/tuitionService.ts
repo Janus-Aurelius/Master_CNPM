@@ -8,10 +8,10 @@ import {
     ITuitionCalculation,
     PaymentStatus 
 } from '../../models/student_related/studentPaymentInterface';
+import { IRegistration, IEnhancedRegistration } from '../../models/student_related/studentEnrollmentInterface';
 import { IPayment } from '../../models/payment';
 
-export const tuitionService = {
-    /**
+export const tuitionService = {    /**
      * Get tuition status for student in a semester
      * Shows registered courses, amounts, payment history
      */
@@ -24,10 +24,6 @@ export const tuitionService = {
                     NgayLap as "registrationDate",
                     MaSoSinhVien as "studentId", 
                     MaHocKy as "semesterId",
-                    SoTienDangKy as "registrationAmount",
-                    SoTienPhaiDong as "requiredAmount",
-                    SoTienDaDong as "paidAmount",
-                    SoTienConLai as "remainingAmount",
                     SoTinChiToiDa as "maxCredits"
                 FROM PHIEUDANGKY 
                 WHERE MaSoSinhVien = $1 AND MaHocKy = $2
@@ -40,14 +36,34 @@ export const tuitionService = {
             // Get registered courses with calculated fees
             const courses = await this.getRegisteredCoursesWithFees(registration.registrationId);
             
+            // Calculate registration amount from courses
+            const registrationAmount = courses.reduce((total, course) => total + course.totalFee, 0);
+            
             // Get student discount
             const discount = await this.getStudentDiscount(studentId);
             
-            // Get payment history
+            // Calculate required amount after discount
+            const discountMultiplier = discount ? (1 - discount.percentage) : 1;
+            const requiredAmount = registrationAmount * discountMultiplier;
+            
+            // Get payment history and calculate paid amount
             const paymentHistory = await this.getPaymentHistory(registration.registrationId);
+            const paidAmount = paymentHistory.reduce((total, payment) => total + (payment.amount || 0), 0);
+            
+            // Calculate remaining amount
+            const remainingAmount = Math.max(0, requiredAmount - paidAmount);
+
+            // Add calculated amounts to registration object
+            const enhancedRegistration = {
+                ...registration,
+                registrationAmount,
+                requiredAmount,
+                paidAmount,
+                remainingAmount
+            };
 
             return {
-                registration,
+                registration: enhancedRegistration,
                 courses,
                 discount,
                 paymentHistory
@@ -56,9 +72,7 @@ export const tuitionService = {
             console.error('Error getting tuition status:', error);
             throw error;
         }
-    },
-
-    /**
+    },    /**
      * Get registered courses with calculated fees
      */
     async getRegisteredCoursesWithFees(registrationId: string): Promise<ICourseDetail[]> {
@@ -67,9 +81,9 @@ export const tuitionService = {
                 SELECT 
                     mh.MaMonHoc as "courseId",
                     mh.TenMonHoc as "courseName",
-                    mh.SoTiet as "credits",
+                    mh.SoTiet as "totalPeriods",
                     lm.SoTienMotTC as "pricePerCredit",
-                    lm.SoTietMotTC as "creditsPerUnit",
+                    lm.SoTietMotTC as "periodsPerCredit",
                     lm.TenLoaiMon as "courseType"
                 FROM CT_PHIEUDANGKY ct
                 JOIN MONHOC mh ON ct.MaMonHoc = mh.MaMonHoc
@@ -78,14 +92,22 @@ export const tuitionService = {
                 ORDER BY mh.TenMonHoc
             `, [registrationId]);
 
-            return courses.map(course => ({
-                courseId: course.courseId,
-                courseName: course.courseName,
-                credits: course.credits,
-                pricePerCredit: course.pricePerCredit,
-                totalFee: this.calculateCourseFee(course.credits, course.pricePerCredit, course.creditsPerUnit),
-                courseType: course.courseType
-            }));
+            return courses.map(course => {
+                // Calculate actual credits: SoTiet / SoTietMotTC
+                const actualCredits = course.totalPeriods / course.periodsPerCredit;
+                const totalFee = actualCredits * course.pricePerCredit;
+                
+                return {
+                    courseId: course.courseId,
+                    courseName: course.courseName,
+                    credits: actualCredits,
+                    totalPeriods: course.totalPeriods,
+                    periodsPerCredit: course.periodsPerCredit,
+                    pricePerCredit: course.pricePerCredit,
+                    totalFee: totalFee,
+                    courseType: course.courseType
+                };
+            });
         } catch (error) {
             console.error('Error getting registered courses:', error);
             throw error;
@@ -94,27 +116,27 @@ export const tuitionService = {
 
     /**
      * Get student discount from priority object
-     */
-    async getStudentDiscount(studentId: string): Promise<{ type: string; percentage: number; amount: number } | null> {
+     */    async getStudentDiscount(studentId: string): Promise<{ type: string; percentage: number; amount: number; code?: string } | null> {
         try {
             const discountInfo = await DatabaseService.queryOne(`
                 SELECT 
                     dt.TenDoiTuong as "priorityType",
-                    dt.MucGiamHocPhi as "discountAmount"
+                    dt.MucGiamHocPhi as "discountPercentage",
+                    dt.MaDoiTuong as "priorityCode"
                 FROM SINHVIEN sv
                 JOIN DOITUONGUUTIEN dt ON sv.MaDoiTuongUT = dt.MaDoiTuong
                 WHERE sv.MaSoSinhVien = $1
             `, [studentId]);
 
-            if (!discountInfo || !discountInfo.discountAmount) {
+            if (!discountInfo || !discountInfo.discountPercentage) {
                 return null;
             }
 
-            // Convert absolute discount to percentage (assuming it's percentage for now)
             return {
                 type: discountInfo.priorityType,
-                percentage: discountInfo.discountAmount,
-                amount: 0 // Will be calculated when applying to total
+                percentage: discountInfo.discountPercentage,
+                amount: 0, // Will be calculated when applying to specific amount
+                code: discountInfo.priorityCode
             };
         } catch (error) {
             console.error('Error getting student discount:', error);
@@ -143,16 +165,17 @@ export const tuitionService = {
             console.error('Error getting payment history:', error);
             throw error;
         }
-    },
-
-    /**
+    },    /**
      * Make a payment
      */
     async makePayment(paymentRequest: IPaymentRequest): Promise<IPaymentResponse> {
         try {
-            // Get current registration
+            // Get current registration details
             const registration = await DatabaseService.queryOne(`
-                SELECT SoTienDaDong, SoTienConLai, SoTienPhaiDong 
+                SELECT 
+                    MaPhieuDangKy as "registrationId",
+                    MaSoSinhVien as "studentId",
+                    MaHocKy as "semesterId"
                 FROM PHIEUDANGKY 
                 WHERE MaPhieuDangKy = $1
             `, [paymentRequest.registrationId]);
@@ -161,37 +184,51 @@ export const tuitionService = {
                 throw new Error('Registration not found');
             }
 
-            // Validate payment amount
-            if (paymentRequest.amount > registration.SoTienConLai) {
-                throw new Error('Payment amount exceeds remaining amount');
+            // Get current tuition status (with calculated amounts)
+            const tuitionStatus = await this.getTuitionStatus(registration.studentId, registration.semesterId);
+            if (!tuitionStatus) {
+                throw new Error('Unable to calculate tuition status');
             }
 
-            // Generate payment ID
-            const paymentId = `THU_${Date.now()}_${paymentRequest.registrationId}`;
+            // Validate payment amount
+            if (paymentRequest.amount > tuitionStatus.registration.remainingAmount) {
+                throw new Error('Payment amount exceeds remaining amount');
+            }            // Generate payment ID based on existing pattern (PT + number)
+            const nextIdResult = await DatabaseService.queryOne(`
+                SELECT COALESCE(MAX(CAST(SUBSTRING(MaPhieuThu FROM 3) AS INTEGER)), 0) + 1 as next_id
+                FROM PHIEUTHUHP 
+                WHERE MaPhieuThu LIKE 'PT%'
+            `);
+            const nextId = String(nextIdResult?.next_id || 1).padStart(3, '0');
+            const paymentId = `PT${nextId}`;
 
-            // Insert payment record
+            // Insert payment record with CURRENT_DATE for current date
+            console.log('💳 Creating payment record:', paymentId, 'for registration:', paymentRequest.registrationId, 'amount:', paymentRequest.amount);
+            
             await DatabaseService.query(`
                 INSERT INTO PHIEUTHUHP (MaPhieuThu, NgayLap, MaPhieuDangKy, SoTienDong)
-                VALUES ($1, NOW(), $2, $3)
-            `, [paymentId, paymentRequest.registrationId, paymentRequest.amount]);
+                VALUES ($1, CURRENT_DATE, $2, $3)
+            `, [paymentId, paymentRequest.registrationId, paymentRequest.amount]);console.log('✅ Payment record created successfully');
 
-            // Update registration record
-            const newPaidAmount = registration.SoTienDaDong + paymentRequest.amount;
-            const newRemainingAmount = registration.SoTienPhaiDong - newPaidAmount;
+            // Calculate new amounts first
+            const newPaidAmount = tuitionStatus.registration.paidAmount + paymentRequest.amount;
+            const newRemainingAmount = Math.max(0, tuitionStatus.registration.requiredAmount - newPaidAmount);
 
+            // Update PHIEUDANGKY with new remaining amount
+            console.log('💰 Updating PHIEUDANGKY with new remaining amount:', newRemainingAmount);
+            
             await DatabaseService.query(`
                 UPDATE PHIEUDANGKY 
-                SET SoTienDaDong = $1, SoTienConLai = $2
-                WHERE MaPhieuDangKy = $3
-            `, [newPaidAmount, newRemainingAmount, paymentRequest.registrationId]);
+                SET SoTienConLai = $1 
+                WHERE MaPhieuDangKy = $2
+            `, [newRemainingAmount, paymentRequest.registrationId]);
 
-            // Determine status
+            console.log('✅ PHIEUDANGKY updated successfully');// Determine status - simplified to only 3 states
             let status: PaymentStatus = 'unpaid';
             if (newRemainingAmount <= 0) {
                 status = 'paid';
-            } else if (newPaidAmount > 0) {
-                status = 'partial';
             }
+            // Removed partial status - now only unpaid/paid
 
             return {
                 success: true,
@@ -204,34 +241,27 @@ export const tuitionService = {
             console.error('Error making payment:', error);
             throw error;
         }
-    },
-
-    /**
+    },    /**
      * Calculate tuition with discount applied
      */
     async calculateTuitionWithDiscount(studentId: string, semesterId: string): Promise<ITuitionCalculation> {
         try {
-            // Get base amount from registration
-            const registration = await DatabaseService.queryOne(`
-                SELECT SoTienDangKy FROM PHIEUDANGKY 
-                WHERE MaSoSinhVien = $1 AND MaHocKy = $2
-            `, [studentId, semesterId]);
-
-            if (!registration) {
+            // Get tuition status (which calculates base amount from courses)
+            const tuitionStatus = await this.getTuitionStatus(studentId, semesterId);
+            
+            if (!tuitionStatus) {
                 throw new Error('Registration not found');
             }
 
-            const baseAmount = registration.SoTienDangKy;
-            
-            // Get discount
-            const discount = await this.getStudentDiscount(studentId);
+            const baseAmount = tuitionStatus.registration.registrationAmount;
+            const discount = tuitionStatus.discount;
             
             let discountAmount = 0;
             let discountDetails = null;
 
             if (discount) {
                 // Apply percentage discount
-                discountAmount = (baseAmount * discount.percentage) / 100;
+                discountAmount = baseAmount * discount.percentage;
                 discountDetails = {
                     type: discount.type,
                     rate: discount.percentage
@@ -250,33 +280,26 @@ export const tuitionService = {
             console.error('Error calculating tuition:', error);
             throw error;
         }
-    },
-
-    /**
-     * Helper: Calculate course fee
+    },    /**
+     * Helper: Calculate course fee (kept for backward compatibility)
      */
-    calculateCourseFee(credits: number, pricePerCredit: number, creditsPerUnit: number): number {
-        const actualCredits = credits / (creditsPerUnit || 1);
+    calculateCourseFee(totalPeriods: number, pricePerCredit: number, periodsPerCredit: number): number {
+        const actualCredits = totalPeriods / (periodsPerCredit || 1);
         return actualCredits * pricePerCredit;
-    },
-
-    /**
+    },    /**
      * Get all outstanding tuitions (for financial department)
      */
     async getOutstandingTuitions(semesterId?: string): Promise<any[]> {
         try {
             let query = `
-                SELECT 
+                SELECT DISTINCT
                     pd.MaHocKy as "semesterId",
                     pd.MaSoSinhVien as "studentId", 
                     pd.MaPhieuDangKy as "registrationId",
-                    sv.HoTen as "studentName",
-                    pd.SoTienPhaiDong as "requiredAmount",
-                    pd.SoTienDaDong as "paidAmount",
-                    pd.SoTienConLai as "remainingAmount"
+                    sv.HoTen as "studentName"
                 FROM PHIEUDANGKY pd
                 JOIN SINHVIEN sv ON pd.MaSoSinhVien = sv.MaSoSinhVien
-                WHERE pd.SoTienConLai > 0
+                WHERE 1=1
             `;
 
             const params: string[] = [];
@@ -287,14 +310,36 @@ export const tuitionService = {
 
             query += ` ORDER BY pd.NgayLap DESC`;
 
-            return await DatabaseService.query(query, params);
+            const registrations = await DatabaseService.query(query, params);
+
+            // Calculate amounts for each registration
+            const outstandingTuitions = await Promise.all(
+                registrations.map(async (reg) => {
+                    const tuitionStatus = await this.getTuitionStatus(reg.studentId, reg.semesterId);
+                    
+                    if (!tuitionStatus || tuitionStatus.registration.remainingAmount <= 0) {
+                        return null; // Filter out paid tuitions
+                    }
+
+                    return {
+                        semesterId: reg.semesterId,
+                        studentId: reg.studentId,
+                        registrationId: reg.registrationId,
+                        studentName: reg.studentName,
+                        requiredAmount: tuitionStatus.registration.requiredAmount,
+                        paidAmount: tuitionStatus.registration.paidAmount,
+                        remainingAmount: tuitionStatus.registration.remainingAmount
+                    };
+                })
+            );
+
+            // Filter out null values (paid tuitions)
+            return outstandingTuitions.filter(item => item !== null);
         } catch (error) {
             console.error('Error getting outstanding tuitions:', error);
             throw error;
         }
-    },
-
-    /**
+    },/**
      * Get all registrations for a student
      */
     async getAllRegistrations(studentId: string): Promise<any[]> {
@@ -304,26 +349,49 @@ export const tuitionService = {
                     pd.MaPhieuDangKy as "registrationId",
                     pd.MaHocKy as "semesterId", 
                     pd.MaHocKy as "semesterName",
-                    '2024' as "year",
+                    hy.NamHoc as "year",
                     pd.NgayLap as "registrationDate",
-                    hy.ThoiHanDongHP as "dueDate",
-                    pd.SoTienDangKy as "originalAmount",
-                    pd.SoTienPhaiDong as "totalAmount",
-                    pd.SoTienDaDong as "paidAmount",
-                    pd.SoTienConLai as "remainingAmount",
-                    CASE 
-                        WHEN pd.SoTienConLai <= 0 THEN 'paid'
-                        WHEN hy.ThoiHanDongHP < CURRENT_DATE AND pd.SoTienConLai > 0 THEN 'overdue'
-                        WHEN pd.SoTienConLai > 0 THEN 'unpaid'
-                        ELSE 'pending'
-                    END as "status"
+                    hy.ThoiHanDongHP as "dueDate"
                 FROM PHIEUDANGKY pd
                 LEFT JOIN HOCKYNAMHOC hy ON pd.MaHocKy = hy.MaHocKy
                 WHERE pd.MaSoSinhVien = $1
                 ORDER BY pd.MaHocKy DESC
             `, [studentId]);
 
-            return registrations || [];
+            // For each registration, get calculated amounts
+            const registrationsWithAmounts = await Promise.all(
+                registrations.map(async (reg) => {
+                    const tuitionStatus = await this.getTuitionStatus(studentId, reg.semesterId);
+                    
+                    if (!tuitionStatus) {
+                        return {
+                            ...reg,
+                            originalAmount: 0,
+                            totalAmount: 0,
+                            paidAmount: 0,
+                            remainingAmount: 0,
+                            status: 'error'
+                        };
+                    }                    // Determine status - simplified to only 3 states
+                    let status = 'unpaid';
+                    if (tuitionStatus.registration.remainingAmount <= 0) {
+                        status = 'paid';
+                    }
+                    // Removed overdue and partial status - now only unpaid/paid for opened semesters
+
+                    return {
+                        ...reg,
+                        originalAmount: tuitionStatus.registration.registrationAmount,
+                        totalAmount: tuitionStatus.registration.requiredAmount,
+                        paidAmount: tuitionStatus.registration.paidAmount,
+                        remainingAmount: tuitionStatus.registration.remainingAmount,
+                        status,
+                        discount: tuitionStatus.discount
+                    };
+                })
+            );
+
+            return registrationsWithAmounts || [];
         } catch (error) {
             console.error('Error getting all registrations:', error);
             throw error;
@@ -365,9 +433,7 @@ export const tuitionService = {
             console.error('Error getting registration by semester:', error);
             throw error;
         }
-    },
-
-    /**
+    },    /**
      * Get registration by ID for validation
      */
     async getRegistrationById(registrationId: string): Promise<{
@@ -379,13 +445,27 @@ export const tuitionService = {
             const registration = await DatabaseService.queryOne(`
                 SELECT 
                     MaSoSinhVien as "studentId",
-                    MaHocKy as "semesterId", 
-                    SoTienConLai as "remainingAmount"
+                    MaHocKy as "semesterId"
                 FROM PHIEUDANGKY 
                 WHERE MaPhieuDangKy = $1
             `, [registrationId]);
 
-            return registration;
+            if (!registration) {
+                return null;
+            }
+
+            // Get calculated tuition status
+            const tuitionStatus = await this.getTuitionStatus(registration.studentId, registration.semesterId);
+            
+            if (!tuitionStatus) {
+                return null;
+            }
+
+            return {
+                studentId: registration.studentId,
+                semesterId: registration.semesterId,
+                remainingAmount: tuitionStatus.registration.remainingAmount
+            };
         } catch (error) {
             console.error('Error getting registration by ID:', error);
             throw error;

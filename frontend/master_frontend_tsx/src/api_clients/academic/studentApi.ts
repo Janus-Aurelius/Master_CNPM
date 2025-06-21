@@ -31,6 +31,47 @@ export interface Student {
     facultyName?: string;      // from KHOA.TenKhoa
 }
 
+// Interfaces for dropdown data
+export interface Major {
+    maNganh?: string;    // Keep camelCase for backward compatibility
+    tenNganh?: string;
+    maKhoa?: string;
+    tenKhoa?: string;
+    // Actual fields from backend (lowercase)
+    manganh: string;
+    tennganh: string;
+    makhoa: string;
+    tenkhoa: string;
+}
+
+export interface PriorityGroup {
+    maDoiTuong?: string; // Keep camelCase for backward compatibility
+    tenDoiTuong?: string;
+    mucGiamHocPhi?: number;
+    // Actual fields from backend (lowercase)
+    madoituong: string;
+    tendoituong: string;
+    mucgiamhocphi: number;
+}
+
+export interface Province {
+    maTinh?: string;     // Keep camelCase for backward compatibility
+    tenTinh?: string;
+    // Actual fields from backend (lowercase)
+    matinh: string;
+    tentinh: string;
+}
+
+export interface District {
+    maHuyen?: string;    // Keep camelCase for backward compatibility
+    tenHuyen?: string;
+    maTinh?: string;
+    // Actual fields from backend (lowercase)
+    mahuyen: string;
+    tenhuyen: string;
+    matinh: string;
+}
+
 interface ApiResponse<T> {
     success: boolean;
     data: T;
@@ -77,7 +118,40 @@ export const studentApi = {
             throw new Error(data?.message || 'No data received from server');
         }
         return data.data || [];
-    }
+    },
+
+    // Dropdown data APIs
+    getMajors: async (): Promise<Major[]> => {
+        const { data } = await axiosInstance.get<ApiResponse<Major[]>>('/academic/majors');
+        if (!data || !data.success) {
+            throw new Error(data?.message || 'Failed to fetch majors');
+        }
+        return data.data || [];
+    },
+
+    getPriorityGroups: async (): Promise<PriorityGroup[]> => {
+        const { data } = await axiosInstance.get<ApiResponse<PriorityGroup[]>>('/academic/priority-groups');
+        if (!data || !data.success) {
+            throw new Error(data?.message || 'Failed to fetch priority groups');
+        }
+        return data.data || [];
+    },
+
+    getProvinces: async (): Promise<Province[]> => {
+        const { data } = await axiosInstance.get<ApiResponse<Province[]>>('/academic/provinces');
+        if (!data || !data.success) {
+            throw new Error(data?.message || 'Failed to fetch provinces');
+        }
+        return data.data || [];
+    },
+
+    getDistrictsByProvince: async (provinceId: string): Promise<District[]> => {
+        const { data } = await axiosInstance.get<ApiResponse<District[]>>(`/academic/districts/province/${provinceId}`);
+        if (!data || !data.success) {
+            throw new Error(data?.message || 'Failed to fetch districts');
+        }
+        return data.data || [];
+    },
 };
 
 // API client cho student
@@ -119,4 +193,4 @@ export async function enrollSubject(studentId: string, subjectId: string) {
   });
   if (!res.ok) throw new Error('Đăng ký môn học thất bại');
   return res.json();
-} 
+}

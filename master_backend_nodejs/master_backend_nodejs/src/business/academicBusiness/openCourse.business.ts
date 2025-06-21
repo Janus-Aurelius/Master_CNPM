@@ -5,11 +5,8 @@ import { OpenCourseService } from '../../services/courseService/openCourse.servi
 export class OpenCourseBusiness {
     static async getAllCourses(): Promise<IOfferedCourse[]> {
         return await OpenCourseService.getAllCourses();
-    }    static async getCourseById(id: number): Promise<IOfferedCourse | null> {
-        // TODO: Fix this - need to determine semesterId and courseId from the single id parameter
-        // For now, using default semester and converting id to string
-        const defaultSemester = 'HK1 2024-2025';
-        return await OpenCourseService.getCourseById(defaultSemester, id.toString());
+    }    static async getCourseById(semesterId: string, courseId: string): Promise<IOfferedCourse | null> {
+        return await OpenCourseService.getCourseById(semesterId, courseId);
     }
 
     static async createCourse(courseData: Omit<IOfferedCourse, 'id' | 'createdAt' | 'updatedAt'>): Promise<IOfferedCourse> {
@@ -22,8 +19,8 @@ export class OpenCourseBusiness {
         this.validateDates(courseData);
 
         return await OpenCourseService.createCourse(courseData);
-    }    static async updateCourse(id: number, courseData: Partial<IOfferedCourse>): Promise<IOfferedCourse> {
-        const existingCourse = await this.getCourseById(id);
+    }    static async updateCourse(semesterId: string, courseId: string, courseData: Partial<IOfferedCourse>): Promise<IOfferedCourse> {
+        const existingCourse = await OpenCourseService.getCourseById(semesterId, courseId);
         if (!existingCourse) {
             throw new ValidationError('Course not found');
         }
@@ -39,17 +36,15 @@ export class OpenCourseBusiness {
             this.validateDates(updatedData);
         }
 
-        return await OpenCourseService.updateCourse(id, courseData);
-    }
-
-    static async deleteCourse(id: number): Promise<void> {
-        const course = await this.getCourseById(id);
+        return await OpenCourseService.updateCourse(semesterId, courseId, courseData);
+    }    static async deleteCourse(semesterId: string, courseId: string): Promise<void> {
+        const course = await OpenCourseService.getCourseById(semesterId, courseId);
         if (!course) {
-            throw new ValidationError('Course not found');        }
+            throw new ValidationError('Course not found');
+        }
 
-        // TODO: Fix this - need to determine semesterId and courseId from the single id parameter  
-        const defaultSemester = 'HK1 2024-2025';
-        await OpenCourseService.deleteCourse(defaultSemester, id.toString());    }
+        await OpenCourseService.deleteCourse(semesterId, courseId);
+    }
 
     static async getCoursesBySemester(semester: string, academicYear: string): Promise<IOfferedCourse[]> {
         if (!semester || !academicYear) {

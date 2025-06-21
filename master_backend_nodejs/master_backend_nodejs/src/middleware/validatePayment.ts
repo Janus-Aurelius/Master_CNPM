@@ -23,12 +23,11 @@ const paymentValidationRules = (): ValidationChain[] => {
         body('semester')
             .isString()
             .notEmpty()
-            .withMessage('Semester is required'),
-        body('status')
+            .withMessage('Semester is required'),        body('status')
             .optional()
             .isString()
-            .isIn(['PAID', 'PARTIAL', 'UNPAID'])
-            .withMessage('Invalid payment status. Must be: PAID, PARTIAL, UNPAID'),
+            .isIn(['PAID', 'UNPAID', 'NOT_OPENED'])
+            .withMessage('Invalid payment status. Must be: PAID, UNPAID, NOT_OPENED'),
         body('paymentDate')
             .isISO8601()
             .withMessage('Invalid payment date format (ISO8601 required)'),

@@ -23,10 +23,8 @@ export class FinancialPaymentController {
                     success: false,
                     message: 'Semester ID is required'
                 });
-            }
-
-            const filters = {
-                paymentStatus: paymentStatus as 'paid' | 'partial' | 'unpaid' | 'overdue',
+            }            const filters = {
+                paymentStatus: paymentStatus as 'paid' | 'unpaid' | 'not_opened',
                 studentId: studentId as string,
                 page: page ? parseInt(page as string) : 1,
                 limit: limit ? parseInt(limit as string) : 50

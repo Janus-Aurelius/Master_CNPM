@@ -5,6 +5,7 @@ import { IRegistration, IRegistrationDetail } from '../../models/student_related
 import { IPaymentRequest } from '../../models/student_related/studentPaymentInterface';
 import { dashboardService } from '../../services/studentService/dashboardService';
 import { studentService } from '../../services/studentService/studentService';
+import { tuitionService } from '../../services/studentService/tuitionService';
 import tuitionManager from '../../business/studentBusiness/tuitionManager';
 import registrationManager from '../../business/studentBusiness/registrationManager';
 import { AppError } from '../../middleware/errorHandler';
@@ -36,23 +37,24 @@ interface IStudentController {
     getTuitionStatus(req: Request, res: Response): Promise<Response>;
     makePayment(req: Request, res: Response): Promise<Response>;
     getPaymentHistory(req: Request, res: Response): Promise<Response>;
+
+    // Get current semester
+    getCurrentSemester(req: Request, res: Response): Promise<Response>;
 }
 
-class StudentController implements IStudentController {    public async getDashboard(req: Request, res: Response): Promise<Response> {
-        try {
+class StudentController implements IStudentController {    public async getDashboard(req: Request, res: Response): Promise<Response> {        try {
             // Lấy studentId từ req.user (đã xác thực)
             const studentId = req.user?.studentId;
             if (!studentId) {
-                return res.status(400).json({ success: false, message: 'Missing studentId in user token' });
+                return res.status(400).json({ success: false, message: 'Thiếu thông tin studentId trong token' });
             }
-            const dashboard = await dashboardService.getStudentOverview(studentId);            if (!dashboard) {
-                return res.status(404).json({ success: false, message: 'Student dashboard not found' });
+            const dashboard = await dashboardService.getStudentOverview(studentId);if (!dashboard) {
+                return res.status(404).json({ success: false, message: 'Không tìm thấy dashboard của sinh viên' });
             }
             
-            return res.status(200).json({ success: true, data: dashboard });
-        } catch (error: unknown) {
+            return res.status(200).json({ success: true, data: dashboard });        } catch (error: unknown) {
             console.error(`Error getting dashboard: ${error}`);
-            return res.status(500).json({ success: false, message: 'Internal server error' });
+            return res.status(500).json({ success: false, message: 'Lỗi hệ thống' });
         }
     }    public async getStudentInfo(req: Request, res: Response): Promise<Response> {
         try {
@@ -83,10 +85,9 @@ class StudentController implements IStudentController {    public async getDashb
             }
             
             if (!studentId) {
-                console.log('❌ No studentId found in request or token:', { body: req.body, params: req.params, user: req.user });
-                return res.status(400).json({ 
+                console.log('❌ No studentId found in request or token:', { body: req.body, params: req.params, user: req.user });                return res.status(400).json({ 
                     success: false, 
-                    message: 'Missing studentId in request or user token',
+                    message: 'Thiếu thông tin studentId trong request hoặc token',
                     debug: { body: req.body, params: req.params, user: req.user }
                 });
             }
@@ -112,31 +113,29 @@ class StudentController implements IStudentController {    public async getDashb
             };
             
             console.log('✅ Formatted response:', response);
-            return res.status(200).json({ success: true, data: response });
-        } catch (error: unknown) {
+            return res.status(200).json({ success: true, data: response });        } catch (error: unknown) {
             console.error('❌ Error getting student info:', error);
-            const message = error instanceof Error ? error.message : 'Internal server error';
+            const message = error instanceof Error ? error.message : 'Lỗi hệ thống';
             return res.status(500).json({ success: false, message });
         }
     }    public async getTimeTable(req: Request, res: Response): Promise<Response> {
         try {
+            const { DatabaseService } = await import('../../services/database/databaseService');
             const studentId = req.user?.studentId || req.query.studentId as string;
-            const semester = (req.query.semester as string) || 'HK1_2024';
+            const semester = (req.query.semester as string) || await DatabaseService.getCurrentSemester();
             
             console.log(`🔵 [StudentController] getTimeTable called for student: ${studentId}, semester: ${semester}`);
             
-            if (!studentId) {
-                return res.status(400).json({ 
+            if (!studentId) {                return res.status(400).json({ 
                     success: false, 
-                    message: 'Missing studentId in user token or query' 
+                    message: 'Thiếu thông tin studentId trong token hoặc query' 
                 });
             }
               // Lấy thông tin sinh viên
             const student = await studentService.getStudentInfo(studentId);
-            if (!student) {
-                return res.status(404).json({ 
+            if (!student) {                return res.status(404).json({ 
                     success: false, 
-                    message: 'Student not found' 
+                    message: 'Không tìm thấy sinh viên' 
                 });
             }
             
@@ -144,10 +143,9 @@ class StudentController implements IStudentController {    public async getDashb
             const timetableData = await dashboardService.getStudentTimetable(studentId, semester);
             
             console.log(`✅ [StudentController] Retrieved ${timetableData.length} courses for timetable`);
-            
-            return res.status(200).json({ 
+              return res.status(200).json({ 
                 success: true, 
-                message: 'Timetable retrieved successfully',
+                message: 'Lấy thời khóa biểu thành công',
                 data: {
                     student: {
                         studentId: student.studentId,
@@ -160,16 +158,17 @@ class StudentController implements IStudentController {    public async getDashb
                 }
             });
         } catch (error: unknown) {
-            console.error(`❌ [StudentController] Error getting timetable:`, error);
-            return res.status(500).json({ 
+            console.error(`❌ [StudentController] Error getting timetable:`, error);            return res.status(500).json({ 
                 success: false, 
-                message: 'Internal server error',
+                message: 'Lỗi hệ thống',
                 error: error instanceof Error ? error.message : 'Unknown error'
             });
         }
-    }public async getAvailableSubjects(req: Request, res: Response): Promise<Response> {
-        try {            // Optional query parameters with defaults
-            const semester = (req.query.semester as string) || 'HK1_2024';
+    }    public async getAvailableSubjects(req: Request, res: Response): Promise<Response> {
+        try {
+            const { DatabaseService } = await import('../../services/database/databaseService');
+            // Optional query parameters with defaults
+            const semester = (req.query.semester as string) || await DatabaseService.getCurrentSemester();
             const studentId = req.query.studentId as string;
             
             console.log('🔍 Getting available subjects for:', { semester, studentId });
@@ -189,17 +188,18 @@ class StudentController implements IStudentController {    public async getDashb
                 success: true,
                 data: result.data
             });
-        } catch (error: any) {
-            console.error('❌ Error getting available subjects:', error);
+        } catch (error: any) {            console.error('❌ Error getting available subjects:', error);
             return res.status(500).json({
                 success: false,
-                message: 'Internal server error',
+                message: 'Lỗi hệ thống',
                 error: error.message
             });
         }
-    }    public async searchSubjects(req: Request, res: Response): Promise<Response> {        try {
+    }    public async searchSubjects(req: Request, res: Response): Promise<Response> {
+        try {
+            const { DatabaseService } = await import('../../services/database/databaseService');
             const searchQuery = req.query.query as string;
-            const semester = (req.query.semester as string) || 'HK1_2024';
+            const semester = (req.query.semester as string) || await DatabaseService.getCurrentSemester();
             const studentId = req.query.studentId as string;
             
             console.log('🔍 Searching subjects:', { searchQuery, semester, studentId });
@@ -228,39 +228,48 @@ class StudentController implements IStudentController {    public async getDashb
             return res.status(200).json({
                 success: true,
                 data: filteredData
-            });
-        } catch (error: any) {
+            });        } catch (error: any) {
             console.error('❌ Error searching subjects:', error);
             return res.status(500).json({
                 success: false,
-                message: 'Internal server error',
+                message: 'Lỗi hệ thống',
                 error: error.message
-            });
-        }    }public async registerSubject(req: Request, res: Response): Promise<Response> {
-        try {            console.log('🔵 [StudentController] registerSubject called');
+            });        }    }
+
+    public async registerSubject(req: Request, res: Response): Promise<Response> {
+        try {
+            console.log('🔵 [StudentController] registerSubject called');
             console.log('🔵 [StudentController] req.body:', req.body);
             console.log('🔵 [StudentController] req.user:', req.user);
-              // Lấy studentId từ req.body thay vì req.user
+              
+            // Lấy studentId từ req.body thay vì req.user
             const { studentId, courseId, semester, semesterId } = req.body; // Accept both semester and semesterId
             
             if (!studentId || !courseId) {
                 console.log('❌ [StudentController] Missing studentId or courseId');
                 console.log('🔍 [StudentController] studentId:', studentId, 'courseId:', courseId);
-                return res.status(400).json({ success: false, message: 'Missing studentId or courseId' });
+                return res.status(400).json({ success: false, message: 'Thiếu thông tin studentId hoặc courseId' });
             }
-            
-            const semesterParam = semesterId || semester || 'HK1_2024';
+
+            const { DatabaseService } = await import('../../services/database/databaseService');
+            const semesterParam = semesterId || semester || await DatabaseService.getCurrentSemester();
             console.log('🔵 [StudentController] Calling registerSubject with:', {
                 studentId,
                 courseId,
                 semesterParam
             });
             
-            await registrationManager.registerSubject(studentId, courseId, semesterParam);
+            const result = await registrationManager.registerSubject(studentId, courseId, semesterParam);
             
-            console.log('✅ [StudentController] Registration successful');
-            return res.status(201).json({ success: true, message: 'Subject registered successfully' });
-        } catch (error: any) {
+            console.log('🔵 [StudentController] Registration result:', result);
+            
+            if (result.success) {
+                console.log('✅ [StudentController] Registration successful');
+                return res.status(201).json({ success: true, message: result.message });
+            } else {
+                console.log('❌ [StudentController] Registration failed:', result.message);
+                return res.status(409).json({ success: false, message: result.message });
+            }} catch (error: any) {
             console.error('❌ [StudentController] Registration error:', error);
             if (error.message.includes('already registered')) {
                 return res.status(409).json({
@@ -282,25 +291,33 @@ class StudentController implements IStudentController {    public async getDashb
                     success: false,
                     message: error.message
                 });
-            } else {
+            } else if (error.message.includes('Trùng lịch học') || error.message.includes('conflict') || error.message.includes('lịch học')) {
+                // Handle schedule conflict errors
+                return res.status(409).json({
+                    success: false,
+                    message: error.message
+                });            } else {
                 console.error('Error registering subject:', error);
                 return res.status(500).json({
                     success: false,
-                    message: 'Internal server error'
+                    message: 'Lỗi hệ thống'
                 });
             }
-        }    }    public async getEnrolledCourses(req: Request, res: Response): Promise<Response> {
+        }
+    }
+
+    public async getEnrolledCourses(req: Request, res: Response): Promise<Response> {
         try {
+            const { DatabaseService } = await import('../../services/database/databaseService');
             // Thử lấy studentId từ nhiều nguồn khác nhau
             const studentId = req.user?.studentId || req.user?.id || req.params?.studentId || req.query?.studentId;
-            const semester = (req.query.semester as string) || 'HK1_2024';
+            const semester = (req.query.semester as string) || await DatabaseService.getCurrentSemester();
             
             console.log('🔍 [StudentController] getEnrolledCourses - req.user:', req.user);
             console.log('🔍 [StudentController] getEnrolledCourses - extracted studentId:', studentId);
-            
-            if (!studentId) {
+              if (!studentId) {
                 console.log('❌ [StudentController] No studentId found in request');
-                return res.status(400).json({ success: false, message: 'Missing studentId in user token' });
+                return res.status(400).json({ success: false, message: 'Thiếu thông tin studentId trong token' });
             }
             
             console.log('📚 [StudentController] Getting enrolled courses for student:', studentId, 'semester:', semester);
@@ -308,11 +325,10 @@ class StudentController implements IStudentController {    public async getDashb
             
             console.log('✅ [StudentController] Enrolled courses result:', enrolledCourses);
             return res.status(200).json(enrolledCourses);
-        } catch (error: any) {
-            console.error('Error getting enrolled courses:', error);
+        } catch (error: any) {            console.error('Error getting enrolled courses:', error);
             return res.status(500).json({
                 success: false,
-                message: 'Internal server error'
+                message: 'Lỗi hệ thống'
             });
         }
     }
@@ -323,13 +339,12 @@ class StudentController implements IStudentController {    public async getDashb
             // Simulate registration logic
             return res.status(201).json({
                 success: true,
-                message: 'Student registered successfully'
-            });
-        } catch (error: any) {
+                message: 'Đăng ký sinh viên thành công'
+            });        } catch (error: any) {
             console.error('Error registering student:', error);
             return res.status(500).json({
                 success: false,
-                message: 'Internal server error'
+                message: 'Lỗi hệ thống'
             });
         }
     }
@@ -337,17 +352,16 @@ class StudentController implements IStudentController {    public async getDashb
     public async updateProfile(req: Request, res: Response): Promise<Response> {
         try {
             const studentId = req.user?.studentId;
-            const updateData = req.body;
-            if (!studentId) {
-                return res.status(400).json({ success: false, message: 'Missing studentId in user token' });
+            const updateData = req.body;            if (!studentId) {
+                return res.status(400).json({ success: false, message: 'Thiếu thông tin studentId trong token' });
             }
             // Simulate update logic
-            return res.status(200).json({ success: true, message: 'Profile updated successfully' });
+            return res.status(200).json({ success: true, message: 'Cập nhật hồ sơ thành công' });
         } catch (error: any) {
             console.error('Error updating profile:', error);
             return res.status(500).json({
                 success: false,
-                message: 'Internal server error'
+                message: 'Lỗi hệ thống'
             });
         }
     }
@@ -357,25 +371,23 @@ class StudentController implements IStudentController {    public async getDashb
             const studentId = req.user?.studentId;
             const { courseIds, semester, academicYear } = req.body;
             if (!studentId || !Array.isArray(courseIds) || courseIds.length === 0) {
-                return res.status(400).json({ success: false, message: 'Missing studentId or courseIds' });
+                return res.status(400).json({ success: false, message: 'Thiếu thông tin studentId hoặc courseIds' });
             }
             // Simulate course registration logic
-            return res.status(201).json({ success: true, message: 'Courses registered successfully' });
-        } catch (error: any) {
-            console.error('Error registering courses:', error);
-            return res.status(500).json({ success: false, message: 'Internal server error' });
+            return res.status(201).json({ success: true, message: 'Đăng ký các môn học thành công' });
+        } catch (error: any) {            console.error('Error registering courses:', error);
+            return res.status(500).json({ success: false, message: 'Lỗi hệ thống' });
         }
     }    public async getRegisteredCourses(req: Request, res: Response): Promise<Response> {
         try {
             const studentId = req.user?.studentId;
-            const semester = req.query.semester as string;
-            if (!studentId) {
-                return res.status(400).json({ success: false, message: 'Missing studentId in user token' });
+            const semester = req.query.semester as string;            if (!studentId) {
+                return res.status(400).json({ success: false, message: 'Thiếu thông tin studentId trong token' });
             }            // Simulate getting registered courses logic
             return res.status(200).json({ success: true, data: [] });
         } catch (error: any) {
             console.error('Error getting registered courses:', error);
-            return res.status(500).json({ success: false, message: 'Internal server error' });
+            return res.status(500).json({ success: false, message: 'Lỗi hệ thống' });
         }
     }
 
@@ -388,7 +400,7 @@ class StudentController implements IStudentController {    public async getDashb
             if (!studentId) {
                 return res.status(400).json({ 
                     success: false, 
-                    message: 'Missing studentId' 
+                    message: 'Thiếu thông tin studentId' 
                 });
             }
 
@@ -403,25 +415,22 @@ class StudentController implements IStudentController {    public async getDashb
                     data: [],
                     message: 'No tuition records found' 
                 });
-            }
-
-            return res.status(200).json({ success: true, data: allTuitionStatus });
+            }            return res.status(200).json({ success: true, data: allTuitionStatus });
         } catch (error: any) {
             console.error('Error getting tuition status:', error);
             return res.status(500).json({ 
                 success: false, 
-                message: 'Internal server error' 
+                message: 'Lỗi hệ thống' 
             });
         }
     }    public async makePayment(req: Request, res: Response): Promise<Response> {
         try {
-            const studentId = req.user?.studentId || req.user?.id || req.body?.studentId;
-            const { semesterId, amount, paymentMethod } = req.body;
+            const studentId = req.user?.studentId || req.user?.id || req.body?.studentId;            const { semesterId, amount, paymentMethod } = req.body;
 
             if (!studentId) {
                 return res.status(400).json({ 
                     success: false, 
-                    message: 'Missing studentId in user token' 
+                    message: 'Thiếu thông tin studentId trong token' 
                 });
             }
 
@@ -431,14 +440,34 @@ class StudentController implements IStudentController {    public async getDashb
                     success: false, 
                     message: 'Invalid payment request - missing semesterId or amount' 
                 });
-            }            console.log('💳 Processing payment for student:', studentId, 'semester:', semesterId, 'amount:', amount);
+            }            console.log('💳 Processing payment for student:', studentId, 'semester/registrationId:', semesterId, 'amount:', amount);
 
-            // Create payment request with proper format
+            // Check if semesterId is actually a registrationId (starts with "PD")
+            let registrationId = semesterId;
+            
+            if (!semesterId.startsWith('PD')) {
+                // This is a real semesterId, need to get registrationId from database
+                const registration = await tuitionService.getRegistrationBySemester(studentId, semesterId);
+                
+                if (!registration) {
+                    return res.status(404).json({ 
+                        success: false, 
+                        message: 'Không tìm thấy phiếu đăng ký cho học kỳ này' 
+                    });
+                }
+                
+                registrationId = registration.registrationId;
+                console.log('📋 Found registration ID:', registrationId, 'for semester:', semesterId);
+            } else {
+                console.log('📋 Using provided registration ID directly:', registrationId);
+            }
+
+            // Create payment request with proper registrationId
             const paymentRequest: IPaymentRequest = {
-                registrationId: semesterId, // Using semesterId as registrationId for now
+                registrationId: registrationId,
                 amount: amount,
                 paymentMethod: 'bank_transfer',
-                notes: `Payment from student ${studentId}`
+                notes: `Payment from student ${studentId} for registration ${registrationId}`
             };
 
             const paymentResponse = await tuitionManager.processPayment(paymentRequest);
@@ -446,23 +475,22 @@ class StudentController implements IStudentController {    public async getDashb
             return res.status(200).json({ 
                 success: true, 
                 data: paymentResponse,
-                message: 'Payment processed successfully'
+                message: 'Thanh toán được xử lý thành công'
             });
         } catch (error: any) {
             console.error('Error making payment:', error);
             return res.status(500).json({ 
                 success: false, 
-                message: error.message || 'Internal server error' 
+                message: error.message || 'Lỗi hệ thống' 
             });
         }
     }    public async getPaymentHistory(req: Request, res: Response): Promise<Response> {
         try {
             const studentId = req.user?.studentId || req.user?.id || req.query?.studentId as string;
-            
-            if (!studentId) {
+              if (!studentId) {
                 return res.status(400).json({ 
                     success: false, 
-                    message: 'Missing studentId in user token' 
+                    message: 'Thiếu thông tin studentId trong token' 
                 });
             }
 
@@ -473,18 +501,17 @@ class StudentController implements IStudentController {    public async getDashb
             return res.status(200).json({ 
                 success: true, 
                 data: paymentHistory 
-            });
-        } catch (error: any) {
+            });        } catch (error: any) {
             console.error('Error getting payment history:', error);
             return res.status(500).json({ 
                 success: false, 
-                message: 'Internal server error' 
+                message: 'Lỗi hệ thống' 
             });
         }
-    }public async cancelRegistration(req: Request, res: Response): Promise<Response> {
+    }    public async cancelRegistration(req: Request, res: Response): Promise<Response> {
         try {
-            // Thử lấy studentId từ nhiều nguồn khác nhau
-            const studentId = req.user?.studentId || req.user?.id || req.body?.studentId;
+            // Ưu tiên lấy studentId từ body trước, sau đó từ token
+            const studentId = req.body?.studentId || req.user?.studentId || req.user?.id;
             const { courseId } = req.body;
             
             console.log('🔍 [StudentController] cancelRegistration - req.user:', req.user);
@@ -493,7 +520,7 @@ class StudentController implements IStudentController {    public async getDashb
             
             if (!studentId || !courseId) {
                 console.log('❌ [StudentController] Missing studentId or courseId');
-                return res.status(400).json({ success: false, message: 'Missing studentId or courseId' });
+                return res.status(400).json({ success: false, message: 'Thiếu thông tin studentId hoặc courseId' });
             }
             
             console.log('❌ [StudentController] Cancelling registration for student:', studentId, 'course:', courseId);
@@ -506,7 +533,7 @@ class StudentController implements IStudentController {    public async getDashb
                 return res.status(404).json({ success: false, message: error.message });
             } else {
                 console.error('Error cancelling registration:', error);
-                return res.status(500).json({ success: false, message: 'Internal server error' });
+                return res.status(500).json({ success: false, message: 'Lỗi hệ thống' });
             }
         }
     }public async getRecommendedSubjects(req: Request, res: Response): Promise<Response> {
@@ -520,22 +547,21 @@ class StudentController implements IStudentController {    public async getDashb
                 
                 // Nếu có username và username bắt đầu bằng 'sv', convert thành format SV0xxx
                 if (!studentId && req.user?.username) {
-                    const username = req.user.username.toLowerCase();
-                    if (username.startsWith('sv')) {
+                    const username = req.user.username.toLowerCase();                    if (username.startsWith('sv')) {
                         studentId = username.toUpperCase();
                     }
                 }
             }
-            
-            const semester = (req.query.semester as string) || 'HK1_2024';
+
+            const { DatabaseService } = await import('../../services/database/databaseService');
+            const semester = (req.query.semester as string) || await DatabaseService.getCurrentSemester();
             
             console.log('🎯 Getting recommended subjects for:', { semester, studentId, userFromToken: req.user });
             
-            if (!studentId) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'Missing studentId in request or user token'
-                });
+            if (!studentId) {            return res.status(400).json({
+                success: false,
+                message: 'Thiếu thông tin studentId trong request hoặc token'
+            });
             }
             
             const result = await registrationManager.getRecommendedCourses(studentId, semester);
@@ -551,12 +577,11 @@ class StudentController implements IStudentController {    public async getDashb
             return res.status(200).json({
                 success: true,
                 data: result.data
-            });
-        } catch (error: any) {
+            });        } catch (error: any) {
             console.error('❌ Error getting recommended subjects:', error);
             return res.status(500).json({
                 success: false,
-                message: 'Internal server error',
+                message: 'Lỗi hệ thống',
                 error: error.message
             });
         }
@@ -580,20 +605,19 @@ class StudentController implements IStudentController {    public async getDashb
                     if (username.startsWith('sv')) {
                         // Convert sv0001 -> SV0001
                         studentId = username.toUpperCase();
-                        console.log('🔄 Converted username to studentId:', studentId);
-                    }
+                        console.log('🔄 Converted username to studentId:', studentId);                    }
                 }
             }
-            
-            const semester = (req.query.semester as string) || 'HK1_2024';
+
+            const { DatabaseService } = await import('../../services/database/databaseService');
+            const semester = (req.query.semester as string) || await DatabaseService.getCurrentSemester();
             
             console.log('📚 Getting classified subjects for:', { semester, studentId });
             
             if (!studentId) {
-                console.log('❌ No studentId found in request or token:', { body: req.body, params: req.params, user: req.user });
-                return res.status(400).json({
+                console.log('❌ No studentId found in request or token:', { body: req.body, params: req.params, user: req.user });                return res.status(400).json({
                     success: false,
-                    message: 'Missing studentId in request or user token',
+                    message: 'Thiếu thông tin studentId trong request hoặc token',
                     debug: { body: req.body, params: req.params, user: req.user }
                 });
             }
@@ -635,11 +659,31 @@ class StudentController implements IStudentController {    public async getDashb
                 data: classifiedSubjects 
             });
         } catch (error: any) {
-            console.error('❌ Error getting classified subjects:', error);
+            console.error('❌ Error getting classified subjects:', error);            return res.status(500).json({
+                success: false,
+                message: 'Lỗi hệ thống',
+                error: error.message
+            });
+        }
+    }
+
+    /**
+     * Get current semester from system settings
+     */
+    public async getCurrentSemester(req: Request, res: Response): Promise<Response> {
+        try {
+            const { DatabaseService } = await import('../../services/database/databaseService');
+            const currentSemester = await DatabaseService.getCurrentSemester();
+            
+            return res.status(200).json({
+                success: true,
+                data: { currentSemester }
+            });
+        } catch (error: any) {
+            console.error('Error getting current semester:', error);
             return res.status(500).json({
                 success: false,
-                message: 'Internal server error',
-                error: error.message
+                message: 'Lỗi hệ thống khi lấy học kỳ hiện tại'
             });
         }
     }

@@ -18,14 +18,21 @@ import {
     Table,
     TableHead,
     TableRow,
-    TableCell,    TableBody,
+    TableCell,
+    TableBody,
     TablePagination,
     Snackbar,
-    Alert
+    Alert,
+    FormControl,
+    InputLabel,
+    Select,
+    MenuItem,
+    InputAdornment
 } from "@mui/material";
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import AddIcon from '@mui/icons-material/Add';
+import SearchIcon from '@mui/icons-material/Search';
 import { programApi, ProgramSchedule } from "../api_clients/academic/programApi";
 
 interface AcademicPageProps {
@@ -59,6 +66,32 @@ export default function ProgramMgmAcademic({ user, onLogout }: AcademicPageProps
         severity: 'error'
     });
     const [oldKeys, setOldKeys] = useState<{ maNganh: string, maMonHoc: string, maHocKy: string } | null>(null);
+    
+    // Search states
+    const [searchTerm, setSearchTerm] = useState("");
+    const [selectedMajor, setSelectedMajor] = useState<string>("all");
+    const [selectedDepartment, setSelectedDepartment] = useState<string>("all");
+    const [selectedSemester, setSelectedSemester] = useState<string>("all");
+
+    // Filter programs based on search criteria
+    const filteredPrograms = programs.filter(program => {
+        const matchesSearch = searchTerm === "" || 
+            program.maNganh?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            program.maMonHoc?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            program.tenNganh?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            program.tenKhoa?.toLowerCase().includes(searchTerm.toLowerCase());
+        
+        const matchesMajor = selectedMajor === "all" || program.maNganh === selectedMajor;
+        const matchesDepartment = selectedDepartment === "all" || program.tenKhoa === selectedDepartment;
+        const matchesSemester = selectedSemester === "all" || program.maHocKy === selectedSemester;
+        
+        return matchesSearch && matchesMajor && matchesDepartment && matchesSemester;
+    });
+
+    // Get unique values for filter dropdowns
+    const uniqueMajors = Array.from(new Set(programs.map(p => p.maNganh).filter(Boolean)));
+    const uniqueDepartments = Array.from(new Set(programs.map(p => p.tenKhoa).filter(Boolean)));
+    const uniqueSemesters = Array.from(new Set(programs.map(p => p.maHocKy).filter(Boolean)));
 
     const fetchPrograms = async () => {
         try {
@@ -166,15 +199,26 @@ export default function ProgramMgmAcademic({ user, onLogout }: AcademicPageProps
                     severity: 'success'
                 });
             }
-            handleCloseDialog();
-        } catch (err: any) {
-            const errorMessage = err.response?.data?.message || 'Có lỗi xảy ra khi lưu chương trình học';
+            handleCloseDialog();        } catch (err: any) {
+            console.log('Full error object:', err);
+            console.log('Error response status:', err.response?.status);
+            console.log('Error response data:', err.response?.data);
+            console.log('Error response message:', err.response?.data?.message);
+            
+            let errorMessage = 'Có lỗi xảy ra khi lưu chương trình học';
+            
+            if (err.response?.data?.message) {
+                errorMessage = err.response.data.message;
+            } else if (err.message) {
+                errorMessage = err.message;
+            }
+            
             setSnackbar({
                 open: true,
                 message: errorMessage,
                 severity: 'error'
             });
-            console.error(err);
+            console.error('Complete error:', err);
         }
     };
 
@@ -322,10 +366,94 @@ export default function ProgramMgmAcademic({ user, onLogout }: AcademicPageProps
                             marginTop: '0px',
                             textAlign: "center",
                             fontSize: "30px",
-                        }}
-                    >
+                        }}                    >
                         Danh sách chương trình học
                     </Typography>
+                    
+                    {/* Search and Filter Controls */}
+                    <Grid container spacing={2} sx={{ mb: 3 }}>
+                        <Grid item xs={12} md={3}>
+                            <TextField
+                                fullWidth
+                                placeholder="Tìm kiếm theo mã ngành, môn học, tên ngành..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                InputProps={{
+                                    startAdornment: (
+                                        <InputAdornment position="start">
+                                            <SearchIcon />
+                                        </InputAdornment>
+                                    ),
+                                }}
+                                sx={{
+                                    '& .MuiOutlinedInput-root': {
+                                        borderRadius: '12px'
+                                    }
+                                }}
+                            />
+                        </Grid>
+                        <Grid item xs={12} md={3}>
+                            <FormControl fullWidth>
+                                <InputLabel>Mã ngành</InputLabel>
+                                <Select
+                                    value={selectedMajor}
+                                    label="Mã ngành"
+                                    onChange={(e) => setSelectedMajor(e.target.value)}
+                                    sx={{
+                                        borderRadius: '12px'
+                                    }}
+                                >
+                                    <MenuItem value="all">Tất cả</MenuItem>
+                                    {uniqueMajors.map((major) => (
+                                        <MenuItem key={major} value={major}>
+                                            {major}
+                                        </MenuItem>
+                                    ))}
+                                </Select>
+                            </FormControl>
+                        </Grid>
+                        <Grid item xs={12} md={3}>
+                            <FormControl fullWidth>
+                                <InputLabel>Khoa</InputLabel>
+                                <Select
+                                    value={selectedDepartment}
+                                    label="Khoa"
+                                    onChange={(e) => setSelectedDepartment(e.target.value)}
+                                    sx={{
+                                        borderRadius: '12px'
+                                    }}
+                                >
+                                    <MenuItem value="all">Tất cả</MenuItem>
+                                    {uniqueDepartments.map((dept) => (
+                                        <MenuItem key={dept} value={dept}>
+                                            {dept}
+                                        </MenuItem>
+                                    ))}
+                                </Select>
+                            </FormControl>
+                        </Grid>
+                        <Grid item xs={12} md={3}>
+                            <FormControl fullWidth>
+                                <InputLabel>Học kỳ</InputLabel>
+                                <Select
+                                    value={selectedSemester}
+                                    label="Học kỳ"
+                                    onChange={(e) => setSelectedSemester(e.target.value)}
+                                    sx={{
+                                        borderRadius: '12px'
+                                    }}
+                                >
+                                    <MenuItem value="all">Tất cả</MenuItem>
+                                    {uniqueSemesters.map((semester) => (
+                                        <MenuItem key={semester} value={semester}>
+                                            {semester}
+                                        </MenuItem>
+                                    ))}
+                                </Select>
+                            </FormControl>
+                        </Grid>
+                    </Grid>
+
                     <Box sx={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '16px' }}>
                         <Button
                             variant="contained"
@@ -359,7 +487,7 @@ export default function ProgramMgmAcademic({ user, onLogout }: AcademicPageProps
                                         </TableRow>
                                     </TableHead>
                                     <TableBody>
-                                        {programs
+                                        {filteredPrograms
                                             .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                                             .map((program, index) => (
                                             <TableRow 
@@ -416,7 +544,7 @@ export default function ProgramMgmAcademic({ user, onLogout }: AcademicPageProps
                             <TablePagination
                                 rowsPerPageOptions={[5, 10, 25]}
                                 component="div"
-                                count={programs.length}
+                                count={filteredPrograms.length}
                                 rowsPerPage={rowsPerPage}
                                 page={page}
                                 onPageChange={handleChangePage}

@@ -2,7 +2,14 @@ import { useState, useEffect } from "react";
 import { ThemeLayout } from "../styles/theme_layout.tsx";
 import { User } from "../types.ts";
 import UserInfo from "../components/UserInfo.tsx";
-import { studentApi, Student as ApiStudent } from "../api_clients/academic/studentApi.ts";
+import { 
+    studentApi, 
+    Student as ApiStudent, 
+    Major, 
+    PriorityGroup, 
+    Province, 
+    District 
+} from "../api_clients/academic/studentApi.ts";
 import {
     Box, Paper, Typography, Button, Table, TableBody, TableCell, 
     TableContainer, TableHead, TableRow, CircularProgress, Alert,
@@ -45,7 +52,7 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
     const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; student: ApiStudent | null }>({
         open: false,
         student: null
-    });const [formData, setFormData] = useState({
+    });    const [formData, setFormData] = useState({
         studentId: '',
         fullName: '',
         email: '',
@@ -54,16 +61,31 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
         gender: 'Nam',
         hometown: '',
         priorityName: '',
-        facultyName: '',
         majorName: '',
-        enrollmentYear: '',
         provinceName: '',
         districtName: '',
         address: '',
         districtId: '',
         priorityObjectId: '',
         majorId: ''
+    });    // Dropdown data states
+    const [majors, setMajors] = useState<Major[]>([]);
+    const [priorityGroups, setPriorityGroups] = useState<PriorityGroup[]>([]);
+    const [provinces, setProvinces] = useState<Province[]>([]);
+    const [districts, setDistricts] = useState<District[]>([]);    // Debug log current state
+    console.log('=== DROPDOWN STATE DEBUG ===');
+    console.log('Current dropdown data counts:', {
+        majors: majors.length,
+        priorityGroups: priorityGroups.length,
+        provinces: provinces.length,
+        districts: districts.length
     });
+    console.log('Sample data:');
+    if (majors.length > 0) console.log('First major:', majors[0]);
+    if (priorityGroups.length > 0) console.log('First priority group:', priorityGroups[0]);
+    if (provinces.length > 0) console.log('First province:', provinces[0]);
+    if (districts.length > 0) console.log('First district:', districts[0]);
+    console.log('=== END DEBUG ===');
 
     // Fetch students on component mount
     useEffect(() => {
@@ -83,7 +105,70 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
         };
 
         fetchStudents();
+    }, []);    // Fetch dropdown data on component mount
+    useEffect(() => {
+        const fetchDropdownData = async () => {
+            try {
+                console.log('Starting to fetch dropdown data...');
+                console.log('Token in localStorage:', localStorage.getItem('token'));
+                
+                const majorsPromise = studentApi.getMajors().catch(err => {
+                    console.error('Error fetching majors:', err.response?.data || err.message);
+                    return [];
+                });
+                
+                const priorityGroupsPromise = studentApi.getPriorityGroups().catch(err => {
+                    console.error('Error fetching priority groups:', err.response?.data || err.message);
+                    return [];
+                });
+                
+                const provincesPromise = studentApi.getProvinces().catch(err => {
+                    console.error('Error fetching provinces:', err.response?.data || err.message);
+                    return [];
+                });
+
+                const [majorsData, priorityGroupsData, provincesData] = await Promise.all([
+                    majorsPromise,
+                    priorityGroupsPromise,
+                    provincesPromise
+                ]);
+                
+                console.log('Raw API responses:', {
+                    majorsData,
+                    priorityGroupsData,
+                    provincesData
+                });
+                
+                setMajors(majorsData);
+                setPriorityGroups(priorityGroupsData);
+                setProvinces(provincesData);
+                
+                console.log('Set dropdown data successfully');
+            } catch (err) {
+                console.error('Error fetching dropdown data:', err);
+            }
+        };
+
+        fetchDropdownData();
     }, []);
+
+    // Fetch districts when province changes
+    const handleProvinceChange = async (provinceId: string) => {
+        try {
+            const districtsData = await studentApi.getDistrictsByProvince(provinceId);
+            setDistricts(districtsData);
+              // Update form data
+            const selectedProvince = provinces.find(p => (p as any).matinh === provinceId);
+            setFormData(prev => ({
+                ...prev,
+                provinceName: (selectedProvince as any)?.tentinh || '',
+                districtId: '', // Reset district when province changes
+                districtName: ''
+            }));
+        } catch (err) {
+            console.error('Error fetching districts:', err);
+        }
+    };
 
     // Apply filters
     useEffect(() => {
@@ -134,8 +219,14 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
     const closeStudentDetails = () => {
         setDetailDialog({ open: false, student: null });
     };    // Open add/edit dialog
-    const openAddEditDialog = (student?: ApiStudent) => {
+    const openAddEditDialog = async (student?: ApiStudent) => {
         if (student) {
+            // Wait for dropdown data to be available before setting form
+            console.log('Opening edit dialog for student:', student);
+            console.log('Available majors:', majors);
+            console.log('Available priority groups:', priorityGroups);
+            console.log('Available provinces:', provinces);
+            
             setFormData({
                 studentId: student.studentId,
                 fullName: student.fullName,
@@ -145,9 +236,7 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
                 gender: student.gender,
                 hometown: student.hometown,
                 priorityName: student.priorityName || '',
-                facultyName: student.facultyName || '',
                 majorName: student.majorName || '',
-                enrollmentYear: '2021', // Default since not in schema
                 provinceName: student.provinceName || '',
                 districtName: student.districtName || '',
                 address: student.address || '',
@@ -155,6 +244,19 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
                 priorityObjectId: student.priorityObjectId || '',
                 majorId: student.majorId || ''
             });
+              // If student has a province, fetch districts for that province
+            if (student.provinceName && provinces.length > 0) {
+                const selectedProvince = provinces.find(p => (p as any).tentinh === student.provinceName);
+                if (selectedProvince) {
+                    try {
+                        const districtsData = await studentApi.getDistrictsByProvince((selectedProvince as any).matinh);
+                        setDistricts(districtsData);
+                    } catch (err) {
+                        console.error('Error fetching districts for edit:', err);
+                    }
+                }
+            }
+            
             setAddEditDialog({ open: true, student, isEdit: true });
         } else {
             setFormData({
@@ -166,9 +268,7 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
                 gender: 'Nam',
                 hometown: '',
                 priorityName: '',
-                facultyName: '',
                 majorName: '',
-                enrollmentYear: '',
                 provinceName: '',
                 districtName: '',
                 address: '',
@@ -176,6 +276,8 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
                 priorityObjectId: '',
                 majorId: ''
             });
+            // Clear districts when adding new student
+            setDistricts([]);
             setAddEditDialog({ open: true, student: null, isEdit: false });
         }
     };
@@ -195,8 +297,7 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
     const handleSaveStudent = async () => {
         try {
             setLoading(true);
-            
-            const studentData = {
+              const studentData = {
                 studentId: formData.studentId,
                 fullName: formData.fullName,
                 email: formData.email,
@@ -212,8 +313,7 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
                 districtName: formData.districtName,
                 provinceName: formData.provinceName,
                 priorityName: formData.priorityName,
-                majorName: formData.majorName,
-                facultyName: formData.facultyName
+                majorName: formData.majorName
             };
 
             if (addEditDialog.isEdit && addEditDialog.student) {
@@ -479,7 +579,7 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
                                 variant="contained"
                                 color="primary"
                                 startIcon={<AddIcon />}
-                                onClick={() => openAddEditDialog()}
+                                onClick={async () => await openAddEditDialog()}
                                 sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '8px' }}
                             >
                                 Thêm sinh viên
@@ -561,9 +661,9 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
                                             <VisibilityIcon fontSize="small" />
                                         </IconButton>                                        <IconButton
                                             size="small"
-                                            onClick={(e) => {
+                                            onClick={async (e) => {
                                                 e.stopPropagation();
-                                                openAddEditDialog(student);
+                                                await openAddEditDialog(student);
                                             }}
                                             sx={{ mr: 1, color: '#ed6c02' }}
                                         >
@@ -668,19 +768,10 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
                                         }}>
                                             <SchoolIcon sx={{ mr: 1 }} />
                                             Thông tin học tập
-                                        </Typography>
-                                        <Box sx={{ pl: 2 }}>
-                                            <Typography variant="body2" sx={{ mb: 1 }}>
-                                                <strong>Khoa:</strong><br />
-                                                {detailDialog.student.facultyName || 'N/A'}
-                                            </Typography>
+                                        </Typography>                                        <Box sx={{ pl: 2 }}>
                                             <Typography variant="body2" sx={{ mb: 1 }}>
                                                 <strong>Chương trình đào tạo:</strong><br />
                                                 {detailDialog.student.majorName || 'N/A'}
-                                            </Typography>
-                                            <Typography variant="body2">
-                                                <strong>Năm nhập học:</strong><br />
-                                                N/A
                                             </Typography>
                                         </Box>
                                     </Grid>
@@ -916,55 +1007,42 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
                                 </FormControl>
                             </Grid>
 
-                            {/* Row 4 */}
-                            <Grid item xs={12} md={6}>
-                                <TextField
-                                    fullWidth
-                                    label="Khoa *"
-                                    value={formData.facultyName}
-                                    onChange={(e) => handleInputChange('facultyName', e.target.value)}
-                                    variant="outlined"
-                                    size="medium"
-                                    sx={{
-                                        '& .MuiOutlinedInput-root': {
+                            {/* Row 4 */}                            <Grid item xs={12} md={6}>
+                                <FormControl fullWidth size="medium">
+                                    <InputLabel id="major-select-label">Ngành học *</InputLabel>                                    <Select
+                                        labelId="major-select-label"
+                                        value={formData.majorId || ''}
+                                        label="Ngành học *"                                        onChange={(e) => {
+                                            const selectedMajor = majors.find(m => (m as any).manganh === e.target.value);
+                                            setFormData(prev => ({
+                                                ...prev,
+                                                majorId: e.target.value,
+                                                majorName: (selectedMajor as any)?.tennganh || ''
+                                            }));
+                                        }}
+                                        sx={{
                                             backgroundColor: 'white',
                                             borderRadius: '8px'
-                                        }
-                                    }}
-                                />
-                            </Grid>
-                            <Grid item xs={12} md={6}>
-                                <TextField
-                                    fullWidth
-                                    label="Ngành học *"
-                                    value={formData.majorName}
-                                    onChange={(e) => handleInputChange('majorName', e.target.value)}
-                                    variant="outlined"
-                                    size="medium"
-                                    sx={{
-                                        '& .MuiOutlinedInput-root': {
-                                            backgroundColor: 'white',
-                                            borderRadius: '8px'
-                                        }
-                                    }}
-                                />
-                            </Grid>                            {/* Row 5 */}
-                            <Grid item xs={12} md={6}>
-                                <TextField
-                                    fullWidth
-                                    label="Năm nhập học *"
-                                    value={formData.enrollmentYear}
-                                    onChange={(e) => handleInputChange('enrollmentYear', e.target.value)}
-                                    variant="outlined"
-                                    size="medium"
-                                    sx={{
-                                        '& .MuiOutlinedInput-root': {
-                                            backgroundColor: 'white',
-                                            borderRadius: '8px'
-                                        }
-                                    }}
-                                />
-                            </Grid>
+                                        }}
+                                    >
+                                        <MenuItem value="">
+                                            <em>-- Chọn ngành học --</em>
+                                        </MenuItem>
+                                        {majors.length === 0 && (
+                                            <MenuItem value="" disabled>
+                                                <em>Đang tải ngành học...</em>
+                                            </MenuItem>
+                                        )}                                        {majors.map((major) => {
+                                            console.log('Rendering major:', major, 'tennganh:', (major as any).tennganh);
+                                            return (
+                                                <MenuItem key={(major as any).manganh} value={(major as any).manganh}>
+                                                    {(major as any).tennganh}
+                                                </MenuItem>
+                                            );
+                                        })}
+                                    </Select>
+                                </FormControl>
+                            </Grid>{/* Row 5 */}
                             <Grid item xs={12} md={6}>
                                 <TextField
                                     fullWidth
@@ -982,22 +1060,41 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
                                 />
                             </Grid>
 
-                            {/* Row 6 */}
-                            <Grid item xs={12} md={6}>
-                                <TextField
-                                    fullWidth
-                                    label="Đối tượng ưu tiên"
-                                    value={formData.priorityName}
-                                    onChange={(e) => handleInputChange('priorityName', e.target.value)}
-                                    variant="outlined"
-                                    size="medium"
-                                    sx={{
-                                        '& .MuiOutlinedInput-root': {
+                            {/* Row 6 */}                            <Grid item xs={12} md={6}>
+                                <FormControl fullWidth size="medium">
+                                    <InputLabel id="priority-select-label">Đối tượng ưu tiên</InputLabel>                                    <Select
+                                        labelId="priority-select-label"
+                                        value={formData.priorityObjectId || ''}
+                                        label="Đối tượng ưu tiên"                                        onChange={(e) => {
+                                            const selectedPriority = priorityGroups.find(p => (p as any).madoituong === e.target.value);
+                                            setFormData(prev => ({
+                                                ...prev,
+                                                priorityObjectId: e.target.value,
+                                                priorityName: (selectedPriority as any)?.tendoituong || ''
+                                            }));
+                                        }}
+                                        sx={{
                                             backgroundColor: 'white',
                                             borderRadius: '8px'
-                                        }
-                                    }}
-                                />
+                                        }}
+                                    >
+                                        <MenuItem value="">
+                                            <em>-- Không có --</em>
+                                        </MenuItem>
+                                        {priorityGroups.length === 0 && (
+                                            <MenuItem value="" disabled>
+                                                <em>Đang tải đối tượng ưu tiên...</em>
+                                            </MenuItem>
+                                        )}                                        {priorityGroups.map((priority) => {
+                                            console.log('Rendering priority:', priority, 'tendoituong:', (priority as any).tendoituong);
+                                            return (
+                                                <MenuItem key={(priority as any).madoituong} value={(priority as any).madoituong}>
+                                                    {(priority as any).tendoituong}
+                                                </MenuItem>
+                                            );
+                                        })}
+                                    </Select>
+                                </FormControl>
                             </Grid>
                             <Grid item xs={12} md={6}>
                                 {/* Empty grid item for spacing */}
@@ -1039,36 +1136,76 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
                                                     }
                                                 }}
                                             />
-                                        </Grid>
-                                        <Grid item xs={12} md={6}>
-                                            <TextField
-                                                fullWidth
-                                                label="Quận/Huyện"
-                                                value={formData.districtName}
-                                                onChange={(e) => handleInputChange('districtName', e.target.value)}
-                                                variant="outlined"
-                                                size="medium"
-                                                sx={{
-                                                    '& .MuiOutlinedInput-root': {
+                                        </Grid>                                        <Grid item xs={12} md={6}>
+                                            <FormControl fullWidth size="medium">
+                                                <InputLabel id="district-select-label">Quận/Huyện</InputLabel>                                                <Select
+                                                    labelId="district-select-label"
+                                                    value={formData.districtId || ''}
+                                                    label="Quận/Huyện"                                                    onChange={(e) => {
+                                                        const selectedDistrict = districts.find(d => (d as any).mahuyen === e.target.value);
+                                                        setFormData(prev => ({
+                                                            ...prev,
+                                                            districtId: e.target.value,
+                                                            districtName: (selectedDistrict as any)?.tenhuyen || ''
+                                                        }));
+                                                    }}
+                                                    disabled={!formData.provinceName} // Disable until province is selected
+                                                    sx={{
+                                                        backgroundColor: 'white',
                                                         borderRadius: '8px'
-                                                    }
-                                                }}
-                                            />
-                                        </Grid>
-                                        <Grid item xs={12}>
-                                            <TextField
-                                                fullWidth
-                                                label="Tỉnh/Thành phố"
-                                                value={formData.provinceName}
-                                                onChange={(e) => handleInputChange('provinceName', e.target.value)}
-                                                variant="outlined"
-                                                size="medium"
-                                                sx={{
-                                                    '& .MuiOutlinedInput-root': {
+                                                    }}
+                                                >
+                                                    <MenuItem value="">
+                                                        <em>-- Chọn quận/huyện --</em>
+                                                    </MenuItem>
+                                                    {districts.length === 0 && !formData.provinceName && (
+                                                        <MenuItem value="" disabled>
+                                                            <em>Chọn tỉnh trước</em>
+                                                        </MenuItem>
+                                                    )}
+                                                    {districts.length === 0 && formData.provinceName && (
+                                                        <MenuItem value="" disabled>
+                                                            <em>Đang tải quận/huyện...</em>
+                                                        </MenuItem>
+                                                    )}                                                    {districts.map((district) => {
+                                                        console.log('Rendering district:', district, 'tenhuyen:', (district as any).tenhuyen);
+                                                        return (
+                                                            <MenuItem key={(district as any).mahuyen} value={(district as any).mahuyen}>
+                                                                {(district as any).tenhuyen}
+                                                            </MenuItem>
+                                                        );
+                                                    })}
+                                                </Select>
+                                            </FormControl>
+                                        </Grid><Grid item xs={12}>                                            <FormControl fullWidth size="medium">
+                                                <InputLabel id="province-select-label">Tỉnh/Thành phố</InputLabel>                                                <Select
+                                                    labelId="province-select-label"                                                    value={provinces.length > 0 && formData.provinceName ? 
+                                                        provinces.find(p => (p as any).tentinh === formData.provinceName)?.maTinh || '' : ''}
+                                                    label="Tỉnh/Thành phố"
+                                                    onChange={(e) => handleProvinceChange(e.target.value)}
+                                                    sx={{
+                                                        backgroundColor: 'white',
                                                         borderRadius: '8px'
-                                                    }
-                                                }}
-                                            />
+                                                    }}
+                                                >
+                                                    <MenuItem value="">
+                                                        <em>-- Chọn tỉnh/thành phố --</em>
+                                                    </MenuItem>
+                                                    {provinces.length === 0 && (
+                                                        <MenuItem value="" disabled>
+                                                            <em>Đang tải tỉnh/thành phố...</em>
+                                                        </MenuItem>
+                                                    )}
+                                                    {                                                        provinces.map((province) => {
+                                                            console.log('Rendering province:', province, 'tentinh:', (province as any).tentinh);
+                                                            return (
+                                                                <MenuItem key={(province as any).matinh} value={(province as any).matinh}>
+                                                                    {(province as any).tentinh}
+                                                                </MenuItem>
+                                                            );
+                                                        })}
+                                                </Select>
+                                            </FormControl>
                                         </Grid>
                                     </Grid>
                                 </Box>

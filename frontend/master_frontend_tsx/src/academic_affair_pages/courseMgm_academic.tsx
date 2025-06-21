@@ -131,9 +131,18 @@ const CourseMgmAcademic: React.FC<AcademicPageProps> = ({ user, onLogout }) => {
             await courseApi.updateCourse(oldMaMonHoc, subject);
             await fetchSubjects(); // Fetch lại data
             handleCloseDialog(); // Đóng dialog
-            setSnackbar({ open: true, message: 'Cập nhật môn học thành công!', severity: 'success' });
-        } catch (error: any) {
-            setSnackbar({ open: true, message: error?.message || 'Có lỗi khi cập nhật môn học', severity: 'error' });
+            setSnackbar({ open: true, message: 'Cập nhật môn học thành công!', severity: 'success' });        } catch (error: any) {
+            console.log('Update course error:', error);
+            
+            let errorMessage = 'Có lỗi khi cập nhật môn học';
+            
+            if (error.response?.data?.message) {
+                errorMessage = error.response.data.message;
+            } else if (error.message) {
+                errorMessage = error.message;
+            }
+            
+            setSnackbar({ open: true, message: errorMessage, severity: 'error' });
         }
     };
 
@@ -142,13 +151,20 @@ const CourseMgmAcademic: React.FC<AcademicPageProps> = ({ user, onLogout }) => {
             await courseApi.createCourse(subject);
             await fetchSubjects(); // Fetch lại data
             handleCloseDialog(); // Đóng dialog
-            setSnackbar({ open: true, message: 'Thêm môn học thành công!', severity: 'success' });
-        } catch (error: any) {
-            if (error?.message?.includes('Mã môn học đã tồn tại')) {
-                setSnackbar({ open: true, message: 'Mã môn học đã tồn tại!', severity: 'error' });
-            } else {
-                setSnackbar({ open: true, message: error?.message || 'Có lỗi khi thêm môn học', severity: 'error' });
+            setSnackbar({ open: true, message: 'Thêm môn học thành công!', severity: 'success' });        } catch (error: any) {
+            console.log('Create course error:', error);
+            console.log('Error response:', error.response);
+            console.log('Error response data:', error.response?.data);
+            
+            let errorMessage = 'Có lỗi khi thêm môn học';
+            
+            if (error.response?.data?.message) {
+                errorMessage = error.response.data.message;
+            } else if (error.message) {
+                errorMessage = error.message;
             }
+            
+            setSnackbar({ open: true, message: errorMessage, severity: 'error' });
         }
     };
 
@@ -160,12 +176,22 @@ const CourseMgmAcademic: React.FC<AcademicPageProps> = ({ user, onLogout }) => {
                 open: true, 
                 message: 'Xóa môn học thành công!', 
                 severity: 'success' 
-            });
-        } catch (error: any) {
+            });        } catch (error: any) {
             console.error('Error deleting subject:', error);
+            console.log('Delete error response:', error.response);
+            console.log('Delete error response data:', error.response?.data);
+            
+            let errorMessage = 'Có lỗi khi xóa môn học';
+            
+            if (error.response?.data?.message) {
+                errorMessage = error.response.data.message;
+            } else if (error.message) {
+                errorMessage = error.message;
+            }
+            
             setSnackbar({ 
                 open: true, 
-                message: error?.message || 'Có lỗi khi xóa môn học', 
+                message: errorMessage, 
                 severity: 'error' 
             });
         }

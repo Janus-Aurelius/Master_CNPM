@@ -170,7 +170,7 @@ class DashboardManager {
             const recentPayments = await tuitionManager.getRecentPayments(studentId);            // Convert to IPayment format for dashboard
             return recentPayments.map(payment => ({
                 paymentId: payment.paymentId,
-                paymentDate: payment.paymentDate,
+                paymentDate: new Date(payment.paymentDate), // Convert string back to Date for IPayment interface
                 registrationId: payment.registrationId,
                 paymentAmount: payment.amount,
                 status: 'paid' as const, // Assuming completed payments

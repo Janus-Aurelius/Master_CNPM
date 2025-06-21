@@ -26,7 +26,7 @@ import {
 import PaymentIcon from "@mui/icons-material/Payment";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import ExpandLessIcon from "@mui/icons-material/ExpandLess";
-import { tuitionApi, TuitionRecord, PaymentHistoryItem, EnrolledSubject, formatCurrency, getStatusText, getStatusChipColor } from "../api_clients/student/tuitionApi";
+import { tuitionApi, TuitionRecord, PaymentHistoryItem, formatCurrency, getStatusText, getStatusChipColor } from "../api_clients/student/tuitionApi";
 
 const TuitionCollecting = ({ user, onLogout }: StudentPageProps) => {
     const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -49,12 +49,14 @@ const TuitionCollecting = ({ user, onLogout }: StudentPageProps) => {
         
         setLoading(true);
         setError(null);
-        
-        try {
+          try {
             const [tuitionList, paymentHistoryList] = await Promise.all([
                 tuitionApi.getTuitionStatus(String(user.id)),
                 tuitionApi.getPaymentHistory(String(user.id))
             ]);
+              console.log('🎓 [TuitionCollecting] Loaded tuition data:', tuitionList);
+            console.log('💰 [TuitionCollecting] Sample discount info:', tuitionList[0]?.discountInfo);
+            console.log('📋 [TuitionCollecting] Loaded payment history:', paymentHistoryList);
             
             setTuitionDataState(tuitionList);
             setPaymentHistory(paymentHistoryList);
@@ -63,16 +65,8 @@ const TuitionCollecting = ({ user, onLogout }: StudentPageProps) => {
         } finally {
             setLoading(false);
         }
-    };
-
-    const handleExpand = (id: string) => {
+    };    const handleExpand = (id: string) => {
         setExpandedId(expandedId === id ? null : id);
-    };
-
-    const getPaidAmount = (tuitionId: string) => {
-        return paymentHistory
-            .filter(item => item.semester === tuitionId)
-            .reduce((sum, item) => sum + item.amount, 0);
     };
 
     const handleOpenPaymentDialog = (tuition: TuitionRecord) => {
@@ -105,9 +99,10 @@ const TuitionCollecting = ({ user, onLogout }: StudentPageProps) => {
         } finally {
             setPaymentInProgress(null);
         }
-    };
-
-    const handleOpenHistoryDialog = (tuitionId: string) => {
+    };    const handleOpenHistoryDialog = (tuitionId: string) => {
+        console.log('📋 Opening history dialog for tuition ID:', tuitionId);
+        console.log('📋 Available payment history:', paymentHistory);
+        console.log('📋 Filtered payment history:', paymentHistory.filter(item => item.registrationId === tuitionId || item.semester === tuitionId));
         setHistoryDialog({ open: true, tuitionId });
     };
 
@@ -183,29 +178,31 @@ const TuitionCollecting = ({ user, onLogout }: StudentPageProps) => {
 
                     <Box>
                         {tuitionDataState.map((tuition) => (
-                            <Box key={tuition.id} mb={2}>
-                                <Paper
+                            <Box key={tuition.id} mb={2}>                                <Paper
                                     elevation={1}
                                     sx={{
                                         p: 2,
                                         borderLeft: "5px solid",
                                         borderColor: getStatusChipColor(tuition.status).text,
-                                        cursor: "pointer",
+                                        cursor: tuition.status !== 'not_opened' ? "pointer" : "default",
                                         boxShadow: '0 2px 5px rgba(0, 0, 0, 0.1)', 
                                         borderRadius: '8px',
-                                        backgroundColor: "#f7fcfe",
+                                        backgroundColor: tuition.status === 'not_opened' ? "#f8f9fa" : "#f7fcfe",
                                         transition: "all 0.2s",
-                                        "&:hover": {
+                                        opacity: tuition.status === 'not_opened' ? 0.7 : 1,
+                                        "&:hover": tuition.status !== 'not_opened' ? {
                                             bgcolor: "rgba(0, 0, 0, 0.02)",
                                             boxShadow: `0 6px 15px ${getStatusChipColor(tuition.status).text}50`,
-                                        },
+                                        } : {},
                                     }}
-                                    onClick={() => handleExpand(tuition.id)}
-                                >
-                                    <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                                        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                                            <Typography variant="h6">
-                                                Học phí {tuition.semesterName} {tuition.year}
+                                    onClick={() => tuition.status !== 'not_opened' && handleExpand(tuition.id)}
+                                ><Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                                        <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                                            <Typography variant="h6" sx={{ 
+                                                fontWeight: "bold",
+                                                color: tuition.status === 'not_opened' ? '#999' : 'inherit'
+                                            }}>
+                                                {tuition.semesterName} - {tuition.year}
                                             </Typography>
                                             <Chip
                                                 label={getStatusText(tuition.status)}
@@ -218,8 +215,33 @@ const TuitionCollecting = ({ user, onLogout }: StudentPageProps) => {
                                                 }}
                                             />
                                         </Box>
-                                        <Box>
-                                            {expandedId === tuition.id ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                                        <Box sx={{ textAlign: "right" }}>
+                                            {tuition.status !== 'not_opened' && (
+                                                <>                                                    <Typography variant="body2" color="text.secondary">
+                                                        Tổng học phí gốc: {formatCurrency(tuition.originalAmount)}
+                                                    </Typography>                                                    {tuition.discountInfo && (
+                                                        <Typography variant="body2" color="success.main">
+                                                            Ưu tiên {tuition.discountInfo.code ? `(${tuition.discountInfo.code})` : ''} - {tuition.discountInfo.type}: -{Math.round(tuition.discountInfo.percentage * 100)}%
+                                                        </Typography>
+                                                    )}
+                                                    <Typography variant="body2" color="text.secondary">
+                                                        Phải đóng: {formatCurrency(tuition.totalAmount)}
+                                                    </Typography>
+                                                    <Typography variant="body2" color={tuition.remainingAmount > 0 ? "error" : "success"}>
+                                                        Còn lại: {formatCurrency(tuition.remainingAmount)}
+                                                    </Typography>
+                                                </>
+                                            )}
+                                            {tuition.status === 'not_opened' && (
+                                                <Typography variant="body2" color="text.secondary">
+                                                    Kỳ học chưa được mở
+                                                </Typography>
+                                            )}
+                                            {tuition.status !== 'not_opened' && (
+                                                <Box sx={{ mt: 1 }}>
+                                                    {expandedId === tuition.id ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                                                </Box>
+                                            )}
                                         </Box>
                                     </Box>
                                 </Paper>
@@ -239,38 +261,61 @@ const TuitionCollecting = ({ user, onLogout }: StudentPageProps) => {
                                                         <TableCell align="center">Số tín chỉ</TableCell>
                                                         <TableCell align="right">Học phí (VNĐ)</TableCell>
                                                     </TableRow>
-                                                </TableHead>
-                                                <TableBody>
-                                                    {tuition.subjects.map((subject) => (
-                                                        <TableRow key={subject.id}>
-                                                            <TableCell>{subject.name}</TableCell>
+                                                </TableHead>                                                <TableBody>
+                                                    {tuition.subjects.map((subject, index) => (
+                                                        <TableRow key={subject.courseId || index}>
+                                                            <TableCell>{subject.courseName}</TableCell>
                                                             <TableCell>{subject.courseType}</TableCell>
                                                             <TableCell align="center">{subject.credits}</TableCell>
                                                             <TableCell align="right">
-                                                                {formatCurrency(subject.tuition)}
+                                                                {formatCurrency(subject.totalFee)}
                                                             </TableCell>
                                                         </TableRow>
                                                     ))}
-                                                    <TableRow sx={{ bgcolor: "#f5f5f5" }}>
+                                                    {tuition.subjects.length === 0 && (
+                                                        <TableRow>
+                                                            <TableCell colSpan={4} align="center" sx={{ py: 3 }}>
+                                                                <Typography color="text.secondary">
+                                                                    Chưa có môn học nào được đăng ký
+                                                                </Typography>
+                                                            </TableCell>
+                                                        </TableRow>
+                                                    )}                                                    <TableRow sx={{ bgcolor: "#f5f5f5" }}>
                                                         <TableCell colSpan={3}>
                                                             <Typography variant="subtitle1" fontWeight="bold">
-                                                                Tổng học phí
+                                                                Tổng học phí gốc (trước ưu tiên)
                                                             </Typography>
                                                         </TableCell>
                                                         <TableCell align="right">
                                                             <Typography variant="subtitle1" fontWeight="bold">
-                                                                {formatCurrency(tuition.totalAmount)}
+                                                                {formatCurrency(tuition.originalAmount)}
                                                             </Typography>
                                                         </TableCell>
                                                     </TableRow>
                                                 </TableBody>
                                             </Table>
-                                        </TableContainer>
-
-                                        <Box mt={2}>
-                                            <Typography>Đã đóng: <b>{formatCurrency(tuition.paidAmount)}</b></Typography>
-                                            <Typography>Còn lại: <b>{formatCurrency(tuition.remainingAmount)}</b></Typography>
-                                            <Typography>Hạn nộp: <b>{new Date(tuition.dueDate).toLocaleDateString('vi-VN')}</b></Typography>
+                                        </TableContainer>                                        <Box mt={2}>
+                                            <Typography variant="body1" mb={1}>
+                                                <strong>Tổng học phí gốc:</strong> {formatCurrency(tuition.originalAmount)}
+                                            </Typography>                                            {tuition.discountInfo && (
+                                                <Typography variant="body1" mb={1} color="success.main">
+                                                    <strong>Ưu tiên {tuition.discountInfo.code ? `(${tuition.discountInfo.code})` : ''} - {tuition.discountInfo.type}:</strong> -{Math.round(tuition.discountInfo.percentage * 100)}%
+                                                </Typography>
+                                            )}
+                                            <Typography variant="body1" mb={1}>
+                                                <strong>Số tiền phải đóng:</strong> {formatCurrency(tuition.totalAmount)}
+                                            </Typography>
+                                            <Typography variant="body1" mb={1}>
+                                                <strong>Đã đóng:</strong> {formatCurrency(tuition.paidAmount)}
+                                            </Typography>
+                                            <Typography variant="body1" color={tuition.remainingAmount > 0 ? "error" : "success"}>
+                                                <strong>Còn lại:</strong> {formatCurrency(tuition.remainingAmount)}
+                                            </Typography>
+                                            {tuition.dueDate && (
+                                                <Typography variant="body2" color="text.secondary" mt={1}>
+                                                    Hạn nộp: {new Date(tuition.dueDate).toLocaleDateString('vi-VN')}
+                                                </Typography>
+                                            )}
                                         </Box>
 
                                         <Box mt={2} display="flex" gap={2}>
@@ -369,31 +414,26 @@ const TuitionCollecting = ({ user, onLogout }: StudentPageProps) => {
                 <DialogContent>
                     {historyDialog.tuitionId && (
                         <TableContainer>
-                            <Table>
-                                <TableHead>
+                            <Table>                                <TableHead>
                                     <TableRow>
                                         <TableCell>Mã thanh toán</TableCell>
                                         <TableCell align="right">Số tiền</TableCell>
                                         <TableCell>Ngày thanh toán</TableCell>
-                                        <TableCell>Kỳ học</TableCell>
                                     </TableRow>
-                                </TableHead>
-                                <TableBody>
+                                </TableHead>                                <TableBody>
                                     {paymentHistory
-                                        .filter(item => item.semester === historyDialog.tuitionId)
+                                        .filter(item => item.registrationId === historyDialog.tuitionId || item.semester === historyDialog.tuitionId)
                                         .map((item) => (
                                             <TableRow key={item.paymentId}>
                                                 <TableCell>{item.paymentId}</TableCell>
                                                 <TableCell align="right">{formatCurrency(item.amount)}</TableCell>
-                                                <TableCell>{new Date(item.date).toLocaleDateString('vi-VN')}</TableCell>
-                                                <TableCell>{item.semester}</TableCell>
+                                                <TableCell>{new Date(item.paymentDate).toLocaleDateString('vi-VN')}</TableCell>
                                             </TableRow>
                                         ))}
                                 </TableBody>
                             </Table>
-                        </TableContainer>
-                    )}
-                    {paymentHistory.filter(item => item.semester === historyDialog.tuitionId).length === 0 && (
+                        </TableContainer>                    )}
+                    {paymentHistory.filter(item => item.registrationId === historyDialog.tuitionId || item.semester === historyDialog.tuitionId).length === 0 && (
                         <Typography>Chưa có lịch sử thanh toán nào.</Typography>
                     )}
                 </DialogContent>

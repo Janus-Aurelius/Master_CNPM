@@ -43,8 +43,7 @@ class RegistrationManager {
 
     /**
      * Lấy danh sách môn học đã đăng ký của sinh viên
-     */
-    public async getRegisteredCourses(studentId: string, semesterId?: string): Promise<IRegistrationManagerResponse> {        try {
+     */    public async getRegisteredCourses(studentId: string, semesterId?: string): Promise<IRegistrationManagerResponse> {        try {
             if (!studentId) {
                 return {
                     success: false,
@@ -52,7 +51,10 @@ class RegistrationManager {
                 };
             }
 
-            const courses = await registrationService.getRegisteredCourses(studentId, semesterId || '');
+            // Resolve userId to studentId if needed (U103 -> SV0001)
+            const actualStudentId = await this.resolveStudentId(studentId);
+
+            const courses = await registrationService.getRegisteredCourses(actualStudentId, semesterId || '');
             
             return {
                 success: true,
@@ -88,6 +90,10 @@ class RegistrationManager {
                 };
             }
 
+            // Resolve userId to studentId if needed (U103 -> SV0001)
+            const actualStudentId = await this.resolveStudentId(studentId);
+            console.log('🔵 [RegistrationManager] Resolved studentId:', actualStudentId);
+
             // Check if semester exists
             console.log('🔵 [RegistrationManager] Checking semester exists...');
             const semester = await DatabaseService.queryOne(`
@@ -103,13 +109,11 @@ class RegistrationManager {
                     success: false,
                     message: 'Học kỳ không tồn tại'
                 };
-            }
-
-            // Check student exists
+            }            // Check student exists
             console.log('🔵 [RegistrationManager] Checking student exists...');
             const student = await DatabaseService.queryOne(`
                 SELECT MaSoSinhVien FROM SINHVIEN WHERE MaSoSinhVien = $1
-            `, [studentId]);
+            `, [actualStudentId]);
 
             console.log('🔵 [RegistrationManager] Student query result:', student);
             if (!student) {
@@ -118,12 +122,10 @@ class RegistrationManager {
                     success: false,
                     message: 'Sinh viên không tồn tại trong hệ thống'
                 };
-            }
-
-            // Perform registration
+            }// Perform registration
             console.log('🔵 [RegistrationManager] Calling registrationService.registerCourses...');
             const result = await registrationService.registerCourses({
-                studentId,
+                studentId: actualStudentId,
                 courseIds,
                 semesterId
             });
@@ -147,8 +149,7 @@ class RegistrationManager {
 
     /**
      * Hủy đăng ký môn học
-     */
-    public async unregisterCourse(studentId: string, courseId: string, semesterId: string): Promise<IRegistrationManagerResponse> {
+     */    public async unregisterCourse(studentId: string, courseId: string, semesterId: string): Promise<IRegistrationManagerResponse> {
         try {
             if (!studentId || !courseId || !semesterId) {
                 return {
@@ -157,7 +158,10 @@ class RegistrationManager {
                 };
             }
 
-            const success = await registrationService.unregisterCourse(studentId, courseId, semesterId);
+            // Resolve userId to studentId if needed (U103 -> SV0001)
+            const actualStudentId = await this.resolveStudentId(studentId);
+
+            const success = await registrationService.unregisterCourse(actualStudentId, courseId, semesterId);
 
             if (success) {
                 return {
@@ -292,17 +296,19 @@ class RegistrationManager {
 
     public async registerSubject(studentId: string, courseId: string, semesterId: string): Promise<IRegistrationManagerResponse> {
         return await this.registerCourses(studentId, [courseId], semesterId);
-    }    public async getEnrolledCourses(studentId: string, semesterId?: string): Promise<IRegistrationManagerResponse> {
-        try {
+    }    public async getEnrolledCourses(studentId: string, semesterId?: string): Promise<IRegistrationManagerResponse> {        try {
             if (!studentId) {
                 return {
-                    success: false,
-                    message: 'Mã sinh viên không được để trống'
+                    success: false,                    message: 'Mã sinh viên không được để trống'
                 };
             }
 
-            const semester = semesterId || 'HK1_2024';
-            const courses = await registrationService.getEnrolledCoursesWithSchedule(studentId, semester);
+            // Resolve userId to studentId if needed (U103 -> SV0001)
+            const actualStudentId = await this.resolveStudentId(studentId);
+
+            const { DatabaseService } = await import('../../services/database/databaseService');
+            const semester = semesterId || await DatabaseService.getCurrentSemester();
+            const courses = await registrationService.getEnrolledCoursesWithSchedule(actualStudentId, semester);
             
             return {
                 success: true,
@@ -317,11 +323,34 @@ class RegistrationManager {
                 error: error instanceof Error ? error.message : 'Unknown error'
             };
         }
+    }    public async cancelRegistration(studentId: string, courseId: string, semesterId?: string): Promise<IRegistrationManagerResponse> {
+        const { DatabaseService } = await import('../../services/database/databaseService');
+        const semester = semesterId || await DatabaseService.getCurrentSemester(); // Default semester if not provided
+        return await this.unregisterCourse(studentId, courseId, semester);
     }
 
-    public async cancelRegistration(studentId: string, courseId: string, semesterId?: string): Promise<IRegistrationManagerResponse> {
-        const semester = semesterId || 'HK1_2024'; // Default semester if not provided
-        return await this.unregisterCourse(studentId, courseId, semester);
+    /**
+     * Helper method to resolve student ID from user ID if needed
+     */
+    private async resolveStudentId(inputId: string): Promise<string> {
+        // If inputId looks like a userId (starts with U), map it to studentId
+        if (inputId.startsWith('U')) {
+            const { DatabaseService } = await import('../../services/database/databaseService');
+            const user = await DatabaseService.queryOne(`
+                SELECT masosinhvien 
+                FROM nguoidung 
+                WHERE userid = $1
+            `, [inputId]);
+            
+            if (!user?.masosinhvien) {
+                throw new Error(`No student found for user ID: ${inputId}`);
+            }
+            console.log(`🔄 [RegistrationManager] Mapped userId ${inputId} to studentId ${user.masosinhvien}`);
+            return user.masosinhvien;
+        }
+        
+        // Otherwise assume it's already a studentId
+        return inputId;
     }
 }
 

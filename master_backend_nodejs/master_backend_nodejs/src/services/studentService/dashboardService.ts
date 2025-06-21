@@ -106,9 +106,11 @@ export const dashboardService = {    async getStudentOverview(studentId: string)
             throw error;
         }
     },    // Lấy thời khóa biểu sinh viên từ CT_PHIEUDANGKY và DANHSACHMONHOCMO
-    async getStudentTimetable(studentId: string, semester: string = 'HK1_2024'): Promise<any[]> {
+    async getStudentTimetable(studentId: string, semester?: string): Promise<any[]> {
         try {
-            console.log(`🔵 [DashboardService] Getting timetable for student ${studentId} in semester ${semester}`);            // Lấy thời khóa biểu từ các bảng CT_PHIEUDANGKY, DANHSACHMONHOCMO, MONHOC
+            // Get current semester if not provided
+            const actualSemester = semester || await DatabaseService.getCurrentSemester();
+            console.log(`🔵 [DashboardService] Getting timetable for student ${studentId} in semester ${actualSemester}`);// Lấy thời khóa biểu từ các bảng CT_PHIEUDANGKY, DANHSACHMONHOCMO, MONHOC
             const timetableData = await DatabaseService.query(`
                 SELECT 
                     ct.MaMonHoc as "courseId",
@@ -119,12 +121,11 @@ export const dashboardService = {    async getStudentOverview(studentId: string)
                     ds.TietKetThuc as "endPeriod"
                 FROM CT_PHIEUDANGKY ct
                 JOIN PHIEUDANGKY pd ON ct.MaPhieuDangKy = pd.MaPhieuDangKy
-                JOIN MONHOC mh ON ct.MaMonHoc = mh.MaMonHoc
-                JOIN LOAIMON lm ON mh.MaLoaiMon = lm.MaLoaiMon
+                JOIN MONHOC mh ON ct.MaMonHoc = mh.MaMonHoc                JOIN LOAIMON lm ON mh.MaLoaiMon = lm.MaLoaiMon
                 JOIN DANHSACHMONHOCMO ds ON ct.MaMonHoc = ds.MaMonHoc AND ct.MaHocKy = ds.MaHocKy
                 WHERE pd.MaSoSinhVien = $1 AND ct.MaHocKy = $2
                 ORDER BY ds.Thu, ds.TietBatDau
-            `, [studentId, semester]);
+            `, [studentId, actualSemester]);
 
             console.log(`✅ [DashboardService] Found ${timetableData.length} courses in timetable`);
             console.log(`📋 [DashboardService] Timetable data:`, timetableData);

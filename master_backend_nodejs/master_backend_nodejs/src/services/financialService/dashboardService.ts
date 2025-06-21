@@ -20,17 +20,12 @@ export class FinancialDashboardService {
 
         if (!targetSemester) {
             throw new Error('No active semester found');
-        }
-
-        // Get payment statistics
+        }        // Get payment statistics
         const stats = await DatabaseService.queryOne(`
             SELECT 
                 COUNT(DISTINCT pd.MaSoSinhVien) as total_students,
                 COUNT(DISTINCT CASE WHEN pd.SoTienConLai = 0 THEN pd.MaSoSinhVien END) as paid_students,
-                COUNT(DISTINCT CASE WHEN pd.SoTienConLai > 0 AND pd.SoTienDaDong > 0 THEN pd.MaSoSinhVien END) as partial_students,
-                COUNT(DISTINCT CASE WHEN pd.SoTienDaDong = 0 THEN pd.MaSoSinhVien END) as unpaid_students,
-                SUM(pd.SoTienPhaiDong) as total_tuition,
-                SUM(pd.SoTienDaDong) as total_collected,
+                COUNT(DISTINCT CASE WHEN pd.SoTienConLai > 0 THEN pd.MaSoSinhVien END) as unpaid_students,
                 SUM(pd.SoTienConLai) as total_outstanding
             FROM PHIEUDANGKY pd
             WHERE pd.MaHocKy = $1
@@ -47,15 +42,11 @@ export class FinancialDashboardService {
             WHERE pt.NgayLap >= CURRENT_DATE - INTERVAL '12 months'
             GROUP BY EXTRACT(YEAR FROM pt.NgayLap), EXTRACT(MONTH FROM pt.NgayLap)
             ORDER BY year DESC, month DESC
-        `);
-
-        // Get payment status by faculty
+        `);        // Get payment status by faculty
         const facultyStats = await DatabaseService.query(`
             SELECT 
                 k.TenKhoa as faculty_name,
                 COUNT(DISTINCT pd.MaSoSinhVien) as total_students,
-                SUM(pd.SoTienPhaiDong) as total_tuition,
-                SUM(pd.SoTienDaDong) as total_collected,
                 SUM(pd.SoTienConLai) as total_outstanding
             FROM PHIEUDANGKY pd
             JOIN SINHVIEN sv ON pd.MaSoSinhVien = sv.MaSoSinhVien
@@ -95,11 +86,8 @@ export class FinancialDashboardService {
                 pd.MaSoSinhVien,
                 sv.HoTen as student_name,
                 sv.Email,
-                sv.SoDienThoai,
-                k.TenKhoa as faculty,
+                sv.SoDienThoai,                k.TenKhoa as faculty,
                 nh.TenNganh as program,
-                pd.SoTienPhaiDong,
-                pd.SoTienDaDong,
                 pd.SoTienConLai,
                 hk.ThoiHanDongHP as due_date,
                 CURRENT_DATE - hk.ThoiHanDongHP as days_overdue

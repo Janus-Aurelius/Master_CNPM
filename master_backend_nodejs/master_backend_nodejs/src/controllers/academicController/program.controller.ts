@@ -69,18 +69,36 @@ export class ProgramController {
     static async createProgram(req: Request, res: Response): Promise<void> {
         try {
             const program = await ProgramBusiness.createProgram(req.body);
-            res.status(201).json({ success: true, data: program });
-        } catch (error) {
+            res.status(201).json({ success: true, data: program });        } catch (error) {
             console.error('Error in createProgram:', error);
-            if (error instanceof ValidationError) {
+            console.error('Error type:', typeof error);
+            console.error('Error constructor name:', error?.constructor?.name);
+            console.error('Error instanceof ValidationError:', error instanceof ValidationError);
+            console.error('Error message:', error instanceof Error ? error.message : 'Unknown error');
+            
+            if (error instanceof ValidationError || 
+                (error instanceof Error && error.message === 'Mã môn học không tồn tại trong hệ thống')) {
                 res.status(400).json({ 
                     success: false, 
                     message: error.message 
                 });
+            } else if (error instanceof Error && error.message === 'Semester not found') {
+                res.status(400).json({ 
+                    success: false, 
+                    message: 'Mã học kỳ không tồn tại trong hệ thống' 
+                });
+            } else if (error instanceof Error && 
+                      (error.message.includes('duplicate key value violates unique constraint "chuongtrinhhoc_pkey"') ||
+                       error.message.includes('already exists'))) {
+                res.status(400).json({ 
+                    success: false, 
+                    message: 'Môn học này đã có trong chương trình học' 
+                });
             } else {
                 res.status(500).json({ 
                     success: false, 
-                    message: 'Internal server error' 
+                    message: 'Internal server error',
+                    debug: error instanceof Error ? error.message : 'Unknown error'
                 });
             }
         }

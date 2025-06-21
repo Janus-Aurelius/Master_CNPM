@@ -19,7 +19,7 @@ export default interface ISemester {
     courses?: Course[];         // For UI display
 }
 
-// Interface for creating/updating semesters
+// Interface for creating semesters
 export interface ISemesterCreate {
     semesterId: string;
     termNumber: number;
@@ -28,6 +28,14 @@ export interface ISemesterCreate {
     status: string;
     academicYear: number;
     feeDeadline: Date;
+}
+
+// Interface for updating semesters (only editable fields)
+export interface ISemesterUpdate {
+    startDate?: Date;
+    endDate?: Date;
+    status?: string;
+    feeDeadline?: Date;
 }
 
 // Interface for semester filters

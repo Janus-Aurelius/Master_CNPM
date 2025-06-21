@@ -1,19 +1,7 @@
 // Student Payment Interfaces - Based on Database Schema
+import { IEnhancedRegistration } from './studentEnrollmentInterface';
 
 // === DATABASE SCHEMA INTERFACES ===
-
-// Maps to PHIEUDANGKY table
-export interface IRegistration {
-    registrationId: string;     // MaPhieuDangKy
-    registrationDate: Date;     // NgayLap
-    studentId: string;          // MaSoSinhVien
-    semesterId: string;         // MaHocKy
-    registrationAmount: number; // SoTienDangKy
-    requiredAmount: number;     // SoTienPhaiDong (after discount)
-    paidAmount: number;         // SoTienDaDong
-    remainingAmount: number;    // SoTienConLai
-    maxCredits: number;         // SoTinChiToiDa
-}
 
 // Maps to BAOCAOSINHVIENNOHP table
 export interface IOutstandingTuition {
@@ -26,7 +14,7 @@ export interface IOutstandingTuition {
 
 // For tuition status page display
 export interface ITuitionStatus {
-    registration: IRegistration;
+    registration: IEnhancedRegistration;
     courses: ICourseDetail[];
     discount: {
         type: string;
@@ -40,7 +28,9 @@ export interface ITuitionStatus {
 export interface ICourseDetail {
     courseId: string;           // MaMonHoc
     courseName: string;         // TenMonHoc
-    credits: number;            // SoTiet from MONHOC
+    credits: number;            // Calculated: totalPeriods / periodsPerCredit
+    totalPeriods: number;       // SoTiet from MONHOC
+    periodsPerCredit: number;   // SoTietMotTC from LOAIMON
     pricePerCredit: number;     // SoTienMotTC from LOAIMON
     totalFee: number;           // Calculated: credits * pricePerCredit
     courseType: string;         // TenLoaiMon
@@ -54,9 +44,17 @@ export interface IPaymentHistory {
     registrationId: string;     // MaPhieuDangKy
 }
 
+// Payment history for frontend response (with string date)
+export interface IPaymentHistoryResponse {
+    paymentId: string;          // MaPhieuThu
+    paymentDate: string;        // NgayLap as string (YYYY-MM-DD)
+    amount: number;             // SoTienDong
+    registrationId: string;     // MaPhieuDangKy
+}
+
 // === UI/FRONTEND INTERFACES ===
 
-export type PaymentStatus = 'paid' | 'partial' | 'unpaid' | 'overdue';
+export type PaymentStatus = 'paid' | 'unpaid' | 'not_opened';
 export type PaymentMethod = 'cash' | 'bank_transfer' | 'momo' | 'vnpay';
 
 // For payment form
@@ -128,7 +126,7 @@ export interface IPaymentData {
     paymentDate: Date;
     notes?: string;
     semester: string;
-    status: 'PAID' | 'PARTIAL' | 'UNPAID';
+    status: 'PAID' | 'UNPAID' | 'NOT_OPENED';
 }
 
 // Payment validation interface

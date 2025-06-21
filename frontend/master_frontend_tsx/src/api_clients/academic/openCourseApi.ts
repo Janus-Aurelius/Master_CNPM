@@ -47,20 +47,72 @@ export const openCourseApi = {
             console.error('Error fetching open courses:', error); 
             throw error;
         }
+    },    // Thêm API để lấy danh sách môn học
+    getAllCourses: async (): Promise<any[]> => {
+        try {
+            const response = await axios.get(`${API_URL}/academic/courses`);
+            return response.data as any[];
+        } catch (error) {
+            console.error('Error fetching all courses:', error);
+            throw error;
+        }
+    },    // Thêm API để lấy danh sách học kỳ
+    getSemesters: async (): Promise<any[]> => {
+        try {
+            const response = await axios.get(`${API_URL}/academic/open-courses/available-semesters`);
+            const data = response.data as any;
+            if (data.success) {
+                return data.data;
+            }
+            return data || [];
+        } catch (error) {
+            console.error('Error fetching semesters:', error);
+            throw error;
+        }
     },
 
-    createCourse: async (course: Omit<OpenCourse, 'semesterId' | 'courseId'>): Promise<OpenCourse> => {
-        const response = await axios.post(`${API_URL}/academic/open-courses`, course);
-        return response.data as OpenCourse;
+    getAvailableCourses: async (): Promise<Array<{courseId: string, courseName: string, courseTypeId: string, courseTypeName: string, totalHours: number}>> => {
+        try {
+            const response = await axios.get(`${API_URL}/academic/open-courses/available-courses`);
+            const data = response.data as any;
+            if (data.success) {
+                return data.data;
+            }
+            return data || [];
+        } catch (error) {
+            console.error('Error fetching available courses:', error);
+            throw error;
+        }
+    },createCourse: async (course: Omit<OpenCourse, 'currentStudents' | 'courseName' | 'courseTypeId' | 'courseTypeName' | 'totalHours' | 'hoursPerCredit' | 'pricePerCredit' | 'semesterNumber' | 'academicYear' | 'status' | 'registrationStartDate' | 'registrationEndDate'>): Promise<OpenCourse> => {
+        try {
+            const response = await axios.post(`${API_URL}/academic/open-courses`, course);
+            const data = response.data as any;
+            if (data.success) {
+                return data.data;
+            }
+            throw new Error(data.message || 'Failed to create course');
+        } catch (error) {
+            throw error;
+        }
     },
 
     updateCourse: async (semesterId: string, courseId: string, course: Partial<OpenCourse>): Promise<OpenCourse> => {
-        const response = await axios.put(`${API_URL}/academic/open-courses/${semesterId}/${courseId}`, course);
-        return response.data as OpenCourse;
-    },
-
-    deleteCourse: async (semesterId: string, courseId: string): Promise<void> => {
-        await axios.delete(`${API_URL}/academic/open-courses/${semesterId}/${courseId}`);
+        try {
+            const response = await axios.put(`${API_URL}/academic/open-courses/${semesterId}/${courseId}`, course);
+            const data = response.data as any;
+            if (data.success) {
+                return data.data;
+            }
+            throw new Error(data.message || 'Failed to update course');
+        } catch (error) {
+            throw error;
+        }
+    },    deleteCourse: async (semesterId: string, courseId: string): Promise<void> => {
+        try {
+            await axios.delete(`${API_URL}/academic/open-courses/${semesterId}/${courseId}`);
+        } catch (error) {
+            throw error;
+        }
     },
 
     updateCourseStatus: async (semesterId: string, courseId: string, status: CourseStatus): Promise<OpenCourse> => {

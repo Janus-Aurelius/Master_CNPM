@@ -15,13 +15,12 @@ import { enrollmentApi, parseSemesterInfo } from "../api_clients/student/enrollm
 export const EnrolledSubject = ({ user, onLogout }: Omit<EnrolledSubjectProps, 'handleUnenroll'>) => {
     const [open, setOpen] = useState(false);
     const [subjects, setSubjects] = useState<EnrolledSubjectData[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+    const [loading, setLoading] = useState(true);    const [error, setError] = useState<string | null>(null);
     const [studentInfo, setStudentInfo] = useState<{ studentId: any; name: any; major: any; majorName: any; } | null>(null);
-    const currentSemester = "HK1_2024";
+    const [currentSemester, setCurrentSemester] = useState<string>("");
     
-    // Parse semester info
-    const semesterInfo = parseSemesterInfo(currentSemester);useEffect(() => {
+    // Parse semester info only if currentSemester is available
+    const semesterInfo = currentSemester ? parseSemesterInfo(currentSemester) : null;    useEffect(() => {
         console.log('🔄 EnrolledSubject useEffect triggered');
         console.log('👤 User:', user);
         
@@ -30,26 +29,29 @@ export const EnrolledSubject = ({ user, onLogout }: Omit<EnrolledSubjectProps, '
             return;
         }
         
-        console.log('✅ User found, starting to load enrolled subjects...');
+        console.log('✅ User found, starting to load data...');
         setLoading(true);
-        setError(null);        // Load cả thông tin sinh viên và môn học đã đăng ký
+        setError(null);        // Load current semester, student info and enrolled subjects
         Promise.all([
+            enrollmentApi.getCurrentSemester(),
             enrollmentApi.getStudentInfo(),
-            enrolledSubjectApi.getEnrolledSubjects()
+            enrolledSubjectApi.getEnrolledSubjects() // No semester parameter - backend uses current
         ])
-        .then(([studentData, enrolledSubjects]) => {
+        .then(([currentSemesterStr, studentData, enrolledSubjects]) => {
+            console.log('✅ Successfully loaded current semester:', currentSemesterStr);
             console.log('✅ Successfully loaded student info:', studentData);
             console.log('✅ Successfully loaded enrolled subjects:', enrolledSubjects);
+            setCurrentSemester(currentSemesterStr);
             setStudentInfo(studentData);
             setSubjects(enrolledSubjects);
             setLoading(false);
         })
         .catch((err: any) => {
             console.error('❌ Error loading data:', err);
-            setError(err.message || 'Không thể tải danh sách môn học đã đăng ký');
+            setError(err.message || 'Không thể tải dữ liệu');
             setLoading(false);
         });
-    }, [user]);    const [snackbarMessage, setSnackbarMessage] = useState<string>('');
+    }, [user]);const [snackbarMessage, setSnackbarMessage] = useState<string>('');
     const [snackbarSeverity, setSnackbarSeverity] = useState<'success' | 'error'>('success');
 
     const handleClose = (_: React.SyntheticEvent | Event, reason?: string) => {
@@ -132,10 +134,8 @@ export const EnrolledSubject = ({ user, onLogout }: Omit<EnrolledSubjectProps, '
                         }}
                     >
                         Danh sách môn học đã đăng ký
-                    </Typography>
-
-                    {/* Thông tin ngành và học kỳ */}
-                    {studentInfo && (
+                    </Typography>                    {/* Thông tin ngành và học kỳ */}
+                    {studentInfo && semesterInfo && (
                         <Box sx={{ mb: 2, p: 2, backgroundColor: '#f8f9fa', borderRadius: '0.5rem', border: '1px solid #e9ecef' }}>
                             <Typography sx={{ fontWeight: 'bold', mb: 1, color: '#495057' }}>
                                 Ngành: {studentInfo.majorName}

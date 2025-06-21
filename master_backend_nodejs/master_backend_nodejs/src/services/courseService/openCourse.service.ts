@@ -67,10 +67,32 @@ export class OpenCourseService {    static async getAllCourses(): Promise<IOffer
             console.error('Error in getCourseById:', error);
             throw new DatabaseError('Error fetching open course by ID');
         }
-    }
-
-    static async createCourse(courseData: IOfferedCourse): Promise<IOfferedCourse> {
+    }    static async createCourse(courseData: IOfferedCourse): Promise<IOfferedCourse> {
         try {
+            // Validation business rules
+            if (!courseData.semesterId || !courseData.courseId) {
+                throw new Error('Mã học kỳ và mã môn học là bắt buộc');
+            }
+
+            if (courseData.minStudents < 1) {
+                throw new Error('Số sinh viên tối thiểu phải lớn hơn 0');
+            }
+
+            if (courseData.maxStudents < courseData.minStudents) {
+                throw new Error('Số sinh viên tối đa phải lớn hơn hoặc bằng số sinh viên tối thiểu');
+            }
+
+            if (courseData.dayOfWeek < 1 || courseData.dayOfWeek > 7) {
+                throw new Error('Thứ phải từ 1 đến 7');
+            }            if (courseData.startPeriod < 1 || courseData.startPeriod > 10 || 
+                courseData.endPeriod < 1 || courseData.endPeriod > 10) {
+                throw new Error('Tiết học phải từ 1 đến 10');
+            }
+
+            if (courseData.startPeriod >= courseData.endPeriod) {
+                throw new Error('Tiết bắt đầu phải nhỏ hơn tiết kết thúc');
+            }
+
             const query = `
                 INSERT INTO DANHSACHMONHOCMO (
                     MaHocKy,
@@ -120,12 +142,90 @@ export class OpenCourseService {    static async getAllCourses(): Promise<IOffer
             registrationStartDate: data.registrationStartDate || data.registration_start_date,
             registrationEndDate: data.registrationEndDate || data.registration_end_date
         };
-    }static async updateCourse(id: number, courseData: Partial<IOfferedCourse>): Promise<IOfferedCourse> {
+    }    static async updateCourse(semesterId: string, courseId: string, courseData: Partial<IOfferedCourse>): Promise<IOfferedCourse> {
         try {
-            // First get the current course to update only the fields that exist in the schema
-            const currentCourse = await this.getCourseById(courseData.semesterId || '', courseData.courseId || '');
+            // First get the current course and check if students are registered
+            const currentCourse = await this.getCourseById(semesterId, courseId);
             if (!currentCourse) {
-                throw new Error('Course not found');
+                throw new Error('Môn học không tồn tại');
+            }
+
+            // Check if there are registered students for edit restrictions
+            const registrationCheckQuery = `
+                SELECT COUNT(*) as count 
+                FROM CT_PHIEUDANGKY 
+                WHERE MaHocKy = $1 AND MaMonHoc = $2
+            `;
+            const registrationResult = await Database.query(registrationCheckQuery, [semesterId, courseId]);
+            const hasRegistrations = parseInt(registrationResult[0].count) > 0;
+
+            console.log(`Course has ${registrationResult[0].count} registrations`);
+
+            // Business rules for editing
+            if (hasRegistrations) {
+                // If there are registrations, only allow editing minStudents and maxStudents
+                const allowedFields = ['minStudents', 'maxStudents'];
+                const attemptedFields = Object.keys(courseData);
+                const unauthorizedFields = attemptedFields.filter(field => !allowedFields.includes(field));
+                
+                if (unauthorizedFields.length > 0) {
+                    throw new Error('Không thể sửa các trường khác ngoài số sinh viên tối thiểu/tối đa khi đã có sinh viên đăng ký');
+                }
+
+                // Validate student number constraints
+                if (courseData.minStudents !== undefined) {
+                    if (courseData.minStudents < currentCourse.currentStudents) {
+                        throw new Error(`Số sinh viên tối thiểu không được nhỏ hơn số sinh viên đã đăng ký (${currentCourse.currentStudents})`);
+                    }
+                }
+
+                if (courseData.maxStudents !== undefined) {
+                    const newMinStudents = courseData.minStudents ?? currentCourse.minStudents;
+                    if (courseData.maxStudents < newMinStudents) {
+                        throw new Error('Số sinh viên tối đa phải lớn hơn hoặc bằng số sinh viên tối thiểu');
+                    }
+                    if (courseData.maxStudents < currentCourse.currentStudents) {
+                        throw new Error(`Số sinh viên tối đa không được nhỏ hơn số sinh viên đã đăng ký (${currentCourse.currentStudents})`);
+                    }
+                }
+            } else {
+                // If no registrations, validate all constraints normally
+                if (courseData.minStudents !== undefined && courseData.minStudents < 1) {
+                    throw new Error('Số sinh viên tối thiểu phải lớn hơn 0');
+                }
+
+                if (courseData.maxStudents !== undefined && courseData.minStudents !== undefined) {
+                    if (courseData.maxStudents < courseData.minStudents) {
+                        throw new Error('Số sinh viên tối đa phải lớn hơn hoặc bằng số sinh viên tối thiểu');
+                    }
+                } else if (courseData.maxStudents !== undefined) {
+                    const currentMinStudents = currentCourse.minStudents;
+                    if (courseData.maxStudents < currentMinStudents) {
+                        throw new Error('Số sinh viên tối đa phải lớn hơn hoặc bằng số sinh viên tối thiểu');
+                    }
+                } else if (courseData.minStudents !== undefined) {
+                    const currentMaxStudents = currentCourse.maxStudents;
+                    if (courseData.minStudents > currentMaxStudents) {
+                        throw new Error('Số sinh viên tối thiểu phải nhỏ hơn hoặc bằng số sinh viên tối đa');
+                    }
+                }
+
+                if (courseData.dayOfWeek !== undefined && (courseData.dayOfWeek < 1 || courseData.dayOfWeek > 7)) {
+                    throw new Error('Thứ phải từ 1 đến 7');
+                }                if (courseData.startPeriod !== undefined && 
+                    (courseData.startPeriod < 1 || courseData.startPeriod > 10)) {
+                    throw new Error('Tiết bắt đầu phải từ 1 đến 10');
+                }
+
+                if (courseData.endPeriod !== undefined && 
+                    (courseData.endPeriod < 1 || courseData.endPeriod > 10)) {
+                    throw new Error('Tiết kết thúc phải từ 1 đến 10');
+                }
+
+                if (courseData.startPeriod !== undefined && courseData.endPeriod !== undefined &&
+                    courseData.startPeriod >= courseData.endPeriod) {
+                    throw new Error('Tiết bắt đầu phải nhỏ hơn tiết kết thúc');
+                }
             }
 
             const query = `
@@ -141,8 +241,8 @@ export class OpenCourseService {    static async getAllCourses(): Promise<IOffer
             `;
 
             const result = await Database.query(query, [
-                courseData.semesterId || currentCourse.semesterId,
-                courseData.courseId || currentCourse.courseId,
+                semesterId,
+                courseId,
                 courseData.minStudents,
                 courseData.maxStudents,
                 courseData.currentStudents,
@@ -152,17 +252,29 @@ export class OpenCourseService {    static async getAllCourses(): Promise<IOffer
             ]);
 
             if (!result[0]) {
-                throw new Error('Course not found');
+                throw new Error('Môn học không tồn tại');
             }
             return result[0];
         } catch (error) {
-            throw new DatabaseError('Error updating open course');
+            throw error instanceof Error ? error : new DatabaseError('Error updating open course');
         }
     }    static async deleteCourse(semesterId: string, courseId: string): Promise<void> {
-        try {            const query = 'DELETE FROM DANHSACHMONHOCMO WHERE MaHocKy = $1 AND MaMonHoc = $2';
+        try {
+            // Check if there are registered students
+            const registrationCheckQuery = `
+                SELECT COUNT(*) as count 
+                FROM CT_PHIEUDANGKY 
+                WHERE MaHocKy = $1 AND MaMonHoc = $2
+            `;
+            const registrationResult = await Database.query(registrationCheckQuery, [semesterId, courseId]);
+            const hasRegistrations = parseInt(registrationResult[0].count) > 0;
+
+            if (hasRegistrations) {
+                throw new Error('Không thể xóa môn học này vì đã có sinh viên đăng ký');
+            }            const query = 'DELETE FROM DANHSACHMONHOCMO WHERE MaHocKy = $1 AND MaMonHoc = $2';
             await Database.query(query, [semesterId, courseId]);
         } catch (error) {
-            throw new DatabaseError('Error deleting open course');
+            throw error instanceof Error ? error : new DatabaseError('Error deleting open course');
         }
     }
 

@@ -63,23 +63,20 @@ axiosInstance.interceptors.request.use((config: any) => {
     return Promise.reject(error);
 });
 
-export const dashboardApi = {
-    // Lấy thời khóa biểu của sinh viên
-    getStudentTimetable: async (semester: string = 'HK1_2024'): Promise<TimetableEntry[]> => {
+export const dashboardApi = {    // Lấy thời khóa biểu của sinh viên
+    getStudentTimetable: async (semester?: string): Promise<TimetableEntry[]> => {
         try {
             const user = JSON.parse(localStorage.getItem('user') || '{}');
-            console.log('📅 Getting student timetable for:', user.studentId, 'semester:', semester);
+            console.log('📅 Getting student timetable for:', user.studentId, 'semester:', semester || 'current (from backend)');
             
             if (!user.studentId) {
                 throw new Error('Không tìm thấy thông tin sinh viên');
+            }            const params: any = { studentId: user.studentId };
+            if (semester) {
+                params.semester = semester;
             }
             
-            const response = await axiosInstance.get<StudentScheduleResponse>('/student/timetable', {
-                params: { 
-                    semester,
-                    studentId: user.studentId
-                }
-            });
+            const response = await axiosInstance.get<StudentScheduleResponse>('/student/timetable', { params });
             
             console.log('✅ Timetable response:', response.data);
             

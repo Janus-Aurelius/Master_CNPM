@@ -7,13 +7,11 @@ export class FinancialPaymentBusiness {
 
     constructor() {
         this.paymentService = new FinancialPaymentService();
-    }
-
-    /**
+    }    /**
      * Get payment status list with validation and business logic
      */
     async getPaymentStatusList(semesterId: string, filters?: {
-        paymentStatus?: 'paid' | 'partial' | 'unpaid' | 'overdue';
+        paymentStatus?: 'paid' | 'unpaid' | 'not_opened';
         studentId?: string;
         page?: number;
         limit?: number;
@@ -305,9 +303,7 @@ export class FinancialPaymentBusiness {
         const validPaymentMethods = ['cash', 'bank_transfer', 'momo', 'vnpay'];
         if (paymentData.paymentMethod && !validPaymentMethods.includes(paymentData.paymentMethod)) {
             errors.push('Invalid payment method');
-        }
-
-        const validStatuses = ['PAID', 'PARTIAL', 'UNPAID'];
+        }        const validStatuses = ['PAID', 'UNPAID', 'NOT_OPENED'];
         if (paymentData.status && !validStatuses.includes(paymentData.status)) {
             errors.push('Invalid payment status');
         }

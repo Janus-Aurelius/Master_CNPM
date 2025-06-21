@@ -1,10 +1,18 @@
 import { Router } from 'express';
 import { OpenCourseController } from '../../controllers/academicController/openCourse.controller';
+import * as courseController from '../../controllers/academicController/course.controller';
+import { semesterController } from '../../controllers/academicController/semester.controller';
 
 const router = Router();
 
-// Get all courses
+// Get all open courses
 router.get('/', OpenCourseController.getAllCourses);
+
+// Get available courses for dropdown (public endpoint)
+router.get('/available-courses', courseController.getCoursesHandler);
+
+// Get available semesters for dropdown (public endpoint)
+router.get('/available-semesters', semesterController.getAllSemesters);
 
 // Get course by semesterId and courseId
 router.get('/:semesterId/:courseId', OpenCourseController.getCourseById);

@@ -1,4 +1,3 @@
-// Academic Structure Service - Handles Faculty, Major, CourseType, Geographic data
 import { DatabaseService } from '../database/databaseService';
 import { Faculty, Major, CourseType, District, Province, PriorityGroup } from '../../models/academic_related/academicStructure';
 
@@ -39,13 +38,12 @@ export class AcademicStructureService {
 
     // Major Services
     static async getAllMajors(): Promise<Major[]> {
-        try {
-            const majors = await DatabaseService.query(`
+        try {            const majors = await DatabaseService.query(`
                 SELECT 
-                    ng.MaNganh as majorId,
-                    ng.TenNganh as majorName,
-                    ng.MaKhoa as facultyId,
-                    k.TenKhoa as facultyName
+                    ng.MaNganh as maNganh,
+                    ng.TenNganh as tenNganh,
+                    ng.MaKhoa as maKhoa,
+                    k.TenKhoa as tenKhoa
                 FROM NGANHHOC ng
                 JOIN KHOA k ON ng.MaKhoa = k.MaKhoa
                 ORDER BY k.TenKhoa, ng.TenNganh
@@ -58,13 +56,12 @@ export class AcademicStructureService {
     }
 
     static async getMajorsByFaculty(facultyId: string): Promise<Major[]> {
-        try {
-            const majors = await DatabaseService.query(`
+        try {            const majors = await DatabaseService.query(`
                 SELECT 
-                    ng.MaNganh as majorId,
-                    ng.TenNganh as majorName,
-                    ng.MaKhoa as facultyId,
-                    k.TenKhoa as facultyName
+                    ng.MaNganh as maNganh,
+                    ng.TenNganh as tenNganh,
+                    ng.MaKhoa as maKhoa,
+                    k.TenKhoa as tenKhoa
                 FROM NGANHHOC ng
                 JOIN KHOA k ON ng.MaKhoa = k.MaKhoa
                 WHERE ng.MaKhoa = $1
@@ -98,11 +95,10 @@ export class AcademicStructureService {
 
     // Geographic Services
     static async getAllProvinces(): Promise<Province[]> {
-        try {
-            const provinces = await DatabaseService.query(`
+        try {            const provinces = await DatabaseService.query(`
                 SELECT 
-                    MaTinh as provinceId,
-                    TenTinh as provinceName
+                    MaTinh as maTinh,
+                    TenTinh as tenTinh
                 FROM TINH
                 ORDER BY TenTinh
             `);
@@ -114,13 +110,12 @@ export class AcademicStructureService {
     }
 
     static async getDistrictsByProvince(provinceId: string): Promise<District[]> {
-        try {
-            const districts = await DatabaseService.query(`
+        try {            const districts = await DatabaseService.query(`
                 SELECT 
-                    h.MaHuyen as districtId,
-                    h.TenHuyen as districtName,
-                    h.MaTinh as provinceId,
-                    t.TenTinh as provinceName
+                    h.MaHuyen as maHuyen,
+                    h.TenHuyen as tenHuyen,
+                    h.MaTinh as maTinh,
+                    t.TenTinh as tenTinh
                 FROM HUYEN h
                 JOIN TINH t ON h.MaTinh = t.MaTinh
                 WHERE h.MaTinh = $1
@@ -134,13 +129,12 @@ export class AcademicStructureService {
     }
 
     static async getAllDistricts(): Promise<District[]> {
-        try {
-            const districts = await DatabaseService.query(`
+        try {            const districts = await DatabaseService.query(`
                 SELECT 
-                    h.MaHuyen as districtId,
-                    h.TenHuyen as districtName,
-                    h.MaTinh as provinceId,
-                    t.TenTinh as provinceName
+                    h.MaHuyen as maHuyen,
+                    h.TenHuyen as tenHuyen,
+                    h.MaTinh as maTinh,
+                    t.TenTinh as tenTinh
                 FROM HUYEN h
                 JOIN TINH t ON h.MaTinh = t.MaTinh
                 ORDER BY t.TenTinh, h.TenHuyen
@@ -154,12 +148,11 @@ export class AcademicStructureService {
 
     // Priority Group Services
     static async getAllPriorityGroups(): Promise<PriorityGroup[]> {
-        try {
-            const priorityGroups = await DatabaseService.query(`
+        try {            const priorityGroups = await DatabaseService.query(`
                 SELECT 
-                    MaDoiTuong as priorityId,
-                    TenDoiTuong as priorityName,
-                    MucGiamHocPhi as feeDiscountAmount
+                    MaDoiTuong as maDoiTuong,
+                    TenDoiTuong as tenDoiTuong,
+                    MucGiamHocPhi as mucGiamHocPhi
                 FROM DOITUONGUUTIEN
                 ORDER BY TenDoiTuong
             `);
@@ -171,12 +164,11 @@ export class AcademicStructureService {
     }
 
     static async getPriorityGroupById(priorityId: string): Promise<PriorityGroup | null> {
-        try {
-            const priorityGroup = await DatabaseService.queryOne(`
+        try {            const priorityGroup = await DatabaseService.queryOne(`
                 SELECT 
-                    MaDoiTuong as priorityId,
-                    TenDoiTuong as priorityName,
-                    MucGiamHocPhi as feeDiscountAmount
+                    MaDoiTuong as maDoiTuong,
+                    TenDoiTuong as tenDoiTuong,
+                    MucGiamHocPhi as mucGiamHocPhi
                 FROM DOITUONGUUTIEN
                 WHERE MaDoiTuong = $1
             `, [priorityId]);
