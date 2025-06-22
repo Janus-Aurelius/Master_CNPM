@@ -80,5 +80,23 @@ exports.studentBusiness = {
                 case 1: return [2 /*return*/, _a.sent()];
             }
         });
-    }); }
+    }); },
+    // Lấy danh sách sinh viên cho tạo hàng loạt PHIEUDANGKY
+    getStudentsForBulkRegistration: function (semesterId, filters) { return __awaiter(void 0, void 0, void 0, function () {
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0: return [4 /*yield*/, student_service_1.studentService.getStudentsForBulkRegistration(semesterId, filters)];
+                case 1: return [2 /*return*/, _a.sent()];
+            }
+        });
+    }); },
+    // Tạo hàng loạt PHIEUDANGKY
+    createBulkRegistrations: function (studentIds, semesterId, maxCredits) { return __awaiter(void 0, void 0, void 0, function () {
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0: return [4 /*yield*/, student_service_1.studentService.createBulkRegistrations(studentIds, semesterId, maxCredits)];
+                case 1: return [2 /*return*/, _a.sent()];
+            }
+        });
+    }); },
 };

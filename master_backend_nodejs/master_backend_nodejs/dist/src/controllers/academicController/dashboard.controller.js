@@ -107,8 +107,35 @@ var AcademicDashboardController = /** @class */ (function () {
                     case 2:
                         error_3 = _a.sent();
                         res.status(500).json({
-                            success: false, message: 'Error fetching recent activities',
+                            success: false,
+                            message: 'Error fetching recent activities',
                             error: error_3 instanceof Error ? error_3.message : 'Unknown error'
+                        });
+                        return [3 /*break*/, 3];
+                    case 3: return [2 /*return*/];
+                }
+            });
+        });
+    };
+    AcademicDashboardController.getStudentRequests = function (req, res) {
+        return __awaiter(this, void 0, void 0, function () {
+            var limit, requests, error_4;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        _a.trys.push([0, 2, , 3]);
+                        limit = parseInt(req.query.limit) || 10;
+                        return [4 /*yield*/, dashboard_business_1.AcademicDashboardBusiness.getStudentRequests(limit)];
+                    case 1:
+                        requests = _a.sent();
+                        res.status(200).json({ success: true, data: requests });
+                        return [3 /*break*/, 3];
+                    case 2:
+                        error_4 = _a.sent();
+                        res.status(500).json({
+                            success: false,
+                            message: 'Error fetching student requests',
+                            error: error_4 instanceof Error ? error_4.message : 'Unknown error'
                         });
                         return [3 /*break*/, 3];
                     case 3: return [2 /*return*/];

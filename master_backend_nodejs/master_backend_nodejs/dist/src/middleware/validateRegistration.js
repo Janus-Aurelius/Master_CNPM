@@ -51,13 +51,12 @@ var registrationValidationRules = function () {
             .notEmpty()
             .withMessage('Course ID is required')
             .matches(/^[A-Z]{2}\d{3}$/)
-            .withMessage('Course ID must be 2 uppercase letters followed by 3 digits'),
-        (0, express_validator_1.body)('semester')
+            .withMessage('Course ID must be 2 uppercase letters followed by 3 digits'), (0, express_validator_1.body)('semester')
             .isString()
             .notEmpty()
             .withMessage('Semester is required')
-            .matches(/^HK[1-3] \d{4}-\d{4}$/)
-            .withMessage('Semester must be in format: HK1 2023-2024')
+            .matches(/^HK[1-3]_\d{4}$/)
+            .withMessage('Semester must be in format: HK{1-3}_{YYYY} (e.g., HK1_2024)')
     ];
 };
 var validate = function (req, res, next) {

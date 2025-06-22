@@ -41,34 +41,47 @@ var paymentBusiness_1 = require("../../business/financialBusiness/paymentBusines
 var FinancialPaymentController = /** @class */ (function () {
     function FinancialPaymentController() {
         this.paymentBusiness = new paymentBusiness_1.FinancialPaymentBusiness();
-    }
-    /**
+    } /**
      * GET /api/financial/payment/status
      * Get payment status list for a semester
      */
     FinancialPaymentController.prototype.getPaymentStatusList = function (req, res) {
         return __awaiter(this, void 0, void 0, function () {
-            var _a, semesterId, paymentStatus, studentId, page, limit, filters, result, error_1;
-            return __generator(this, function (_b) {
-                switch (_b.label) {
+            var _a, semesterId, paymentStatus, studentId, page, limit, finalStudentId, filters, result, error_1;
+            var _b;
+            return __generator(this, function (_c) {
+                switch (_c.label) {
                     case 0:
-                        _b.trys.push([0, 2, , 3]);
+                        _c.trys.push([0, 2, , 3]);
                         _a = req.query, semesterId = _a.semesterId, paymentStatus = _a.paymentStatus, studentId = _a.studentId, page = _a.page, limit = _a.limit;
+                        console.log('[getPaymentStatusList] req.user:', req.user);
+                        console.log('[getPaymentStatusList] req.query before processing:', req.query);
                         if (!semesterId) {
                             return [2 /*return*/, res.status(400).json({
                                     success: false,
                                     message: 'Semester ID is required'
                                 })];
                         }
+                        finalStudentId = undefined;
+                        if (((_b = req.user) === null || _b === void 0 ? void 0 : _b.role) === 'financial') {
+                            // Financial staff should see all students, ignore auto-injected studentId
+                            console.log('[getPaymentStatusList] Financial staff detected, ignoring studentId filter');
+                            finalStudentId = undefined;
+                        }
+                        else if (studentId && typeof studentId === 'string') {
+                            // For other roles, use studentId if provided
+                            finalStudentId = studentId;
+                        }
                         filters = {
                             paymentStatus: paymentStatus,
-                            studentId: studentId,
+                            studentId: finalStudentId,
                             page: page ? parseInt(page) : 1,
                             limit: limit ? parseInt(limit) : 50
                         };
+                        console.log('[getPaymentStatusList] Final filters after role check:', filters);
                         return [4 /*yield*/, this.paymentBusiness.getPaymentStatusList(semesterId, filters)];
                     case 1:
-                        result = _b.sent();
+                        result = _c.sent();
                         if (result.success) {
                             res.json({
                                 success: true,
@@ -84,7 +97,7 @@ var FinancialPaymentController = /** @class */ (function () {
                         }
                         return [3 /*break*/, 3];
                     case 2:
-                        error_1 = _b.sent();
+                        error_1 = _c.sent();
                         res.status(500).json({
                             success: false,
                             message: 'Internal server error',
@@ -157,7 +170,10 @@ var FinancialPaymentController = /** @class */ (function () {
                     case 0:
                         _b.trys.push([0, 2, , 3]);
                         paymentData = req.body;
-                        performedBy = ((_a = req.user) === null || _a === void 0 ? void 0 : _a.userId) || req.body.performedBy;
+                        performedBy = ((_a = req.user) === null || _a === void 0 ? void 0 : _a.id) || req.body.performedBy;
+                        // Log dữ liệu nhận vào
+                        console.log('[CONFIRM PAYMENT] Request body:', paymentData);
+                        console.log('[CONFIRM PAYMENT] Performed by:', performedBy);
                         if (!performedBy) {
                             return [2 /*return*/, res.status(401).json({
                                     success: false,
@@ -167,10 +183,12 @@ var FinancialPaymentController = /** @class */ (function () {
                         return [4 /*yield*/, this.paymentBusiness.confirmPayment(paymentData, performedBy)];
                     case 1:
                         result = _b.sent();
+                        // Log kết quả trả về từ business/service
+                        console.log('[CONFIRM PAYMENT] Result:', result);
                         if (result.success) {
                             res.status(201).json({
                                 success: true,
-                                data: 'data' in result ? result.data : { paymentId: result.paymentId },
+                                data: { paymentId: result.paymentId },
                                 message: result.message
                             });
                         }
@@ -183,6 +201,7 @@ var FinancialPaymentController = /** @class */ (function () {
                         return [3 /*break*/, 3];
                     case 2:
                         error_3 = _b.sent();
+                        console.error('[CONFIRM PAYMENT] Error:', error_3);
                         res.status(500).json({
                             success: false,
                             message: 'Internal server error',
@@ -330,6 +349,46 @@ var FinancialPaymentController = /** @class */ (function () {
                             success: false,
                             message: 'Internal server error',
                             error: error_6 === null || error_6 === void 0 ? void 0 : error_6.message
+                        });
+                        return [3 /*break*/, 3];
+                    case 3: return [2 /*return*/];
+                }
+            });
+        });
+    };
+    /**
+     * GET /api/financial/payment/available-semesters
+     * Get list of semesters that have payment data
+     */
+    FinancialPaymentController.prototype.getAvailableSemesters = function (req, res) {
+        return __awaiter(this, void 0, void 0, function () {
+            var result, error_7;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        _a.trys.push([0, 2, , 3]);
+                        return [4 /*yield*/, this.paymentBusiness.getAvailableSemesters()];
+                    case 1:
+                        result = _a.sent();
+                        if (result.success) {
+                            res.json({
+                                success: true,
+                                data: result.data
+                            });
+                        }
+                        else {
+                            res.status(400).json({
+                                success: false,
+                                message: result.message
+                            });
+                        }
+                        return [3 /*break*/, 3];
+                    case 2:
+                        error_7 = _a.sent();
+                        res.status(500).json({
+                            success: false,
+                            message: 'Internal server error',
+                            error: error_7 === null || error_7 === void 0 ? void 0 : error_7.message
                         });
                         return [3 /*break*/, 3];
                     case 3: return [2 /*return*/];

@@ -152,6 +152,76 @@ export const studentApi = {
         }
         return data.data || [];
     },
+
+    // Lấy dữ liệu form sinh viên
+    getStudentFormData: async (): Promise<any> => {
+        try {
+            const response = await axiosInstance.get('/academic/students/form-data');
+            return response.data;
+        } catch (error) {
+            console.error('Error fetching student form data:', error);
+            throw error;
+        }
+    },
+
+    // Tạo hàng loạt PHIEUDANGKY
+    createBulkRegistrations: async (studentIds: string[], semesterId: string, maxCredits: number): Promise<any> => {
+        try {
+            const response = await axiosInstance.post('/academic/students/bulk-registration', {
+                studentIds,
+                semesterId,
+                maxCredits
+            });
+            return response.data;
+        } catch (error) {
+            console.error('Error creating bulk registrations:', error);
+            throw error;
+        }
+    },
+
+    // Kiểm tra trạng thái đăng ký của sinh viên
+    checkRegistrationStatus: async (studentId: string, semesterId: string): Promise<any> => {
+        try {
+            const response = await axiosInstance.get(`/academic/students/registration-status?studentId=${studentId}&semesterId=${semesterId}`);
+            return response.data;
+        } catch (error) {
+            console.error('Error checking registration status:', error);
+            throw error;
+        }
+    },
+
+    // Lấy danh sách tất cả học kỳ
+    getSemesters: async (): Promise<any> => {
+        try {
+            const response = await axiosInstance.get('/academic/students/semesters');
+            return response.data;
+        } catch (error) {
+            console.error('Error fetching semesters:', error);
+            throw error;
+        }
+    },
+
+    // Lấy học kỳ hiện tại (đang mở đăng ký)
+    getCurrentSemester: async (): Promise<string> => {
+        try {
+            const { data } = await axiosInstance.get<ApiResponse<string>>('/academic/students/current-semester');
+            return data.data;
+        } catch (error) {
+            console.error('Error fetching current semester:', error);
+            throw error;
+        }
+    },
+
+    // Kiểm tra trạng thái PHIEUDANGKY của sinh viên cho học kỳ hiện tại
+    checkStudentRegistrationStatus: async (studentId: string, semesterId: string): Promise<boolean> => {
+        try {
+            const { data } = await axiosInstance.get<ApiResponse<{hasRegistration: boolean}>>(`/academic/students/registration-status?studentId=${studentId}&semesterId=${semesterId}`);
+            return data.data.hasRegistration;
+        } catch (error) {
+            console.error('Error checking student registration status:', error);
+            return false;
+        }
+    },
 };
 
 // API client cho student

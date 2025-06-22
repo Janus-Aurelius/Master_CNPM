@@ -36,12 +36,14 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.adminController = void 0;
 var userManager_1 = require("../../business/AdminBussiness/userManager");
-var activitylogManager_1 = require("../../business/AdminBussiness/activitylogManager");
+var auditlogManager_1 = require("../../business/AdminBussiness/auditlogManager");
+var dashboardManager_1 = require("../../business/AdminBussiness/dashboardManager");
 var AdminController = /** @class */ (function () {
     function AdminController() {
     }
-    AdminController.prototype.getActivityLog = function (req, res, next) {
+    AdminController.prototype.getAuditLog = function (req, res, next) {
         return __awaiter(this, void 0, void 0, function () {
             var page, size, result, error_1;
             return __generator(this, function (_a) {
@@ -50,12 +52,15 @@ var AdminController = /** @class */ (function () {
                         _a.trys.push([0, 2, , 3]);
                         page = parseInt(req.query.page) || 1;
                         size = parseInt(req.query.size) || 10;
-                        return [4 /*yield*/, activitylogManager_1.activitylogManager.getActivityLogs(page, size)];
+                        return [4 /*yield*/, auditlogManager_1.auditlogManager.getAuditLogs(page, size)];
                     case 1:
                         result = _a.sent();
                         res.status(200).json({
                             success: true,
-                            data: result
+                            data: result.logs,
+                            total: result.total,
+                            page: result.page,
+                            size: result.size
                         });
                         return [3 /*break*/, 3];
                     case 2:
@@ -67,19 +72,20 @@ var AdminController = /** @class */ (function () {
             });
         });
     };
-    AdminController.prototype.getDashboard = function (req, res, next) {
+    AdminController.prototype.getRecentActivities = function (req, res, next) {
         return __awaiter(this, void 0, void 0, function () {
-            var stats, error_2;
+            var limit, result, error_2;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         _a.trys.push([0, 2, , 3]);
-                        return [4 /*yield*/, userManager_1.userManager.getDashboardStats()];
+                        limit = parseInt(req.query.limit) || 5;
+                        return [4 /*yield*/, auditlogManager_1.auditlogManager.getRecentActivities(limit)];
                     case 1:
-                        stats = _a.sent();
+                        result = _a.sent();
                         res.status(200).json({
                             success: true,
-                            data: stats
+                            data: result
                         });
                         return [3 /*break*/, 3];
                     case 2:
@@ -91,9 +97,33 @@ var AdminController = /** @class */ (function () {
             });
         });
     };
+    AdminController.prototype.getDashboard = function (req, res, next) {
+        return __awaiter(this, void 0, void 0, function () {
+            var stats, error_3;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        _a.trys.push([0, 2, , 3]);
+                        return [4 /*yield*/, dashboardManager_1.dashboardAdminManager.getDashboardStats()];
+                    case 1:
+                        stats = _a.sent();
+                        res.status(200).json({
+                            success: true,
+                            data: stats
+                        });
+                        return [3 /*break*/, 3];
+                    case 2:
+                        error_3 = _a.sent();
+                        next(error_3);
+                        return [3 /*break*/, 3];
+                    case 3: return [2 /*return*/];
+                }
+            });
+        });
+    };
     AdminController.prototype.getUserManagement = function (req, res, next) {
         return __awaiter(this, void 0, void 0, function () {
-            var _a, search, role_1, page, size, _b, userList, total, currentPage, totalPages, users, searchLower_1, pageNum, pageSize, start, pagedUsers, error_3;
+            var _a, search, role_1, page, size, _b, userList, total, currentPage, totalPages, users, searchLower_1, pageNum, pageSize, start, pagedUsers, error_4;
             return __generator(this, function (_c) {
                 switch (_c.label) {
                     case 0:
@@ -129,8 +159,8 @@ var AdminController = /** @class */ (function () {
                         });
                         return [3 /*break*/, 3];
                     case 2:
-                        error_3 = _c.sent();
-                        next(error_3);
+                        error_4 = _c.sent();
+                        next(error_4);
                         return [3 /*break*/, 3];
                     case 3: return [2 /*return*/];
                 }
@@ -139,7 +169,7 @@ var AdminController = /** @class */ (function () {
     };
     AdminController.prototype.getConfig = function (req, res, next) {
         return __awaiter(this, void 0, void 0, function () {
-            var config, error_4;
+            var config, error_5;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -153,8 +183,8 @@ var AdminController = /** @class */ (function () {
                         });
                         return [3 /*break*/, 3];
                     case 2:
-                        error_4 = _a.sent();
-                        next(error_4);
+                        error_5 = _a.sent();
+                        next(error_5);
                         return [3 /*break*/, 3];
                     case 3: return [2 /*return*/];
                 }
@@ -163,4 +193,4 @@ var AdminController = /** @class */ (function () {
     };
     return AdminController;
 }());
-exports.default = new AdminController();
+exports.adminController = new AdminController();

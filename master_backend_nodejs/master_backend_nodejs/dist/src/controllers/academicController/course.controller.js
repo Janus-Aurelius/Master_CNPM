@@ -119,21 +119,29 @@ var getCourseByIdHandler = function (req, res, next) { return __awaiter(void 0, 
 exports.getCourseByIdHandler = getCourseByIdHandler;
 var createCourseHandler = function (req, res, next) { return __awaiter(void 0, void 0, void 0, function () {
     var courseData, newCourse, error_3;
-    return __generator(this, function (_a) {
-        switch (_a.label) {
+    var _a;
+    return __generator(this, function (_b) {
+        switch (_b.label) {
             case 0:
-                _a.trys.push([0, 2, , 3]);
+                _b.trys.push([0, 2, , 3]);
                 courseData = req.body;
                 return [4 /*yield*/, courseBusiness.createCourse(courseData)];
             case 1:
-                newCourse = _a.sent();
+                newCourse = _b.sent();
                 res.status(201).json({ success: true, data: newCourse });
                 return [3 /*break*/, 3];
             case 2:
-                error_3 = _a.sent();
+                error_3 = _b.sent();
                 console.error('Error in createCourseHandler:', error_3);
+                console.error('Error type:', typeof error_3);
+                console.error('Error constructor name:', (_a = error_3 === null || error_3 === void 0 ? void 0 : error_3.constructor) === null || _a === void 0 ? void 0 : _a.name);
+                console.error('Error message:', error_3 === null || error_3 === void 0 ? void 0 : error_3.message);
+                console.error('Error code:', error_3 === null || error_3 === void 0 ? void 0 : error_3.code);
                 if (error_3.message && error_3.message.includes('Mã môn học đã tồn tại')) {
                     res.status(400).json({ success: false, message: error_3.message });
+                }
+                else if (error_3.message === 'Mã môn học đã tồn tại') {
+                    res.status(400).json({ success: false, message: 'Mã môn học đã tồn tại' });
                 }
                 else if (error_3.code === '23503' && error_3.constraint === 'monhoc_maloaimon_fkey') {
                     res.status(400).json({
@@ -231,8 +239,17 @@ var deleteCourseHandler = function (req, res, next) { return __awaiter(void 0, v
             case 2:
                 error_5 = _a.sent();
                 console.error('Error in deleteCourseHandler:', error_5);
+                console.error('Error code:', error_5.code);
+                console.error('Error constraint:', error_5.constraint);
+                console.error('Error detail:', error_5.detail);
                 // Xử lý lỗi foreign key constraint
-                if (error_5.code === '23503') {
+                if (error_5.code === '23503' && error_5.constraint === 'chuongtrinhhoc_mamonhoc_fkey') {
+                    res.status(400).json({
+                        success: false,
+                        message: 'Môn này đang tồn tại trong một chương trình học'
+                    });
+                }
+                else if (error_5.code === '23503') {
                     res.status(400).json({
                         success: false,
                         message: 'Không thể xóa môn học vì có dữ liệu liên quan trong hệ thống'

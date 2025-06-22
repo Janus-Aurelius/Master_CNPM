@@ -41,15 +41,22 @@ var userManager_1 = require("../../business/AdminBussiness/userManager");
 var errorHandler_1 = require("../../middleware/errorHandler");
 var UserController = /** @class */ (function () {
     function UserController() {
-    }
-    UserController.prototype.getAllUsers = function (req, res, next) {
-        return __awaiter(this, void 0, void 0, function () {
-            var users, error_1;
+        var _this = this;
+        this.searchUsersByName = function (req, res, next) { return __awaiter(_this, void 0, void 0, function () {
+            var searchTerm, users, error_1;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         _a.trys.push([0, 2, , 3]);
-                        return [4 /*yield*/, userManager_1.userManager.getAllUsers()];
+                        searchTerm = req.query.searchTerm;
+                        if (!searchTerm) {
+                            res.status(400).json({
+                                success: false,
+                                message: 'Search term is required'
+                            });
+                            return [2 /*return*/];
+                        }
+                        return [4 /*yield*/, userManager_1.userManager.searchUsersByName(searchTerm)];
                     case 1:
                         users = _a.sent();
                         res.status(200).json({
@@ -64,30 +71,91 @@ var UserController = /** @class */ (function () {
                     case 3: return [2 /*return*/];
                 }
             });
+        }); };
+        this.advancedSearch = function (req, res, next) { return __awaiter(_this, void 0, void 0, function () {
+            var _a, searchTerm, role, status_1, department, results, error_2;
+            return __generator(this, function (_b) {
+                switch (_b.label) {
+                    case 0:
+                        _b.trys.push([0, 2, , 3]);
+                        _a = req.query, searchTerm = _a.searchTerm, role = _a.role, status_1 = _a.status, department = _a.department;
+                        return [4 /*yield*/, userManager_1.userManager.advancedSearch({
+                                searchTerm: searchTerm,
+                                role: role,
+                                status: status_1 === 'true',
+                                department: department
+                            })];
+                    case 1:
+                        results = _b.sent();
+                        res.status(200).json({
+                            success: true,
+                            data: results
+                        });
+                        return [3 /*break*/, 3];
+                    case 2:
+                        error_2 = _b.sent();
+                        next(error_2);
+                        return [3 /*break*/, 3];
+                    case 3: return [2 /*return*/];
+                }
+            });
+        }); };
+    }
+    UserController.prototype.getAllUsers = function (req, res, next) {
+        return __awaiter(this, void 0, void 0, function () {
+            var page, limit, filters, users, err_1;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        _a.trys.push([0, 2, , 3]);
+                        page = parseInt(req.query.page) || 1;
+                        limit = parseInt(req.query.limit) || 10;
+                        filters = {
+                            role: req.query.role,
+                            status: req.query.status === 'true' ? true :
+                                req.query.status === 'false' ? false : undefined,
+                            search: req.query.search
+                        };
+                        console.log('Request params:', { page: page, limit: limit, filters: filters });
+                        return [4 /*yield*/, userManager_1.userManager.getAllUsers(page, limit, filters)];
+                    case 1:
+                        users = _a.sent();
+                        res.status(200).json({
+                            success: true,
+                            data: users
+                        });
+                        return [3 /*break*/, 3];
+                    case 2:
+                        err_1 = _a.sent();
+                        console.error('Error in getAllUsers controller:', err_1);
+                        next(err_1);
+                        return [3 /*break*/, 3];
+                    case 3: return [2 /*return*/];
+                }
+            });
         });
     };
     UserController.prototype.getUserById = function (req, res, next) {
         return __awaiter(this, void 0, void 0, function () {
-            var id, user, error_2;
+            var id, user, error_3;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         _a.trys.push([0, 2, , 3]);
                         id = req.params.id;
-                        return [4 /*yield*/, userManager_1.userManager.getUserById(parseInt(id))];
+                        return [4 /*yield*/, userManager_1.userManager.getUserById(id)];
                     case 1:
                         user = _a.sent();
-                        if (!user) {
+                        if (!user)
                             throw new errorHandler_1.AppError(404, 'User not found');
-                        }
                         res.status(200).json({
                             success: true,
                             data: user
                         });
                         return [3 /*break*/, 3];
                     case 2:
-                        error_2 = _a.sent();
-                        next(error_2);
+                        error_3 = _a.sent();
+                        next(error_3);
                         return [3 /*break*/, 3];
                     case 3: return [2 /*return*/];
                 }
@@ -96,7 +164,7 @@ var UserController = /** @class */ (function () {
     };
     UserController.prototype.createUser = function (req, res, next) {
         return __awaiter(this, void 0, void 0, function () {
-            var userData, newUser, error_3;
+            var userData, newUser, error_4;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -111,35 +179,6 @@ var UserController = /** @class */ (function () {
                         });
                         return [3 /*break*/, 3];
                     case 2:
-                        error_3 = _a.sent();
-                        next(error_3);
-                        return [3 /*break*/, 3];
-                    case 3: return [2 /*return*/];
-                }
-            });
-        });
-    };
-    UserController.prototype.updateUser = function (req, res, next) {
-        return __awaiter(this, void 0, void 0, function () {
-            var id, userData, updatedUser, error_4;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        _a.trys.push([0, 2, , 3]);
-                        id = req.params.id;
-                        userData = req.body;
-                        return [4 /*yield*/, userManager_1.userManager.updateUser(parseInt(id), userData)];
-                    case 1:
-                        updatedUser = _a.sent();
-                        if (!updatedUser) {
-                            throw new errorHandler_1.AppError(404, 'User not found');
-                        }
-                        res.status(200).json({
-                            success: true,
-                            data: updatedUser
-                        });
-                        return [3 /*break*/, 3];
-                    case 2:
                         error_4 = _a.sent();
                         next(error_4);
                         return [3 /*break*/, 3];
@@ -148,23 +187,23 @@ var UserController = /** @class */ (function () {
             });
         });
     };
-    UserController.prototype.deleteUser = function (req, res, next) {
+    UserController.prototype.updateUser = function (req, res, next) {
         return __awaiter(this, void 0, void 0, function () {
-            var id, success, error_5;
+            var id, userData, updatedUser, error_5;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         _a.trys.push([0, 2, , 3]);
                         id = req.params.id;
-                        return [4 /*yield*/, userManager_1.userManager.deleteUser(parseInt(id))];
+                        userData = req.body;
+                        return [4 /*yield*/, userManager_1.userManager.updateUser(id, userData)];
                     case 1:
-                        success = _a.sent();
-                        if (!success) {
+                        updatedUser = _a.sent();
+                        if (!updatedUser)
                             throw new errorHandler_1.AppError(404, 'User not found');
-                        }
                         res.status(200).json({
                             success: true,
-                            message: 'User deleted successfully'
+                            data: updatedUser
                         });
                         return [3 /*break*/, 3];
                     case 2:
@@ -176,29 +215,55 @@ var UserController = /** @class */ (function () {
             });
         });
     };
-    UserController.prototype.changeUserStatus = function (req, res, next) {
+    UserController.prototype.deleteUser = function (req, res, next) {
         return __awaiter(this, void 0, void 0, function () {
-            var id, status_1, updatedUser, error_6;
+            var id, success, error_6;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         _a.trys.push([0, 2, , 3]);
                         id = req.params.id;
-                        status_1 = req.body.status;
-                        return [4 /*yield*/, userManager_1.userManager.changeUserStatus(parseInt(id), status_1)];
+                        return [4 /*yield*/, userManager_1.userManager.deleteUser(id)];
+                    case 1:
+                        success = _a.sent();
+                        if (!success)
+                            throw new errorHandler_1.AppError(404, 'User not found');
+                        res.status(200).json({
+                            success: true,
+                            message: 'User deleted successfully'
+                        });
+                        return [3 /*break*/, 3];
+                    case 2:
+                        error_6 = _a.sent();
+                        next(error_6);
+                        return [3 /*break*/, 3];
+                    case 3: return [2 /*return*/];
+                }
+            });
+        });
+    };
+    UserController.prototype.changeUserStatus = function (req, res, next) {
+        return __awaiter(this, void 0, void 0, function () {
+            var id, status_2, updatedUser, error_7;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        _a.trys.push([0, 2, , 3]);
+                        id = req.params.id;
+                        status_2 = req.body.status;
+                        return [4 /*yield*/, userManager_1.userManager.changeUserStatus(id, status_2)];
                     case 1:
                         updatedUser = _a.sent();
-                        if (!updatedUser) {
+                        if (!updatedUser)
                             throw new errorHandler_1.AppError(404, 'User not found');
-                        }
                         res.status(200).json({
                             success: true,
                             data: updatedUser
                         });
                         return [3 /*break*/, 3];
                     case 2:
-                        error_6 = _a.sent();
-                        next(error_6);
+                        error_7 = _a.sent();
+                        next(error_7);
                         return [3 /*break*/, 3];
                     case 3: return [2 /*return*/];
                 }

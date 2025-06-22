@@ -1,15 +1,4 @@
 "use strict";
-var __assign = (this && this.__assign) || function () {
-    __assign = Object.assign || function(t) {
-        for (var s, i = 1, n = arguments.length; i < n; i++) {
-            s = arguments[i];
-            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
-                t[p] = s[p];
-        }
-        return t;
-    };
-    return __assign.apply(this, arguments);
-};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -50,6 +39,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.OpenCourseController = void 0;
 var openCourse_service_1 = require("../../services/courseService/openCourse.service");
 var database_error_1 = require("../../utils/errors/database.error");
+var validation_error_1 = require("../../utils/errors/validation.error");
 var OpenCourseController = /** @class */ (function () {
     function OpenCourseController() {
     }
@@ -71,10 +61,10 @@ var OpenCourseController = /** @class */ (function () {
                         error_1 = _a.sent();
                         console.error('Error in getAllCourses:', error_1);
                         if (error_1 instanceof database_error_1.DatabaseError) {
-                            res.status(500).json({ error: error_1.message });
+                            res.status(500).json({ success: false, message: error_1.message });
                         }
                         else {
-                            res.status(500).json({ error: 'Internal server error' });
+                            res.status(500).json({ success: false, message: 'Internal server error' });
                         }
                         return [3 /*break*/, 3];
                     case 3: return [2 /*return*/];
@@ -121,24 +111,52 @@ var OpenCourseController = /** @class */ (function () {
     OpenCourseController.createCourse = function (req, res) {
         return __awaiter(this, void 0, void 0, function () {
             var courseData, course, error_3;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
+            var _a;
+            return __generator(this, function (_b) {
+                switch (_b.label) {
                     case 0:
-                        _a.trys.push([0, 2, , 3]);
+                        _b.trys.push([0, 2, , 3]);
                         courseData = req.body;
+                        console.log('Creating course with data:', courseData);
                         return [4 /*yield*/, openCourse_service_1.OpenCourseService.createCourse(courseData)];
                     case 1:
-                        course = _a.sent();
-                        res.status(201).json(course);
+                        course = _b.sent();
+                        res.status(201).json({ success: true, data: course });
                         return [3 /*break*/, 3];
                     case 2:
-                        error_3 = _a.sent();
+                        error_3 = _b.sent();
                         console.error('Error in createCourse:', error_3);
-                        if (error_3 instanceof database_error_1.DatabaseError) {
-                            res.status(500).json({ error: error_3.message });
+                        console.error('Error type:', typeof error_3);
+                        console.error('Error constructor name:', (_a = error_3 === null || error_3 === void 0 ? void 0 : error_3.constructor) === null || _a === void 0 ? void 0 : _a.name);
+                        console.error('Error message:', error_3 === null || error_3 === void 0 ? void 0 : error_3.message);
+                        if (error_3 instanceof validation_error_1.ValidationError) {
+                            res.status(400).json({ success: false, message: error_3.message });
+                        }
+                        else if (error_3 instanceof database_error_1.DatabaseError) {
+                            res.status(500).json({ success: false, message: error_3.message });
+                        }
+                        else if (error_3 instanceof Error) {
+                            // Handle database constraint errors
+                            if (error_3.message.includes('duplicate key value violates unique constraint')) {
+                                res.status(400).json({ success: false, message: 'Môn học này đã được mở trong học kỳ này' });
+                            }
+                            else if (error_3.message.includes('violates foreign key constraint')) {
+                                if (error_3.message.includes('mamonhoc')) {
+                                    res.status(400).json({ success: false, message: 'Mã môn học không tồn tại trong hệ thống' });
+                                }
+                                else if (error_3.message.includes('mahocky')) {
+                                    res.status(400).json({ success: false, message: 'Mã học kỳ không tồn tại trong hệ thống' });
+                                }
+                                else {
+                                    res.status(400).json({ success: false, message: 'Dữ liệu không hợp lệ' });
+                                }
+                            }
+                            else {
+                                res.status(400).json({ success: false, message: error_3.message });
+                            }
                         }
                         else {
-                            res.status(500).json({ error: 'Internal server error' });
+                            res.status(500).json({ success: false, message: 'Internal server error' });
                         }
                         return [3 /*break*/, 3];
                     case 3: return [2 /*return*/];
@@ -149,29 +167,40 @@ var OpenCourseController = /** @class */ (function () {
     OpenCourseController.updateCourse = function (req, res) {
         return __awaiter(this, void 0, void 0, function () {
             var _a, semesterId, courseId, courseData, course, error_4;
-            return __generator(this, function (_b) {
-                switch (_b.label) {
+            var _b;
+            return __generator(this, function (_c) {
+                switch (_c.label) {
                     case 0:
-                        _b.trys.push([0, 2, , 3]);
+                        _c.trys.push([0, 2, , 3]);
                         _a = req.params, semesterId = _a.semesterId, courseId = _a.courseId;
                         courseData = req.body;
+                        console.log('Updating course with data:', courseData);
                         if (!semesterId || !courseId) {
-                            res.status(400).json({ error: 'Missing semesterId or courseId' });
+                            res.status(400).json({ success: false, message: 'Thiếu mã học kỳ hoặc mã môn học' });
                             return [2 /*return*/];
                         }
-                        return [4 /*yield*/, openCourse_service_1.OpenCourseService.updateCourse(0, __assign(__assign({}, courseData), { semesterId: semesterId, courseId: courseId }))];
+                        return [4 /*yield*/, openCourse_service_1.OpenCourseService.updateCourse(semesterId, courseId, courseData)];
                     case 1:
-                        course = _b.sent();
-                        res.json(course);
+                        course = _c.sent();
+                        res.json({ success: true, data: course });
                         return [3 /*break*/, 3];
                     case 2:
-                        error_4 = _b.sent();
+                        error_4 = _c.sent();
                         console.error('Error in updateCourse:', error_4);
-                        if (error_4 instanceof database_error_1.DatabaseError) {
-                            res.status(500).json({ error: error_4.message });
+                        console.error('Error type:', typeof error_4);
+                        console.error('Error constructor name:', (_b = error_4 === null || error_4 === void 0 ? void 0 : error_4.constructor) === null || _b === void 0 ? void 0 : _b.name);
+                        console.error('Error message:', error_4 === null || error_4 === void 0 ? void 0 : error_4.message);
+                        if (error_4 instanceof validation_error_1.ValidationError) {
+                            res.status(400).json({ success: false, message: error_4.message });
+                        }
+                        else if (error_4 instanceof database_error_1.DatabaseError) {
+                            res.status(500).json({ success: false, message: error_4.message });
+                        }
+                        else if (error_4 instanceof Error) {
+                            res.status(400).json({ success: false, message: error_4.message });
                         }
                         else {
-                            res.status(500).json({ error: 'Internal server error' });
+                            res.status(500).json({ success: false, message: 'Internal server error' });
                         }
                         return [3 /*break*/, 3];
                     case 3: return [2 /*return*/];
@@ -182,28 +211,43 @@ var OpenCourseController = /** @class */ (function () {
     OpenCourseController.deleteCourse = function (req, res) {
         return __awaiter(this, void 0, void 0, function () {
             var _a, semesterId, courseId, error_5;
-            return __generator(this, function (_b) {
-                switch (_b.label) {
+            var _b;
+            return __generator(this, function (_c) {
+                switch (_c.label) {
                     case 0:
-                        _b.trys.push([0, 2, , 3]);
+                        _c.trys.push([0, 2, , 3]);
                         _a = req.params, semesterId = _a.semesterId, courseId = _a.courseId;
                         if (!semesterId || !courseId) {
-                            res.status(400).json({ error: 'Missing semesterId or courseId' });
+                            res.status(400).json({ success: false, message: 'Thiếu mã học kỳ hoặc mã môn học' });
                             return [2 /*return*/];
                         }
                         return [4 /*yield*/, openCourse_service_1.OpenCourseService.deleteCourse(semesterId, courseId)];
                     case 1:
-                        _b.sent();
-                        res.status(204).send();
+                        _c.sent();
+                        res.status(200).json({ success: true, message: 'Xóa môn học thành công' });
                         return [3 /*break*/, 3];
                     case 2:
-                        error_5 = _b.sent();
+                        error_5 = _c.sent();
                         console.error('Error in deleteCourse:', error_5);
-                        if (error_5 instanceof database_error_1.DatabaseError) {
-                            res.status(500).json({ error: error_5.message });
+                        console.error('Error type:', typeof error_5);
+                        console.error('Error constructor name:', (_b = error_5 === null || error_5 === void 0 ? void 0 : error_5.constructor) === null || _b === void 0 ? void 0 : _b.name);
+                        console.error('Error message:', error_5 === null || error_5 === void 0 ? void 0 : error_5.message);
+                        if (error_5 instanceof validation_error_1.ValidationError) {
+                            res.status(400).json({ success: false, message: error_5.message });
+                        }
+                        else if (error_5 instanceof database_error_1.DatabaseError) {
+                            res.status(500).json({ success: false, message: error_5.message });
+                        }
+                        else if (error_5 instanceof Error) {
+                            if (error_5.message.includes('violates foreign key constraint')) {
+                                res.status(400).json({ success: false, message: 'Không thể xóa môn học này vì đã có sinh viên đăng ký' });
+                            }
+                            else {
+                                res.status(400).json({ success: false, message: error_5.message });
+                            }
                         }
                         else {
-                            res.status(500).json({ error: 'Internal server error' });
+                            res.status(500).json({ success: false, message: 'Internal server error' });
                         }
                         return [3 /*break*/, 3];
                     case 3: return [2 /*return*/];

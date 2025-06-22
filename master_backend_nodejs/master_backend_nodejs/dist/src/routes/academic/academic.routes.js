@@ -46,6 +46,7 @@ var program_controller_1 = require("../../controllers/academicController/program
 var student_routes_1 = __importDefault(require("./student.routes"));
 var course_routes_1 = __importDefault(require("./course.routes"));
 var openCourse_routes_1 = __importDefault(require("./openCourse.routes"));
+var semester_routes_1 = __importDefault(require("./semester.routes"));
 var router = (0, express_1.Router)();
 // Mount open course routes WITHOUT authentication for testing
 router.use('/open-courses', openCourse_routes_1.default);
@@ -66,6 +67,12 @@ router.get('/dashboard/stats', function (req, res) {
 });
 router.get('/dashboard/activities', function (req, res) {
     dashboard_controller_1.AcademicDashboardController.getRecentActivities(req, res).catch(function (err) {
+        console.error(err);
+        res.status(500).json({ success: false, message: 'Internal server error' });
+    });
+});
+router.get('/dashboard/requests', function (req, res) {
+    dashboard_controller_1.AcademicDashboardController.getStudentRequests(req, res).catch(function (err) {
         console.error(err);
         res.status(500).json({ success: false, message: 'Internal server error' });
     });
@@ -112,6 +119,12 @@ router.get('/provinces', function (req, res) {
         res.status(500).json({ success: false, message: 'Internal server error' });
     });
 });
+router.get('/districts/province/:provinceId', function (req, res) {
+    student_controller_1.studentController.getDistrictsByProvince(req, res).catch(function (err) {
+        console.error(err);
+        res.status(500).json({ success: false, message: 'Internal server error' });
+    });
+});
 router.get('/priority-groups', function (req, res) {
     student_controller_1.studentController.getPriorityGroups(req, res).catch(function (err) {
         console.error(err);
@@ -132,4 +145,6 @@ router.get('/course-form-data', courseController.getCourseFormData);
 router.use('/students', student_routes_1.default);
 // Mount course routes at /api/academic/courses
 router.use('/courses', course_routes_1.default);
+// Mount semester routes at /api/academic/semesters
+router.use('/semesters', semester_routes_1.default);
 exports.default = router;

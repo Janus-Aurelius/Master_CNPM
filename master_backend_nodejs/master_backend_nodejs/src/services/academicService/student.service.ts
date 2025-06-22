@@ -269,5 +269,66 @@ export const studentService = {    getAllStudents: async (): Promise<IStudent[]>
             console.error('Error searching students:', error);
             throw new Error('Failed to search students');
         }
+    },
+
+    // Tạo hàng loạt PHIEUDANGKY
+    createBulkRegistrations: async (studentIds: string[], semesterId: string, maxCredits: number): Promise<any> => {
+        try {
+            const { registrationService } = await import('../../services/studentService/registrationService');
+            
+            const results = [];
+            let successCount = 0;
+            let failCount = 0;
+            let alreadyExistsCount = 0;
+
+            for (const studentId of studentIds) {
+                try {
+                    // Kiểm tra xem sinh viên đã có phiếu chưa
+                    const alreadyExists = await registrationService.checkRegistrationExists(studentId, semesterId);
+                    
+                    const registrationId = await registrationService.createRegistration(studentId, semesterId, maxCredits);
+                    
+                    if (alreadyExists) {
+                        results.push({ 
+                            studentId, 
+                            success: true, 
+                            message: 'Sinh viên đã có phiếu đăng ký (sử dụng phiếu hiện tại)',
+                            registrationId,
+                            alreadyExists: true
+                        });
+                        alreadyExistsCount++;
+                    } else {
+                        results.push({ 
+                            studentId, 
+                            success: true, 
+                            message: 'Tạo phiếu đăng ký thành công',
+                            registrationId,
+                            alreadyExists: false
+                        });
+                    }
+                    successCount++;
+                } catch (error) {
+                    const errorMessage = error instanceof Error ? error.message : 'Lỗi không xác định';
+                    results.push({ studentId, success: false, message: errorMessage });
+                    failCount++;
+                }
+            }
+
+            return {
+                success: successCount > 0,
+                message: `Xử lý thành công ${successCount}/${studentIds.length} sinh viên. ${alreadyExistsCount} sinh viên đã có phiếu, ${successCount - alreadyExistsCount} sinh viên được tạo phiếu mới. ${failCount} sinh viên thất bại.`,
+                details: results,
+                summary: {
+                    total: studentIds.length,
+                    success: successCount,
+                    failed: failCount,
+                    alreadyExists: alreadyExistsCount,
+                    newlyCreated: successCount - alreadyExistsCount
+                }
+            };
+        } catch (error) {
+            console.error('Error creating bulk registrations:', error);
+            throw new Error('Failed to create bulk registrations');
+        }
     }
 };

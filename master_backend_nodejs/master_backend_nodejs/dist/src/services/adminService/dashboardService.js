@@ -36,39 +36,98 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getDashboardStats = void 0;
+exports.DashboardService = void 0;
 // src/services/AdminService/dashboardService.ts
 var databaseService_1 = require("../database/databaseService");
-var getDashboardStats = function () { return __awaiter(void 0, void 0, void 0, function () {
-    var totalStudents, pendingPayments, newRegistrations, systemWarnings, error_1;
-    return __generator(this, function (_a) {
-        switch (_a.label) {
-            case 0:
-                _a.trys.push([0, 5, , 6]);
-                return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("SELECT COUNT(*) as count FROM students")];
-            case 1:
-                totalStudents = _a.sent();
-                return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("SELECT COUNT(*) as count FROM payments WHERE status = 'pending'")];
-            case 2:
-                pendingPayments = _a.sent();
-                return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("SELECT COUNT(*) as count FROM registrations WHERE created_at >= NOW() - INTERVAL '7 days'")];
-            case 3:
-                newRegistrations = _a.sent();
-                return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("SELECT COUNT(*) as count FROM system_warnings WHERE resolved = false")];
-            case 4:
-                systemWarnings = _a.sent();
-                return [2 /*return*/, {
-                        totalStudents: (totalStudents === null || totalStudents === void 0 ? void 0 : totalStudents.count) || 0,
-                        pendingPayments: (pendingPayments === null || pendingPayments === void 0 ? void 0 : pendingPayments.count) || 0,
-                        newRegistrations: (newRegistrations === null || newRegistrations === void 0 ? void 0 : newRegistrations.count) || 0,
-                        systemWarnings: (systemWarnings === null || systemWarnings === void 0 ? void 0 : systemWarnings.count) || 0
-                    }];
-            case 5:
-                error_1 = _a.sent();
-                console.error('Error fetching admin dashboard stats:', error_1);
-                throw error_1;
-            case 6: return [2 /*return*/];
-        }
-    });
-}); };
-exports.getDashboardStats = getDashboardStats;
+var DashboardService = /** @class */ (function () {
+    function DashboardService() {
+    }
+    DashboardService.getDashboardStats = function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var totalStudents, pendingPayments, newRegistrations, systemAlerts, error_1;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        _a.trys.push([0, 5, , 6]);
+                        return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("\n                SELECT COUNT(*) as count \n                FROM SINHVIEN \n                WHERE MaSoSinhVien IS NOT NULL\n            ")];
+                    case 1:
+                        totalStudents = _a.sent();
+                        return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("\n                SELECT COUNT(*) as count \n                FROM PHIEUDANGKY \n                WHERE SoTienConLai > 0\n            ")];
+                    case 2:
+                        pendingPayments = _a.sent();
+                        return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("\n                SELECT COUNT(*) as count \n                FROM PHIEUDANGKY \n                WHERE NgayLap >= CURRENT_DATE - INTERVAL '7 days'\n            ")];
+                    case 3:
+                        newRegistrations = _a.sent();
+                        return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("\n                SELECT COUNT(*) as count \n                FROM AUDIT_LOGS \n                WHERE action_type = 'ERROR' \n                AND created_at >= CURRENT_DATE - INTERVAL '7 days'\n            ")];
+                    case 4:
+                        systemAlerts = _a.sent();
+                        return [2 /*return*/, {
+                                totalStudents: (totalStudents === null || totalStudents === void 0 ? void 0 : totalStudents.count) || 0,
+                                pendingPayments: (pendingPayments === null || pendingPayments === void 0 ? void 0 : pendingPayments.count) || 0,
+                                newRegistrations: (newRegistrations === null || newRegistrations === void 0 ? void 0 : newRegistrations.count) || 0,
+                                systemAlerts: (systemAlerts === null || systemAlerts === void 0 ? void 0 : systemAlerts.count) || 0
+                            }];
+                    case 5:
+                        error_1 = _a.sent();
+                        console.error('Error fetching admin dashboard stats:', error_1);
+                        throw error_1;
+                    case 6: return [2 /*return*/];
+                }
+            });
+        });
+    };
+    DashboardService.getAuditLogs = function () {
+        return __awaiter(this, arguments, void 0, function (page, size) {
+            var offset, logs, total, error_2;
+            if (page === void 0) { page = 1; }
+            if (size === void 0) { size = 10; }
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        _a.trys.push([0, 3, , 4]);
+                        offset = (page - 1) * size;
+                        return [4 /*yield*/, databaseService_1.DatabaseService.query("\n                SELECT \n                    id,\n                    user_id,\n                    action_type,\n                    details,\n                    created_at,\n                    ip_address,\n                    user_agent\n                FROM AUDIT_LOGS\n                ORDER BY created_at DESC\n                LIMIT $1 OFFSET $2\n            ", [size, offset])];
+                    case 1:
+                        logs = _a.sent();
+                        return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("\n                SELECT COUNT(*) as count\n                FROM AUDIT_LOGS\n            ")];
+                    case 2:
+                        total = _a.sent();
+                        return [2 /*return*/, {
+                                logs: logs,
+                                total: (total === null || total === void 0 ? void 0 : total.count) || 0,
+                                page: page,
+                                size: size
+                            }];
+                    case 3:
+                        error_2 = _a.sent();
+                        console.error('Error fetching audit logs:', error_2);
+                        throw error_2;
+                    case 4: return [2 /*return*/];
+                }
+            });
+        });
+    };
+    DashboardService.getRecentActivities = function () {
+        return __awaiter(this, arguments, void 0, function (limit) {
+            var activities, error_3;
+            if (limit === void 0) { limit = 5; }
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        _a.trys.push([0, 2, , 3]);
+                        return [4 /*yield*/, databaseService_1.DatabaseService.query("\n                SELECT \n                    id,\n                    user_id,\n                    action_type,\n                    details,\n                    created_at\n                FROM AUDIT_LOGS\n                ORDER BY created_at DESC\n                LIMIT $1\n            ", [limit])];
+                    case 1:
+                        activities = _a.sent();
+                        return [2 /*return*/, activities];
+                    case 2:
+                        error_3 = _a.sent();
+                        console.error('Error fetching recent activities:', error_3);
+                        throw error_3;
+                    case 3: return [2 /*return*/];
+                }
+            });
+        });
+    };
+    return DashboardService;
+}());
+exports.DashboardService = DashboardService;

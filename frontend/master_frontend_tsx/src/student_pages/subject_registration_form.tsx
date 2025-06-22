@@ -17,7 +17,26 @@ import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import UserInfo from "../components/UserInfo";
-import { enrollmentApi, parseSemesterInfo } from "../api_clients/student";
+import { enrollmentApi, parseSemesterInfo, checkRegistrationStatus } from "../api_clients/student/enrollmentApi";
+
+// Helper function to map backend course to frontend subject format
+const mapBackendCourseToFrontendSubject = (course: any): Subject => {
+    const dayMap: { [key: number]: string } = {
+        2: "Hai", 3: "Ba", 4: "Tư", 5: "Năm", 6: "Sáu", 7: "Bảy", 8: "Chủ nhật"
+    };
+    const dayOfWeek = course.dayOfWeek ? `Thứ ${dayMap[course.dayOfWeek] || course.dayOfWeek}` : 'Chưa có thông tin';
+    const fromTo = (course.startPeriod && course.endPeriod) ? `tiết ${course.startPeriod}-${course.endPeriod}` : 'Chưa có thông tin';
+    
+    return {
+        id: course.courseId,
+        name: course.courseName,
+        credits: course.credits ? Math.round(course.credits / 15) : 0,
+        lecturer: course.lecturer || 'Chưa có thông tin',
+        day: dayOfWeek,
+        fromTo: fromTo,
+        courseType: course.courseType || 'Chưa xác định'
+    };
+};
 
 const SubjectRegistrationForm = ({ user, onLogout }: { user: { id?: string; name?: string } | null; onLogout: () => void }) => {
     const [open, setOpen] = useState(false);
@@ -25,59 +44,75 @@ const SubjectRegistrationForm = ({ user, onLogout }: { user: { id?: string; name
     const [electiveSubjects, setElectiveSubjects] = useState<Subject[]>([]);
     const [filteredRequiredSubjects, setFilteredRequiredSubjects] = useState<Subject[]>([]);
     const [filteredElectiveSubjects, setFilteredElectiveSubjects] = useState<Subject[]>([]);
-    const [enrolledSubjectIds, setEnrolledSubjectIds] = useState<Set<string>>(new Set());    const [studentInfo, setStudentInfo] = useState<{ studentId: any; name: any; major: any; majorName: any; } | null>(null);
+    const [enrolledSubjectIds, setEnrolledSubjectIds] = useState<Set<string>>(new Set());
+    const [studentInfo, setStudentInfo] = useState<{ studentId: any; name: any; major: any; majorName: any; } | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [currentSemester, setCurrentSemester] = useState<string>(""); // Loaded from API
+    const [currentSemester, setCurrentSemester] = useState<string>("");
+    const [hasRegistration, setHasRegistration] = useState<boolean | null>(null);
+    const [maxCredits, setMaxCredits] = useState(0);
+    const [registeredCredits, setRegisteredCredits] = useState(0);
     
     // Parse semester info
-    const semesterInfo = parseSemesterInfo(currentSemester);useEffect(() => {
-        console.log('🔄 SubjectRegistrationForm useEffect triggered');
-        console.log('👤 User:', user);
-        
-        if (!user || !user.id) {
-            console.log('❌ No user or user.id, returning early');
-            return;
-        }
+    const semesterInfo = parseSemesterInfo(currentSemester);
 
-        console.log('✅ User found, starting to load data...');
-        setLoading(true);
-        setError(null);        // Load student info, classified subjects, enrolled subjects, and current semester
-        Promise.all([
-            enrollmentApi.getStudentInfo(),
-            enrollmentApi.getClassifiedSubjects(), // No semester parameter - backend uses current
-            enrollmentApi.getEnrolledSubjects(), // Load enrolled subjects to show status
-            enrollmentApi.getCurrentSemester() // Load current semester from backend
-        ])
-        .then(([studentData, subjectsData, enrolledData, currentSemesterData]) => {
-            console.log('✅ Successfully loaded student info:', studentData);
-            console.log('✅ Successfully loaded classified subjects:', subjectsData);
-            console.log('✅ Successfully loaded enrolled subjects:', enrolledData);
-            console.log('📅 Successfully loaded current semester:', currentSemesterData);
-            console.log('🔍 Required subjects:', subjectsData.required);
-            console.log('🔍 Elective subjects:', subjectsData.elective);
-            console.log('🔍 Summary:', subjectsData.summary);
-            
-            setStudentInfo(studentData);
-            setCurrentSemester(currentSemesterData); // Update current semester
-            setRequiredSubjects(subjectsData.required || []);
-            setElectiveSubjects(subjectsData.elective || []);
-            setFilteredRequiredSubjects(subjectsData.required || []);
-            setFilteredElectiveSubjects(subjectsData.elective || []);
-            
-            // Set enrolled subjects from backend
-            const enrolledIds = new Set(enrolledData.map((subject: any) => subject.courseId || subject.id));
-            setEnrolledSubjectIds(enrolledIds);
-            console.log('📋 Enrolled subject IDs:', Array.from(enrolledIds));
-            
-            setLoading(false);
-        })
-        .catch((err) => {
-            console.error('❌ Error loading data:', err);
-            setError(err.message || 'Lỗi khi tải dữ liệu');
-            setLoading(false);
-        });
-    }, [user]);const [snackbarMessage, setSnackbarMessage] = useState<string>('');
+    useEffect(() => {
+        const fetchData = async () => {
+            if (!user || !user.id) {
+                setLoading(false);
+                return;
+            }
+
+            setLoading(true);
+            setError(null);
+            setHasRegistration(null);
+
+            try {
+                const currentSemesterData = await enrollmentApi.getCurrentSemester();
+                setCurrentSemester(currentSemesterData);
+
+                if (!currentSemesterData) {
+                    throw new Error("Không thể xác định học kỳ hiện tại.");
+                }
+
+                // Luôn fetch tất cả dữ liệu, bất kể trạng thái đăng ký
+                const [statusResult, studentData, subjectsData, enrolledData] = await Promise.all([
+                    checkRegistrationStatus(currentSemesterData),
+                    enrollmentApi.getStudentInfo(),
+                    enrollmentApi.getClassifiedSubjects(currentSemesterData),
+                    enrollmentApi.getEnrolledSubjects(currentSemesterData)
+                ]);
+
+                // Cập nhật trạng thái đăng ký để hiển thị UI
+                setHasRegistration(statusResult.hasRegistration);
+                setMaxCredits(statusResult.maxCredits);
+                setRegisteredCredits(statusResult.registeredCredits);
+
+                // Map và cập nhật state môn học như bình thường
+                const mappedRequired = (subjectsData.required || []).map(mapBackendCourseToFrontendSubject);
+                const mappedElective = (subjectsData.elective || []).map(mapBackendCourseToFrontendSubject);
+
+                setStudentInfo(studentData);
+                setRequiredSubjects(mappedRequired);
+                setElectiveSubjects(mappedElective);
+                setFilteredRequiredSubjects(mappedRequired);
+                setFilteredElectiveSubjects(mappedElective);
+
+                const enrolledIds = new Set(enrolledData.map((subject: any) => subject.id));
+                setEnrolledSubjectIds(enrolledIds);
+
+            } catch (err: any) {
+                console.error('❌ Error during data loading chain:', err);
+                setError(err.message || 'Lỗi khi tải dữ liệu');
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchData();
+    }, [user]);
+
+    const [snackbarMessage, setSnackbarMessage] = useState<string>('');
     const [snackbarSeverity, setSnackbarSeverity] = useState<'success' | 'error' | 'warning'>('success');
 
     const handleClose = (_: React.SyntheticEvent | Event, reason?: string) => {
@@ -89,7 +124,7 @@ const SubjectRegistrationForm = ({ user, onLogout }: { user: { id?: string; name
             setLoading(true);
             setError(null);
             
-            const result = await enrollmentApi.registerSubject(subject.id);
+            const result = await enrollmentApi.registerSubject(subject.id, currentSemester);
             
             if (result.success) {
                 setSnackbarMessage(result.message);
@@ -97,6 +132,8 @@ const SubjectRegistrationForm = ({ user, onLogout }: { user: { id?: string; name
                 setOpen(true);
                 // Thêm vào danh sách đã đăng ký
                 setEnrolledSubjectIds(prev => new Set([...prev, subject.id]));
+                // Cập nhật lại số tín chỉ đã đăng ký
+                setRegisteredCredits(prev => prev + subject.credits);
             } else {
                 // Show error message from backend (including conflict messages)
                 setSnackbarMessage(result.message || 'Đăng ký môn học thất bại');
@@ -179,15 +216,20 @@ const SubjectRegistrationForm = ({ user, onLogout }: { user: { id?: string; name
                             <Typography sx={{ fontWeight: 'bold', mb: 1, color: '#495057' }}>
                                 Ngành: {studentInfo.majorName}
                             </Typography>
-                            <Typography sx={{ fontWeight: 'bold', color: '#495057' }}>
+                            <Typography sx={{ fontWeight: 'bold', color: '#495057', mb: 1 }}>
                                 {semesterInfo.fullName}
                             </Typography>
+                            {hasRegistration && (
+                                <Typography sx={{ fontWeight: 'bold', color: '#1976d2' }}>
+                                    Tín chỉ đã đăng ký: {registeredCredits} / {maxCredits}
+                                </Typography>
+                            )}
                         </Box>
                     )}
                     
                     {loading && (
                         <Typography sx={{ textAlign: 'center', mt: 2 }}>
-                            Đang tải danh sách môn học...
+                            Đang tải dữ liệu...
                         </Typography>
                     )}
 
@@ -198,6 +240,22 @@ const SubjectRegistrationForm = ({ user, onLogout }: { user: { id?: string; name
                     )}
 
                     {!loading && !error && (
+                    <>
+                    {/* Kiểm tra registration status */}
+                    {!hasRegistration && (
+                        <Typography sx={{ 
+                            textAlign: 'center', 
+                            mt: 4, 
+                            p: 2,
+                            backgroundColor: 'warning.light',
+                            borderRadius: 2,
+                            fontWeight: 'bold'
+                        }}>
+                            Chưa mở đăng ký học phần cho học kỳ này.
+                        </Typography>
+                    )}
+
+                    {hasRegistration === true && (
                     <>
                     <Box sx={{ marginBottom: '1rem' }}>
                         <CustomSearchBox
@@ -246,6 +304,8 @@ const SubjectRegistrationForm = ({ user, onLogout }: { user: { id?: string; name
                         tableType="elective"
                         enrolledSubjectIds={enrolledSubjectIds}
                     />
+                    </>
+                    )}
                     </>
                     )}
                 </Paper>
@@ -386,14 +446,14 @@ const SubjectsList = ({ subjects, onEnroll, tableType, enrolledSubjectIds }: {
                                     {isEnrolled && <span style={{ color: '#4caf50', fontWeight: 'bold', marginLeft: '8px' }}>(Đã đăng ký)</span>}
                                 </TableCell>
                                 <TableCell sx={{ fontSize: '1rem', fontFamily: '"Varela Round", sans-serif', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                    {(subject as any).courseType || 'Chưa xác định'}
+                                    {subject.courseType}
                                 </TableCell>
                                 <TableCell sx={{ fontSize: '1rem', fontFamily: '"Varela Round", sans-serif', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                    {subject.lecturer || 'Chưa có thông tin'}
+                                    {subject.lecturer}
                                 </TableCell>
                                 <TableCell sx={{ fontSize: '1rem', fontFamily: '"Varela Round", sans-serif', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{subject.credits || 'N/A'}</TableCell>
                                 <TableCell sx={{ fontSize: '1rem', fontFamily: '"Varela Round", sans-serif', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                    {(subject as any).schedule || `${subject.day}: ${subject.fromTo}`}
+                                    {subject.day}: {subject.fromTo}
                                 </TableCell>
                                 <TableCell sx={{ textAlign: 'left', fontFamily: '"Varela Round", sans-serif', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                     <Button

@@ -1,4 +1,37 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -72,14 +105,13 @@ var convertNameToCode = function (name, table, nameColumn, codeColumn) { return 
         }
     });
 }); };
-exports.studentService = {
-    getAllStudents: function () { return __awaiter(void 0, void 0, void 0, function () {
+exports.studentService = { getAllStudents: function () { return __awaiter(void 0, void 0, void 0, function () {
         var result, error_2;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
                     _a.trys.push([0, 2, , 3]);
-                    return [4 /*yield*/, database_1.db.query("\n                SELECT \n                    s.MaSoSinhVien as studentId,\n                    s.HoTen as fullName,\n                    s.NgaySinh as dateOfBirth,\n                    s.GioiTinh as gender,\n                    s.QueQuan as hometown,\n                    s.MaHuyen as districtId,\n                    s.MaDoiTuongUT as priorityObjectId,\n                    s.MaNganh as majorId,\n                    s.Email as email,\n                    s.SoDienThoai as phone,\n                    h.TenHuyen as districtName,\n                    t.TenTinh as provinceName,\n                    d.TenDoiTuong as priorityName,\n                    n.TenNganh as majorName,\n                    k.TenKhoa as facultyName\n                FROM SINHVIEN s\n                LEFT JOIN HUYEN h ON s.MaHuyen = h.MaHuyen\n                LEFT JOIN TINH t ON h.MaTinh = t.MaTinh\n                LEFT JOIN DOITUONGUUTIEN d ON s.MaDoiTuongUT = d.MaDoiTuong\n                LEFT JOIN NGANHHOC n ON s.MaNganh = n.MaNganh\n                LEFT JOIN KHOA k ON n.MaKhoa = k.MaKhoa\n                ORDER BY s.MaSoSinhVien\n            ")];
+                    return [4 /*yield*/, database_1.db.query("\n                SELECT \n                    s.MaSoSinhVien as studentId,\n                    s.HoTen as fullName,\n                    s.NgaySinh as dateOfBirth,\n                    s.GioiTinh as gender,\n                    s.QueQuan as hometown,\n                    s.MaHuyen as districtId,\n                    s.MaDoiTuongUT as priorityObjectId,\n                    s.MaNganh as majorId,\n                    s.Email as email,\n                    s.SoDienThoai as phone,\n                    s.DiaChi as address,\n                    h.TenHuyen as districtName,\n                    t.TenTinh as provinceName,\n                    d.TenDoiTuong as priorityName,\n                    n.TenNganh as majorName,\n                    k.TenKhoa as facultyName\n                FROM SINHVIEN s\n                LEFT JOIN HUYEN h ON s.MaHuyen = h.MaHuyen\n                LEFT JOIN TINH t ON h.MaTinh = t.MaTinh\n                LEFT JOIN DOITUONGUUTIEN d ON s.MaDoiTuongUT = d.MaDoiTuong\n                LEFT JOIN NGANHHOC n ON s.MaNganh = n.MaNganh\n                LEFT JOIN KHOA k ON n.MaKhoa = k.MaKhoa\n                ORDER BY s.MaSoSinhVien\n            ")];
                 case 1:
                     result = _a.sent();
                     return [2 /*return*/, result.rows.map(function (row) { return ({
@@ -93,6 +125,7 @@ exports.studentService = {
                             majorId: row.majorid,
                             email: row.email || '',
                             phone: row.phone || '',
+                            address: row.address || '',
                             districtName: row.districtname,
                             provinceName: row.provincename,
                             priorityName: row.priorityname,
@@ -106,14 +139,13 @@ exports.studentService = {
                 case 3: return [2 /*return*/];
             }
         });
-    }); },
-    getStudentById: function (id) { return __awaiter(void 0, void 0, void 0, function () {
+    }); }, getStudentById: function (id) { return __awaiter(void 0, void 0, void 0, function () {
         var result, row, error_3;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
                     _a.trys.push([0, 2, , 3]);
-                    return [4 /*yield*/, database_1.db.query("\n                SELECT \n                    s.MaSoSinhVien as studentId,\n                    s.HoTen as fullName,\n                    s.NgaySinh as dateOfBirth,\n                    s.GioiTinh as gender,\n                    s.QueQuan as hometown,\n                    s.MaHuyen as districtId,\n                    s.MaDoiTuongUT as priorityObjectId,\n                    s.MaNganh as majorId,\n                    s.Email as email,\n                    s.SoDienThoai as phone,\n                    h.TenHuyen as districtName,\n                    t.TenTinh as provinceName,\n                    d.TenDoiTuong as priorityName,\n                    n.TenNganh as majorName,\n                    k.TenKhoa as facultyName\n                FROM SINHVIEN s\n                LEFT JOIN HUYEN h ON s.MaHuyen = h.MaHuyen\n                LEFT JOIN TINH t ON h.MaTinh = t.MaTinh\n                LEFT JOIN DOITUONGUUTIEN d ON s.MaDoiTuongUT = d.MaDoiTuong\n                LEFT JOIN NGANHHOC n ON s.MaNganh = n.MaNganh\n                LEFT JOIN KHOA k ON n.MaKhoa = k.MaKhoa\n                WHERE s.MaSoSinhVien = $1\n            ", [id])];
+                    return [4 /*yield*/, database_1.db.query("\n                SELECT \n                    s.MaSoSinhVien as studentId,\n                    s.HoTen as fullName,\n                    s.NgaySinh as dateOfBirth,\n                    s.GioiTinh as gender,\n                    s.QueQuan as hometown,\n                    s.MaHuyen as districtId,\n                    s.MaDoiTuongUT as priorityObjectId,\n                    s.MaNganh as majorId,\n                    s.Email as email,\n                    s.SoDienThoai as phone,\n                    s.DiaChi as address,\n                    h.TenHuyen as districtName,\n                    t.TenTinh as provinceName,\n                    d.TenDoiTuong as priorityName,\n                    n.TenNganh as majorName,\n                    k.TenKhoa as facultyName\n                FROM SINHVIEN s\n                LEFT JOIN HUYEN h ON s.MaHuyen = h.MaHuyen\n                LEFT JOIN TINH t ON h.MaTinh = t.MaTinh\n                LEFT JOIN DOITUONGUUTIEN d ON s.MaDoiTuongUT = d.MaDoiTuong\n                LEFT JOIN NGANHHOC n ON s.MaNganh = n.MaNganh\n                LEFT JOIN KHOA k ON n.MaKhoa = k.MaKhoa\n                WHERE s.MaSoSinhVien = $1\n            ", [id])];
                 case 1:
                     result = _a.sent();
                     if (result.rows.length === 0)
@@ -130,6 +162,7 @@ exports.studentService = {
                             majorId: row.majorid,
                             email: row.email || '',
                             phone: row.phone || '',
+                            address: row.address || '',
                             districtName: row.districtname,
                             provinceName: row.provincename,
                             priorityName: row.priorityname,
@@ -169,7 +202,7 @@ exports.studentService = {
                         priorityCode: priorityCode,
                         majorCode: majorCode
                     });
-                    return [4 /*yield*/, database_1.db.query('INSERT INTO SINHVIEN (MaSoSinhVien, HoTen, NgaySinh, GioiTinh, QueQuan, MaHuyen, MaDoiTuongUT, MaNganh, Email, SoDienThoai) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *', [student.studentId, student.fullName, student.dateOfBirth, student.gender, student.hometown, districtCode, priorityCode, majorCode, student.email, student.phone])];
+                    return [4 /*yield*/, database_1.db.query('INSERT INTO SINHVIEN (MaSoSinhVien, HoTen, NgaySinh, GioiTinh, QueQuan, MaHuyen, MaDoiTuongUT, MaNganh, Email, SoDienThoai, DiaChi) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *', [student.studentId, student.fullName, student.dateOfBirth, student.gender, student.hometown, districtCode, priorityCode, majorCode, student.email, student.phone, student.address || ''])];
                 case 4:
                     result = _a.sent();
                     row = result.rows[0];
@@ -183,7 +216,8 @@ exports.studentService = {
                             priorityObjectId: row.madoituongut,
                             majorId: row.manganh,
                             email: row.email || '',
-                            phone: row.sodienthoai || ''
+                            phone: row.sodienthoai || '',
+                            address: row.diachi || ''
                         }];
                 case 5:
                     error_4 = _a.sent();
@@ -208,7 +242,7 @@ exports.studentService = {
                     return [4 /*yield*/, convertNameToCode(student.majorName || '', 'NGANHHOC', 'TenNganh', 'MaNganh')];
                 case 3:
                     majorCode = _a.sent();
-                    return [4 /*yield*/, database_1.db.query("UPDATE SINHVIEN SET \n                    HoTen = $2, NgaySinh = $3, GioiTinh = $4, QueQuan = $5, \n                    MaHuyen = $6, MaDoiTuongUT = $7, MaNganh = $8, \n                    Email = $9, SoDienThoai = $10\n                WHERE MaSoSinhVien = $1 RETURNING *", [id, student.fullName, student.dateOfBirth, student.gender, student.hometown, districtCode, priorityCode, majorCode, student.email, student.phone])];
+                    return [4 /*yield*/, database_1.db.query("UPDATE SINHVIEN SET \n                    HoTen = $2, NgaySinh = $3, GioiTinh = $4, QueQuan = $5, \n                    MaHuyen = $6, MaDoiTuongUT = $7, MaNganh = $8, \n                    Email = $9, SoDienThoai = $10, DiaChi = $11\n                WHERE MaSoSinhVien = $1 RETURNING *", [id, student.fullName, student.dateOfBirth, student.gender, student.hometown, districtCode, priorityCode, majorCode, student.email, student.phone, student.address || ''])];
                 case 4:
                     result = _a.sent();
                     if (result.rows.length === 0) {
@@ -225,7 +259,8 @@ exports.studentService = {
                             priorityObjectId: row.madoituongut,
                             majorId: row.manganh,
                             email: row.email || '',
-                            phone: row.sodienthoai || ''
+                            phone: row.sodienthoai || '',
+                            address: row.diachi || ''
                         }];
                 case 5:
                     error_5 = _a.sent();
@@ -262,7 +297,7 @@ exports.studentService = {
             switch (_a.label) {
                 case 0:
                     _a.trys.push([0, 2, , 3]);
-                    return [4 /*yield*/, database_1.db.query("\n                SELECT \n                    s.MaSoSinhVien as studentId,\n                    s.HoTen as fullName,\n                    s.NgaySinh as dateOfBirth,\n                    s.GioiTinh as gender,\n                    s.QueQuan as hometown,\n                    s.MaHuyen as districtId,\n                    s.MaDoiTuongUT as priorityObjectId,\n                    s.MaNganh as majorId,\n                    s.Email as email,\n                    s.SoDienThoai as phone,\n                    h.TenHuyen as districtName,\n                    t.TenTinh as provinceName,\n                    d.TenDoiTuong as priorityName,\n                    n.TenNganh as majorName,\n                    k.TenKhoa as facultyName\n                FROM SINHVIEN s\n                LEFT JOIN HUYEN h ON s.MaHuyen = h.MaHuyen\n                LEFT JOIN TINH t ON h.MaTinh = t.MaTinh\n                LEFT JOIN DOITUONGUUTIEN d ON s.MaDoiTuongUT = d.MaDoiTuong\n                LEFT JOIN NGANHHOC n ON s.MaNganh = n.MaNganh\n                LEFT JOIN KHOA k ON n.MaKhoa = k.MaKhoa\n                WHERE s.MaSoSinhVien ILIKE $1 OR s.HoTen ILIKE $1\n                ORDER BY s.MaSoSinhVien\n            ", ["%".concat(searchTerm, "%")])];
+                    return [4 /*yield*/, database_1.db.query("\n                SELECT \n                    s.MaSoSinhVien as studentId,\n                    s.HoTen as fullName,\n                    s.NgaySinh as dateOfBirth,\n                    s.GioiTinh as gender,\n                    s.QueQuan as hometown,\n                    s.MaHuyen as districtId,\n                    s.MaDoiTuongUT as priorityObjectId,\n                    s.MaNganh as majorId,\n                    s.Email as email,\n                    s.SoDienThoai as phone,\n                    s.DiaChi as address,\n                    h.TenHuyen as districtName,\n                    t.TenTinh as provinceName,\n                    d.TenDoiTuong as priorityName,\n                    n.TenNganh as majorName,\n                    k.TenKhoa as facultyName\n                FROM SINHVIEN s\n                LEFT JOIN HUYEN h ON s.MaHuyen = h.MaHuyen\n                LEFT JOIN TINH t ON h.MaTinh = t.MaTinh\n                LEFT JOIN DOITUONGUUTIEN d ON s.MaDoiTuongUT = d.MaDoiTuong\n                LEFT JOIN NGANHHOC n ON s.MaNganh = n.MaNganh\n                LEFT JOIN KHOA k ON n.MaKhoa = k.MaKhoa\n                WHERE s.MaSoSinhVien ILIKE $1 OR s.HoTen ILIKE $1\n                ORDER BY s.MaSoSinhVien\n            ", ["%".concat(searchTerm, "%")])];
                 case 1:
                     result = _a.sent();
                     return [2 /*return*/, result.rows.map(function (row) { return ({
@@ -276,6 +311,7 @@ exports.studentService = {
                             majorId: row.majorid,
                             email: row.email || '',
                             phone: row.phone || '',
+                            address: row.address || '',
                             districtName: row.districtname,
                             provinceName: row.provincename,
                             priorityName: row.priorityname,
@@ -287,6 +323,108 @@ exports.studentService = {
                     console.error('Error searching students:', error_7);
                     throw new Error('Failed to search students');
                 case 3: return [2 /*return*/];
+            }
+        });
+    }); },
+    // Lấy danh sách sinh viên cho tạo hàng loạt PHIEUDANGKY
+    getStudentsForBulkRegistration: function (semesterId, filters) { return __awaiter(void 0, void 0, void 0, function () {
+        var query, params, whereConditions, studentIdParamIndex, result, error_8;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    _a.trys.push([0, 2, , 3]);
+                    query = "\n                SELECT \n                    s.MaSoSinhVien as studentId,\n                    s.HoTen as fullName,\n                    n.TenNganh as majorName,\n                    k.TenKhoa as facultyName,\n                    CASE \n                        WHEN pd.MaPhieuDangKy IS NOT NULL THEN true \n                        ELSE false \n                    END as hasRegistration\n                FROM SINHVIEN s\n                LEFT JOIN NGANHHOC n ON s.MaNganh = n.MaNganh\n                LEFT JOIN KHOA k ON n.MaKhoa = k.MaKhoa\n                LEFT JOIN PHIEUDANGKY pd ON s.MaSoSinhVien = pd.MaSoSinhVien AND pd.MaHocKy = $1\n                LEFT JOIN NGUOIDUNG u ON UPPER(TRIM(s.MaSoSinhVien)) = UPPER(TRIM(u.MaSoSinhVien))\n            ";
+                    params = [semesterId];
+                    whereConditions = [];
+                    // Thêm filter theo ngành nếu có
+                    if ((filters === null || filters === void 0 ? void 0 : filters.majorId) && filters.majorId !== '') {
+                        whereConditions.push('s.MaNganh = $' + (params.length + 1));
+                        params.push(filters.majorId);
+                    }
+                    // Thêm filter theo MSSV hoặc UserID nếu có (và bỏ qua khoảng trắng, không phân biệt hoa thường)
+                    if ((filters === null || filters === void 0 ? void 0 : filters.studentId) && filters.studentId.trim() !== '') {
+                        studentIdParamIndex = params.length + 1;
+                        whereConditions.push("(TRIM(s.MaSoSinhVien) ILIKE $".concat(studentIdParamIndex, " OR TRIM(u.UserID) ILIKE $").concat(studentIdParamIndex, ")"));
+                        params.push("%".concat(filters.studentId.trim(), "%"));
+                    }
+                    if (whereConditions.length > 0) {
+                        query += ' WHERE ' + whereConditions.join(' AND ');
+                    }
+                    query += ' ORDER BY s.MaSoSinhVien';
+                    console.log('[DEBUG] Executing getStudentsForBulkRegistration:');
+                    console.log('  > SQL:', query);
+                    console.log('  > Params:', params);
+                    return [4 /*yield*/, database_1.db.query(query, params)];
+                case 1:
+                    result = _a.sent();
+                    console.log("  > Found ".concat(result.rows.length, " students."));
+                    // Map kết quả để đảm bảo frontend nhận đúng tên thuộc tính (camelCase)
+                    return [2 /*return*/, result.rows.map(function (row) { return ({
+                            studentId: row.studentid,
+                            fullName: row.fullname,
+                            majorName: row.majorname,
+                            facultyName: row.facultyname,
+                            hasRegistration: row.hasregistration
+                        }); })];
+                case 2:
+                    error_8 = _a.sent();
+                    console.error('Error fetching students for bulk registration:', error_8);
+                    throw new Error('Failed to fetch students for bulk registration');
+                case 3: return [2 /*return*/];
+            }
+        });
+    }); },
+    // Tạo hàng loạt PHIEUDANGKY
+    createBulkRegistrations: function (studentIds, semesterId, maxCredits) { return __awaiter(void 0, void 0, void 0, function () {
+        var registrationService, results, successCount, failCount, _i, studentIds_1, studentId, error_9, errorMessage, error_10;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    _a.trys.push([0, 8, , 9]);
+                    return [4 /*yield*/, Promise.resolve().then(function () { return __importStar(require('../../services/studentService/registrationService')); })];
+                case 1:
+                    registrationService = (_a.sent()).registrationService;
+                    results = [];
+                    successCount = 0;
+                    failCount = 0;
+                    _i = 0, studentIds_1 = studentIds;
+                    _a.label = 2;
+                case 2:
+                    if (!(_i < studentIds_1.length)) return [3 /*break*/, 7];
+                    studentId = studentIds_1[_i];
+                    _a.label = 3;
+                case 3:
+                    _a.trys.push([3, 5, , 6]);
+                    return [4 /*yield*/, registrationService.createRegistration(studentId, semesterId, maxCredits)];
+                case 4:
+                    _a.sent();
+                    results.push({ studentId: studentId, success: true, message: 'Tạo thành công' });
+                    successCount++;
+                    return [3 /*break*/, 6];
+                case 5:
+                    error_9 = _a.sent();
+                    errorMessage = error_9 instanceof Error ? error_9.message : 'Lỗi không xác định';
+                    results.push({ studentId: studentId, success: false, message: errorMessage });
+                    failCount++;
+                    return [3 /*break*/, 6];
+                case 6:
+                    _i++;
+                    return [3 /*break*/, 2];
+                case 7: return [2 /*return*/, {
+                        success: successCount > 0,
+                        message: "T\u1EA1o th\u00E0nh c\u00F4ng ".concat(successCount, "/").concat(studentIds.length, " phi\u1EBFu \u0111\u0103ng k\u00FD. ").concat(failCount, " phi\u1EBFu th\u1EA5t b\u1EA1i."),
+                        details: results,
+                        summary: {
+                            total: studentIds.length,
+                            success: successCount,
+                            failed: failCount
+                        }
+                    }];
+                case 8:
+                    error_10 = _a.sent();
+                    console.error('Error creating bulk registrations:', error_10);
+                    throw new Error('Failed to create bulk registrations');
+                case 9: return [2 /*return*/];
             }
         });
     }); }

@@ -20,5 +20,10 @@ export const studentBusiness = {
 
     searchStudents: async (query: string): Promise<IStudent[]> => {
         return await studentService.searchStudents(query);
-    }
+    },
+
+    // Tạo hàng loạt PHIEUDANGKY
+    createBulkRegistrations: async (studentIds: string[], semesterId: string, maxCredits: number): Promise<any> => {
+        return await studentService.createBulkRegistrations(studentIds, semesterId, maxCredits);
+    },
 }; 

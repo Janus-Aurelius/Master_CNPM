@@ -46,7 +46,7 @@ var errorHandler = function (err, req, res, next) {
         return;
     }
     // Handle standard errors with status property (backward compatibility)
-    if (err.status) {
+    if (err.status && typeof err.status === 'number') {
         res.status(err.status).json({
             status: 'error',
             message: err.message || 'Error occurred'

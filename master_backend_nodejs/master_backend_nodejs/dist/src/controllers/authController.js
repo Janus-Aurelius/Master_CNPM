@@ -41,9 +41,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.me = exports.refreshToken = exports.logout = exports.login = void 0;
 var jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
-var userService_1 = require("../services/userService");
+var userService_1 = require("../services/AdminService/userService");
 var database_1 = require("../config/database");
 var config_1 = require("../config");
+var maintenanceManager_1 = require("../business/AdminBussiness/maintenanceManager");
 var JWT_SECRET = config_1.config.jwtSecret;
 var JWT_EXPIRES = '24h';
 // Map database group codes to roles
@@ -54,14 +55,27 @@ var GROUP_TO_ROLE = {
     'N4': 'financial'
 };
 var login = function (req, res) { return __awaiter(void 0, void 0, void 0, function () {
-    var _a, username, password, result, user, isPasswordValid, role, token, refreshToken_1, redirectUrl, error_1;
+    var _a, username, password, result_1, user_1, result, user, userId, userUsername, studentId, groupCode, isPasswordValid, role, token, refreshToken_1, redirectUrl, responseData, error_1;
     return __generator(this, function (_b) {
         switch (_b.label) {
             case 0:
-                _b.trys.push([0, 2, , 3]);
+                _b.trys.push([0, 4, , 5]);
                 console.log('=== Login Request ===');
                 console.log('Request body:', req.body);
                 _a = req.body, username = _a.username, password = _a.password;
+                if (!maintenanceManager_1.maintenanceManager.isInMaintenanceMode()) return [3 /*break*/, 2];
+                return [4 /*yield*/, database_1.Database.query('SELECT * FROM NGUOIDUNG WHERE TenDangNhap = $1', [username])];
+            case 1:
+                result_1 = _b.sent();
+                user_1 = result_1[0];
+                if (!user_1 || user_1.manhom !== 'N1') {
+                    return [2 /*return*/, res.status(503).json({
+                            success: false,
+                            message: 'Hệ thống đang trong quá trình bảo trì. Chỉ admin mới có thể đăng nhập.'
+                        })];
+                }
+                _b.label = 2;
+            case 2:
                 if (!username || !password) {
                     console.log('Missing username or password');
                     return [2 /*return*/, res.status(400).json({
@@ -71,9 +85,10 @@ var login = function (req, res) { return __awaiter(void 0, void 0, void 0, funct
                 }
                 console.log('Attempting database connection...');
                 return [4 /*yield*/, database_1.Database.query('SELECT * FROM NGUOIDUNG WHERE TenDangNhap = $1', [username])];
-            case 1:
+            case 3:
                 result = _b.sent();
                 console.log('Database query result:', result);
+                console.log('📋 Raw user object from DB:', JSON.stringify(result[0], null, 2));
                 user = result[0];
                 if (!user) {
                     console.log('User not found:', username);
@@ -81,12 +96,29 @@ var login = function (req, res) { return __awaiter(void 0, void 0, void 0, funct
                             success: false,
                             message: 'Tên đăng nhập không tồn tại'
                         })];
-                } // Check password (note: database column is lowercase)
-                isPasswordValid = password === user.matkhau;
+                }
+                console.log('🔍 User fields:', {
+                    UserID: user.UserID || user.userid,
+                    TenDangNhap: user.TenDangNhap || user.tendangnhap,
+                    MaSoSinhVien: user.MaSoSinhVien || user.masosinhvien,
+                    MaNhom: user.MaNhom || user.manhom
+                });
+                userId = user.UserID || user.userid;
+                userUsername = user.TenDangNhap || user.tendangnhap;
+                studentId = user.MaSoSinhVien || user.masosinhvien;
+                groupCode = user.MaNhom || user.manhom;
+                // Check account status first
+                if ((user.TrangThai || user.trangthai) !== 'active') {
+                    return [2 /*return*/, res.status(403).json({
+                            success: false,
+                            message: 'Tài khoản đã bị vô hiệu hóa'
+                        })];
+                }
+                isPasswordValid = password === (user.MatKhau || user.matkhau);
                 console.log('Password validation:', {
                     isPasswordValid: isPasswordValid,
                     providedPassword: password,
-                    storedPassword: user.matkhau
+                    storedPassword: user.MatKhau || user.matkhau
                 });
                 if (!isPasswordValid) {
                     console.log('Invalid password for user:', username);
@@ -94,18 +126,18 @@ var login = function (req, res) { return __awaiter(void 0, void 0, void 0, funct
                             success: false,
                             message: 'Mật khẩu không đúng'
                         })];
-                } // Map group code to role (note: database column is lowercase)
-                role = GROUP_TO_ROLE[user.manhom] || 'unknown';
-                console.log('Mapped role:', { groupCode: user.manhom, role: role });
+                }
+                role = GROUP_TO_ROLE[groupCode] || 'unknown';
+                console.log('Mapped role:', { groupCode: groupCode, role: role });
                 console.log('Generating JWT tokens...');
                 token = jsonwebtoken_1.default.sign({
-                    id: user.userid,
-                    username: user.tendangnhap,
+                    id: userId,
+                    username: userUsername,
                     role: role
                 }, JWT_SECRET, { expiresIn: JWT_EXPIRES });
                 refreshToken_1 = jsonwebtoken_1.default.sign({
-                    id: user.UserID,
-                    username: user.TenDangNhap,
+                    id: userId,
+                    username: userUsername,
                     role: role
                 }, JWT_SECRET + '_refresh', { expiresIn: '7d' });
                 redirectUrl = '/';
@@ -124,27 +156,30 @@ var login = function (req, res) { return __awaiter(void 0, void 0, void 0, funct
                         break;
                 }
                 console.log('Login successful:', {
-                    username: username,
+                    username: userUsername,
                     role: role,
                     redirectUrl: redirectUrl
                 });
-                res.json({
+                responseData = {
                     success: true,
                     message: 'Đăng nhập thành công',
                     data: {
                         user: {
-                            id: user.UserID,
-                            username: user.TenDangNhap,
+                            id: userId,
+                            username: userUsername,
                             role: role,
-                            studentId: user.MaSoSinhVien
+                            studentId: studentId
                         },
                         token: token,
                         refreshToken: refreshToken_1,
                         redirectUrl: redirectUrl
                     }
-                });
-                return [3 /*break*/, 3];
-            case 2:
+                };
+                console.log('🎯 Backend sending response:', JSON.stringify(responseData, null, 2));
+                console.log('👤 User object being sent:', responseData.data.user);
+                res.json(responseData);
+                return [3 /*break*/, 5];
+            case 4:
                 error_1 = _b.sent();
                 console.error('=== Login Error ===');
                 console.error('Error details:', error_1);
@@ -154,8 +189,8 @@ var login = function (req, res) { return __awaiter(void 0, void 0, void 0, funct
                     message: 'Đã có lỗi xảy ra khi đăng nhập',
                     error: error_1 instanceof Error ? error_1.message : 'Unknown error'
                 });
-                return [3 /*break*/, 3];
-            case 3: return [2 /*return*/];
+                return [3 /*break*/, 5];
+            case 5: return [2 /*return*/];
         }
     });
 }); };
@@ -209,7 +244,7 @@ var refreshToken = function (req, res) { return __awaiter(void 0, void 0, void 0
                         })];
                 }
                 newToken = jsonwebtoken_1.default.sign({
-                    id: user.id,
+                    id: user.userId,
                     email: user.email,
                     role: user.role
                 }, JWT_SECRET, { expiresIn: JWT_EXPIRES });
@@ -250,7 +285,7 @@ var me = function (req, res) { return __awaiter(void 0, void 0, void 0, function
                 res.json({
                     success: true,
                     user: {
-                        id: user.id,
+                        id: user.userId,
                         email: user.email,
                         name: user.name,
                         role: user.role,

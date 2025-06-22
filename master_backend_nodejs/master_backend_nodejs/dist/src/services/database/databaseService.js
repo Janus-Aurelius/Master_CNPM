@@ -250,6 +250,46 @@ var DatabaseService = /** @class */ (function () {
                     }); })];
             });
         });
+    }; /**
+     * Get current semester from ACADEMIC_SETTINGS
+     * This replaces hardcoded semester values throughout the application
+     */
+    DatabaseService.getCurrentSemester = function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var result, error_2;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        _a.trys.push([0, 2, , 3]);
+                        return [4 /*yield*/, this.queryOne('SELECT current_semester FROM ACADEMIC_SETTINGS LIMIT 1')];
+                    case 1:
+                        result = _a.sent();
+                        // Fallback to default if no setting found
+                        return [2 /*return*/, (result === null || result === void 0 ? void 0 : result.current_semester) || 'HK1_2024'];
+                    case 2:
+                        error_2 = _a.sent();
+                        console.warn('Unable to fetch current semester from ACADEMIC_SETTINGS, using fallback:', error_2);
+                        return [2 /*return*/, 'HK1_2024']; // Fallback value
+                    case 3: return [2 /*return*/];
+                }
+            });
+        });
+    };
+    /**
+     * Update current semester in ACADEMIC_SETTINGS
+     * Should only be called by academic department
+     */
+    DatabaseService.updateCurrentSemester = function (semesterId) {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this.query('UPDATE ACADEMIC_SETTINGS SET current_semester = $1 WHERE id = 1', [semesterId])];
+                    case 1:
+                        _a.sent();
+                        return [2 /*return*/];
+                }
+            });
+        });
     };
     return DatabaseService;
 }());

@@ -1,4 +1,37 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -296,8 +329,44 @@ exports.studentController = {
             }
         });
     }); },
+    getDistrictsByProvince: function (req, res) { return __awaiter(void 0, void 0, void 0, function () {
+        var provinceId, districts, error_10;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    _a.trys.push([0, 2, , 3]);
+                    provinceId = req.params.provinceId;
+                    if (!provinceId) {
+                        return [2 /*return*/, res.status(400).json({
+                                success: false,
+                                data: null,
+                                error: 'Province ID is required'
+                            })];
+                    }
+                    return [4 /*yield*/, academicStructure_service_1.AcademicStructureService.getDistrictsByProvince(provinceId)];
+                case 1:
+                    districts = _a.sent();
+                    res.json({
+                        success: true,
+                        data: districts,
+                        message: 'Districts fetched successfully'
+                    });
+                    return [3 /*break*/, 3];
+                case 2:
+                    error_10 = _a.sent();
+                    console.error('Error getting districts by province:', error_10);
+                    res.status(500).json({
+                        success: false,
+                        data: null,
+                        error: 'Failed to fetch districts by province'
+                    });
+                    return [3 /*break*/, 3];
+                case 3: return [2 /*return*/];
+            }
+        });
+    }); },
     getPriorityGroups: function (req, res) { return __awaiter(void 0, void 0, void 0, function () {
-        var priorityGroups, error_10;
+        var priorityGroups, error_11;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
@@ -312,8 +381,8 @@ exports.studentController = {
                     });
                     return [3 /*break*/, 3];
                 case 2:
-                    error_10 = _a.sent();
-                    console.error('Error getting priority groups:', error_10);
+                    error_11 = _a.sent();
+                    console.error('Error getting priority groups:', error_11);
                     res.status(500).json({
                         success: false,
                         data: null,
@@ -326,7 +395,7 @@ exports.studentController = {
     }); },
     // Helper endpoint for all student form data
     getStudentFormData: function (req, res) { return __awaiter(void 0, void 0, void 0, function () {
-        var _a, faculties, majors, provinces, districts, priorityGroups, error_11;
+        var _a, faculties, majors, provinces, districts, priorityGroups, error_12;
         return __generator(this, function (_b) {
             switch (_b.label) {
                 case 0:
@@ -353,8 +422,8 @@ exports.studentController = {
                     });
                     return [3 /*break*/, 3];
                 case 2:
-                    error_11 = _b.sent();
-                    console.error('Error getting student form data:', error_11);
+                    error_12 = _b.sent();
+                    console.error('Error getting student form data:', error_12);
                     res.status(500).json({
                         success: false,
                         data: null,
@@ -362,6 +431,163 @@ exports.studentController = {
                     });
                     return [3 /*break*/, 3];
                 case 3: return [2 /*return*/];
+            }
+        });
+    }); },
+    // Lấy danh sách sinh viên cho tạo hàng loạt PHIEUDANGKY
+    getStudentsForBulkRegistration: function (req, res) { return __awaiter(void 0, void 0, void 0, function () {
+        var semesterId, filters, students, error_13;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    _a.trys.push([0, 2, , 3]);
+                    semesterId = req.query.semesterId;
+                    filters = {
+                        majorId: req.query.majorId,
+                        studentId: req.query.studentId
+                    };
+                    if (!semesterId) {
+                        return [2 /*return*/, res.status(400).json({
+                                success: false,
+                                data: null,
+                                error: 'Semester ID is required'
+                            })];
+                    }
+                    return [4 /*yield*/, student_business_1.studentBusiness.getStudentsForBulkRegistration(semesterId, filters)];
+                case 1:
+                    students = _a.sent();
+                    res.json({
+                        success: true,
+                        data: students,
+                        message: 'Students for bulk registration fetched successfully'
+                    });
+                    return [3 /*break*/, 3];
+                case 2:
+                    error_13 = _a.sent();
+                    console.error('Error getting students for bulk registration:', error_13);
+                    res.status(500).json({
+                        success: false,
+                        data: null,
+                        error: 'Failed to fetch students for bulk registration'
+                    });
+                    return [3 /*break*/, 3];
+                case 3: return [2 /*return*/];
+            }
+        });
+    }); },
+    // Tạo hàng loạt PHIEUDANGKY
+    createBulkRegistrations: function (req, res) { return __awaiter(void 0, void 0, void 0, function () {
+        var _a, studentIds, semesterId, maxCredits, result, error_14;
+        return __generator(this, function (_b) {
+            switch (_b.label) {
+                case 0:
+                    _b.trys.push([0, 2, , 3]);
+                    _a = req.body, studentIds = _a.studentIds, semesterId = _a.semesterId, maxCredits = _a.maxCredits;
+                    if (!studentIds || !Array.isArray(studentIds) || studentIds.length === 0) {
+                        return [2 /*return*/, res.status(400).json({
+                                success: false,
+                                data: null,
+                                error: 'Student IDs array is required'
+                            })];
+                    }
+                    if (!semesterId) {
+                        return [2 /*return*/, res.status(400).json({
+                                success: false,
+                                data: null,
+                                error: 'Semester ID is required'
+                            })];
+                    }
+                    return [4 /*yield*/, student_business_1.studentBusiness.createBulkRegistrations(studentIds, semesterId, maxCredits || 24)];
+                case 1:
+                    result = _b.sent();
+                    res.json({
+                        success: result.success,
+                        data: result,
+                        message: result.message
+                    });
+                    return [3 /*break*/, 3];
+                case 2:
+                    error_14 = _b.sent();
+                    console.error('Error creating bulk registrations:', error_14);
+                    res.status(500).json({
+                        success: false,
+                        data: null,
+                        error: 'Failed to create bulk registrations'
+                    });
+                    return [3 /*break*/, 3];
+                case 3: return [2 /*return*/];
+            }
+        });
+    }); },
+    // Kiểm tra trạng thái đăng ký của sinh viên
+    checkRegistrationStatus: function (req, res) { return __awaiter(void 0, void 0, void 0, function () {
+        var _a, studentId, semesterId, registrationService, hasRegistration, error_15;
+        return __generator(this, function (_b) {
+            switch (_b.label) {
+                case 0:
+                    _b.trys.push([0, 3, , 4]);
+                    _a = req.query, studentId = _a.studentId, semesterId = _a.semesterId;
+                    if (!studentId || !semesterId) {
+                        return [2 /*return*/, res.status(400).json({
+                                success: false,
+                                data: null,
+                                error: 'Student ID and Semester ID are required'
+                            })];
+                    }
+                    return [4 /*yield*/, Promise.resolve().then(function () { return __importStar(require('../../services/studentService/registrationService')); })];
+                case 1:
+                    registrationService = (_b.sent()).registrationService;
+                    return [4 /*yield*/, registrationService.checkRegistrationExists(studentId, semesterId)];
+                case 2:
+                    hasRegistration = _b.sent();
+                    res.json({
+                        success: true,
+                        data: { hasRegistration: hasRegistration },
+                        message: 'Registration status checked successfully'
+                    });
+                    return [3 /*break*/, 4];
+                case 3:
+                    error_15 = _b.sent();
+                    console.error('Error checking registration status:', error_15);
+                    res.status(500).json({
+                        success: false,
+                        data: null,
+                        error: 'Failed to check registration status'
+                    });
+                    return [3 /*break*/, 4];
+                case 4: return [2 /*return*/];
+            }
+        });
+    }); },
+    // Lấy danh sách tất cả học kỳ
+    getSemesters: function (req, res) { return __awaiter(void 0, void 0, void 0, function () {
+        var DatabaseService, semesters, error_16;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    _a.trys.push([0, 3, , 4]);
+                    return [4 /*yield*/, Promise.resolve().then(function () { return __importStar(require('../../services/database/databaseService')); })];
+                case 1:
+                    DatabaseService = (_a.sent()).DatabaseService;
+                    return [4 /*yield*/, DatabaseService.query("\n                SELECT \n                    MaHocKy as value,\n                    CONCAT('H\u1ECDc k\u1EF3 ', HocKyThu, ' - N\u0103m h\u1ECDc ', NamHoc) as label,\n                    TrangThaiHocKy as status,\n                    ThoiGianBatDau as startDate,\n                    ThoiGianKetThuc as endDate\n                FROM HOCKYNAMHOC \n                ORDER BY ThoiGianBatDau DESC\n            ")];
+                case 2:
+                    semesters = _a.sent();
+                    res.json({
+                        success: true,
+                        data: semesters,
+                        message: 'Semesters fetched successfully'
+                    });
+                    return [3 /*break*/, 4];
+                case 3:
+                    error_16 = _a.sent();
+                    console.error('Error getting semesters:', error_16);
+                    res.status(500).json({
+                        success: false,
+                        data: null,
+                        error: 'Failed to fetch semesters'
+                    });
+                    return [3 /*break*/, 4];
+                case 4: return [2 /*return*/];
             }
         });
     }); },

@@ -63,14 +63,11 @@ var OpenCourseBusiness = /** @class */ (function () {
             });
         });
     };
-    OpenCourseBusiness.getCourseById = function (id) {
+    OpenCourseBusiness.getCourseById = function (semesterId, courseId) {
         return __awaiter(this, void 0, void 0, function () {
-            var defaultSemester;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0:
-                        defaultSemester = 'HK1 2024-2025';
-                        return [4 /*yield*/, openCourse_service_1.OpenCourseService.getCourseById(defaultSemester, id.toString())];
+                    case 0: return [4 /*yield*/, openCourse_service_1.OpenCourseService.getCourseById(semesterId, courseId)];
                     case 1: return [2 /*return*/, _a.sent()];
                 }
             });
@@ -94,12 +91,12 @@ var OpenCourseBusiness = /** @class */ (function () {
             });
         });
     };
-    OpenCourseBusiness.updateCourse = function (id, courseData) {
+    OpenCourseBusiness.updateCourse = function (semesterId, courseId, courseData) {
         return __awaiter(this, void 0, void 0, function () {
             var existingCourse, updatedData, errors;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.getCourseById(id)];
+                    case 0: return [4 /*yield*/, openCourse_service_1.OpenCourseService.getCourseById(semesterId, courseId)];
                     case 1:
                         existingCourse = _a.sent();
                         if (!existingCourse) {
@@ -114,25 +111,24 @@ var OpenCourseBusiness = /** @class */ (function () {
                         if (courseData.registrationStartDate || courseData.registrationEndDate) {
                             this.validateDates(updatedData);
                         }
-                        return [4 /*yield*/, openCourse_service_1.OpenCourseService.updateCourse(id, courseData)];
+                        return [4 /*yield*/, openCourse_service_1.OpenCourseService.updateCourse(semesterId, courseId, courseData)];
                     case 2: return [2 /*return*/, _a.sent()];
                 }
             });
         });
     };
-    OpenCourseBusiness.deleteCourse = function (id) {
+    OpenCourseBusiness.deleteCourse = function (semesterId, courseId) {
         return __awaiter(this, void 0, void 0, function () {
-            var course, defaultSemester;
+            var course;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.getCourseById(id)];
+                    case 0: return [4 /*yield*/, openCourse_service_1.OpenCourseService.getCourseById(semesterId, courseId)];
                     case 1:
                         course = _a.sent();
                         if (!course) {
                             throw new validation_error_1.ValidationError('Course not found');
                         }
-                        defaultSemester = 'HK1 2024-2025';
-                        return [4 /*yield*/, openCourse_service_1.OpenCourseService.deleteCourse(defaultSemester, id.toString())];
+                        return [4 /*yield*/, openCourse_service_1.OpenCourseService.deleteCourse(semesterId, courseId)];
                     case 2:
                         _a.sent();
                         return [2 /*return*/];

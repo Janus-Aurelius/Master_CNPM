@@ -40,6 +40,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var express_1 = require("express");
 var paymentController_1 = require("../../controllers/financialController/paymentController");
 var validatePayment_1 = require("../../middleware/validatePayment");
+var auth_1 = require("../../middleware/auth");
 var router = (0, express_1.Router)();
 // Get payment status list
 router.get('/status', function (req, res) { return __awaiter(void 0, void 0, void 0, function () {
@@ -64,7 +65,7 @@ router.get('/history/:studentId', function (req, res) { return __awaiter(void 0,
     });
 }); });
 // Confirm payment (with validation)
-router.post('/confirm', validatePayment_1.validatePayment, function (req, res) { return __awaiter(void 0, void 0, void 0, function () {
+router.post('/confirm', auth_1.authenticateToken, validatePayment_1.validatePayment, function (req, res) { return __awaiter(void 0, void 0, void 0, function () {
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0: return [4 /*yield*/, paymentController_1.financialPaymentController.confirmPayment(req, res)];
@@ -101,6 +102,17 @@ router.get('/statistics', function (req, res) { return __awaiter(void 0, void 0,
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0: return [4 /*yield*/, paymentController_1.financialPaymentController.getPaymentStatistics(req, res)];
+            case 1:
+                _a.sent();
+                return [2 /*return*/];
+        }
+    });
+}); });
+// Get available semesters
+router.get('/available-semesters', function (req, res) { return __awaiter(void 0, void 0, void 0, function () {
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0: return [4 /*yield*/, paymentController_1.financialPaymentController.getAvailableSemesters(req, res)];
             case 1:
                 _a.sent();
                 return [2 /*return*/];

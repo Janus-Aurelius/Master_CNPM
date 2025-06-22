@@ -33,10 +33,12 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.activityLogService = exports.dashboardService = exports.userService = void 0;
-var userService = __importStar(require("../userService"));
+exports.roleService = exports.auditlogService = exports.dashboardService = exports.userService = void 0;
+var userService = __importStar(require("./userService"));
 exports.userService = userService;
 var dashboardService = __importStar(require("./dashboardService"));
 exports.dashboardService = dashboardService;
-var activityLogService = __importStar(require("./activitylogService"));
-exports.activityLogService = activityLogService;
+var auditlogService = __importStar(require("./auditlogService"));
+exports.auditlogService = auditlogService;
+var roleService = __importStar(require("./roleService"));
+exports.roleService = roleService;

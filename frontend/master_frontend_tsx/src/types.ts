@@ -1,8 +1,7 @@
 export interface User {
-    id: string;
-    username: string;
-    role: string;
-    studentId?: string;
+    id?: string;
+    name?: string;
+    role?: 'student' | 'academic' | 'financial' | 'admin';
 }
 
 export interface UserData {
@@ -15,12 +14,11 @@ export interface UserData {
 export interface Subject {
     id: string;
     name: string;
-    lecturer: string;
+    credits: number;
     day: string;
     fromTo: string;
-    credits: number;
-    maxStudents: number;
-    currentStudents: number;
+    courseType?: string;
+    lecturer: string;
 }
 
 export interface StudentPageProps {
@@ -32,4 +30,11 @@ export interface EnrolledSubjectProps {
     user: User | null;
     handleUnenroll: (subject: Subject) => void;
     onLogout: () => void;
+}
+
+export interface StudentInfo {
+    studentId: string;
+    name: string;
+    major: string;
+    majorName: string;
 } 

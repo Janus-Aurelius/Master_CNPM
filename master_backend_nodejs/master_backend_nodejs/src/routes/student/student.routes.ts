@@ -157,4 +157,9 @@ router.get('/current-semester', (req: Request, res: Response) => {
     studentController.getCurrentSemester(req, res);
 });
 
+// Check registration status
+router.get('/registration-status', (req: Request, res: Response) => {
+    studentController.checkRegistrationStatus(req, res);
+});
+
 export default router;

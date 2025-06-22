@@ -65,7 +65,7 @@ export const EnrolledSubject = ({ user, onLogout }: Omit<EnrolledSubjectProps, '
             setLoading(true);
             setError(null);
             
-            const result = await enrolledSubjectApi.unenrollSubject(subject.id);
+            const result = await enrollmentApi.unenrollSubject(subject.id, currentSemester);
             
             if (result.success) {
                 setSubjects(prev => prev.filter(s => s.id !== subject.id));

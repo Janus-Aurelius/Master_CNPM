@@ -295,11 +295,71 @@ class RegistrationManager {
     }
 
     public async registerSubject(studentId: string, courseId: string, semesterId: string): Promise<IRegistrationManagerResponse> {
-        return await this.registerCourses(studentId, [courseId], semesterId);
-    }    public async getEnrolledCourses(studentId: string, semesterId?: string): Promise<IRegistrationManagerResponse> {        try {
+        try {
+            const actualStudentId = await this.resolveStudentId(studentId);
+
+            // 1. Get current registration status (max credits and registered credits)
+            const registrationStatusResult = await this.checkRegistrationStatus(actualStudentId, semesterId);
+            
+            // Correctly handle the new structure from checkRegistrationStatus
+            if (!registrationStatusResult.success || !registrationStatusResult.data.hasRegistration) {
+                return { success: false, message: 'Chưa tới thời gian đăng ký học phần.' };
+            }
+            const registrationStatus = registrationStatusResult.data;
+
+            // 2. Get credit info for the new course (Corrected query and logic)
+            const courseResult = await DatabaseService.queryOne(
+                `SELECT SoTiet FROM MONHOC WHERE MaMonHoc = $1`, 
+                [courseId]
+            );
+            if (!courseResult || !courseResult.sotiet) {
+                return { success: false, message: 'Môn học không tồn tại hoặc không có thông tin tín chỉ.' };
+            }
+            const newCourseCredits = Math.round(parseInt(courseResult.sotiet, 10) / 15);
+
+            // 3. Check credit limit
+            const { maxCredits, registeredCredits } = registrationStatus;
+            if ((registeredCredits + newCourseCredits) > maxCredits) {
+                return { 
+                    success: false, 
+                    message: `Không thể đăng ký, sẽ vượt số tín chỉ tối đa cho phép (${registeredCredits + newCourseCredits} > ${maxCredits}).` 
+                };
+            }
+            
+            // 4. If valid, proceed with registration
+            const result = await registrationService.registerCourses({
+                studentId: actualStudentId,
+                courseIds: [courseId],
+                semesterId
+            });
+
+            return result;
+
+        } catch (error) {
+            console.error('❌ Error in registerSubject:', error);
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+
+            if (errorMessage.includes('SINHVIEN_DA_DANG_KY_MON_HOC')) {
+                 return { success: false, message: 'Bạn đã đăng ký môn học này rồi.' };
+            }
+            if (errorMessage.includes('TRUNG_LICH')) {
+                 return { success: false, message: 'Bị trùng lịch học, vui lòng chọn lại.' };
+            }
+
+            return {
+                success: false,
+                message: 'Lỗi trong quá trình đăng ký môn học.',
+                error: errorMessage
+            };
+        }
+    }
+
+    public async getEnrolledCourses(studentId: string, semesterId?: string): Promise<IRegistrationManagerResponse> {
+        try {
             if (!studentId) {
                 return {
-                    success: false,                    message: 'Mã sinh viên không được để trống'
+                    success: false,
+                    message: 'Mã sinh viên không được để trống'
                 };
             }
 
@@ -323,10 +383,64 @@ class RegistrationManager {
                 error: error instanceof Error ? error.message : 'Unknown error'
             };
         }
-    }    public async cancelRegistration(studentId: string, courseId: string, semesterId?: string): Promise<IRegistrationManagerResponse> {
+    }
+
+    public async cancelRegistration(studentId: string, courseId: string, semesterId?: string): Promise<IRegistrationManagerResponse> {
         const { DatabaseService } = await import('../../services/database/databaseService');
-        const semester = semesterId || await DatabaseService.getCurrentSemester(); // Default semester if not provided
-        return await this.unregisterCourse(studentId, courseId, semester);
+        const actualSemesterId = semesterId || await DatabaseService.getCurrentSemester();
+        return await this.unregisterCourse(studentId, courseId, actualSemesterId);
+    }
+
+    /**
+     * Kiểm tra trạng thái đăng ký của sinh viên
+     */
+    public async checkRegistrationStatus(studentId: string, semesterId?: string): Promise<any> {
+        try {
+            const actualStudentId = await this.resolveStudentId(studentId);
+            const actualSemesterId = semesterId || await DatabaseService.getCurrentSemester();
+
+            // Corrected query based on the database schema from previous interactions
+            const query = `
+                SELECT 
+                    pdk.MaPhieuDangKy, 
+                    pdk.SoTinChiToiDa,
+                    COALESCE(
+                        (SELECT SUM(mh.SoTiet / 15) 
+                         FROM CT_PHIEUDANGKY ct
+                         JOIN MONHOC mh ON ct.MaMonHoc = mh.MaMonHoc
+                         WHERE ct.MaPhieuDangKy = pdk.MaPhieuDangKy), 
+                    0) AS SoTCDaDangKy
+                FROM PHIEUDANGKY pdk
+                WHERE pdk.MaSoSinhVien = $1 AND pdk.MaHocKy = $2;
+            `;
+
+            const result = await DatabaseService.queryOne(query, [actualStudentId, actualSemesterId]);
+
+            if (result) {
+                return {
+                    success: true,
+                    message: "Found registration ticket.",
+                    data: {
+                        hasRegistration: true,
+                        maxCredits: result.sotinchitoida,
+                        registeredCredits: Math.round(parseFloat(result.sotcdadangky))
+                    }
+                };
+            } else {
+                return { 
+                    success: true, // Still success, just no ticket
+                    data: { hasRegistration: false, maxCredits: 0, registeredCredits: 0 }
+                };
+            }
+        } catch (error) {
+            console.error('❌ Error in checkRegistrationStatus:', error);
+            // Return failure on actual database error
+            return { 
+                success: false, 
+                message: 'Error checking registration status.',
+                error: error instanceof Error ? error.message : 'Unknown error'
+            };
+        }
     }
 
     /**

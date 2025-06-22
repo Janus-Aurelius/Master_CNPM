@@ -1,15 +1,37 @@
 "use strict";
-var __assign = (this && this.__assign) || function () {
-    __assign = Object.assign || function(t) {
-        for (var s, i = 1, n = arguments.length; i < n; i++) {
-            s = arguments[i];
-            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
-                t[p] = s[p];
-        }
-        return t;
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
     };
-    return __assign.apply(this, arguments);
-};
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -59,43 +81,46 @@ var TuitionManager = /** @class */ (function () {
     /**
      * Get comprehensive tuition status for a student in current semester
      * Includes business rules for payment deadlines and warnings
-     */
-    TuitionManager.prototype.getStudentTuitionStatus = function (studentId, semesterId) {
+     */ TuitionManager.prototype.getStudentTuitionStatus = function (studentId, semesterId) {
         return __awaiter(this, void 0, void 0, function () {
-            var semester, _a, tuitionStatus, statusWithWarnings, error_1;
+            var actualStudentId, semester, _a, tuitionStatus, statusWithWarnings, error_1;
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
-                        _b.trys.push([0, 4, , 5]);
+                        _b.trys.push([0, 5, , 6]);
                         if (!studentId) {
                             throw new Error('Student ID is required');
                         }
-                        _a = semesterId;
-                        if (_a) return [3 /*break*/, 2];
-                        return [4 /*yield*/, this.getCurrentSemester()];
+                        return [4 /*yield*/, this.resolveStudentId(studentId)];
                     case 1:
-                        _a = (_b.sent());
-                        _b.label = 2;
+                        actualStudentId = _b.sent();
+                        _a = semesterId;
+                        if (_a) return [3 /*break*/, 3];
+                        return [4 /*yield*/, this.getCurrentSemester()];
                     case 2:
-                        semester = _a;
-                        return [4 /*yield*/, tuitionService_1.tuitionService.getTuitionStatus(studentId, semester)];
+                        _a = (_b.sent());
+                        _b.label = 3;
                     case 3:
+                        semester = _a;
+                        return [4 /*yield*/, tuitionService_1.tuitionService.getTuitionStatus(actualStudentId, semester)];
+                    case 4:
                         tuitionStatus = _b.sent();
                         if (!tuitionStatus) {
                             return [2 /*return*/, null];
                         }
                         statusWithWarnings = this.applyPaymentDeadlineRules(tuitionStatus);
                         return [2 /*return*/, statusWithWarnings];
-                    case 4:
+                    case 5:
                         error_1 = _b.sent();
-                        console.error('Error in tuition manager getting status:', error_1);
+                        console.error('Error in tuition manager getting student tuition status:', error_1);
                         throw error_1;
-                    case 5: return [2 /*return*/];
+                    case 6: return [2 /*return*/];
                 }
             });
         });
-    }; /**
-     * Process tuition payment with business validation
+    };
+    /**
+     * Process a payment with business validations
      */
     TuitionManager.prototype.processPayment = function (paymentRequest) {
         return __awaiter(this, void 0, void 0, function () {
@@ -105,17 +130,19 @@ var TuitionManager = /** @class */ (function () {
                     case 0:
                         _a.trys.push([0, 4, , 5]);
                         // Validate payment request
-                        this.validatePaymentRequest(paymentRequest); // Check if payment is allowed (not overpaying, valid amount, etc.)
+                        this.validatePaymentRequest(paymentRequest);
+                        // Additional business validation
                         return [4 /*yield*/, this.validatePaymentAmount(paymentRequest)];
                     case 1:
+                        // Additional business validation
                         _a.sent();
                         return [4 /*yield*/, tuitionService_1.tuitionService.makePayment(paymentRequest)];
                     case 2:
                         paymentResponse = _a.sent();
-                        // Apply post-payment business rules (notifications, status updates, etc.)
+                        // Apply post-payment business rules
                         return [4 /*yield*/, this.applyPostPaymentRules(paymentResponse)];
                     case 3:
-                        // Apply post-payment business rules (notifications, status updates, etc.)
+                        // Apply post-payment business rules
                         _a.sent();
                         return [2 /*return*/, paymentResponse];
                     case 4:
@@ -126,169 +153,284 @@ var TuitionManager = /** @class */ (function () {
                 }
             });
         });
-    }; /**
+    };
+    /**
      * Get payment history with business formatting
-     */
-    TuitionManager.prototype.getPaymentHistory = function (studentId, semesterId) {
+     */ TuitionManager.prototype.getPaymentHistory = function (studentId, semesterId) {
         return __awaiter(this, void 0, void 0, function () {
-            var semester, _a, registration, history_1, error_3;
-            return __generator(this, function (_b) {
-                switch (_b.label) {
+            var actualStudentId, registration, history_1, allRegistrationIds, allHistory, _i, allRegistrationIds_1, regId, history_2, error_3;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
                     case 0:
-                        _b.trys.push([0, 5, , 6]);
+                        _a.trys.push([0, 11, , 12]);
                         if (!studentId) {
                             throw new Error('Student ID is required');
                         }
-                        _a = semesterId;
-                        if (_a) return [3 /*break*/, 2];
-                        return [4 /*yield*/, this.getCurrentSemester()];
+                        return [4 /*yield*/, this.resolveStudentId(studentId)];
                     case 1:
-                        _a = (_b.sent());
-                        _b.label = 2;
+                        actualStudentId = _a.sent();
+                        if (!semesterId) return [3 /*break*/, 4];
+                        return [4 /*yield*/, tuitionService_1.tuitionService.getRegistrationBySemester(actualStudentId, semesterId)];
                     case 2:
-                        semester = _a;
-                        return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("\n                SELECT MaPhieuDangKy as \"registrationId\"\n                FROM PHIEUDANGKY \n                WHERE MaSoSinhVien = $1 AND MaHocKy = $2\n            ", [studentId, semester])];
-                    case 3:
-                        registration = _b.sent();
+                        registration = _a.sent();
                         if (!registration) {
                             return [2 /*return*/, []];
                         }
                         return [4 /*yield*/, tuitionService_1.tuitionService.getPaymentHistory(registration.registrationId)];
-                    case 4:
-                        history_1 = _b.sent();
+                    case 3:
+                        history_1 = _a.sent();
                         // Apply business formatting and categorization
                         return [2 /*return*/, this.formatPaymentHistory(history_1)];
+                    case 4:
+                        // Get history for all semesters using service
+                        console.log('📋 Getting all registration IDs for student:', actualStudentId);
+                        return [4 /*yield*/, tuitionService_1.tuitionService.getAllRegistrationIds(actualStudentId)];
                     case 5:
-                        error_3 = _b.sent();
+                        allRegistrationIds = _a.sent();
+                        console.log('📋 Found registration IDs:', allRegistrationIds);
+                        if (!allRegistrationIds || allRegistrationIds.length === 0) {
+                            console.log('📋 No registration IDs found');
+                            return [2 /*return*/, []];
+                        }
+                        allHistory = [];
+                        _i = 0, allRegistrationIds_1 = allRegistrationIds;
+                        _a.label = 6;
+                    case 6:
+                        if (!(_i < allRegistrationIds_1.length)) return [3 /*break*/, 9];
+                        regId = allRegistrationIds_1[_i];
+                        console.log('📋 Getting payment history for registration:', regId);
+                        return [4 /*yield*/, tuitionService_1.tuitionService.getPaymentHistory(regId)];
+                    case 7:
+                        history_2 = _a.sent();
+                        console.log('📋 Found payment history:', history_2);
+                        allHistory.push.apply(allHistory, history_2);
+                        _a.label = 8;
+                    case 8:
+                        _i++;
+                        return [3 /*break*/, 6];
+                    case 9:
+                        console.log('📋 Total payment history items:', allHistory.length);
+                        // Sort by date and limit to 10 most recent
+                        return [2 /*return*/, this.formatPaymentHistory(allHistory)
+                                .sort(function (a, b) { return new Date(b.paymentDate).getTime() - new Date(a.paymentDate).getTime(); })
+                                .slice(0, 10)];
+                    case 10: return [3 /*break*/, 12];
+                    case 11:
+                        error_3 = _a.sent();
                         console.error('Error in tuition manager getting payment history:', error_3);
-                        throw error_3;
+                        return [2 /*return*/, []]; // Return empty array instead of throwing to prevent cascade errors
+                    case 12: return [2 /*return*/];
+                }
+            });
+        });
+    }; /**
+     * Get tuition status for all semesters of a student
+     * Returns formatted data for frontend display, including unopened semesters
+     */
+    TuitionManager.prototype.getAllTuitionStatus = function (studentId) {
+        return __awaiter(this, void 0, void 0, function () {
+            var actualStudentId, allSemesters, registrations, registrationMap_1, tuitionRecords, error_4;
+            var _this = this;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        _a.trys.push([0, 5, , 6]);
+                        if (!studentId) {
+                            throw new Error('Student ID is required');
+                        }
+                        return [4 /*yield*/, this.resolveStudentId(studentId)];
+                    case 1:
+                        actualStudentId = _a.sent();
+                        console.log('📊 Getting all tuition status for student:', actualStudentId);
+                        return [4 /*yield*/, databaseService_1.DatabaseService.query("\n                SELECT \n                    MaHocKy as \"semesterId\",\n                    HocKyThu as \"semesterNumber\", \n                    NamHoc as \"year\",\n                    TrangThaiHocKy as \"semesterStatus\",\n                    ThoiHanDongHP as \"dueDate\"\n                FROM HOCKYNAMHOC \n                ORDER BY NamHoc DESC, HocKyThu DESC\n            ")];
+                    case 2:
+                        allSemesters = _a.sent();
+                        return [4 /*yield*/, tuitionService_1.tuitionService.getAllRegistrations(actualStudentId)];
+                    case 3:
+                        registrations = _a.sent();
+                        console.log('📋 Found all semesters:', allSemesters.length);
+                        console.log('📋 Found registrations:', registrations.length);
+                        registrationMap_1 = new Map();
+                        registrations.forEach(function (reg) {
+                            registrationMap_1.set(reg.semesterId, reg);
+                        }); // Process all semesters
+                        return [4 /*yield*/, Promise.all(allSemesters.map(function (semester) { return __awaiter(_this, void 0, void 0, function () {
+                                var registration, formattedSemesterName_1, subjects, formattedSemesterName;
+                                return __generator(this, function (_a) {
+                                    switch (_a.label) {
+                                        case 0:
+                                            registration = registrationMap_1.get(semester.semesterId);
+                                            if (!registration) {
+                                                formattedSemesterName_1 = this.formatSemesterName(semester.semesterId);
+                                                return [2 /*return*/, {
+                                                        registrationId: null,
+                                                        semester: semester.semesterId,
+                                                        semesterName: formattedSemesterName_1,
+                                                        year: semester.year,
+                                                        dueDate: semester.dueDate,
+                                                        status: 'not_opened',
+                                                        courses: [],
+                                                        originalAmount: 0,
+                                                        totalAmount: 0,
+                                                        paidAmount: 0,
+                                                        remainingAmount: 0,
+                                                        registrationDate: null,
+                                                        discount: null
+                                                    }];
+                                            }
+                                            return [4 /*yield*/, tuitionService_1.tuitionService.getRegisteredCoursesWithFees(registration.registrationId)];
+                                        case 1:
+                                            subjects = _a.sent();
+                                            if (!subjects || subjects.length === 0) {
+                                                console.warn('⚠️ No subjects found for registration:', registration.registrationId);
+                                                subjects = [];
+                                            }
+                                            formattedSemesterName = this.formatSemesterName(registration.semesterName);
+                                            return [2 /*return*/, {
+                                                    registrationId: registration.registrationId,
+                                                    semester: registration.semesterId,
+                                                    semesterName: formattedSemesterName,
+                                                    year: registration.year || semester.year,
+                                                    dueDate: registration.dueDate || semester.dueDate,
+                                                    status: registration.status || 'unpaid',
+                                                    courses: subjects.map(function (subject) { return ({
+                                                        courseId: subject.courseId,
+                                                        courseName: subject.courseName,
+                                                        credits: subject.credits,
+                                                        totalPeriods: subject.totalPeriods,
+                                                        periodsPerCredit: subject.periodsPerCredit,
+                                                        pricePerCredit: subject.pricePerCredit,
+                                                        totalFee: subject.totalFee,
+                                                        courseType: subject.courseType
+                                                    }); }),
+                                                    originalAmount: registration.originalAmount || 0,
+                                                    totalAmount: registration.totalAmount || 0,
+                                                    paidAmount: registration.paidAmount || 0,
+                                                    remainingAmount: registration.remainingAmount || (registration.totalAmount || 0),
+                                                    registrationDate: registration.registrationDate,
+                                                    discount: registration.discount
+                                                }];
+                                    }
+                                });
+                            }); }))];
+                    case 4:
+                        tuitionRecords = _a.sent();
+                        console.log('✅ Formatted tuition records with unopened semesters:', tuitionRecords.length);
+                        return [2 /*return*/, tuitionRecords];
+                    case 5:
+                        error_4 = _a.sent();
+                        console.error('❌ Error getting all tuition status:', error_4);
+                        // Log detailed error for debugging
+                        console.error('Error details:', {
+                            inputStudentId: studentId,
+                            errorMessage: error_4 instanceof Error ? error_4.message : 'Unknown error',
+                            stack: error_4 instanceof Error ? error_4.stack : undefined
+                        });
+                        // In production, should throw error instead of returning mock data
+                        throw error_4;
                     case 6: return [2 /*return*/];
                 }
             });
         });
-    };
-    /**
+    }; /**
      * Get recent payments for dashboard (last 5 transactions)
      */
     TuitionManager.prototype.getRecentPayments = function (studentId) {
         return __awaiter(this, void 0, void 0, function () {
-            var allHistory, error_4;
+            var actualStudentId, allHistory, error_5;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        _a.trys.push([0, 2, , 3]);
-                        return [4 /*yield*/, this.getPaymentHistory(studentId)];
+                        _a.trys.push([0, 3, , 4]);
+                        return [4 /*yield*/, this.resolveStudentId(studentId)];
                     case 1:
+                        actualStudentId = _a.sent();
+                        return [4 /*yield*/, this.getPaymentHistory(actualStudentId)];
+                    case 2:
                         allHistory = _a.sent();
                         return [2 /*return*/, allHistory.slice(0, 5)]; // Return only the 5 most recent
-                    case 2:
-                        error_4 = _a.sent();
-                        console.error('Error getting recent payments:', error_4);
+                    case 3:
+                        error_5 = _a.sent();
+                        console.error('Error getting recent payments:', error_5);
                         return [2 /*return*/, []];
-                    case 3: return [2 /*return*/];
+                    case 4: return [2 /*return*/];
                 }
             });
         });
-    };
-    /**
+    }; /**
      * Get tuition summary for financial reporting
      */
     TuitionManager.prototype.getTuitionSummary = function (studentId, semesterId) {
         return __awaiter(this, void 0, void 0, function () {
-            var semester, _a, status_1, summary, error_5;
-            var _b;
-            return __generator(this, function (_c) {
-                switch (_c.label) {
+            var actualStudentId, semester, _a, status_1, discountAmount, summary, error_6;
+            return __generator(this, function (_b) {
+                switch (_b.label) {
                     case 0:
-                        _c.trys.push([0, 4, , 5]);
-                        _a = semesterId;
-                        if (_a) return [3 /*break*/, 2];
-                        return [4 /*yield*/, this.getCurrentSemester()];
+                        _b.trys.push([0, 5, , 6]);
+                        return [4 /*yield*/, this.resolveStudentId(studentId)];
                     case 1:
-                        _a = (_c.sent());
-                        _c.label = 2;
+                        actualStudentId = _b.sent();
+                        _a = semesterId;
+                        if (_a) return [3 /*break*/, 3];
+                        return [4 /*yield*/, this.getCurrentSemester()];
                     case 2:
-                        semester = _a;
-                        return [4 /*yield*/, this.getStudentTuitionStatus(studentId, semester)];
+                        _a = (_b.sent());
+                        _b.label = 3;
                     case 3:
-                        status_1 = _c.sent();
+                        semester = _a;
+                        return [4 /*yield*/, this.getStudentTuitionStatus(actualStudentId, semester)];
+                    case 4:
+                        status_1 = _b.sent();
                         if (!status_1) {
                             return [2 /*return*/, null];
                         }
+                        discountAmount = status_1.discount ?
+                            status_1.registration.registrationAmount * status_1.discount.percentage : 0;
                         summary = {
                             studentId: status_1.registration.studentId,
                             semesterId: semester,
                             totalTuition: status_1.registration.registrationAmount,
                             totalPaid: status_1.registration.paidAmount,
                             remainingBalance: status_1.registration.remainingAmount,
-                            totalDiscount: ((_b = status_1.discount) === null || _b === void 0 ? void 0 : _b.amount) || 0,
+                            totalDiscount: discountAmount,
                             paymentStatus: this.calculateOverallPaymentStatus(status_1),
                             registrationCount: 1, // One registration per semester
                             lastPaymentDate: status_1.paymentHistory.length > 0 ?
-                                status_1.paymentHistory
+                                new Date(status_1.paymentHistory
                                     .sort(function (a, b) { return new Date(b.paymentDate).getTime() - new Date(a.paymentDate).getTime(); })[0]
-                                    .paymentDate : undefined
+                                    .paymentDate) : undefined
                         };
                         return [2 /*return*/, summary];
-                    case 4:
-                        error_5 = _c.sent();
-                        console.error('Error getting tuition summary:', error_5);
-                        throw error_5;
-                    case 5: return [2 /*return*/];
-                }
-            });
-        });
-    };
-    /**
-     * Get tuition overview for dashboard display
-     */
-    TuitionManager.prototype.getTuitionOverview = function (studentId) {
-        return __awaiter(this, void 0, void 0, function () {
-            var summary, error_6;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        _a.trys.push([0, 2, , 3]);
-                        return [4 /*yield*/, this.getTuitionSummary(studentId)];
-                    case 1:
-                        summary = _a.sent();
-                        if (!summary) {
-                            return [2 /*return*/, null];
-                        }
-                        return [2 /*return*/, {
-                                totalOwed: summary.remainingBalance,
-                                totalPaid: summary.totalPaid,
-                                paymentStatus: summary.paymentStatus,
-                                nextPaymentDue: summary.lastPaymentDate
-                            }];
-                    case 2:
-                        error_6 = _a.sent();
-                        console.error('Error getting tuition overview:', error_6);
+                    case 5:
+                        error_6 = _b.sent();
+                        console.error('Error getting tuition summary:', error_6);
                         return [2 /*return*/, null];
-                    case 3: return [2 /*return*/];
+                    case 6: return [2 /*return*/];
                 }
             });
         });
     };
+    // Private helper methods
     /**
-     * Get current active semester
+     * Get current active semester - uses ACADEMIC_SETTINGS
      */
     TuitionManager.prototype.getCurrentSemester = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var currentSemester, error_7;
+            var DatabaseService_1, error_7;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        _a.trys.push([0, 2, , 3]);
-                        return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("\n                SELECT setting_value FROM system_settings WHERE setting_key = 'current_semester'\n            ")];
+                        _a.trys.push([0, 3, , 4]);
+                        return [4 /*yield*/, Promise.resolve().then(function () { return __importStar(require('../../services/database/databaseService')); })];
                     case 1:
-                        currentSemester = _a.sent();
-                        return [2 /*return*/, (currentSemester === null || currentSemester === void 0 ? void 0 : currentSemester.setting_value) || '2024-1'];
-                    case 2:
+                        DatabaseService_1 = (_a.sent()).DatabaseService;
+                        return [4 /*yield*/, DatabaseService_1.getCurrentSemester()];
+                    case 2: return [2 /*return*/, _a.sent()];
+                    case 3:
                         error_7 = _a.sent();
                         console.error('Error getting current semester:', error_7);
-                        return [2 /*return*/, '2024-1']; // Fallback
-                    case 3: return [2 /*return*/];
+                        return [2 /*return*/, 'HK1_2024']; // Fallback if unable to fetch from settings
+                    case 4: return [2 /*return*/];
                 }
             });
         });
@@ -316,7 +458,8 @@ var TuitionManager = /** @class */ (function () {
         if (!request.paymentMethod) {
             throw new Error('Payment method is required');
         }
-    }; /**
+    };
+    /**
      * Validate payment amount against outstanding balance
      */
     TuitionManager.prototype.validatePaymentAmount = function (request) {
@@ -324,7 +467,7 @@ var TuitionManager = /** @class */ (function () {
             var registration;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("\n            SELECT \n                MaSoSinhVien as \"studentId\",\n                MaHocKy as \"semesterId\", \n                SoTienConLai as \"remainingAmount\"\n            FROM PHIEUDANGKY \n            WHERE MaPhieuDangKy = $1\n        ", [request.registrationId])];
+                    case 0: return [4 /*yield*/, tuitionService_1.tuitionService.getRegistrationById(request.registrationId)];
                     case 1:
                         registration = _a.sent();
                         if (!registration) {
@@ -354,25 +497,69 @@ var TuitionManager = /** @class */ (function () {
                 return [2 /*return*/];
             });
         });
-    };
-    /**
+    }; /**
      * Format payment history with business logic
      */
     TuitionManager.prototype.formatPaymentHistory = function (history) {
-        return history.map(function (payment) { return (__assign({}, payment)); });
+        return history.map(function (payment) { return ({
+            paymentId: payment.paymentId,
+            paymentDate: payment.paymentDate instanceof Date
+                ? payment.paymentDate.toISOString().split('T')[0] // Convert to YYYY-MM-DD string
+                : payment.paymentDate, // Keep as is if already string
+            amount: payment.amount,
+            registrationId: payment.registrationId
+        }); });
     };
     /**
-     * Calculate overall payment status
+     * Business logic for formatting semester names
+     */
+    TuitionManager.prototype.formatSemesterName = function (semesterName) {
+        switch (semesterName) {
+            case 'hk1_2024':
+                return 'Học kỳ 1';
+            case 'hk2_2024':
+                return 'Học kỳ 2';
+            case 'hk1_2023':
+                return 'Học kỳ 1';
+            case 'hk2_2023':
+                return 'Học kỳ 2';
+            default:
+                return semesterName;
+        }
+    }; /**
+     * Calculate overall payment status - simplified to only 3 states
      */
     TuitionManager.prototype.calculateOverallPaymentStatus = function (status) {
         if (status.registration.remainingAmount <= 0) {
             return 'paid';
         }
-        if (status.registration.paidAmount > 0) {
-            return 'partial';
-        }
-        // Here you could add logic to check if overdue based on dates
+        // Removed partial and overdue logic - simplified to just unpaid
         return 'unpaid';
+    };
+    /**
+     * Helper method to resolve student ID from user ID if needed
+     */
+    TuitionManager.prototype.resolveStudentId = function (inputId) {
+        return __awaiter(this, void 0, void 0, function () {
+            var studentId;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        if (!inputId.startsWith('U')) return [3 /*break*/, 2];
+                        return [4 /*yield*/, tuitionService_1.tuitionService.mapUserIdToStudentId(inputId)];
+                    case 1:
+                        studentId = _a.sent();
+                        if (!studentId) {
+                            throw new Error("No student found for user ID: ".concat(inputId));
+                        }
+                        console.log("\uD83D\uDD04 Mapped userId ".concat(inputId, " to studentId ").concat(studentId));
+                        return [2 /*return*/, studentId];
+                    case 2: 
+                    // Otherwise assume it's already a studentId
+                    return [2 /*return*/, inputId];
+                }
+            });
+        });
     };
     return TuitionManager;
 }());

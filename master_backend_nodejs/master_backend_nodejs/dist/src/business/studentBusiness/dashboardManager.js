@@ -47,7 +47,7 @@ var DashboardManager = /** @class */ (function () {
     }
     DashboardManager.prototype.getStudentDashboard = function (studentId) {
         return __awaiter(this, void 0, void 0, function () {
-            var student, upcomingClasses, availableOpenCourses, recentPayments, currentSemester, semester, dashboardData, error_1;
+            var student, upcomingClasses, availableOpenCourses, recentPayments, semester, dashboardData, error_1;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -71,10 +71,9 @@ var DashboardManager = /** @class */ (function () {
                         return [4 /*yield*/, this.getRecentPayments(studentId)];
                     case 4:
                         recentPayments = _a.sent();
-                        return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("\n                SELECT setting_value FROM system_settings WHERE setting_key = 'current_semester'\n            ")];
+                        return [4 /*yield*/, databaseService_1.DatabaseService.getCurrentSemester()];
                     case 5:
-                        currentSemester = _a.sent();
-                        semester = (currentSemester === null || currentSemester === void 0 ? void 0 : currentSemester.setting_value) || '2024-1';
+                        semester = _a.sent();
                         dashboardData = {
                             student: {
                                 studentId: student.student_id,
@@ -135,8 +134,7 @@ var DashboardManager = /** @class */ (function () {
     };
     /**
      * Get student's upcoming classes for the next 2 days
-     */
-    DashboardManager.prototype.getUpcomingClasses = function (studentId) {
+     */ DashboardManager.prototype.getUpcomingClasses = function (studentId) {
         return __awaiter(this, void 0, void 0, function () {
             var currentSemester, semester, classes, error_3;
             var _this = this;
@@ -144,10 +142,10 @@ var DashboardManager = /** @class */ (function () {
                 switch (_a.label) {
                     case 0:
                         _a.trys.push([0, 3, , 4]);
-                        return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("\n                SELECT setting_value FROM system_settings WHERE setting_key = 'current_semester'\n            ")];
+                        return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("\n                SELECT current_semester FROM ACADEMIC_SETTINGS WHERE id = 1\n            ")];
                     case 1:
                         currentSemester = _a.sent();
-                        semester = (currentSemester === null || currentSemester === void 0 ? void 0 : currentSemester.setting_value) || '2024-1';
+                        semester = (currentSemester === null || currentSemester === void 0 ? void 0 : currentSemester.current_semester) || '2024-1';
                         return [4 /*yield*/, databaseService_1.DatabaseService.query("\n                SELECT \n                    e.course_name as name,\n                    oc.subject_code as id,\n                    oc.lecturer,\n                    oc.schedule,\n                    oc.room,\n                    s.credits\n                FROM enrollments e\n                JOIN open_courses oc ON e.course_id = oc.id\n                JOIN subjects s ON oc.subject_code = s.subject_code\n                WHERE e.student_id = (SELECT id FROM students WHERE student_id = $1)\n                AND e.semester = $2\n                AND e.status = 'registered'\n                ORDER BY oc.schedule\n                LIMIT 5\n            ", [studentId, semester])];
                     case 2:
                         classes = _a.sent();
@@ -186,7 +184,7 @@ var DashboardManager = /** @class */ (function () {
                         recentPayments = _a.sent();
                         return [2 /*return*/, recentPayments.map(function (payment) { return ({
                                 paymentId: payment.paymentId,
-                                paymentDate: payment.paymentDate,
+                                paymentDate: new Date(payment.paymentDate), // Convert string back to Date for IPayment interface
                                 registrationId: payment.registrationId,
                                 paymentAmount: payment.amount,
                                 status: 'paid', // Assuming completed payments
@@ -325,18 +323,17 @@ var DashboardManager = /** @class */ (function () {
     };
     /**
      * Get available open courses for student registration
-     */
-    DashboardManager.prototype.getAvailableOpenCourses = function (studentId) {
+     */ DashboardManager.prototype.getAvailableOpenCourses = function (studentId) {
         return __awaiter(this, void 0, void 0, function () {
             var currentSemester, semester_1, courses, error_6;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         _a.trys.push([0, 3, , 4]);
-                        return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("\n                SELECT setting_value FROM system_settings WHERE setting_key = 'current_semester'\n            ")];
+                        return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("\n                SELECT current_semester FROM ACADEMIC_SETTINGS WHERE id = 1\n            ")];
                     case 1:
                         currentSemester = _a.sent();
-                        semester_1 = (currentSemester === null || currentSemester === void 0 ? void 0 : currentSemester.setting_value) || '2024-1';
+                        semester_1 = (currentSemester === null || currentSemester === void 0 ? void 0 : currentSemester.current_semester) || '2024-1';
                         return [4 /*yield*/, openCourse_service_1.OpenCourseService.getAllCourses()];
                     case 2:
                         courses = _a.sent();
@@ -344,7 +341,7 @@ var DashboardManager = /** @class */ (function () {
                         return [2 /*return*/, courses.filter(function (course) {
                                 return course.semesterId === semester_1 &&
                                     course.currentStudents < course.maxStudents &&
-                                    course.isAvailable !== false;
+                                    course.status === 'Mở';
                             }).slice(0, 5)]; // Show top 5 available courses
                     case 3:
                         error_6 = _a.sent();

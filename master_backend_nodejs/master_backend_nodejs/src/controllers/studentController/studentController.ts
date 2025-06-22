@@ -40,6 +40,30 @@ interface IStudentController {
 
     // Get current semester
     getCurrentSemester(req: Request, res: Response): Promise<Response>;
+
+    // Check registration status
+    checkRegistrationStatus(req: Request, res: Response): Promise<Response>;
+}
+
+// Helper function to resolve studentId from request
+async function getStudentIdFromRequest(req: Request): Promise<string | null> {
+    // Priority: params -> body -> user token
+    let studentId = req.params?.studentId || req.body?.studentId || req.user?.studentId || req.user?.id;
+
+    // If the ID is a User ID (e.g., U103), map it to a Student ID (e.g., SV0001)
+    if (studentId && studentId.toUpperCase().startsWith('U')) {
+        console.log(`🔄 Mapping User ID ${studentId} to Student ID...`);
+        const mappedId = await studentService.mapUserIdToStudentId(studentId);
+        if (mappedId) {
+            console.log(`✅ Mapped ${studentId} to ${mappedId}`);
+            return mappedId;
+        } else {
+            console.log(`⚠️ Failed to map User ID ${studentId}. It might not exist.`);
+            return null; // Return null if mapping fails
+        }
+    }
+
+    return studentId || null;
 }
 
 class StudentController implements IStudentController {    public async getDashboard(req: Request, res: Response): Promise<Response> {        try {
@@ -58,52 +82,24 @@ class StudentController implements IStudentController {    public async getDashb
         }
     }    public async getStudentInfo(req: Request, res: Response): Promise<Response> {
         try {
-            // Debug: Xem thông tin từ request
-            console.log('🔍 Debug - req.body:', req.body);
-            console.log('🔍 Debug - req.params:', req.params);
-            console.log('🔍 Debug - req.user:', req.user);
-            console.log('🔍 Debug - req.user.studentId:', req.user?.studentId);
-            console.log('🔍 Debug - req.user.id:', req.user?.id);
-            console.log('🔍 Debug - req.user.username:', req.user?.username);
-            
-            // Lấy studentId từ request body/params trước, sau đó mới lấy từ token
-            let studentId = req.body?.studentId || req.params?.studentId || req.user?.studentId;
-            
-            // Nếu không có studentId từ request, thử lấy từ user token
+            const studentId = await getStudentIdFromRequest(req);
+
             if (!studentId) {
-                studentId = req.user?.id;
-                
-                // Nếu có username và username bắt đầu bằng 'sv', convert thành format SV0xxx
-                if (!studentId && req.user?.username) {
-                    const username = req.user.username.toLowerCase();
-                    if (username.startsWith('sv')) {
-                        // Convert sv0001 -> SV0001
-                        studentId = username.toUpperCase();
-                        console.log('🔄 Converted username to studentId:', studentId);
-                    }
-                }
-            }
-            
-            if (!studentId) {
-                console.log('❌ No studentId found in request or token:', { body: req.body, params: req.params, user: req.user });                return res.status(400).json({ 
-                    success: false, 
-                    message: 'Thiếu thông tin studentId trong request hoặc token',
-                    debug: { body: req.body, params: req.params, user: req.user }
+                return res.status(400).json({
+                    success: false,
+                    message: 'Không thể xác định mã số sinh viên từ request hoặc token.'
                 });
             }
 
-            console.log('🎓 Getting student info for studentId:', studentId);
+            console.log('🎓 Getting student info for final studentId:', studentId);
             const studentInfo = await studentService.getStudentInfo(studentId);
-            
+
             if (!studentInfo) {
                 console.log('❌ Student not found in database for ID:', studentId);
-                return res.status(404).json({ success: false, message: 'Student not found' });
+                return res.status(404).json({ success: false, message: 'Không tìm thấy sinh viên' });
             }
 
-            console.log('✅ Raw student info from database:', studentInfo);
-
-            // Format response để phù hợp với frontend
-            const response = {
+            const responseData = {
                 studentId: studentInfo.studentId,
                 name: studentInfo.fullName,
                 major: studentInfo.majorId,
@@ -111,39 +107,33 @@ class StudentController implements IStudentController {    public async getDashb
                 email: studentInfo.email,
                 phone: studentInfo.phone
             };
-            
-            console.log('✅ Formatted response:', response);
-            return res.status(200).json({ success: true, data: response });        } catch (error: unknown) {
-            console.error('❌ Error getting student info:', error);
+
+            return res.status(200).json({ success: true, data: responseData });
+        } catch (error: unknown) {
+            console.error('❌ Error in getStudentInfo:', error);
             const message = error instanceof Error ? error.message : 'Lỗi hệ thống';
             return res.status(500).json({ success: false, message });
         }
     }    public async getTimeTable(req: Request, res: Response): Promise<Response> {
         try {
+            const studentId = await getStudentIdFromRequest(req);
+            if (!studentId) {
+                return res.status(400).json({ success: false, message: 'Không thể xác định mã số sinh viên.' });
+            }
+
             const { DatabaseService } = await import('../../services/database/databaseService');
-            const studentId = req.user?.studentId || req.query.studentId as string;
             const semester = (req.query.semester as string) || await DatabaseService.getCurrentSemester();
             
             console.log(`🔵 [StudentController] getTimeTable called for student: ${studentId}, semester: ${semester}`);
             
-            if (!studentId) {                return res.status(400).json({ 
-                    success: false, 
-                    message: 'Thiếu thông tin studentId trong token hoặc query' 
-                });
-            }
-              // Lấy thông tin sinh viên
             const student = await studentService.getStudentInfo(studentId);
-            if (!student) {                return res.status(404).json({ 
-                    success: false, 
-                    message: 'Không tìm thấy sinh viên' 
-                });
+            if (!student) {
+                return res.status(404).json({ success: false, message: 'Không tìm thấy sinh viên' });
             }
             
-            // Lấy thời khóa biểu
             const timetableData = await dashboardService.getStudentTimetable(studentId, semester);
             
-            console.log(`✅ [StudentController] Retrieved ${timetableData.length} courses for timetable`);
-              return res.status(200).json({ 
+            return res.status(200).json({ 
                 success: true, 
                 message: 'Lấy thời khóa biểu thành công',
                 data: {
@@ -151,14 +141,15 @@ class StudentController implements IStudentController {    public async getDashb
                         studentId: student.studentId,
                         name: student.fullName,
                         major: student.majorId,
-                        majorName: student.majorId // TODO: Map to actual major name
+                        majorName: student.majorName
                     },
                     semester: semester,
                     courses: timetableData
                 }
             });
         } catch (error: unknown) {
-            console.error(`❌ [StudentController] Error getting timetable:`, error);            return res.status(500).json({ 
+            console.error(`❌ [StudentController] Error getting timetable:`, error);
+            return res.status(500).json({ 
                 success: false, 
                 message: 'Lỗi hệ thống',
                 error: error instanceof Error ? error.message : 'Unknown error'
@@ -166,57 +157,46 @@ class StudentController implements IStudentController {    public async getDashb
         }
     }    public async getAvailableSubjects(req: Request, res: Response): Promise<Response> {
         try {
+            const studentId = await getStudentIdFromRequest(req);
+            if (!studentId) {
+                return res.status(400).json({ success: false, message: 'Không thể xác định mã số sinh viên.' });
+            }
+
             const { DatabaseService } = await import('../../services/database/databaseService');
-            // Optional query parameters with defaults
             const semester = (req.query.semester as string) || await DatabaseService.getCurrentSemester();
-            const studentId = req.query.studentId as string;
             
             console.log('🔍 Getting available subjects for:', { semester, studentId });
             
-            // Sử dụng getAvailableCourses thay vì getAvailableSubjects
             const result = await registrationManager.getAvailableCourses(semester);
             
             if (!result.success) {
-                return res.status(400).json({
-                    success: false,
-                    message: result.message,
-                    error: result.error
-                });
+                return res.status(400).json({ success: false, message: result.message, error: result.error });
             }
             
-            return res.status(200).json({
-                success: true,
-                data: result.data
-            });
-        } catch (error: any) {            console.error('❌ Error getting available subjects:', error);
-            return res.status(500).json({
-                success: false,
-                message: 'Lỗi hệ thống',
-                error: error.message
-            });
+            return res.status(200).json({ success: true, data: result.data });
+        } catch (error: any) {
+            console.error('❌ Error getting available subjects:', error);
+            return res.status(500).json({ success: false, message: 'Lỗi hệ thống', error: error.message });
         }
     }    public async searchSubjects(req: Request, res: Response): Promise<Response> {
         try {
+            const studentId = await getStudentIdFromRequest(req);
+            if (!studentId) {
+                return res.status(400).json({ success: false, message: 'Không thể xác định mã số sinh viên.' });
+            }
+
             const { DatabaseService } = await import('../../services/database/databaseService');
             const searchQuery = req.query.query as string;
             const semester = (req.query.semester as string) || await DatabaseService.getCurrentSemester();
-            const studentId = req.query.studentId as string;
             
             console.log('🔍 Searching subjects:', { searchQuery, semester, studentId });
             
-            // Tạm thời sử dụng getAvailableCourses và filter client-side
-            // TODO: Implement proper search in registrationManager
             const result = await registrationManager.getAvailableCourses(semester);
             
             if (!result.success) {
-                return res.status(400).json({
-                    success: false,
-                    message: result.message,
-                    error: result.error
-                });
+                return res.status(400).json({ success: false, message: result.message, error: result.error });
             }
             
-            // Simple client-side filtering
             let filteredData = result.data || [];
             if (searchQuery) {
                 filteredData = filteredData.filter((course: any) => 
@@ -225,111 +205,52 @@ class StudentController implements IStudentController {    public async getDashb
                 );
             }
             
-            return res.status(200).json({
-                success: true,
-                data: filteredData
-            });        } catch (error: any) {
+            return res.status(200).json({ success: true, data: filteredData });
+        } catch (error: any) {
             console.error('❌ Error searching subjects:', error);
-            return res.status(500).json({
-                success: false,
-                message: 'Lỗi hệ thống',
-                error: error.message
-            });        }    }
+            return res.status(500).json({ success: false, message: 'Lỗi hệ thống', error: error.message });
+        }
+    }
 
     public async registerSubject(req: Request, res: Response): Promise<Response> {
         try {
-            console.log('🔵 [StudentController] registerSubject called');
-            console.log('🔵 [StudentController] req.body:', req.body);
-            console.log('🔵 [StudentController] req.user:', req.user);
-              
-            // Lấy studentId từ req.body thay vì req.user
-            const { studentId, courseId, semester, semesterId } = req.body; // Accept both semester and semesterId
-            
-            if (!studentId || !courseId) {
-                console.log('❌ [StudentController] Missing studentId or courseId');
-                console.log('🔍 [StudentController] studentId:', studentId, 'courseId:', courseId);
-                return res.status(400).json({ success: false, message: 'Thiếu thông tin studentId hoặc courseId' });
+            const studentId = await getStudentIdFromRequest(req);
+            if (!studentId) {
+                return res.status(400).json({ success: false, message: 'Không thể xác định mã số sinh viên.' });
             }
 
-            const { DatabaseService } = await import('../../services/database/databaseService');
-            const semesterParam = semesterId || semester || await DatabaseService.getCurrentSemester();
-            console.log('🔵 [StudentController] Calling registerSubject with:', {
-                studentId,
-                courseId,
-                semesterParam
-            });
-            
-            const result = await registrationManager.registerSubject(studentId, courseId, semesterParam);
-            
-            console.log('🔵 [StudentController] Registration result:', result);
-            
-            if (result.success) {
-                console.log('✅ [StudentController] Registration successful');
-                return res.status(201).json({ success: true, message: result.message });
-            } else {
-                console.log('❌ [StudentController] Registration failed:', result.message);
-                return res.status(409).json({ success: false, message: result.message });
-            }} catch (error: any) {
-            console.error('❌ [StudentController] Registration error:', error);
-            if (error.message.includes('already registered')) {
-                return res.status(409).json({
-                    success: false,
-                    message: error.message
-                });
-            } else if (error.message.includes('not found')) {
-                return res.status(404).json({
-                    success: false,
-                    message: error.message
-                });
-            } else if (error.message.toLowerCase().includes('invalid') || error.message.toLowerCase().includes('required')) {
-                return res.status(400).json({
-                    success: false,
-                    message: error.message
-                });
-            } else if (error.message.includes('available')) {
-                return res.status(404).json({
-                    success: false,
-                    message: error.message
-                });
-            } else if (error.message.includes('Trùng lịch học') || error.message.includes('conflict') || error.message.includes('lịch học')) {
-                // Handle schedule conflict errors
-                return res.status(409).json({
-                    success: false,
-                    message: error.message
-                });            } else {
-                console.error('Error registering subject:', error);
-                return res.status(500).json({
-                    success: false,
-                    message: 'Lỗi hệ thống'
-                });
+            const { courseId, semester, semesterId } = req.body;
+            const effectiveSemester = semester || semesterId;
+
+            console.log('🔵 [StudentController] registerSubject called for student:', studentId);
+
+            if (!courseId || !effectiveSemester) {
+                return res.status(400).json({ success: false, message: 'Thiếu thông tin courseId hoặc semesterId' });
             }
+            
+            const result = await registrationManager.registerSubject(studentId, courseId, effectiveSemester);
+            
+            return res.status(result.success ? 201 : 409).json(result);
+        } catch (error: any) {
+            console.error('❌ Error registering subject:', error);
+            return res.status(500).json({ success: false, message: 'Lỗi hệ thống', error: error.message });
         }
     }
 
     public async getEnrolledCourses(req: Request, res: Response): Promise<Response> {
         try {
-            const { DatabaseService } = await import('../../services/database/databaseService');
-            // Thử lấy studentId từ nhiều nguồn khác nhau
-            const studentId = req.user?.studentId || req.user?.id || req.params?.studentId || req.query?.studentId;
-            const semester = (req.query.semester as string) || await DatabaseService.getCurrentSemester();
-            
-            console.log('🔍 [StudentController] getEnrolledCourses - req.user:', req.user);
-            console.log('🔍 [StudentController] getEnrolledCourses - extracted studentId:', studentId);
-              if (!studentId) {
-                console.log('❌ [StudentController] No studentId found in request');
-                return res.status(400).json({ success: false, message: 'Thiếu thông tin studentId trong token' });
+            const studentId = await getStudentIdFromRequest(req);
+            if (!studentId) {
+                return res.status(400).json({ success: false, message: 'Không thể xác định mã số sinh viên.' });
             }
+
+            const { registrationService } = await import('../../services/studentService/registrationService');
+            const enrolledCourses = await registrationService.getEnrolledCoursesWithSchedule(studentId);
             
-            console.log('📚 [StudentController] Getting enrolled courses for student:', studentId, 'semester:', semester);
-            const enrolledCourses = await registrationManager.getEnrolledCourses(studentId, semester);
-            
-            console.log('✅ [StudentController] Enrolled courses result:', enrolledCourses);
-            return res.status(200).json(enrolledCourses);
-        } catch (error: any) {            console.error('Error getting enrolled courses:', error);
-            return res.status(500).json({
-                success: false,
-                message: 'Lỗi hệ thống'
-            });
+            return res.status(200).json({ success: true, message: `Sinh viên đã đăng ký ${enrolledCourses.length} môn học`, data: enrolledCourses });
+        } catch (error: any) {
+            console.error('❌ Error getting enrolled courses:', error);
+            return res.status(500).json({ success: false, message: 'Lỗi hệ thống', error: error.message });
         }
     }
 
@@ -510,31 +431,24 @@ class StudentController implements IStudentController {    public async getDashb
         }
     }    public async cancelRegistration(req: Request, res: Response): Promise<Response> {
         try {
-            // Ưu tiên lấy studentId từ body trước, sau đó từ token
-            const studentId = req.body?.studentId || req.user?.studentId || req.user?.id;
+            const studentId = await getStudentIdFromRequest(req);
+            if (!studentId) {
+                return res.status(400).json({ success: false, message: 'Không thể xác định mã số sinh viên.' });
+            }
+
             const { courseId } = req.body;
-            
-            console.log('🔍 [StudentController] cancelRegistration - req.user:', req.user);
-            console.log('🔍 [StudentController] cancelRegistration - req.body:', req.body);
-            console.log('🔍 [StudentController] cancelRegistration - extracted studentId:', studentId);
-            
-            if (!studentId || !courseId) {
-                console.log('❌ [StudentController] Missing studentId or courseId');
-                return res.status(400).json({ success: false, message: 'Thiếu thông tin studentId hoặc courseId' });
+            if (!courseId) {
+                return res.status(400).json({ success: false, message: 'Thiếu mã môn học' });
             }
+
+            // Lấy semesterId từ body, nếu không có thì lấy học kỳ hiện tại
+            const { semesterId } = req.body;
+            const result = await registrationManager.cancelRegistration(studentId, courseId, semesterId);
             
-            console.log('❌ [StudentController] Cancelling registration for student:', studentId, 'course:', courseId);
-            const result = await registrationManager.cancelRegistration(studentId, courseId);
-            
-            console.log('✅ [StudentController] Cancel registration result:', result);
-            return res.status(200).json(result);
+            return res.status(result.success ? 200 : 400).json(result);
         } catch (error: any) {
-            if (error.message.includes('not found')) {
-                return res.status(404).json({ success: false, message: error.message });
-            } else {
-                console.error('Error cancelling registration:', error);
-                return res.status(500).json({ success: false, message: 'Lỗi hệ thống' });
-            }
+            console.error('❌ Error canceling registration:', error);
+            return res.status(500).json({ success: false, message: 'Lỗi hệ thống', error: error.message });
         }
     }public async getRecommendedSubjects(req: Request, res: Response): Promise<Response> {
         try {
@@ -587,83 +501,33 @@ class StudentController implements IStudentController {    public async getDashb
         }
     }    public async getClassifiedSubjects(req: Request, res: Response): Promise<Response> {
         try {
-            // Debug: Xem thông tin từ request (giống getStudentInfo và getRecommendedSubjects)
-            console.log('🔍 Debug getClassifiedSubjects - req.body:', req.body);
-            console.log('🔍 Debug getClassifiedSubjects - req.params:', req.params);
-            console.log('🔍 Debug getClassifiedSubjects - req.user:', req.user);
-            
-            // Lấy studentId từ request body/params trước, sau đó mới lấy từ token
-            let studentId = req.body?.studentId || req.params?.studentId || req.user?.studentId;
-            
-            // Nếu không có studentId từ request, thử lấy từ user token
+            const studentId = await getStudentIdFromRequest(req);
             if (!studentId) {
-                studentId = req.user?.id;
-                
-                // Nếu có username và username bắt đầu bằng 'sv', convert thành format SV0xxx
-                if (!studentId && req.user?.username) {
-                    const username = req.user.username.toLowerCase();
-                    if (username.startsWith('sv')) {
-                        // Convert sv0001 -> SV0001
-                        studentId = username.toUpperCase();
-                        console.log('🔄 Converted username to studentId:', studentId);                    }
-                }
+                return res.status(400).json({ success: false, message: 'Không thể xác định mã số sinh viên.' });
             }
 
             const { DatabaseService } = await import('../../services/database/databaseService');
             const semester = (req.query.semester as string) || await DatabaseService.getCurrentSemester();
             
-            console.log('📚 Getting classified subjects for:', { semester, studentId });
+            console.log('📚 Getting classified subjects for:', { studentId, semester });
             
-            if (!studentId) {
-                console.log('❌ No studentId found in request or token:', { body: req.body, params: req.params, user: req.user });                return res.status(400).json({
-                    success: false,
-                    message: 'Thiếu thông tin studentId trong request hoặc token',
-                    debug: { body: req.body, params: req.params, user: req.user }
-                });
-            }
-            
-            // Sử dụng getRecommendedCourses để lấy môn học đã phân loại
+            // Re-using getRecommendedCourses as it returns classified subjects
             const result = await registrationManager.getRecommendedCourses(studentId, semester);
             
-            if (!result.success) {
-                return res.status(400).json({
-                    success: false,
-                    message: result.message,
-                    error: result.error
-                });
+            if (result.success) {
+                // Transform data to match frontend expectations
+                const transformedData = {
+                    required: result.data.inProgram || [],
+                    elective: result.data.notInProgram || []
+                };
+                
+                return res.status(200).json({ success: true, data: transformedData });
+            } else {
+                return res.status(400).json({ success: false, message: result.message, error: result.error });
             }
-            
-            // Phân loại môn học theo việc thuộc chương trình đào tạo của sinh viên hay không
-            const courses = result.data?.all || [];
-            const inProgramSubjects = result.data?.inProgram || [];
-            const notInProgramSubjects = result.data?.notInProgram || [];
-            
-            const classifiedSubjects = {
-                inProgram: inProgramSubjects,
-                notInProgram: notInProgramSubjects,
-                summary: {
-                    totalInProgram: inProgramSubjects.length,
-                    totalNotInProgram: notInProgramSubjects.length,
-                    totalSubjects: courses.length
-                }
-            };
-            
-            console.log('✅ Classified subjects:', {
-                inProgram: classifiedSubjects.inProgram.length,
-                notInProgram: classifiedSubjects.notInProgram.length,
-                total: classifiedSubjects.summary.totalSubjects
-            });
-            
-            return res.status(200).json({ 
-                success: true, 
-                data: classifiedSubjects 
-            });
         } catch (error: any) {
-            console.error('❌ Error getting classified subjects:', error);            return res.status(500).json({
-                success: false,
-                message: 'Lỗi hệ thống',
-                error: error.message
-            });
+            console.error('❌ Error getting classified subjects:', error);
+            return res.status(500).json({ success: false, message: 'Lỗi hệ thống', error: error.message });
         }
     }
 
@@ -685,6 +549,33 @@ class StudentController implements IStudentController {    public async getDashb
                 success: false,
                 message: 'Lỗi hệ thống khi lấy học kỳ hiện tại'
             });
+        }
+    }
+
+    // Check registration status
+    public async checkRegistrationStatus(req: Request, res: Response): Promise<Response> {
+        try {
+            const studentId = await getStudentIdFromRequest(req);
+            if (!studentId) {
+                return res.status(400).json({ success: false, message: 'Không thể xác định mã số sinh viên.' });
+            }
+
+            const { DatabaseService } = await import('../../services/database/databaseService');
+            const semesterId = (req.query.semesterId as string) || await DatabaseService.getCurrentSemester();
+
+            console.log('🎓 Getting registration status for studentId:', studentId);
+            
+            const result = await registrationManager.checkRegistrationStatus(studentId, semesterId);
+            
+            if (result.success) {
+                // The frontend now expects the full { success: true, data: { ... } } structure
+                return res.status(200).json(result);
+            } else {
+                return res.status(400).json({ success: false, message: result.message });
+            }
+        } catch (error: any) {
+            console.error('❌ Error checking registration status:', error);
+            return res.status(500).json({ success: false, message: 'Lỗi hệ thống', error: error.message });
         }
     }
 }

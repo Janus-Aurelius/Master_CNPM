@@ -53,8 +53,7 @@ var paymentService_1 = require("../../services/financialService/paymentService")
 var FinancialPaymentBusiness = /** @class */ (function () {
     function FinancialPaymentBusiness() {
         this.paymentService = new paymentService_1.FinancialPaymentService();
-    }
-    /**
+    } /**
      * Get payment status list with validation and business logic
      */
     FinancialPaymentBusiness.prototype.getPaymentStatusList = function (semesterId, filters) {
@@ -74,7 +73,12 @@ var FinancialPaymentBusiness = /** @class */ (function () {
                         page = (filters === null || filters === void 0 ? void 0 : filters.page) || 1;
                         limit = (filters === null || filters === void 0 ? void 0 : filters.limit) || 50;
                         offset = (page - 1) * limit;
-                        return [4 /*yield*/, this.paymentService.getPaymentStatusList(semesterId, __assign(__assign({}, filters), { offset: offset, limit: limit }))];
+                        return [4 /*yield*/, this.paymentService.getPaymentStatusList(semesterId, {
+                                paymentStatus: filters === null || filters === void 0 ? void 0 : filters.paymentStatus,
+                                studentId: filters === null || filters === void 0 ? void 0 : filters.studentId,
+                                offset: offset,
+                                limit: limit
+                            })];
                     case 1:
                         result = _a.sent();
                         return [2 /*return*/, {
@@ -146,95 +150,28 @@ var FinancialPaymentBusiness = /** @class */ (function () {
     /**
      * Confirm payment with validation and business rules
      */
-    FinancialPaymentBusiness.prototype.confirmPayment = function (paymentData, performedBy) {
+    FinancialPaymentBusiness.prototype.confirmPayment = function (paymentData, createdBy) {
         return __awaiter(this, void 0, void 0, function () {
-            var paymentsList, studentStatus, result, updatedStatus, error_3;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        _a.trys.push([0, 5, , 6]);
-                        // Validate required fields
-                        if (!paymentData.studentId) {
+                        // 1. Validate dữ liệu đầu vào
+                        if (!paymentData.studentId || !paymentData.semester || !paymentData.amount || !paymentData.paymentMethod) {
                             return [2 /*return*/, {
                                     success: false,
-                                    message: 'Student ID is required'
+                                    message: 'Missing required payment data'
                                 }];
                         }
-                        if (!paymentData.semester) {
-                            return [2 /*return*/, {
-                                    success: false,
-                                    message: 'Semester is required'
-                                }];
-                        }
-                        if (!paymentData.amount || paymentData.amount <= 0) {
+                        if (paymentData.amount <= 0) {
                             return [2 /*return*/, {
                                     success: false,
                                     message: 'Payment amount must be greater than 0'
                                 }];
                         }
-                        if (!paymentData.paymentMethod) {
-                            return [2 /*return*/, {
-                                    success: false,
-                                    message: 'Payment method is required'
-                                }];
-                        }
-                        if (!performedBy) {
-                            return [2 /*return*/, {
-                                    success: false,
-                                    message: 'Performer information is required'
-                                }];
-                        }
-                        return [4 /*yield*/, this.paymentService.getPaymentStatusList(paymentData.semester, {
-                                studentId: paymentData.studentId,
-                                limit: 1
-                            })];
-                    case 1:
-                        paymentsList = _a.sent();
-                        if (paymentsList.total === 0) {
-                            return [2 /*return*/, {
-                                    success: false,
-                                    message: 'Student not found in this semester'
-                                }];
-                        }
-                        studentStatus = paymentsList.data[0];
-                        if (studentStatus.remainingAmount <= 0) {
-                            return [2 /*return*/, {
-                                    success: false,
-                                    message: 'Student has no outstanding balance'
-                                }];
-                        }
-                        if (paymentData.amount > studentStatus.remainingAmount) {
-                            return [2 /*return*/, {
-                                    success: false,
-                                    message: "Payment amount cannot exceed outstanding balance (".concat(studentStatus.remainingAmount, ")")
-                                }];
-                        }
-                        return [4 /*yield*/, this.paymentService.confirmPayment(paymentData, performedBy)];
-                    case 2:
-                        result = _a.sent();
-                        if (!result.success) return [3 /*break*/, 4];
-                        return [4 /*yield*/, this.paymentService.getPaymentStatusList(paymentData.semester, {
-                                studentId: paymentData.studentId,
-                                limit: 1
-                            })];
-                    case 3:
-                        updatedStatus = _a.sent();
-                        return [2 /*return*/, {
-                                success: true,
-                                data: {
-                                    paymentId: result.paymentId,
-                                    updatedStatus: updatedStatus.data[0] || null
-                                },
-                                message: result.message
-                            }];
-                    case 4: return [2 /*return*/, result];
-                    case 5:
-                        error_3 = _a.sent();
-                        return [2 /*return*/, {
-                                success: false,
-                                message: "Failed to confirm payment: ".concat((error_3 === null || error_3 === void 0 ? void 0 : error_3.message) || 'Unknown error')
-                            }];
-                    case 6: return [2 /*return*/];
+                        return [4 /*yield*/, this.paymentService.confirmPayment(paymentData, createdBy)];
+                    case 1: 
+                    // 2. Gọi service để thực hiện nghiệp vụ
+                    return [2 /*return*/, _a.sent()];
                 }
             });
         });
@@ -244,7 +181,7 @@ var FinancialPaymentBusiness = /** @class */ (function () {
      */
     FinancialPaymentBusiness.prototype.getPaymentReceipt = function (paymentId) {
         return __awaiter(this, void 0, void 0, function () {
-            var receipt, error_4;
+            var receipt, error_3;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -269,10 +206,10 @@ var FinancialPaymentBusiness = /** @class */ (function () {
                                 data: receipt
                             }];
                     case 2:
-                        error_4 = _a.sent();
+                        error_3 = _a.sent();
                         return [2 /*return*/, {
                                 success: false,
-                                message: "Failed to get payment receipt: ".concat((error_4 === null || error_4 === void 0 ? void 0 : error_4.message) || 'Unknown error')
+                                message: "Failed to get payment receipt: ".concat((error_3 === null || error_3 === void 0 ? void 0 : error_3.message) || 'Unknown error')
                             }];
                     case 3: return [2 /*return*/];
                 }
@@ -284,7 +221,7 @@ var FinancialPaymentBusiness = /** @class */ (function () {
      */
     FinancialPaymentBusiness.prototype.getPaymentAudit = function (filters) {
         return __awaiter(this, void 0, void 0, function () {
-            var page, limit, offset, result, error_5;
+            var page, limit, offset, result, error_4;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -313,10 +250,10 @@ var FinancialPaymentBusiness = /** @class */ (function () {
                                 }
                             }];
                     case 2:
-                        error_5 = _a.sent();
+                        error_4 = _a.sent();
                         return [2 /*return*/, {
                                 success: false,
-                                message: "Failed to get payment audit: ".concat((error_5 === null || error_5 === void 0 ? void 0 : error_5.message) || 'Unknown error')
+                                message: "Failed to get payment audit: ".concat((error_4 === null || error_4 === void 0 ? void 0 : error_4.message) || 'Unknown error')
                             }];
                     case 3: return [2 /*return*/];
                 }
@@ -344,7 +281,7 @@ var FinancialPaymentBusiness = /** @class */ (function () {
         if (paymentData.paymentMethod && !validPaymentMethods.includes(paymentData.paymentMethod)) {
             errors.push('Invalid payment method');
         }
-        var validStatuses = ['PAID', 'PARTIAL', 'UNPAID'];
+        var validStatuses = ['PAID', 'UNPAID', 'NOT_OPENED'];
         if (paymentData.status && !validStatuses.includes(paymentData.status)) {
             errors.push('Invalid payment status');
         }
@@ -358,7 +295,7 @@ var FinancialPaymentBusiness = /** @class */ (function () {
      */
     FinancialPaymentBusiness.prototype.getPaymentStatistics = function (filters) {
         return __awaiter(this, void 0, void 0, function () {
-            var auditResult, payments, totalPayments, totalAmount, averagePayment, paymentMethodStats, error_6;
+            var auditResult, payments, totalPayments, totalAmount, averagePayment, paymentMethodStats, error_5;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -389,10 +326,38 @@ var FinancialPaymentBusiness = /** @class */ (function () {
                                 }
                             }];
                     case 2:
+                        error_5 = _a.sent();
+                        return [2 /*return*/, {
+                                success: false,
+                                message: "Failed to get payment statistics: ".concat((error_5 === null || error_5 === void 0 ? void 0 : error_5.message) || 'Unknown error')
+                            }];
+                    case 3: return [2 /*return*/];
+                }
+            });
+        });
+    };
+    /**
+     * Get available semesters that have student registrations
+     */
+    FinancialPaymentBusiness.prototype.getAvailableSemesters = function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var result, error_6;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        _a.trys.push([0, 2, , 3]);
+                        return [4 /*yield*/, this.paymentService.getAvailableSemesters()];
+                    case 1:
+                        result = _a.sent();
+                        return [2 /*return*/, {
+                                success: true,
+                                data: result
+                            }];
+                    case 2:
                         error_6 = _a.sent();
                         return [2 /*return*/, {
                                 success: false,
-                                message: "Failed to get payment statistics: ".concat((error_6 === null || error_6 === void 0 ? void 0 : error_6.message) || 'Unknown error')
+                                message: "Failed to get available semesters: ".concat((error_6 === null || error_6 === void 0 ? void 0 : error_6.message) || 'Unknown error')
                             }];
                     case 3: return [2 /*return*/];
                 }

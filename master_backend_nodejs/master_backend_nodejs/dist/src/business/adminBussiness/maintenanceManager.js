@@ -328,7 +328,7 @@ var MaintenanceManager = /** @class */ (function () {
                 switch (_a.label) {
                     case 0:
                         _a.trys.push([0, 2, , 3]);
-                        return [4 /*yield*/, databaseService_1.DatabaseService.query("\n                INSERT INTO audit_logs (\n                    action_type, \n                    details, \n                    created_at,\n                    user_id,\n                    ip_address,\n                    user_agent\n                ) VALUES ($1, $2, NOW(), 'system', 'system', 'maintenance-manager')\n            ", [action, details])];
+                        return [4 /*yield*/, databaseService_1.DatabaseService.query("\n                INSERT INTO AUDIT_LOGS (\n                    action_type, \n                    details, \n                    created_at,\n                    user_id,\n                    ip_address,\n                    user_agent\n                ) VALUES ($1, $2, NOW(), 'system', 'system', 'maintenance-manager')\n            ", [action, details])];
                     case 1:
                         _a.sent();
                         return [3 /*break*/, 3];

@@ -133,28 +133,49 @@ var ProgramController = /** @class */ (function () {
     ProgramController.createProgram = function (req, res) {
         return __awaiter(this, void 0, void 0, function () {
             var program, error_3;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
+            var _a;
+            return __generator(this, function (_b) {
+                switch (_b.label) {
                     case 0:
-                        _a.trys.push([0, 2, , 3]);
+                        _b.trys.push([0, 2, , 3]);
                         return [4 /*yield*/, program_business_1.ProgramBusiness.createProgram(req.body)];
                     case 1:
-                        program = _a.sent();
+                        program = _b.sent();
                         res.status(201).json({ success: true, data: program });
                         return [3 /*break*/, 3];
                     case 2:
-                        error_3 = _a.sent();
+                        error_3 = _b.sent();
                         console.error('Error in createProgram:', error_3);
-                        if (error_3 instanceof validation_error_1.ValidationError) {
+                        console.error('Error type:', typeof error_3);
+                        console.error('Error constructor name:', (_a = error_3 === null || error_3 === void 0 ? void 0 : error_3.constructor) === null || _a === void 0 ? void 0 : _a.name);
+                        console.error('Error instanceof ValidationError:', error_3 instanceof validation_error_1.ValidationError);
+                        console.error('Error message:', error_3 instanceof Error ? error_3.message : 'Unknown error');
+                        if (error_3 instanceof validation_error_1.ValidationError ||
+                            (error_3 instanceof Error && error_3.message === 'Mã môn học không tồn tại trong hệ thống')) {
                             res.status(400).json({
                                 success: false,
                                 message: error_3.message
                             });
                         }
+                        else if (error_3 instanceof Error && error_3.message === 'Semester not found') {
+                            res.status(400).json({
+                                success: false,
+                                message: 'Mã học kỳ không tồn tại trong hệ thống'
+                            });
+                        }
+                        else if (error_3 instanceof Error &&
+                            (error_3.message.includes('duplicate key value violates unique constraint "chuongtrinhhoc_pkey"') ||
+                                error_3.message.includes('already exists'))) {
+                            res.status(400).json({
+                                success: false,
+                                message: 'Môn học này đã có trong chương trình học'
+                            });
+                        }
                         else {
                             res.status(500).json({
                                 success: false,
-                                message: 'Internal server error'
+                                message: 'Internal server error',
+                                debug: error_3 instanceof Error ? error_3.message : 'Unknown error'
                             });
                         }
                         return [3 /*break*/, 3];

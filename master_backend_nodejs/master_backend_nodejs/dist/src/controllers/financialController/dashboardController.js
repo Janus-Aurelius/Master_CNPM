@@ -38,9 +38,11 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.financialDashboardController = exports.FinancialDashboardController = void 0;
 var dashboardBusiness_1 = require("../../business/financialBusiness/dashboardBusiness");
+var dashboardService_1 = require("../../services/financialService/dashboardService");
 var FinancialDashboardController = /** @class */ (function () {
     function FinancialDashboardController() {
         this.dashboardBusiness = new dashboardBusiness_1.FinancialDashboardBusiness();
+        this.service = new dashboardService_1.FinancialDashboardService();
     }
     /**
      * GET /api/financial/dashboard/overview
@@ -48,7 +50,7 @@ var FinancialDashboardController = /** @class */ (function () {
      */
     FinancialDashboardController.prototype.getDashboardOverview = function (req, res) {
         return __awaiter(this, void 0, void 0, function () {
-            var semesterId, result, error_1;
+            var semesterId, data, error_1;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -56,28 +58,12 @@ var FinancialDashboardController = /** @class */ (function () {
                         semesterId = req.query.semesterId;
                         return [4 /*yield*/, this.dashboardBusiness.getDashboardOverview(semesterId)];
                     case 1:
-                        result = _a.sent();
-                        if (result.success) {
-                            res.json({
-                                success: true,
-                                data: result.data
-                            });
-                        }
-                        else {
-                            res.status(400).json({
-                                success: false,
-                                message: result.message
-                            });
-                        }
-                        return [3 /*break*/, 3];
+                        data = _a.sent();
+                        return [2 /*return*/, res.status(200).json(data)];
                     case 2:
                         error_1 = _a.sent();
-                        res.status(500).json({
-                            success: false,
-                            message: 'Internal server error',
-                            error: error_1 === null || error_1 === void 0 ? void 0 : error_1.message
-                        });
-                        return [3 /*break*/, 3];
+                        console.error('Error in getDashboardOverview:', error_1);
+                        return [2 /*return*/, res.status(500).json({ message: 'Internal server error' })];
                     case 3: return [2 /*return*/];
                 }
             });
@@ -89,42 +75,19 @@ var FinancialDashboardController = /** @class */ (function () {
      */
     FinancialDashboardController.prototype.getSemesterComparison = function (req, res) {
         return __awaiter(this, void 0, void 0, function () {
-            var _a, currentSemesterId, previousSemesterId, result, error_2;
-            return __generator(this, function (_b) {
-                switch (_b.label) {
+            var data, error_2;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
                     case 0:
-                        _b.trys.push([0, 2, , 3]);
-                        _a = req.query, currentSemesterId = _a.currentSemesterId, previousSemesterId = _a.previousSemesterId;
-                        if (!currentSemesterId || !previousSemesterId) {
-                            return [2 /*return*/, res.status(400).json({
-                                    success: false,
-                                    message: 'Both current and previous semester IDs are required'
-                                })];
-                        }
-                        return [4 /*yield*/, this.dashboardBusiness.getSemesterComparison(currentSemesterId, previousSemesterId)];
+                        _a.trys.push([0, 2, , 3]);
+                        return [4 /*yield*/, this.dashboardBusiness.getSemesterComparison()];
                     case 1:
-                        result = _b.sent();
-                        if (result.success) {
-                            res.json({
-                                success: true,
-                                data: result.data
-                            });
-                        }
-                        else {
-                            res.status(400).json({
-                                success: false,
-                                message: result.message
-                            });
-                        }
-                        return [3 /*break*/, 3];
+                        data = _a.sent();
+                        return [2 /*return*/, res.status(200).json(data)];
                     case 2:
-                        error_2 = _b.sent();
-                        res.status(500).json({
-                            success: false,
-                            message: 'Internal server error',
-                            error: error_2 === null || error_2 === void 0 ? void 0 : error_2.message
-                        });
-                        return [3 /*break*/, 3];
+                        error_2 = _a.sent();
+                        console.error('Error in getSemesterComparison:', error_2);
+                        return [2 /*return*/, res.status(500).json({ message: 'Internal server error' })];
                     case 3: return [2 /*return*/];
                 }
             });
@@ -213,6 +176,102 @@ var FinancialDashboardController = /** @class */ (function () {
                             message: 'Internal server error',
                             error: error_4 === null || error_4 === void 0 ? void 0 : error_4.message
                         });
+                        return [3 /*break*/, 3];
+                    case 3: return [2 /*return*/];
+                }
+            });
+        });
+    };
+    FinancialDashboardController.prototype.getOverduePayments = function (req, res) {
+        return __awaiter(this, void 0, void 0, function () {
+            var semesterId, overdueData, error_5;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        _a.trys.push([0, 2, , 3]);
+                        semesterId = req.query.semesterId;
+                        return [4 /*yield*/, this.dashboardBusiness.getOverduePayments(semesterId)];
+                    case 1:
+                        overdueData = _a.sent();
+                        res.json({
+                            success: true,
+                            data: overdueData
+                        });
+                        return [3 /*break*/, 3];
+                    case 2:
+                        error_5 = _a.sent();
+                        console.error('Error in getOverduePayments:', error_5);
+                        res.status(500).json({
+                            success: false,
+                            message: 'Lỗi khi tải dữ liệu nợ học phí',
+                            error: error_5.message
+                        });
+                        return [3 /*break*/, 3];
+                    case 3: return [2 /*return*/];
+                }
+            });
+        });
+    };
+    FinancialDashboardController.prototype.getOverview = function (req, res) {
+        return __awaiter(this, void 0, void 0, function () {
+            var data, err_1;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        _a.trys.push([0, 2, , 3]);
+                        console.log('[getOverview] Called');
+                        return [4 /*yield*/, this.service.getOverview()];
+                    case 1:
+                        data = _a.sent();
+                        console.log('[getOverview] Data:', data);
+                        res.json({ success: true, data: data });
+                        return [3 /*break*/, 3];
+                    case 2:
+                        err_1 = _a.sent();
+                        console.error('[getOverview] Error:', err_1);
+                        res.status(500).json({ success: false, message: 'Server error', error: err_1 instanceof Error ? err_1.message : err_1 });
+                        return [3 /*break*/, 3];
+                    case 3: return [2 /*return*/];
+                }
+            });
+        });
+    };
+    FinancialDashboardController.prototype.getRecentPayments = function (req, res) {
+        return __awaiter(this, void 0, void 0, function () {
+            var data, err_2;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        _a.trys.push([0, 2, , 3]);
+                        return [4 /*yield*/, this.service.getRecentPayments()];
+                    case 1:
+                        data = _a.sent();
+                        res.json({ success: true, data: data });
+                        return [3 /*break*/, 3];
+                    case 2:
+                        err_2 = _a.sent();
+                        res.status(500).json({ success: false, message: 'Server error' });
+                        return [3 /*break*/, 3];
+                    case 3: return [2 /*return*/];
+                }
+            });
+        });
+    };
+    FinancialDashboardController.prototype.getFacultyStats = function (req, res) {
+        return __awaiter(this, void 0, void 0, function () {
+            var data, err_3;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        _a.trys.push([0, 2, , 3]);
+                        return [4 /*yield*/, this.service.getFacultyStats()];
+                    case 1:
+                        data = _a.sent();
+                        res.json({ success: true, data: data });
+                        return [3 /*break*/, 3];
+                    case 2:
+                        err_3 = _a.sent();
+                        res.status(500).json({ success: false, message: 'Server error' });
                         return [3 /*break*/, 3];
                     case 3: return [2 /*return*/];
                 }

@@ -199,6 +199,35 @@ var MaintenanceController = /** @class */ (function () {
             });
         });
     };
+    MaintenanceController.prototype.toggleMaintenance = function (req, res, next) {
+        return __awaiter(this, void 0, void 0, function () {
+            var enable, error_7;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        _a.trys.push([0, 5, , 6]);
+                        enable = req.body.enable;
+                        if (!enable) return [3 /*break*/, 2];
+                        return [4 /*yield*/, maintenanceManager_1.maintenanceManager.enable("Máy chủ đang bảo trì")];
+                    case 1:
+                        _a.sent();
+                        return [3 /*break*/, 4];
+                    case 2: return [4 /*yield*/, maintenanceManager_1.maintenanceManager.disable()];
+                    case 3:
+                        _a.sent();
+                        _a.label = 4;
+                    case 4:
+                        res.status(200).json({ maintenanceMode: enable });
+                        return [3 /*break*/, 6];
+                    case 5:
+                        error_7 = _a.sent();
+                        next(error_7);
+                        return [3 /*break*/, 6];
+                    case 6: return [2 /*return*/];
+                }
+            });
+        });
+    };
     return MaintenanceController;
 }());
 exports.MaintenanceController = MaintenanceController;

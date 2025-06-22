@@ -15,7 +15,7 @@ import {
     TableContainer, TableHead, TableRow, CircularProgress, Alert,
     TextField, InputAdornment, IconButton, Dialog, DialogTitle,
     DialogContent, DialogActions, Chip, Avatar, Grid, Divider,
-    FormControl, InputLabel, Select, MenuItem
+    FormControl, InputLabel, Select, MenuItem, Checkbox, FormControlLabel
 } from "@mui/material";
 import SearchIcon from '@mui/icons-material/Search';
 import VisibilityIcon from '@mui/icons-material/Visibility';
@@ -27,6 +27,8 @@ import PersonIcon from '@mui/icons-material/Person';
 import EmailIcon from '@mui/icons-material/Email';
 import HomeIcon from '@mui/icons-material/Home';
 import SchoolIcon from '@mui/icons-material/School';
+import { CheckBox as CheckBoxIcon, CheckBoxOutlineBlank as CheckBoxOutlineBlankIcon } from '@mui/icons-material';
+import Snackbar from '@mui/material/Snackbar';
 
 interface StudentMgmAcademicProps {
     user: User | null;
@@ -87,6 +89,21 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
     if (districts.length > 0) console.log('First district:', districts[0]);
     console.log('=== END DEBUG ===');
 
+    // Thêm state cho chức năng mở đăng ký
+    const [isBulkRegistrationDialogOpen, setIsBulkRegistrationDialogOpen] = useState(false);
+    const [bulkRegistrationStudents, setBulkRegistrationStudents] = useState<any[]>([]);
+    const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
+    const [bulkRegistrationLoading, setBulkRegistrationLoading] = useState(false);
+    const [maxCredits, setMaxCredits] = useState(24);
+    const [currentSemester, setCurrentSemester] = useState('');
+    const [semesterOptions, setSemesterOptions] = useState<any[]>([]);
+    const [bulkRegistrationFilters, setBulkRegistrationFilters] = useState({
+        majorId: '',
+        studentId: ''
+    });
+    const [snackbarMessage, setSnackbarMessage] = useState('');
+    const [snackbarSeverity, setSnackbarSeverity] = useState<'success' | 'error' | 'warning'>('success');
+
     // Fetch students on component mount
     useEffect(() => {
         const fetchStudents = async () => {
@@ -105,7 +122,9 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
         };
 
         fetchStudents();
-    }, []);    // Fetch dropdown data on component mount
+    }, []);
+
+    // Fetch dropdown data on component mount
     useEffect(() => {
         const fetchDropdownData = async () => {
             try {
@@ -127,21 +146,37 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
                     return [];
                 });
 
-                const [majorsData, priorityGroupsData, provincesData] = await Promise.all([
+                const semestersPromise = studentApi.getSemesters().catch(err => {
+                    console.error('Error fetching semesters:', err.response?.data || err.message);
+                    return [];
+                });
+
+                const currentSemesterPromise = studentApi.getCurrentSemester().catch(err => {
+                    console.error('Error fetching current semester:', err.response?.data || err.message);
+                    return '';
+                });
+
+                const [majorsData, priorityGroupsData, provincesData, semestersData, currentSemesterData] = await Promise.all([
                     majorsPromise,
                     priorityGroupsPromise,
-                    provincesPromise
+                    provincesPromise,
+                    semestersPromise,
+                    currentSemesterPromise
                 ]);
                 
                 console.log('Raw API responses:', {
                     majorsData,
                     priorityGroupsData,
-                    provincesData
+                    provincesData,
+                    semestersData,
+                    currentSemesterData
                 });
                 
                 setMajors(majorsData);
                 setPriorityGroups(priorityGroupsData);
                 setProvinces(provincesData);
+                setSemesterOptions(semestersData);
+                setCurrentSemester(currentSemesterData);
                 
                 console.log('Set dropdown data successfully');
             } catch (err) {
@@ -366,6 +401,118 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
         setDeleteDialog({ open: false, student: null });
     };
 
+    // Hàm mở dialog tạo hàng loạt PHIEUDANGKY
+    const openBulkRegistrationDialog = async () => {
+        if (!currentSemester) {
+            setSnackbarMessage('Không có học kỳ nào đang mở đăng ký');
+            setSnackbarSeverity('warning');
+            return;
+        }
+
+        try {
+            setBulkRegistrationLoading(true);
+            
+            // Kiểm tra trạng thái PHIEUDANGKY cho từng sinh viên
+            const studentsWithRegistrationStatus = await Promise.all(
+                students.map(async (student) => {
+                    const hasRegistration = await studentApi.checkStudentRegistrationStatus(student.studentId, currentSemester);
+                    return {
+                        ...student,
+                        hasRegistration
+                    };
+                })
+            );
+            
+            setBulkRegistrationStudents(studentsWithRegistrationStatus);
+            setIsBulkRegistrationDialogOpen(true);
+        } catch (error) {
+            console.error('Error opening bulk registration dialog:', error);
+            setSnackbarMessage('Lỗi khi kiểm tra trạng thái đăng ký của sinh viên');
+            setSnackbarSeverity('error');
+        } finally {
+            setBulkRegistrationLoading(false);
+        }
+    };
+
+    // Hàm đóng dialog tạo hàng loạt PHIEUDANGKY
+    const closeBulkRegistrationDialog = () => {
+        setIsBulkRegistrationDialogOpen(false);
+        setBulkRegistrationStudents([]);
+        setSelectedStudentIds([]);
+        setMaxCredits(24);
+        setCurrentSemester('');
+        setBulkRegistrationFilters({ majorId: '', studentId: '' });
+    };
+
+    // Hàm lọc sinh viên trong dialog (lọc local trên bulkRegistrationStudents)
+    const filterBulkRegistrationStudents = () => {
+        let filtered = students;
+        if (bulkRegistrationFilters.majorId) {
+            filtered = filtered.filter(s => s.majorId === bulkRegistrationFilters.majorId);
+        }
+        if (bulkRegistrationFilters.studentId) {
+            filtered = filtered.filter(s => s.studentId.includes(bulkRegistrationFilters.studentId));
+        }
+        setBulkRegistrationStudents(filtered);
+    };
+
+    // Hàm chọn tất cả sinh viên (bao gồm cả sinh viên đã có phiếu)
+    const selectAllStudents = () => {
+        const availableStudentIds = bulkRegistrationStudents
+            .map(student => student.studentId); // Chọn tất cả sinh viên
+        setSelectedStudentIds(availableStudentIds);
+    };
+
+    // Hàm bỏ chọn tất cả sinh viên
+    const deselectAllStudents = () => {
+        setSelectedStudentIds([]);
+    };
+
+    // Hàm chọn/bỏ chọn một sinh viên (cho phép chọn tất cả sinh viên)
+    const toggleStudentSelection = (studentId: string) => {
+        setSelectedStudentIds(prev => 
+            prev.includes(studentId) 
+                ? prev.filter(id => id !== studentId)
+                : [...prev, studentId]
+        );
+    };
+
+    // Hàm tạo hàng loạt PHIEUDANGKY
+    const createBulkRegistrations = async () => {
+        if (selectedStudentIds.length === 0) {
+            setSnackbarMessage('Vui lòng chọn ít nhất một sinh viên');
+            setSnackbarSeverity('warning');
+            return;
+        }
+
+        try {
+            setBulkRegistrationLoading(true);
+            const response = await studentApi.createBulkRegistrations(selectedStudentIds, currentSemester, maxCredits);
+            
+            if (response.success) {
+                setSnackbarMessage(response.message);
+                setSnackbarSeverity('success');
+                closeBulkRegistrationDialog();
+                // Refresh danh sách sinh viên bằng cách trigger lại useEffect
+                window.location.reload();
+            } else {
+                setSnackbarMessage(response.message || 'Có lỗi xảy ra khi tạo phiếu đăng ký');
+                setSnackbarSeverity('error');
+            }
+        } catch (error) {
+            console.error('Error creating bulk registrations:', error);
+            setSnackbarMessage('Lỗi khi tạo phiếu đăng ký');
+            setSnackbarSeverity('error');
+        } finally {
+            setBulkRegistrationLoading(false);
+        }
+    };
+
+    // Hàm đóng snackbar
+    const handleCloseSnackbar = () => {
+        setSnackbarMessage('');
+    };
+
     if (loading) {
         return (
             <ThemeLayout role="academic" onLogout={onLogout}>
@@ -583,6 +730,15 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
                                 sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '8px' }}
                             >
                                 Thêm sinh viên
+                            </Button>
+                            <Button
+                                variant="contained"
+                                color="secondary"
+                                startIcon={<SchoolIcon />}
+                                onClick={() => openBulkRegistrationDialog()}
+                                sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '8px' }}
+                            >
+                                Mở đăng ký
                             </Button>
                         </Grid>
                     </Grid>
@@ -1410,8 +1566,268 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
                         </Button>
                     </DialogActions>
                 </Dialog>
-                </Paper>
-            </Box>
-        </ThemeLayout>
-    );
+
+                {/* Bulk Registration Dialog */}
+                <Dialog
+                    open={isBulkRegistrationDialogOpen}
+                    onClose={closeBulkRegistrationDialog}
+                    maxWidth="lg"
+                    fullWidth
+                    sx={{
+                        '& .MuiPaper-root': {
+                            borderRadius: '16px',
+                            minHeight: '600px'
+                        },
+                    }}
+                >
+                    <DialogTitle sx={{ 
+                        fontFamily: '"Roboto", sans-serif', 
+                        fontWeight: 600,
+                        color: '#1976d2',
+                        textAlign: 'center',
+                        borderBottom: '2px solid #e3f2fd',
+                        pb: 2
+                    }}>
+                        Mở đăng ký học phần - Tạo hàng loạt PHIEUDANGKY
+                    </DialogTitle>
+                    
+                    <DialogContent sx={{ p: 3 }}>
+                        {/* Thông tin học kỳ và cấu hình */}
+                        <Box sx={{ mb: 3, p: 2, backgroundColor: '#f8f9fa', borderRadius: '8px' }}>
+                            <Typography variant="h6" sx={{ mb: 2, color: '#1976d2' }}>
+                                Thông tin học kỳ hiện tại
+                            </Typography>
+                            <Grid container spacing={2}>
+                                <Grid item xs={12} md={6}>
+                                    <Box sx={{ p: 2, backgroundColor: '#e3f2fd', borderRadius: '8px', border: '1px solid #bbdefb' }}>
+                                        <Typography variant="subtitle1" sx={{ fontWeight: 'bold', color: '#1976d2', mb: 1 }}>
+                                            Học kỳ đang mở đăng ký:
+                                        </Typography>
+                                        <Typography variant="body1" sx={{ color: '#1565c0' }}>
+                                            {currentSemester ? (
+                                                Array.isArray(semesterOptions) && semesterOptions.find(s => s.value === currentSemester)?.label || currentSemester
+                                            ) : (
+                                                'Đang tải thông tin học kỳ...'
+                                            )}
+                                        </Typography>
+                                    </Box>
+                                </Grid>
+                                <Grid item xs={12} md={6}>
+                                    <TextField
+                                        fullWidth
+                                        label="Số tín chỉ tối đa"
+                                        type="number"
+                                        value={maxCredits}
+                                        onChange={(e) => setMaxCredits(Number(e.target.value))}
+                                        InputProps={{ inputProps: { min: 1, max: 50 } }}
+                                        sx={{ fontFamily: '"Varela Round", sans-serif' }}
+                                    />
+                                </Grid>
+                            </Grid>
+                        </Box>
+
+                        {/* Bộ lọc tìm kiếm */}
+                        <Box sx={{ mb: 3 }}>
+                            <Typography variant="h6" sx={{ mb: 2, color: '#1976d2' }}>
+                                Bộ lọc tìm kiếm
+                            </Typography>
+                            <Grid container spacing={2} alignItems="center">
+                                <Grid item xs={12} md={4}>
+                                    <TextField
+                                        fullWidth
+                                        placeholder="Tìm theo MSSV"
+                                        value={bulkRegistrationFilters.studentId}
+                                        onChange={(e) => setBulkRegistrationFilters(prev => ({ ...prev, studentId: e.target.value }))}
+                                        sx={{ fontFamily: '"Varela Round", sans-serif' }}
+                                    />
+                                </Grid>
+                                <Grid item xs={12} md={4}>
+                                    <FormControl fullWidth>
+                                        <InputLabel>Ngành học</InputLabel>
+                                        <Select
+                                            value={bulkRegistrationFilters.majorId}
+                                            label="Ngành học"
+                                            onChange={(e) => setBulkRegistrationFilters(prev => ({ ...prev, majorId: e.target.value }))}
+                                            sx={{ fontFamily: '"Varela Round", sans-serif' }}
+                                        >
+                                            <MenuItem value="">Tất cả ngành</MenuItem>
+                                            {majors.map((major: any) => (
+                                                <MenuItem key={major.manganh} value={major.manganh}>
+                                                    {major.tennganh}
+                                                </MenuItem>
+                                            ))}
+                                        </Select>
+                                    </FormControl>
+                                </Grid>
+                                <Grid item xs={12} md={4}>
+                                    <Button
+                                        variant="contained"
+                                        onClick={filterBulkRegistrationStudents}
+                                        disabled={bulkRegistrationLoading}
+                                        sx={{ fontFamily: '"Varela Round", sans-serif' }}
+                                    >
+                                        {bulkRegistrationLoading ? <CircularProgress size={20} /> : 'Lọc'}
+                                    </Button>
+                                </Grid>
+                            </Grid>
+                        </Box>
+
+                        {/* Nút chọn tất cả */}
+                        <Box sx={{ mb: 2, display: 'flex', gap: 1 }}>
+                            <Button
+                                variant="outlined"
+                                onClick={selectAllStudents}
+                                disabled={bulkRegistrationLoading}
+                                sx={{ fontFamily: '"Varela Round", sans-serif' }}
+                            >
+                                Chọn tất cả
+                            </Button>
+                            <Button
+                                variant="outlined"
+                                onClick={deselectAllStudents}
+                                disabled={bulkRegistrationLoading}
+                                sx={{ fontFamily: '"Varela Round", sans-serif' }}
+                            >
+                                Bỏ chọn tất cả
+                            </Button>
+                            <Typography variant="body2" sx={{ ml: 2, alignSelf: 'center', color: '#666' }}>
+                                Đã chọn: {selectedStudentIds.length} sinh viên
+                            </Typography>
+                        </Box>
+
+                        {/* Bảng danh sách sinh viên */}
+                        <TableContainer component={Paper} sx={{ maxHeight: '400px', overflow: 'auto' }}>
+                            <Table stickyHeader>
+                                <TableHead>
+                                    <TableRow>
+                                        <TableCell padding="checkbox">
+                                            <Checkbox
+                                                indeterminate={selectedStudentIds.length > 0 && selectedStudentIds.length < bulkRegistrationStudents.length}
+                                                checked={selectedStudentIds.length === bulkRegistrationStudents.length && bulkRegistrationStudents.length > 0}
+                                                onChange={(e) => e.target.checked ? selectAllStudents() : deselectAllStudents()}
+                                            />
+                                        </TableCell>
+                                        <TableCell sx={{ fontWeight: 'bold' }}>MSSV</TableCell>
+                                        <TableCell sx={{ fontWeight: 'bold' }}>Họ tên</TableCell>
+                                        <TableCell sx={{ fontWeight: 'bold' }}>Ngành</TableCell>
+                                        <TableCell sx={{ fontWeight: 'bold' }}>Trạng thái</TableCell>
+                                    </TableRow>
+                                </TableHead>
+                                <TableBody>
+                                    {bulkRegistrationLoading ? (
+                                        <TableRow>
+                                            <TableCell colSpan={5} sx={{ textAlign: 'center', py: 4 }}>
+                                                <CircularProgress />
+                                            </TableCell>
+                                        </TableRow>
+                                    ) : bulkRegistrationStudents.length === 0 ? (
+                                        <TableRow>
+                                            <TableCell colSpan={5} sx={{ textAlign: 'center', py: 4 }}>
+                                                Không có sinh viên nào
+                                            </TableCell>
+                                        </TableRow>
+                                    ) : (
+                                        bulkRegistrationStudents.map((student) => (
+                                            <TableRow key={student.studentId}>
+                                                <TableCell padding="checkbox">
+                                                    <Checkbox
+                                                        checked={selectedStudentIds.includes(student.studentId)}
+                                                        onChange={() => toggleStudentSelection(student.studentId)}
+                                                    />
+                                                </TableCell>
+                                                <TableCell>{student.studentId}</TableCell>
+                                                <TableCell>{student.fullName}</TableCell>
+                                                <TableCell>{student.majorName}</TableCell>
+                                                <TableCell>
+                                                    {student.hasRegistration ? (
+                                                        <Chip 
+                                                            label="Đã có phiếu" 
+                                                            color="success" 
+                                                            size="small"
+                                                            sx={{ fontFamily: '"Varela Round", sans-serif' }}
+                                                        />
+                                                    ) : (
+                                                        <Chip 
+                                                            label="Chưa có phiếu" 
+                                                            color="warning" 
+                                                            size="small"
+                                                            sx={{ fontFamily: '"Varela Round", sans-serif' }}
+                                                        />
+                                                    )}
+                                                </TableCell>
+                                            </TableRow>
+                                        ))
+                                    )}
+                                </TableBody>
+                            </Table>
+                        </TableContainer>
+                    </DialogContent>
+
+                    <DialogActions sx={{ 
+                        p: 3, 
+                        justifyContent: 'space-between',
+                        backgroundColor: '#f8f9fa',
+                        borderTop: '1px solid #e0e0e0' 
+                    }}>
+                        <Typography variant="body2" color="textSecondary">
+                            Tổng: {bulkRegistrationStudents.length} sinh viên | 
+                            Đã chọn: {selectedStudentIds.length} sinh viên
+                        </Typography>
+                        <Box sx={{ display: 'flex', gap: 2 }}>
+                            <Button 
+                                variant="outlined" 
+                                onClick={closeBulkRegistrationDialog}
+                                sx={{ 
+                                    borderRadius: '8px',
+                                    textTransform: 'none',
+                                    px: 3,
+                                    py: 1,
+                                    fontWeight: 'bold',
+                                    fontFamily: '"Varela Round", sans-serif'
+                                }}
+                            >
+                                HỦY
+                            </Button>
+                            <Button 
+                                variant="contained" 
+                                onClick={createBulkRegistrations}
+                                disabled={selectedStudentIds.length === 0 || bulkRegistrationLoading}
+                                sx={{ 
+                                    backgroundColor: '#1976d2',
+                                    borderRadius: '8px',
+                                    textTransform: 'none',
+                                    px: 3,
+                                    py: 1,
+                                    fontWeight: 'bold',
+                                    fontFamily: '"Varela Round", sans-serif',
+                                    '&:hover': {
+                                        backgroundColor: '#1565c0'
+                                    }
+                                }}
+                            >
+                                {bulkRegistrationLoading ? <CircularProgress size={20} /> : 'TẠO PHIẾU ĐĂNG KÝ'}
+                            </Button>
+                        </Box>
+                    </DialogActions>
+                </Dialog>
+
+                {/* Snackbar */}
+                <Snackbar
+                    open={!!snackbarMessage}
+                    autoHideDuration={6000}
+                    onClose={handleCloseSnackbar}
+                    anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+                >
+                    <Alert 
+                        onClose={handleCloseSnackbar} 
+                        severity={snackbarSeverity}
+                        sx={{ fontFamily: '"Varela Round", sans-serif' }}
+                    >
+                        {snackbarMessage}
+                    </Alert>
+                </Snackbar>
+            </Paper>
+        </Box>
+    </ThemeLayout>
+);
 }

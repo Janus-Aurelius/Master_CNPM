@@ -37,7 +37,56 @@ export const registrationService = {
             console.error('Error getting registered courses:', error);
             throw error;
         }
-    },    // Lấy danh sách môn học đã đăng ký với thông tin chi tiết từ DANHSACHMONHOCMO
+    },
+
+    // Kiểm tra PHIEUDANGKY đã tồn tại chưa
+    async checkRegistrationExists(studentId: string, semesterId: string): Promise<boolean> {
+        try {
+            const registration = await DatabaseService.queryOne(`
+                SELECT MaPhieuDangKy 
+                FROM PHIEUDANGKY 
+                WHERE MaSoSinhVien = $1 AND MaHocKy = $2
+            `, [studentId, semesterId]);
+            
+            return !!registration;
+        } catch (error) {
+            console.error('Error checking registration exists:', error);
+            throw error;
+        }
+    },
+
+    // Tạo PHIEUDANGKY cho sinh viên
+    async createRegistration(studentId: string, semesterId: string, maxCredits: number = 24): Promise<string> {
+        try {
+            // Kiểm tra xem đã có PHIEUDANGKY chưa
+            const exists = await this.checkRegistrationExists(studentId, semesterId);
+            if (exists) {
+                // Thay vì ném lỗi, trả về ID phiếu hiện tại
+                const existingRegistration = await DatabaseService.queryOne(`
+                    SELECT MaPhieuDangKy 
+                    FROM PHIEUDANGKY 
+                    WHERE MaSoSinhVien = $1 AND MaHocKy = $2
+                `, [studentId, semesterId]);
+                
+                console.log(`✅ [RegistrationService] Student already has registration: ${existingRegistration.MaPhieuDangKy}`);
+                return existingRegistration.MaPhieuDangKy;
+            }
+
+            const newRegistrationId = `PDK_${studentId}_${semesterId}`;
+            await DatabaseService.query(`
+                INSERT INTO PHIEUDANGKY (MaPhieuDangKy, NgayLap, MaSoSinhVien, MaHocKy, SoTienConLai, SoTinChiToiDa)
+                VALUES ($1, NOW(), $2, $3, 0, $4)
+            `, [newRegistrationId, studentId, semesterId, maxCredits]);
+            
+            console.log(`✅ [RegistrationService] Created new registration with ID: ${newRegistrationId}`);
+            return newRegistrationId;
+        } catch (error) {
+            console.error('Error creating registration:', error);
+            throw error;
+        }
+    },
+
+    // Lấy danh sách môn học đã đăng ký với thông tin chi tiết từ DANHSACHMONHOCMO
     async getEnrolledCoursesWithSchedule(studentId: string, semesterId?: string): Promise<any[]> {
         try {
             // Get current semester if not provided
@@ -190,16 +239,13 @@ export const registrationService = {
 
             console.log(`🔵 [RegistrationService] Existing registration:`, registration);
             
-            // Nếu chưa có, tạo phiếu đăng ký mới
+            // Nếu chưa có PHIEUDANGKY, không cho phép đăng ký
             if (!registration) {
-                console.log(`🔵 [RegistrationService] Creating new registration for student ${studentId}`);
-                const newRegistrationId = `PDK_${studentId}_${semesterId}`;                await DatabaseService.query(`
-                    INSERT INTO PHIEUDANGKY (MaPhieuDangKy, NgayLap, MaSoSinhVien, MaHocKy, SoTienConLai, SoTinChiToiDa)
-                    VALUES ($1, NOW(), $2, $3, 0, 24)
-                `, [newRegistrationId, studentId, semesterId]);
-                registration = { maphieudangky: newRegistrationId, MaPhieuDangKy: newRegistrationId };
-                console.log(`✅ [RegistrationService] Created new registration with ID: ${newRegistrationId}`);
-            }            // Kiểm tra đã đăng ký môn này chưa
+                console.log(`❌ [RegistrationService] No registration found for student ${studentId} in semester ${semesterId}`);
+                throw new Error('Chưa mở đăng ký học phần cho học kỳ này. Vui lòng liên hệ phòng đào tạo.');
+            }
+
+            // Kiểm tra đã đăng ký môn này chưa
             console.log(`🔵 [RegistrationService] Checking if course ${courseId} is already registered`);
             const registrationId = registration.maphieudangky || registration.MaPhieuDangKy;
             console.log(`🔵 [RegistrationService] Using registration ID:`, registrationId);
@@ -214,7 +260,9 @@ export const registrationService = {
             if (existingDetail) {
                 console.log(`❌ [RegistrationService] Course ${courseId} is already registered`);
                 throw new Error('Bạn đã đăng ký môn học này rồi!');
-            }            // Kiểm tra trùng lịch học
+            }
+
+            // Kiểm tra trùng lịch học
             console.log(`🔵 [RegistrationService] Checking schedule conflicts for course ${courseId}`);
             const newCourseSchedule = await DatabaseService.queryOne(`
                 SELECT Thu as "thu", TietBatDau as "tietBatDau", TietKetThuc as "tietKetThuc", MaMonHoc as "maMonHoc"

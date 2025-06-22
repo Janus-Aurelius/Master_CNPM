@@ -251,5 +251,18 @@ export const studentService = {    async getStudentInfo(studentId: string): Prom
             console.error('Error getting all students:', error);
             throw error;
         }
+    },
+
+    async mapUserIdToStudentId(userId: string): Promise<string | null> {
+        try {
+            const mapping = await DatabaseService.queryOne(
+                `SELECT masosinhvien as "studentId" FROM NGUOIDUNG WHERE userid = $1`,
+                [userId]
+            );
+            return mapping?.studentId || null;
+        } catch (error) {
+            console.error(`Error mapping userId ${userId} to studentId:`, error);
+            return null;
+        }
     }
 };

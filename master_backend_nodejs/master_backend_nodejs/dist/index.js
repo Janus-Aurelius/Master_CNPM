@@ -16,6 +16,7 @@ var student_routes_1 = __importDefault(require("./src/routes/student/student.rou
 var socketHandler_1 = require("./src/socket/socketHandler");
 var errorHandler_1 = require("./src/middleware/errorHandler");
 var maintenance_1 = require("./src/middleware/maintenance");
+var auditLogger_1 = require("./src/middleware/auditLogger"); // Đường dẫn đúng tới file của bạn
 // Load environment variables
 dotenv_1.default.config();
 var app = (0, express_1.default)();
@@ -33,9 +34,10 @@ app.use((0, cors_1.default)({
     credentials: true
 }));
 app.use(express_1.default.json());
+app.use(auditLogger_1.auditLogger);
 // Routes
 app.use('/api/auth', maintenance_1.maintenanceMode, auth_routes_1.default);
-app.use('/api/admin', maintenance_1.maintenanceMode, admin_routes_1.default);
+app.use('/api/admin', admin_routes_1.default);
 app.use('/api/academic', maintenance_1.maintenanceMode, academic_routes_1.default);
 app.use('/api/financial', maintenance_1.maintenanceMode, financial_routes_1.default);
 app.use('/api/student', maintenance_1.maintenanceMode, student_routes_1.default);

@@ -68,26 +68,16 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
-    if (pack || arguments.length === 2) for (var i = 0, l = from.length, ar; i < l; i++) {
-        if (ar || !(i in from)) {
-            if (!ar) ar = Array.prototype.slice.call(from, 0, i);
-            ar[i] = from[i];
-        }
-    }
-    return to.concat(ar || Array.prototype.slice.call(from));
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.userManager = void 0;
 var errorHandler_1 = require("../../middleware/errorHandler");
-var DashboardService = __importStar(require("../../services/AdminService/dashboardService"));
-var databaseService_1 = require("../../services/database/databaseService");
+var userService = __importStar(require("../../services/AdminService/userService"));
 var UserManager = /** @class */ (function () {
     function UserManager() {
     }
     UserManager.prototype.getAllUsers = function () {
         return __awaiter(this, arguments, void 0, function (page, limit, filters) {
-            var offset, whereConditions, queryParams, paramIndex, whereClause, totalCount, users, error_1;
+            var offset, whereConditions, queryParams, paramIndex, whereClause, totalCount, total, users, error_1;
             if (page === void 0) { page = 1; }
             if (limit === void 0) { limit = 10; }
             return __generator(this, function (_a) {
@@ -98,40 +88,44 @@ var UserManager = /** @class */ (function () {
                         whereConditions = [];
                         queryParams = [];
                         paramIndex = 1;
-                        if (filters === null || filters === void 0 ? void 0 : filters.role) {
-                            whereConditions.push("role = $".concat(paramIndex));
+                        if ((filters === null || filters === void 0 ? void 0 : filters.status) === true || (filters === null || filters === void 0 ? void 0 : filters.status) === false) {
+                            whereConditions.push("nguoidung.TrangThai = $".concat(paramIndex));
+                            queryParams.push(filters.status ? 'active' : 'inactive');
+                            paramIndex++;
+                        }
+                        if ((filters === null || filters === void 0 ? void 0 : filters.role) && filters.role !== 'all') {
+                            whereConditions.push("nguoidung.MaNhom = $".concat(paramIndex));
                             queryParams.push(filters.role);
                             paramIndex++;
                         }
-                        if ((filters === null || filters === void 0 ? void 0 : filters.status) !== undefined) {
-                            whereConditions.push("status = $".concat(paramIndex));
-                            queryParams.push(filters.status);
-                            paramIndex++;
-                        }
                         if (filters === null || filters === void 0 ? void 0 : filters.search) {
-                            whereConditions.push("(name ILIKE $".concat(paramIndex, " OR email ILIKE $").concat(paramIndex, ")"));
+                            whereConditions.push("(nguoidung.UserID ILIKE $".concat(paramIndex, " OR nguoidung.TenDangNhap ILIKE $").concat(paramIndex, " OR sinhvien.HoTen ILIKE $").concat(paramIndex, ")"));
                             queryParams.push("%".concat(filters.search, "%"));
                             paramIndex++;
                         }
                         whereClause = whereConditions.length > 0
                             ? "WHERE ".concat(whereConditions.join(' AND '))
                             : '';
-                        return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("\n                SELECT COUNT(*) as total\n                FROM users\n                ".concat(whereClause, "\n            "), queryParams)];
+                        console.log('Request params:', { page: page, limit: limit, filters: filters });
+                        console.log('Final whereClause:', whereClause);
+                        console.log('Final queryParams:', queryParams);
+                        return [4 /*yield*/, userService.getUserCount(whereClause, queryParams)];
                     case 1:
                         totalCount = _a.sent();
-                        return [4 /*yield*/, databaseService_1.DatabaseService.query("\n                SELECT *\n                FROM users\n                ".concat(whereClause, "\n                ORDER BY created_at DESC\n                LIMIT $").concat(paramIndex, " OFFSET $").concat(paramIndex + 1, "\n            "), __spreadArray(__spreadArray([], queryParams, true), [limit, offset], false))];
+                        total = parseInt((totalCount === null || totalCount === void 0 ? void 0 : totalCount.total) || '0');
+                        return [4 /*yield*/, userService.getAllUsers(whereClause, queryParams, limit, offset)];
                     case 2:
                         users = _a.sent();
                         return [2 /*return*/, {
-                                users: users,
-                                total: parseInt((totalCount === null || totalCount === void 0 ? void 0 : totalCount.total) || '0'),
+                                users: users || [],
+                                total: total,
                                 page: page,
-                                totalPages: Math.ceil(parseInt((totalCount === null || totalCount === void 0 ? void 0 : totalCount.total) || '0') / limit)
+                                totalPages: Math.ceil(total / limit)
                             }];
                     case 3:
                         error_1 = _a.sent();
-                        console.error('Error getting users:', error_1);
-                        throw new errorHandler_1.AppError(500, 'Error retrieving users');
+                        console.error('Error in getAllUsers:', error_1);
+                        throw new errorHandler_1.AppError(500, 'Error retrieving users: ' + error_1.message);
                     case 4: return [2 /*return*/];
                 }
             });
@@ -144,10 +138,15 @@ var UserManager = /** @class */ (function () {
                 switch (_a.label) {
                     case 0:
                         _a.trys.push([0, 2, , 3]);
-                        return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("\n                SELECT * FROM users WHERE id = $1\n            ", [id])];
+                        return [4 /*yield*/, userService.getUserById(id)];
                     case 1:
                         user = _a.sent();
-                        return [2 /*return*/, user || null];
+                        return [2 /*return*/, {
+                                users: user ? [user] : [],
+                                total: user ? 1 : 0,
+                                page: 1,
+                                totalPages: 1
+                            }];
                     case 2:
                         error_2 = _a.sent();
                         console.error('Error getting user:', error_2);
@@ -159,123 +158,105 @@ var UserManager = /** @class */ (function () {
     };
     UserManager.prototype.createUser = function (userData) {
         return __awaiter(this, void 0, void 0, function () {
-            var existingUser, result, error_3;
+            var existingUser, student, lastUser, newUserId, num, result;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        _a.trys.push([0, 3, , 4]);
-                        return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("\n                SELECT * FROM users WHERE email = $1\n            ", [userData.email])];
+                        // Validate studentId thay vì email
+                        if (!userData.studentId)
+                            throw new errorHandler_1.AppError(400, 'Student ID is required');
+                        return [4 /*yield*/, userService.getUserByUsername(userData.studentId)];
                     case 1:
                         existingUser = _a.sent();
-                        if (existingUser) {
-                            throw new errorHandler_1.AppError(400, 'Email already exists');
-                        }
-                        return [4 /*yield*/, databaseService_1.DatabaseService.query("\n                INSERT INTO users (name, email, role, status, created_at, updated_at)\n                VALUES ($1, $2, $3, $4, NOW(), NOW())\n                RETURNING *\n            ", [userData.name, userData.email, userData.role, userData.status])];
+                        if (existingUser)
+                            throw new errorHandler_1.AppError(400, 'User already exists');
+                        if (!(userData.role === 'N3')) return [3 /*break*/, 3];
+                        return [4 /*yield*/, userService.getStudentById(userData.studentId)];
                     case 2:
+                        student = _a.sent();
+                        if (!student)
+                            throw new errorHandler_1.AppError(400, 'Student does not exist');
+                        _a.label = 3;
+                    case 3: return [4 /*yield*/, userService.getLastUser()];
+                    case 4:
+                        lastUser = _a.sent();
+                        newUserId = 'U001';
+                        if (lastUser && lastUser.UserID) {
+                            num = parseInt(lastUser.UserID.replace('U', '')) + 1;
+                            newUserId = 'U' + num.toString().padStart(3, '0');
+                        }
+                        return [4 /*yield*/, userService.createUser({
+                                username: userData.studentId,
+                                userId: newUserId,
+                                password: '123456',
+                                role: userData.role || '',
+                                studentId: userData.studentId,
+                                status: userData.status ? 'active' : 'inactive'
+                            })];
+                    case 5:
                         result = _a.sent();
-                        return [2 /*return*/, result[0]];
-                    case 3:
-                        error_3 = _a.sent();
-                        if (error_3 instanceof errorHandler_1.AppError)
-                            throw error_3;
-                        console.error('Error creating user:', error_3);
-                        throw new errorHandler_1.AppError(500, 'Error creating user');
-                    case 4: return [2 /*return*/];
+                        if (!result)
+                            throw new errorHandler_1.AppError(500, 'Failed to create user');
+                        return [2 /*return*/, result];
                 }
             });
         });
     };
     UserManager.prototype.updateUser = function (id, userData) {
         return __awaiter(this, void 0, void 0, function () {
-            var existingUser, result, error_4;
+            var result;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        _a.trys.push([0, 4, , 5]);
-                        if (!userData.email) return [3 /*break*/, 2];
-                        return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("\n                    SELECT * FROM users WHERE email = $1 AND id != $2\n                ", [userData.email, id])];
+                        if (!(userData.role === 'N3' && userData.studentid && userData.name && userData.department)) return [3 /*break*/, 2];
+                        return [4 /*yield*/, userService.updateStudentInfo(userData.studentid, userData.name, userData.department)];
                     case 1:
-                        existingUser = _a.sent();
-                        if (existingUser) {
-                            throw new errorHandler_1.AppError(400, 'Email already exists');
-                        }
+                        _a.sent();
                         _a.label = 2;
-                    case 2: return [4 /*yield*/, databaseService_1.DatabaseService.query("\n                UPDATE users \n                SET \n                    name = COALESCE($1, name),\n                    email = COALESCE($2, email),\n                    role = COALESCE($3, role),\n                    status = COALESCE($4, status),\n                    updated_at = NOW()\n                WHERE id = $5\n                RETURNING *\n            ", [userData.name, userData.email, userData.role, userData.status, id])];
+                    case 2: return [4 /*yield*/, userService.updateUser(id, {
+                            status: userData.status
+                        })];
                     case 3:
                         result = _a.sent();
                         return [2 /*return*/, result[0] || null];
-                    case 4:
-                        error_4 = _a.sent();
-                        if (error_4 instanceof errorHandler_1.AppError)
-                            throw error_4;
-                        console.error('Error updating user:', error_4);
-                        throw new errorHandler_1.AppError(500, 'Error updating user');
-                    case 5: return [2 /*return*/];
                 }
             });
         });
     };
     UserManager.prototype.deleteUser = function (id) {
         return __awaiter(this, void 0, void 0, function () {
-            var result, error_5, error_6;
+            var result, error_3;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        _a.trys.push([0, 9, , 10]);
-                        // Start transaction
-                        return [4 /*yield*/, databaseService_1.DatabaseService.query('BEGIN')];
+                        _a.trys.push([0, 2, , 3]);
+                        return [4 /*yield*/, userService.deleteUser(id)];
                     case 1:
-                        // Start transaction
-                        _a.sent();
-                        _a.label = 2;
-                    case 2:
-                        _a.trys.push([2, 6, , 8]);
-                        // Delete related records first
-                        return [4 /*yield*/, databaseService_1.DatabaseService.query("\n                    DELETE FROM user_sessions WHERE user_id = $1;\n                    DELETE FROM audit_logs WHERE user_id = $1;\n                    DELETE FROM enrollments WHERE student_id = (SELECT student_id FROM students WHERE user_id = $1);\n                    DELETE FROM tuition_records WHERE student_id = (SELECT student_id FROM students WHERE user_id = $1);\n                    DELETE FROM payment_receipts WHERE student_id = (SELECT student_id FROM students WHERE user_id = $1);\n                    DELETE FROM students WHERE user_id = $1;\n                ", [id])];
-                    case 3:
-                        // Delete related records first
-                        _a.sent();
-                        return [4 /*yield*/, databaseService_1.DatabaseService.query("\n                    DELETE FROM users WHERE id = $1 RETURNING *\n                ", [id])];
-                    case 4:
                         result = _a.sent();
-                        // Commit transaction
-                        return [4 /*yield*/, databaseService_1.DatabaseService.query('COMMIT')];
-                    case 5:
-                        // Commit transaction
-                        _a.sent();
                         return [2 /*return*/, result.length > 0];
-                    case 6:
-                        error_5 = _a.sent();
-                        // Rollback on error
-                        return [4 /*yield*/, databaseService_1.DatabaseService.query('ROLLBACK')];
-                    case 7:
-                        // Rollback on error
-                        _a.sent();
-                        throw error_5;
-                    case 8: return [3 /*break*/, 10];
-                    case 9:
-                        error_6 = _a.sent();
-                        console.error('Error deleting user:', error_6);
+                    case 2:
+                        error_3 = _a.sent();
+                        console.error('Error deleting user:', error_3);
                         throw new errorHandler_1.AppError(500, 'Error deleting user and related data');
-                    case 10: return [2 /*return*/];
+                    case 3: return [2 /*return*/];
                 }
             });
         });
     };
     UserManager.prototype.changeUserStatus = function (id, status) {
         return __awaiter(this, void 0, void 0, function () {
-            var result, error_7;
+            var result, error_4;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         _a.trys.push([0, 2, , 3]);
-                        return [4 /*yield*/, databaseService_1.DatabaseService.query("\n                UPDATE users \n                SET \n                    status = $1\n                WHERE id = $2\n                RETURNING *\n            ", [status, id])];
+                        return [4 /*yield*/, userService.changeUserStatus(id, status)];
                     case 1:
                         result = _a.sent();
                         return [2 /*return*/, result[0] || null];
                     case 2:
-                        error_7 = _a.sent();
-                        console.error('Error changing user status:', error_7);
+                        error_4 = _a.sent();
+                        console.error('Error changing user status:', error_4);
                         throw new errorHandler_1.AppError(500, 'Error changing user status');
                     case 3: return [2 /*return*/];
                 }
@@ -284,64 +265,44 @@ var UserManager = /** @class */ (function () {
     };
     UserManager.prototype.getDashboardStats = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var userStats, systemStats, recentActivity, error_8;
+            var stats, error_5;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        _a.trys.push([0, 4, , 6]);
-                        return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("\n                SELECT \n                    COUNT(*) as total_users,\n                    COUNT(CASE WHEN status = true THEN 1 END) as active_users,\n                    COUNT(CASE WHEN status = false THEN 1 END) as inactive_users,\n                    COUNT(CASE WHEN role = 'admin' THEN 1 END) as admin_users,\n                    COUNT(CASE WHEN role = 'academic_staff' THEN 1 END) as academic_staff,\n                    COUNT(CASE WHEN role = 'financial_staff' THEN 1 END) as financial_staff,\n                    COUNT(CASE WHEN role = 'student' THEN 1 END) as students\n                FROM users\n            ")];
+                        _a.trys.push([0, 2, , 3]);
+                        return [4 /*yield*/, userService.getDashboardStats()];
                     case 1:
-                        userStats = _a.sent();
-                        return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("\n                SELECT \n                    COUNT(DISTINCT student_id) as total_students,\n                    COUNT(DISTINCT subject_code) as total_subjects,\n                    COUNT(*) as total_courses\n                FROM open_courses\n            ")];
-                    case 2:
-                        systemStats = _a.sent();
-                        return [4 /*yield*/, databaseService_1.DatabaseService.query("\n                SELECT \n                    'user_created' as type,\n                    'New user: ' || name || ' (' || role || ')' as description,\n                    created_at as timestamp,\n                    'System' as user\n                FROM users \n                WHERE created_at >= NOW() - INTERVAL '7 days'\n                ORDER BY created_at DESC\n                LIMIT 5\n            ")];
-                    case 3:
-                        recentActivity = _a.sent();
-                        return [2 /*return*/, {
-                                userStatistics: userStats || {
-                                    total_users: 0,
-                                    active_users: 0,
-                                    inactive_users: 0,
-                                    admin_users: 0,
-                                    academic_staff: 0,
-                                    financial_staff: 0,
-                                    students: 0
-                                },
-                                systemStatistics: systemStats || {
-                                    total_students: 0,
-                                    total_subjects: 0,
-                                    total_courses: 0
-                                },
-                                recentActivity: recentActivity || [],
-                                systemHealth: {
-                                    databaseStatus: 'healthy',
-                                    serverUptime: process.uptime(),
-                                    memoryUsage: process.memoryUsage(),
-                                    lastBackup: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
-                                }
+                        stats = _a.sent();
+                        return [2 /*return*/, stats || {
+                                totalStudents: 0,
+                                pendingPayments: 0,
+                                newRegistrations: 0,
+                                systemAlerts: 0
                             }];
-                    case 4:
-                        error_8 = _a.sent();
-                        console.error('Error fetching dashboard stats:', error_8);
-                        return [4 /*yield*/, DashboardService.getDashboardStats()];
-                    case 5: 
-                    // Fallback to service call
-                    return [2 /*return*/, _a.sent()];
-                    case 6: return [2 /*return*/];
+                    case 2:
+                        error_5 = _a.sent();
+                        console.error('Error fetching dashboard stats:', error_5);
+                        // Fallback to service call with same interface
+                        return [2 /*return*/, {
+                                totalStudents: 0,
+                                pendingPayments: 0,
+                                newRegistrations: 0,
+                                systemAlerts: 0
+                            }];
+                    case 3: return [2 /*return*/];
                 }
             });
         });
     };
     UserManager.prototype.getSystemConfig = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var configs, configMap_1, error_9;
+            var configs, configMap_1, error_6;
             var _a, _b;
             return __generator(this, function (_c) {
                 switch (_c.label) {
                     case 0:
                         _c.trys.push([0, 2, , 3]);
-                        return [4 /*yield*/, databaseService_1.DatabaseService.query("\n                SELECT setting_key, setting_value, setting_type \n                FROM system_settings \n                WHERE setting_key IN (\n                    'max_users', 'allowed_domains', 'password_min_length',\n                    'password_require_numbers', 'password_require_special_chars',\n                    'session_timeout', 'maintenance_mode', 'backup_frequency'\n                )\n            ")];
+                        return [4 /*yield*/, userService.getSystemConfigs()];
                     case 1:
                         configs = _c.sent();
                         configMap_1 = {};
@@ -371,8 +332,8 @@ var UserManager = /** @class */ (function () {
                                 backupFrequency: configMap_1.backup_frequency || 'daily'
                             }];
                     case 2:
-                        error_9 = _c.sent();
-                        console.error('Error fetching system config:', error_9);
+                        error_6 = _c.sent();
+                        console.error('Error fetching system config:', error_6);
                         // Fallback to default config
                         return [2 /*return*/, {
                                 maxUsers: 1000,
@@ -392,7 +353,7 @@ var UserManager = /** @class */ (function () {
     };
     UserManager.prototype.updateSystemConfig = function (configKey, configValue) {
         return __awaiter(this, void 0, void 0, function () {
-            var settingType, settingValue, error_10;
+            var settingType, settingValue, error_7;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -411,56 +372,135 @@ var UserManager = /** @class */ (function () {
                             settingType = 'json';
                             settingValue = JSON.stringify(configValue);
                         }
-                        return [4 /*yield*/, databaseService_1.DatabaseService.query("\n                INSERT INTO system_settings (setting_key, setting_value, setting_type, updated_at)\n                VALUES ($1, $2, $3, NOW())\n                ON CONFLICT (setting_key) \n                DO UPDATE SET \n                    setting_value = EXCLUDED.setting_value,\n                    setting_type = EXCLUDED.setting_type,\n                    updated_at = NOW()\n            ", [configKey, settingValue, settingType])];
+                        return [4 /*yield*/, userService.updateSystemConfig(configKey, settingValue, settingType)];
                     case 1:
                         _a.sent();
                         return [2 /*return*/, { success: true, message: 'System configuration updated successfully' }];
                     case 2:
-                        error_10 = _a.sent();
-                        console.error('Error updating system config:', error_10);
+                        error_7 = _a.sent();
+                        console.error('Error updating system config:', error_7);
                         throw new errorHandler_1.AppError(500, 'Error updating system configuration');
                     case 3: return [2 /*return*/];
                 }
             });
         });
     };
-    UserManager.prototype.getAuditLogs = function () {
-        return __awaiter(this, arguments, void 0, function (limit) {
-            var auditLogs, error_11;
-            if (limit === void 0) { limit = 50; }
+    UserManager.prototype.searchUsersByName = function (searchTerm) {
+        return __awaiter(this, void 0, void 0, function () {
+            var normalizedSearchTerm, whereConditions, queryParams, paramIndex, whereClause, results, mappedResults, error_8;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         _a.trys.push([0, 2, , 3]);
-                        return [4 /*yield*/, databaseService_1.DatabaseService.query("\n                SELECT \n                    id,\n                    user_id,\n                    action,\n                    resource,\n                    details,\n                    ip_address,\n                    created_at\n                FROM audit_logs \n                ORDER BY created_at DESC \n                LIMIT $1\n            ", [limit])];
+                        // Validate search term
+                        if (!searchTerm || searchTerm.trim().length === 0) {
+                            return [2 /*return*/, []];
+                        }
+                        normalizedSearchTerm = searchTerm.trim().toLowerCase();
+                        // Kiểm tra độ dài tối thiểu
+                        if (normalizedSearchTerm.length < 2) {
+                            return [2 /*return*/, []];
+                        }
+                        whereConditions = [];
+                        queryParams = [];
+                        paramIndex = 1;
+                        // Tìm kiếm theo tên sinh viên
+                        whereConditions.push("LOWER(sinhvien.HoTen) LIKE LOWER($".concat(paramIndex, ")"));
+                        queryParams.push("%".concat(normalizedSearchTerm, "%"));
+                        paramIndex++;
+                        // Thêm điều kiện chỉ lấy sinh viên (MaNhom = 'N3')
+                        whereConditions.push("nguoidung.MaNhom = $".concat(paramIndex));
+                        queryParams.push('N3');
+                        whereClause = whereConditions.length > 0
+                            ? "WHERE ".concat(whereConditions.join(' AND '))
+                            : '';
+                        return [4 /*yield*/, userService.getAllUsers(whereClause, queryParams, 10, // Giới hạn 10 kết quả
+                            0 // Không cần offset vì đây là tìm kiếm
+                            )];
                     case 1:
-                        auditLogs = _a.sent();
-                        return [2 /*return*/, auditLogs || []];
+                        results = _a.sent();
+                        mappedResults = results.map(function (user) { return ({
+                            id: user.id,
+                            name: user.name || user.studentId, // Fallback to studentId if name is null
+                            studentId: user.studentId,
+                            role: user.role,
+                            status: user.status,
+                            department: user.department
+                        }); });
+                        return [2 /*return*/, mappedResults];
                     case 2:
-                        error_11 = _a.sent();
-                        console.error('Error fetching audit logs:', error_11);
-                        return [2 /*return*/, []];
+                        error_8 = _a.sent();
+                        console.error('Error in searchUsersByName:', error_8);
+                        throw new errorHandler_1.AppError(500, 'Error searching users: ' + error_8.message);
                     case 3: return [2 /*return*/];
                 }
             });
         });
     };
-    UserManager.prototype.createAuditLog = function (userId, action, resource, details, ipAddress) {
+    // Thêm phương thức mới để xử lý tìm kiếm nâng cao
+    UserManager.prototype.advancedSearch = function (params) {
         return __awaiter(this, void 0, void 0, function () {
-            var error_12;
+            var whereConditions, queryParams, paramIndex, whereClause, totalCount, total, users, mappedResults, error_9;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        _a.trys.push([0, 2, , 3]);
-                        return [4 /*yield*/, databaseService_1.DatabaseService.query("\n                INSERT INTO audit_logs (user_id, action, resource, details, ip_address, created_at)\n                VALUES ($1, $2, $3, $4, $5, NOW())\n            ", [userId, action, resource, details, ipAddress])];
+                        _a.trys.push([0, 3, , 4]);
+                        whereConditions = [];
+                        queryParams = [];
+                        paramIndex = 1;
+                        // Xử lý tìm kiếm theo tên
+                        if (params.searchTerm && params.searchTerm.trim().length >= 2) {
+                            whereConditions.push("(LOWER(sinhvien.HoTen) LIKE LOWER($".concat(paramIndex, ") OR LOWER(nguoidung.TenDangNhap) LIKE LOWER($").concat(paramIndex, "))"));
+                            queryParams.push("%".concat(params.searchTerm.trim().toLowerCase(), "%"));
+                            paramIndex++;
+                        }
+                        // Xử lý lọc theo vai trò
+                        if (params.role && params.role !== 'all') {
+                            whereConditions.push("nguoidung.MaNhom = $".concat(paramIndex));
+                            queryParams.push(params.role);
+                            paramIndex++;
+                        }
+                        // Xử lý lọc theo trạng thái
+                        if (params.status !== undefined) {
+                            whereConditions.push("nguoidung.TrangThai = $".concat(paramIndex));
+                            queryParams.push(params.status ? 'active' : 'inactive');
+                            paramIndex++;
+                        }
+                        // Xử lý lọc theo khoa
+                        if (params.department) {
+                            whereConditions.push("khoa.TenKhoa = $".concat(paramIndex));
+                            queryParams.push(params.department);
+                            paramIndex++;
+                        }
+                        whereClause = whereConditions.length > 0
+                            ? "WHERE ".concat(whereConditions.join(' AND '))
+                            : '';
+                        return [4 /*yield*/, userService.getUserCount(whereClause, queryParams)];
                     case 1:
-                        _a.sent();
-                        return [3 /*break*/, 3];
+                        totalCount = _a.sent();
+                        total = parseInt((totalCount === null || totalCount === void 0 ? void 0 : totalCount.total) || '0');
+                        return [4 /*yield*/, userService.getAllUsers(whereClause, queryParams, 10, // Giới hạn 10 kết quả cho tìm kiếm
+                            0 // Không cần offset
+                            )];
                     case 2:
-                        error_12 = _a.sent();
-                        console.error('Error creating audit log:', error_12);
-                        return [3 /*break*/, 3];
-                    case 3: return [2 /*return*/];
+                        users = _a.sent();
+                        mappedResults = users.map(function (user) { return ({
+                            id: user.id,
+                            name: user.name || user.studentId,
+                            studentId: user.studentId,
+                            role: user.role,
+                            status: user.status,
+                            department: user.department
+                        }); });
+                        return [2 /*return*/, {
+                                users: mappedResults,
+                                total: total
+                            }];
+                    case 3:
+                        error_9 = _a.sent();
+                        console.error('Error in advancedSearch:', error_9);
+                        throw new errorHandler_1.AppError(500, 'Error performing advanced search: ' + error_9.message);
+                    case 4: return [2 /*return*/];
                 }
             });
         });

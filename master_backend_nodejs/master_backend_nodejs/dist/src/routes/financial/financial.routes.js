@@ -7,9 +7,12 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var express_1 = require("express");
 var auth_1 = require("../../middleware/auth");
 var financialIndex_1 = __importDefault(require("./financialIndex"));
+var dashboardRoutes_1 = __importDefault(require("./dashboardRoutes"));
 var router = (0, express_1.Router)();
 // Apply authentication middleware to all financial routes
 router.use(auth_1.authenticateToken);
 // Mount the new refactored financial routes
 router.use('/', financialIndex_1.default);
+// Mount dashboard routes
+router.use('/dashboard', dashboardRoutes_1.default);
 exports.default = router;

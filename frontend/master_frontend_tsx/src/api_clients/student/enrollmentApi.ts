@@ -55,6 +55,8 @@ export interface AvailableSubject extends Subject {
     fee?: number;
     schedule?: string;
     currentEnrollment?: number;
+    maxStudents?: number;
+    currentStudents?: number;
     isRecommended?: boolean;
 }
 
@@ -62,6 +64,8 @@ export interface EnrolledSubjectData extends Subject {
     registrationId?: string;
     fee?: number;
     courseType?: string;
+    maxStudents?: number;
+    currentStudents?: number;
 }
 
 interface ApiResponse<T> {
@@ -215,63 +219,57 @@ export const enrollmentApi = {
     getEnrolledSubjects: async (semester?: string): Promise<EnrolledSubjectData[]> => {
         try {
             const user = JSON.parse(localStorage.getItem('user') || '{}');
-            console.log('📋 Getting enrolled subjects for student:', user.studentId);
-            console.log('📅 Semester:', semester || 'current (from backend)');
-            
             if (!user.studentId) {
                 throw new Error('Không tìm thấy thông tin sinh viên. Vui lòng đăng nhập lại.');
             }
-
             const params: any = { studentId: user.studentId };
             if (semester) {
                 params.semester = semester;
             }
-            
             const response = await axiosInstance.get<ApiResponse<any[]>>('/student/enrolled-courses', { params });
-            console.log('✅ Enrolled subjects response:', response.data);
-            
             if (!response.data || !response.data.success) {
                 throw new Error(response.data?.message || 'Failed to fetch enrolled subjects');
             }
-            
-            // Mapping từ backend course sang frontend subject
             const enrolledCourses = response.data.data || [];
-            console.log('📋 Raw enrolled courses from backend:', enrolledCourses);
-              const mappedSubjects = enrolledCourses.map((course: any): EnrolledSubjectData => ({
+            return enrolledCourses.map((course: any): EnrolledSubjectData => ({
                 id: course.courseId,
                 name: course.courseName,
                 lecturer: course.lecturer || 'Chưa xác định',
                 day: course.day || 'Chưa xác định',
                 fromTo: course.fromTo || 'Chưa xác định',
                 credits: course.credits,
-                maxStudents: 0, // Không có thông tin này từ enrolled courses
-                currentStudents: 0, // Không có thông tin này từ enrolled courses
+                maxStudents: 0,
+                currentStudents: 0,
                 courseType: course.courseType,
                 fee: course.fee || 0,
                 registrationId: course.registrationId
             }));
-            
-            console.log('📋 Mapped enrolled subjects:', mappedSubjects);
-            return mappedSubjects;
         } catch (error: any) {
             console.error('❌ Error fetching enrolled subjects:', error);
             throw new Error(error.response?.data?.message || error.message || 'Không thể tải danh sách môn học đã đăng ký');
         }
     },// Hủy đăng ký môn học cho sinh viên cụ thể
-    unenrollSubject: async (courseId: string): Promise<{ success: boolean; message: string }> => {
+    unenrollSubject: async (courseId: string, semesterId?: string): Promise<{ success: boolean; message: string }> => {
         try {
             const user = JSON.parse(localStorage.getItem('user') || '{}');
             console.log('❌ Unenrolling subject for student:', user.studentId);
             console.log('📚 Course ID:', courseId);
+            console.log('📅 Semester ID:', semesterId);
             
             if (!user.studentId) {
                 throw new Error('Không tìm thấy thông tin sinh viên. Vui lòng đăng nhập lại.');
             }
             
-            const response = await axiosInstance.post<ApiResponse<any>>('/student/enrolled-courses/cancel', {
+            const requestBody: any = {
                 courseId,
-                studentId: user.studentId  // Đảm bảo gửi studentId
-            });
+                studentId: user.studentId
+            };
+            
+            if (semesterId) {
+                requestBody.semesterId = semesterId;
+            }
+
+            const response = await axiosInstance.post<ApiResponse<any>>('/student/enrolled-courses/cancel', requestBody);
             console.log('✅ Unenroll subject response:', response.data);
             
             if (!response.data || !response.data.success) {
@@ -405,82 +403,60 @@ export const enrollmentApi = {
     // API để lấy môn học phân loại theo chương trình
     getClassifiedSubjects: async (semesterId?: string) => {
         try {
-            console.log('🎯 [enrollmentApi] Getting classified subjects for semester:', semesterId || 'current (from backend)');
-            
-            // Lấy studentId từ localStorage
             const user = JSON.parse(localStorage.getItem('user') || '{}');
-            console.log('👤 User from localStorage:', user);
-            
             if (!user.studentId) {
                 throw new Error('Không tìm thấy thông tin sinh viên. Vui lòng đăng nhập lại.');
-            }            const params: any = { studentId: user.studentId };
+            }
+            const params: any = { studentId: user.studentId };
             if (semesterId) {
                 params.semester = semesterId;
             }
-            
-            // Sử dụng API phân loại môn học mới
             const response = await axiosInstance.get('/student/subjects/classified', { params });
-            
-            console.log('🔍 [enrollmentApi] Full response from /student/subjects/classified:', response);
-            console.log('🔍 [enrollmentApi] Response data:', response.data);
             
             if ((response.data as any).success) {
                 const classifiedData = (response.data as any).data;
-                console.log('✅ [enrollmentApi] Classified subjects loaded:', classifiedData);
-                console.log('🔍 [enrollmentApi] inProgram subjects:', classifiedData.inProgram);
-                console.log('🔍 [enrollmentApi] notInProgram subjects:', classifiedData.notInProgram);
-                  // Map môn học thuộc ngành
-                const inProgramSubjects = classifiedData.inProgram?.map((course: any): AvailableSubject => ({
-                    id: course.courseId,
-                    name: course.courseName,
-                    lecturer: 'Chưa có thông tin', // Chưa có từ backend
-                    day: `Thứ ${course.dayOfWeek}`,
-                    fromTo: `tiết ${course.startPeriod}-${course.endPeriod}`,
-                    credits: course.credits,
-                    maxStudents: course.maxStudents,
-                    currentStudents: course.currentEnrollment || 0,
-                    fee: course.fee || 0,
-                    schedule: `Thứ ${course.dayOfWeek}: tiết ${course.startPeriod}-${course.endPeriod}`,
-                    currentEnrollment: course.currentEnrollment,
-                    courseType: course.courseType || 'Chuyên ngành',
-                    isRecommended: true
-                })) || [];
                 
-                // Map môn học không thuộc ngành
-                const notInProgramSubjects = classifiedData.notInProgram?.map((course: any): AvailableSubject => ({
-                    id: course.courseId,
-                    name: course.courseName,
-                    lecturer: 'Chưa có thông tin', // Chưa có từ backend
-                    day: `Thứ ${course.dayOfWeek}`,
-                    fromTo: `tiết ${course.startPeriod}-${course.endPeriod}`,
-                    credits: course.credits,
-                    maxStudents: course.maxStudents,
-                    currentStudents: course.currentEnrollment || 0,
-                    fee: course.fee || 0,
-                    schedule: `Thứ ${course.dayOfWeek}: tiết ${course.startPeriod}-${course.endPeriod}`,
-                    currentEnrollment: course.currentEnrollment,
-                    courseType: course.courseType || 'Tự chọn',
-                    isRecommended: false
-                })) || [];
-                
-                // Để duy trì tương thích với mã nguồn hiện tại, vẫn trả về required/elective
+                // SỬA LẠI KEY CHO ĐÚNG VỚI BACKEND CONTROLLER
                 return {
-                    required: inProgramSubjects,
-                    elective: notInProgramSubjects,
-                    summary: {
-                        total: classifiedData.summary.totalSubjects,
-                        required: classifiedData.summary.totalInProgram,
-                        elective: classifiedData.summary.totalNotInProgram
-                    }
+                    required: classifiedData.required || [],
+                    elective: classifiedData.elective || [],
+                    summary: classifiedData.summary
                 };
             }
-            
             throw new Error('Không thể lấy danh sách môn học phân loại');
         } catch (error) {
             console.error('❌ Error in getClassifiedSubjects:', error);
             throw error;
         }
-    }
+    },
+
+    // *** HÀM MỚI ĐỂ KIỂM TRA PHIẾU ĐĂNG KÝ ***
+    checkRegistrationStatus: async (semesterId: string): Promise<{ hasRegistration: boolean; maxCredits: number; registeredCredits: number; }> => {
+        
+        interface RegistrationStatusResponse {
+            success: boolean;
+            data: {
+                hasRegistration: boolean;
+                maxCredits: number;
+                registeredCredits: number;
+            }
+        }
+
+        try {
+            const response = await axiosInstance.get<RegistrationStatusResponse>('/student/registration-status', {
+                params: { semesterId }
+            });
+            
+            if (response.data && response.data.success) {
+                return response.data.data;
+            }
+            
+            return { hasRegistration: false, maxCredits: 0, registeredCredits: 0 };
+        } catch (error) {
+            console.error('API Error: checkRegistrationStatus failed.', error);
+            return { hasRegistration: false, maxCredits: 0, registeredCredits: 0 };
+        }
+    },
 };
 
 // Helper function để parse mã học kỳ thành năm học và học kỳ
@@ -514,7 +490,20 @@ export const registerSubject = enrollmentApi.registerSubject;
 export const getEnrolledSubjects = enrollmentApi.getEnrolledSubjects;
 export const unenrollSubject = enrollmentApi.unenrollSubject;
 export const getCurrentSemester = enrollmentApi.getCurrentSemester;
+export const checkRegistrationStatus = enrollmentApi.checkRegistrationStatus;
 export { parseSemesterInfo };
+
+// Export additional functions that were in index.ts
+export const enrolledSubjectApi = {
+    getEnrolledSubjects: enrollmentApi.getEnrolledSubjects,
+    unenrollSubject: enrollmentApi.unenrollSubject
+};
+
+export const getEnrolledSubjectsFromApi = enrollmentApi.getEnrolledSubjects;
+export const unenrollSubjectFromApi = enrollmentApi.unenrollSubject;
+
+// Export dashboardApi
+export { dashboardApi } from './dashboardApi';
 
 // Default export
 export default enrollmentApi;

@@ -248,4 +248,180 @@ export const studentController = {
             });
         }
     },
+
+    // Tạo hàng loạt PHIEUDANGKY
+    createBulkRegistrations: async (req: Request, res: Response) => {
+        try {
+            const { studentIds, semesterId, maxCredits } = req.body;
+
+            if (!studentIds || !Array.isArray(studentIds) || studentIds.length === 0) {
+                return res.status(400).json({
+                    success: false,
+                    data: null,
+                    error: 'Student IDs array is required'
+                });
+            }
+
+            if (!semesterId) {
+                return res.status(400).json({
+                    success: false,
+                    data: null,
+                    error: 'Semester ID is required'
+                });
+            }
+
+            const result = await studentBusiness.createBulkRegistrations(studentIds, semesterId, maxCredits || 24);
+            
+            res.json({
+                success: result.success,
+                data: result,
+                message: result.message
+            });
+        } catch (error) {
+            console.error('Error creating bulk registrations:', error);
+            res.status(500).json({ 
+                success: false,
+                data: null,
+                error: 'Failed to create bulk registrations' 
+            });
+        }
+    },
+
+    // Kiểm tra trạng thái đăng ký của sinh viên
+    checkRegistrationStatus: async (req: Request, res: Response) => {
+        try {
+            const { studentId, semesterId } = req.query;
+
+            if (!studentId || !semesterId) {
+                return res.status(400).json({
+                    success: false,
+                    data: null,
+                    error: 'Student ID and Semester ID are required'
+                });
+            }
+
+            const { registrationService } = await import('../../services/studentService/registrationService');
+            const hasRegistration = await registrationService.checkRegistrationExists(studentId as string, semesterId as string);
+            
+            res.json({
+                success: true,
+                data: { hasRegistration },
+                message: 'Registration status checked successfully'
+            });
+        } catch (error) {
+            console.error('Error checking registration status:', error);
+            res.status(500).json({ 
+                success: false,
+                data: null,
+                error: 'Failed to check registration status' 
+            });
+        }
+    },
+
+    // Lấy danh sách tất cả học kỳ
+    getSemesters: async (req: Request, res: Response) => {
+        try {
+            const { DatabaseService } = await import('../../services/database/databaseService');
+            
+            const semesters = await DatabaseService.query(`
+                SELECT 
+                    MaHocKy as value,
+                    CONCAT('Học kỳ ', HocKyThu, ' - Năm học ', NamHoc) as label,
+                    TrangThaiHocKy as status,
+                    ThoiGianBatDau as startDate,
+                    ThoiGianKetThuc as endDate
+                FROM HOCKYNAMHOC 
+                ORDER BY ThoiGianBatDau DESC
+            `);
+            
+            res.json({
+                success: true,
+                data: semesters,
+                message: 'Semesters fetched successfully'
+            });
+        } catch (error) {
+            console.error('Error getting semesters:', error);
+            res.status(500).json({ 
+                success: false,
+                data: null,
+                error: 'Failed to fetch semesters' 
+            });
+        }
+    },
+
+    // Lấy học kỳ hiện tại (đang mở đăng ký)
+    getCurrentSemester: async (req: Request, res: Response) => {
+        try {
+            const { DatabaseService } = await import('../../services/database/databaseService');
+            
+            // Lấy học kỳ có trạng thái "Đang diễn ra" hoặc "Mở đăng ký"
+            const currentSemester = await DatabaseService.query(`
+                SELECT MaHocKy as value
+                FROM HOCKYNAMHOC 
+                WHERE TrangThaiHocKy IN ('Đang diễn ra', 'Mở đăng ký')
+                ORDER BY ThoiGianBatDau DESC
+                LIMIT 1
+            `);
+            
+            if (currentSemester.length === 0) {
+                return res.status(404).json({
+                    success: false,
+                    data: null,
+                    error: 'Không có học kỳ nào đang mở đăng ký'
+                });
+            }
+            
+            res.json({
+                success: true,
+                data: currentSemester[0].value,
+                message: 'Current semester fetched successfully'
+            });
+        } catch (error) {
+            console.error('Error getting current semester:', error);
+            res.status(500).json({ 
+                success: false,
+                data: null,
+                error: 'Failed to fetch current semester' 
+            });
+        }
+    },
+
+    // Kiểm tra trạng thái PHIEUDANGKY của sinh viên cho học kỳ hiện tại
+    checkStudentRegistrationStatus: async (req: Request, res: Response) => {
+        try {
+            const { studentId, semesterId } = req.query;
+            
+            if (!studentId || !semesterId) {
+                return res.status(400).json({
+                    success: false,
+                    data: null,
+                    error: 'Missing studentId or semesterId parameter'
+                });
+            }
+
+            const { DatabaseService } = await import('../../services/database/databaseService');
+            
+            // Kiểm tra xem sinh viên đã có PHIEUDANGKY cho học kỳ này chưa
+            const registrationStatus = await DatabaseService.query(`
+                SELECT COUNT(*) as count
+                FROM PHIEUDANGKY 
+                WHERE masosinhvien = $1 AND mahocky = $2
+            `, [studentId, semesterId]);
+            
+            const hasRegistration = registrationStatus[0].count > 0;
+            
+            res.json({
+                success: true,
+                data: { hasRegistration },
+                message: 'Registration status checked successfully'
+            });
+        } catch (error) {
+            console.error('Error checking student registration status:', error);
+            res.status(500).json({ 
+                success: false,
+                data: null,
+                error: 'Failed to check registration status' 
+            });
+        }
+    },
 };

@@ -37,7 +37,6 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AcademicStructureService = void 0;
-// Academic Structure Service - Handles Faculty, Major, CourseType, Geographic data
 var databaseService_1 = require("../database/databaseService");
 var AcademicStructureService = /** @class */ (function () {
     function AcademicStructureService() {
@@ -91,7 +90,7 @@ var AcademicStructureService = /** @class */ (function () {
                 switch (_a.label) {
                     case 0:
                         _a.trys.push([0, 2, , 3]);
-                        return [4 /*yield*/, databaseService_1.DatabaseService.query("\n                SELECT \n                    ng.MaNganh as majorId,\n                    ng.TenNganh as majorName,\n                    ng.MaKhoa as facultyId,\n                    k.TenKhoa as facultyName\n                FROM NGANHHOC ng\n                JOIN KHOA k ON ng.MaKhoa = k.MaKhoa\n                ORDER BY k.TenKhoa, ng.TenNganh\n            ")];
+                        return [4 /*yield*/, databaseService_1.DatabaseService.query("\n                SELECT \n                    ng.MaNganh as maNganh,\n                    ng.TenNganh as tenNganh,\n                    ng.MaKhoa as maKhoa,\n                    k.TenKhoa as tenKhoa\n                FROM NGANHHOC ng\n                JOIN KHOA k ON ng.MaKhoa = k.MaKhoa\n                ORDER BY k.TenKhoa, ng.TenNganh\n            ")];
                     case 1:
                         majors = _a.sent();
                         return [2 /*return*/, majors];
@@ -111,7 +110,7 @@ var AcademicStructureService = /** @class */ (function () {
                 switch (_a.label) {
                     case 0:
                         _a.trys.push([0, 2, , 3]);
-                        return [4 /*yield*/, databaseService_1.DatabaseService.query("\n                SELECT \n                    ng.MaNganh as majorId,\n                    ng.TenNganh as majorName,\n                    ng.MaKhoa as facultyId,\n                    k.TenKhoa as facultyName\n                FROM NGANHHOC ng\n                JOIN KHOA k ON ng.MaKhoa = k.MaKhoa\n                WHERE ng.MaKhoa = $1\n                ORDER BY ng.TenNganh\n            ", [facultyId])];
+                        return [4 /*yield*/, databaseService_1.DatabaseService.query("\n                SELECT \n                    ng.MaNganh as maNganh,\n                    ng.TenNganh as tenNganh,\n                    ng.MaKhoa as maKhoa,\n                    k.TenKhoa as tenKhoa\n                FROM NGANHHOC ng\n                JOIN KHOA k ON ng.MaKhoa = k.MaKhoa\n                WHERE ng.MaKhoa = $1\n                ORDER BY ng.TenNganh\n            ", [facultyId])];
                     case 1:
                         majors = _a.sent();
                         return [2 /*return*/, majors];
@@ -153,7 +152,7 @@ var AcademicStructureService = /** @class */ (function () {
                 switch (_a.label) {
                     case 0:
                         _a.trys.push([0, 2, , 3]);
-                        return [4 /*yield*/, databaseService_1.DatabaseService.query("\n                SELECT \n                    MaTinh as provinceId,\n                    TenTinh as provinceName\n                FROM TINH\n                ORDER BY TenTinh\n            ")];
+                        return [4 /*yield*/, databaseService_1.DatabaseService.query("\n                SELECT \n                    MaTinh as maTinh,\n                    TenTinh as tenTinh\n                FROM TINH\n                ORDER BY TenTinh\n            ")];
                     case 1:
                         provinces = _a.sent();
                         return [2 /*return*/, provinces];
@@ -173,7 +172,7 @@ var AcademicStructureService = /** @class */ (function () {
                 switch (_a.label) {
                     case 0:
                         _a.trys.push([0, 2, , 3]);
-                        return [4 /*yield*/, databaseService_1.DatabaseService.query("\n                SELECT \n                    h.MaHuyen as districtId,\n                    h.TenHuyen as districtName,\n                    h.MaTinh as provinceId,\n                    t.TenTinh as provinceName\n                FROM HUYEN h\n                JOIN TINH t ON h.MaTinh = t.MaTinh\n                WHERE h.MaTinh = $1\n                ORDER BY h.TenHuyen\n            ", [provinceId])];
+                        return [4 /*yield*/, databaseService_1.DatabaseService.query("\n                SELECT \n                    h.MaHuyen as maHuyen,\n                    h.TenHuyen as tenHuyen,\n                    h.MaTinh as maTinh,\n                    t.TenTinh as tenTinh\n                FROM HUYEN h\n                JOIN TINH t ON h.MaTinh = t.MaTinh\n                WHERE h.MaTinh = $1\n                ORDER BY h.TenHuyen\n            ", [provinceId])];
                     case 1:
                         districts = _a.sent();
                         return [2 /*return*/, districts];
@@ -193,7 +192,7 @@ var AcademicStructureService = /** @class */ (function () {
                 switch (_a.label) {
                     case 0:
                         _a.trys.push([0, 2, , 3]);
-                        return [4 /*yield*/, databaseService_1.DatabaseService.query("\n                SELECT \n                    h.MaHuyen as districtId,\n                    h.TenHuyen as districtName,\n                    h.MaTinh as provinceId,\n                    t.TenTinh as provinceName\n                FROM HUYEN h\n                JOIN TINH t ON h.MaTinh = t.MaTinh\n                ORDER BY t.TenTinh, h.TenHuyen\n            ")];
+                        return [4 /*yield*/, databaseService_1.DatabaseService.query("\n                SELECT \n                    h.MaHuyen as maHuyen,\n                    h.TenHuyen as tenHuyen,\n                    h.MaTinh as maTinh,\n                    t.TenTinh as tenTinh\n                FROM HUYEN h\n                JOIN TINH t ON h.MaTinh = t.MaTinh\n                ORDER BY t.TenTinh, h.TenHuyen\n            ")];
                     case 1:
                         districts = _a.sent();
                         return [2 /*return*/, districts];
@@ -214,7 +213,7 @@ var AcademicStructureService = /** @class */ (function () {
                 switch (_a.label) {
                     case 0:
                         _a.trys.push([0, 2, , 3]);
-                        return [4 /*yield*/, databaseService_1.DatabaseService.query("\n                SELECT \n                    MaDoiTuong as priorityId,\n                    TenDoiTuong as priorityName,\n                    MucGiamHocPhi as feeDiscountAmount\n                FROM DOITUONGUUTIEN\n                ORDER BY TenDoiTuong\n            ")];
+                        return [4 /*yield*/, databaseService_1.DatabaseService.query("\n                SELECT \n                    MaDoiTuong as maDoiTuong,\n                    TenDoiTuong as tenDoiTuong,\n                    MucGiamHocPhi as mucGiamHocPhi\n                FROM DOITUONGUUTIEN\n                ORDER BY TenDoiTuong\n            ")];
                     case 1:
                         priorityGroups = _a.sent();
                         return [2 /*return*/, priorityGroups];
@@ -234,7 +233,7 @@ var AcademicStructureService = /** @class */ (function () {
                 switch (_a.label) {
                     case 0:
                         _a.trys.push([0, 2, , 3]);
-                        return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("\n                SELECT \n                    MaDoiTuong as priorityId,\n                    TenDoiTuong as priorityName,\n                    MucGiamHocPhi as feeDiscountAmount\n                FROM DOITUONGUUTIEN\n                WHERE MaDoiTuong = $1\n            ", [priorityId])];
+                        return [4 /*yield*/, databaseService_1.DatabaseService.queryOne("\n                SELECT \n                    MaDoiTuong as maDoiTuong,\n                    TenDoiTuong as tenDoiTuong,\n                    MucGiamHocPhi as mucGiamHocPhi\n                FROM DOITUONGUUTIEN\n                WHERE MaDoiTuong = $1\n            ", [priorityId])];
                     case 1:
                         priorityGroup = _a.sent();
                         return [2 /*return*/, priorityGroup];
