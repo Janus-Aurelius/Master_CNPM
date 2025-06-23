@@ -21,7 +21,7 @@ const UserInfoContainer = styled(Box)(({ theme }) => ({
 }));
 
 interface UserInfoProps {
-    user: { name?: string; role?: string } | null;
+    user: { name?: string; role?: string; username?: string; studentId?: string } | null;
 }
 
 const roleDisplayName: Record<string, string> = {
@@ -32,7 +32,13 @@ const roleDisplayName: Record<string, string> = {
 };
 
 const UserInfo = ({ user }: UserInfoProps) => {
-    const userInitial = user?.name ? user.name.charAt(0).toUpperCase() : 'S';
+    // Prioritize display name based on available data:
+    // 1. Name (if available)
+    // 2. Username (if available)
+    // 3. Student ID (if available)
+    // 4. Default to 'S'
+    const displayName = user?.name || user?.username || user?.studentId || 'User';
+    const userInitial = displayName.charAt(0).toUpperCase();
     const roleName = user?.role ? roleDisplayName[user.role] || user.role : 'Sinh viên';
 
     return (
@@ -50,8 +56,7 @@ const UserInfo = ({ user }: UserInfoProps) => {
             >
                 {userInitial}
             </Avatar>
-            <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-                <Typography 
+            <Box sx={{ display: 'flex', flexDirection: 'column' }}>                <Typography 
                     variant="subtitle1" 
                     sx={{ 
                         fontWeight: 600, 
@@ -59,7 +64,7 @@ const UserInfo = ({ user }: UserInfoProps) => {
                         lineHeight: 1.2
                     }}
                 >
-                    {user?.name || "Student"}
+                    {displayName}
                 </Typography>
                 <Typography 
                     variant="caption" 

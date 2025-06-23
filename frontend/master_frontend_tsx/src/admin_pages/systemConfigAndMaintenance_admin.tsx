@@ -10,13 +10,14 @@ import {
     Snackbar
 } from "@mui/material";
 import { systemAdminApi } from "../api_clients/systemAdminApi";
+import UserInfo from "../components/UserInfo";
 
 interface SystemConfigAndMaintenanceProps {
     user: User | null;
     onLogout: () => void;
 }
 
-export default function SystemConfigAndMaintenance({ onLogout }: SystemConfigAndMaintenanceProps) {
+export default function SystemConfigAndMaintenance({ user, onLogout }: SystemConfigAndMaintenanceProps) {
     const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -64,6 +65,7 @@ export default function SystemConfigAndMaintenance({ onLogout }: SystemConfigAnd
     };    if (loading) {
         return (
             <ThemeLayout role="admin" onLogout={onLogout}>
+                <UserInfo user={user} />
                 <Box sx={{ textAlign: 'center', mt: 4 }}>
                     <Typography>Đang tải dữ liệu...</Typography>
                 </Box>
@@ -74,6 +76,7 @@ export default function SystemConfigAndMaintenance({ onLogout }: SystemConfigAnd
     if (error) {
         return (
             <ThemeLayout role="admin" onLogout={onLogout}>
+                <UserInfo user={user} />
                 <Box sx={{ textAlign: 'center', mt: 4 }}>
                     <Typography color="error">{error}</Typography>
                 </Box>
@@ -81,6 +84,7 @@ export default function SystemConfigAndMaintenance({ onLogout }: SystemConfigAnd
         );
     }    return (
         <ThemeLayout role="admin" onLogout={onLogout}>
+            <UserInfo user={user} />
             <Box sx={{ display: 'flex', justifyContent: 'center', mt: '0.25rem' }}>
                 <Paper
                     elevation={3}
