@@ -109,9 +109,17 @@ export default function UserManagement({user, onLogout}: UserManagementProps) {
             setUsers(response.users);
             setTotalPages(response.totalPages);
             setError(null);
-        } catch (err) {
+        } catch (err: any) {
             console.error("Error fetching users:", err);
-            setError("Không thể tải dữ liệu người dùng");
+            if (err.response && err.response.data) {
+                if (err.response.data.message === 'User already exists') {
+                    setError('User already exists');
+                } else {
+                    setError(err.response.data.message || "Có lỗi xảy ra");
+                }
+            } else {
+                setError("Có lỗi xảy ra");
+            }
         } finally {
             setIsLoading(false);
         }
@@ -196,14 +204,14 @@ export default function UserManagement({user, onLogout}: UserManagementProps) {
             await fetchUsers();
             handleCloseDialog();
             showSnackbar("Thao tác thành công");
-        } catch (err) {
+        } catch (err: any) {
             console.error("Error:", err);
-            if (typeof err === "object" && err !== null && "response" in err) {
-                // @ts-ignore
-                setError(err.response?.data?.message || "Có lỗi xảy ra");
+            if (err.response && err.response.data) {
+                setSnackbarMessage(err.response.data.message || "Có lỗi xảy ra");
             } else {
-                setError("Có lỗi xảy ra");
+                setSnackbarMessage("Có lỗi xảy ra");
             }
+            setSnackbarOpen(true);
         } finally {
             setIsLoading(false);
         }
@@ -236,10 +244,6 @@ export default function UserManagement({user, onLogout}: UserManagementProps) {
     const showSnackbar = (message: string) => {
         setSnackbarMessage(message);
         setSnackbarOpen(true);
-    };
-
-    const handleCloseSnackbar = () => {
-        setSnackbarOpen(false);
     };
 
     const handleSearch = async (value: string) => {
@@ -748,11 +752,11 @@ export default function UserManagement({user, onLogout}: UserManagementProps) {
                     {/* Snackbar for notifications */}
                     <Snackbar
                         open={snackbarOpen}
-                        autoHideDuration={4000}
-                        onClose={handleCloseSnackbar}
+                        autoHideDuration={6000}
+                        onClose={() => setSnackbarOpen(false)}
                         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
                     >
-                        <Alert severity="success" onClose={handleCloseSnackbar}>
+                        <Alert onClose={() => setSnackbarOpen(false)} severity="success">
                             {snackbarMessage}
                         </Alert>
                     </Snackbar>
