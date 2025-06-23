@@ -17,6 +17,16 @@
   background-color: rgba(0, 0, 0, 0.3);
 }
 
+/* Prevent nested scrollbars */
+html, body {
+  scrollbar-width: thin; /* Firefox */
+}
+
+/* Hide duplicate scrollbars on main containers */
+.main-content, .page-wrapper, .layout-container {
+  overflow: hidden !important;
+}
+
 /* For when you want to completely hide scrollbars */
 .hide-scrollbar {
   -ms-overflow-style: none;  /* IE and Edge */
@@ -47,4 +57,12 @@
 .show-scrollbar-on-hover:hover::-webkit-scrollbar-thumb {
   background-color: rgba(0, 0, 0, 0.2);
   border-radius: 6px;
+}
+
+/* For content areas that should scroll */
+.single-scrollbar {
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  height: 100%;
+  scrollbar-width: thin; /* Firefox */
 }

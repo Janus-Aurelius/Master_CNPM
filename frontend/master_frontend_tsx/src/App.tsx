@@ -3,6 +3,7 @@ import { Route, Routes, Navigate } from 'react-router-dom';
 import { User } from "./types";
 import LoginForm from "./login_page/login_form";
 import { useNavigate } from 'react-router-dom';
+import "./hide-scrollbar.css";
 
 //Student
 import StudentPage from "./student_pages/dashboard_student";
@@ -97,14 +98,13 @@ export default function App() {
     }
 
     console.log('App render, user:', user);
-    console.log('Academic ProtectedRoute');
-
-    return (
+    console.log('Academic ProtectedRoute');    return (
 // reroute the flow to login first then to the respective role
-            <Routes>
-                <Route path="/login" element={<LoginForm onLogin={handleLogin} />} />
-
-                <Route path="/student/*" element={
+            <div className="page-container">
+                <Routes>
+                    <Route path="/login" element={<LoginForm onLogin={handleLogin} />} />
+    
+                    <Route path="/student/*" element={
                     <ProtectedRoute allowedRoles={['student']}>
                         <Routes>
                             <Route index element={<StudentPage user={user} onLogout={handleLogout} />} />
@@ -156,11 +156,9 @@ export default function App() {
                 } />
 
 
-                <Route path="/unauthorized" element={<div>You are not authorized to view this page</div>} />
-
-                {/* Default redirect to login if no match */}
+                <Route path="/unauthorized" element={<div>You are not authorized to view this page</div>} />                {/* Default redirect to login if no match */}
                 <Route path="*" element={<Navigate to={user ? `/${user.role}` : "/login"} replace />} />
             </Routes>
-
+            </div>
     );
 }

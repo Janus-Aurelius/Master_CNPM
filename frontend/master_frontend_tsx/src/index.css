@@ -6,7 +6,12 @@ html, body, #root {
   margin: 0;
   padding: 0;
   height: 100%;
-  /* overflow: auto; */
+  overflow: hidden;
+}
+
+body {
+  overflow-y: auto; /* Single scrollbar on body element */
+  overflow-x: hidden;
 }
 
 /* Modal styles for tuition collecting */
@@ -28,4 +33,22 @@ html, body, #root {
   max-width: 90vw;
   max-height: 90vh;
   overflow-y: auto;
+}
+
+/* Prevent nested scrollbars - only allow scrollbars on specific containers */
+.page-container {
+  height: 100vh;
+  overflow: hidden;
+}
+
+.content-container {
+  height: calc(100vh - 64px); /* Adjust based on your header height */
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* For pages that need their own scroll area */
+.scroll-area {
+  overflow-y: auto;
+  overflow-x: hidden;
 }
