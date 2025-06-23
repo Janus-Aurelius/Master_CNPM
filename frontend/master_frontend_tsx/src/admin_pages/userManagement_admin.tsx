@@ -612,25 +612,7 @@ export default function UserManagement({user, onLogout}: UserManagementProps) {
                                             '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d8d8d8' },
                                         }}
                                     />
-                                </Grid>                                <Grid item xs={12} md={6}>
-                                {currentUser?.role === 'N3' && (
-                                    <Grid item xs={12}>
-                                        <TextField
-                                            label="Mã số sinh viên"
-                                            fullWidth
-                                            value={currentUser?.studentid || ''}
-                                            disabled={dialogType === "edit"}
-                                            onChange={(e) => setCurrentUser({...currentUser, studentid: e.target.value})}
-                                            sx={{
-                                                borderRadius: '12px',
-                                                background: '#f7faff',
-                                                '& .MuiOutlinedInput-root': { borderRadius: '12px' },
-                                                '& .MuiInputLabel-root': { fontWeight: 500 },
-                                                '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d8d8d8' },
-                                            }}
-                                        />
-                                    </Grid>
-                                )}
+                                </Grid>
                                 <Grid item xs={12} md={6}>
                                     <FormControl fullWidth sx={{ background: '#f7faff', borderRadius: '12px' }}>
                                         <InputLabel sx={{ fontWeight: 500 }}>Vai trò</InputLabel>
