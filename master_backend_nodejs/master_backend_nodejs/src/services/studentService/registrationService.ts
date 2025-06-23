@@ -61,15 +61,7 @@ export const registrationService = {
             // Kiểm tra xem đã có PHIEUDANGKY chưa
             const exists = await this.checkRegistrationExists(studentId, semesterId);
             if (exists) {
-                // Thay vì ném lỗi, trả về ID phiếu hiện tại
-                const existingRegistration = await DatabaseService.queryOne(`
-                    SELECT MaPhieuDangKy 
-                    FROM PHIEUDANGKY 
-                    WHERE MaSoSinhVien = $1 AND MaHocKy = $2
-                `, [studentId, semesterId]);
-                
-                console.log(`✅ [RegistrationService] Student already has registration: ${existingRegistration.MaPhieuDangKy}`);
-                return existingRegistration.MaPhieuDangKy;
+                throw new Error('Sinh viên đã có phiếu đăng ký cho học kỳ này');
             }
 
             const newRegistrationId = `PDK_${studentId}_${semesterId}`;
@@ -316,6 +308,11 @@ export const registrationService = {
                 INSERT INTO CT_PHIEUDANGKY (MaPhieuDangKy, MaHocKy, MaMonHoc)
                 VALUES ($1, $2, $3)
             `, [registrationId, semesterId, courseId]);
+            // Cập nhật số SV đã đăng ký trong DANHSACHMONHOCMO
+            await DatabaseService.query(
+                `UPDATE DANHSACHMONHOCMO SET SoSVDaDangKy = SoSVDaDangKy + 1 WHERE MaHocKy = $1 AND MaMonHoc = $2`,
+                [semesterId, courseId]
+            );
             
             console.log(`✅ [RegistrationService] Successfully added course to registration details`);
             
@@ -392,6 +389,11 @@ export const registrationService = {
                 DELETE FROM CT_PHIEUDANGKY
                 WHERE MaPhieuDangKy = $1 AND MaMonHoc = $2
             `, [registrationId, courseId]);
+            // Cập nhật số SV đã đăng ký trong DANHSACHMONHOCMO
+            await DatabaseService.query(
+                `UPDATE DANHSACHMONHOCMO SET SoSVDaDangKy = GREATEST(SoSVDaDangKy - 1, 0) WHERE MaHocKy = $1 AND MaMonHoc = $2`,
+                [semesterId, courseId]
+            );
 
             console.log(`✅ [RegistrationService] Successfully deleted course ${courseId} from registration ${registrationId}`);
 
@@ -492,13 +494,16 @@ export const registrationService = {
     },    // Lấy danh sách môn học có thể đăng ký (DANHSACHMONHOCMO)
     async getAvailableCourses(semesterId: string): Promise<IOfferedCourse[]> {
         try {
-            const availableCourses = await DatabaseService.query(`                SELECT 
+            const availableCourses = await DatabaseService.query(`
+                SELECT 
                     dsm.MaHocKy as "semesterId",
                     dsm.MaMonHoc as "courseId",
                     mh.TenMonHoc as "courseName",
                     mh.SoTiet as "credits",
                     lm.TenLoaiMon as "courseType",
-                    lm.SoTienMotTC as "feePerCredit"
+                    lm.SoTienMotTC as "feePerCredit",
+                    dsm.SoSVDaDangKy as "currentEnrollment",
+                    dsm.SiSoToiDa as "maxEnrollment"
                 FROM DANHSACHMONHOCMO dsm
                 JOIN MONHOC mh ON dsm.MaMonHoc = mh.MaMonHoc
                 JOIN LOAIMON lm ON mh.MaLoaiMon = lm.MaLoaiMon

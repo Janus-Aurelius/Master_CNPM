@@ -19,6 +19,8 @@ export interface Subject {
     fromTo: string;
     courseType?: string;
     lecturer: string;
+    currentEnrollment?: number | string;
+    maxEnrollment?: number | string;
 }
 
 export interface StudentPageProps {

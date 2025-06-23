@@ -7,10 +7,11 @@ import { DatabaseError } from '../../utils/errors/database.error';
 export const studentController = {
     getStudents: async (req: Request, res: Response) => {
         try {
-            const students = await studentBusiness.getStudents();
+            const semesterId = req.query.semesterId as string | undefined;
+            const { students, registrationMap } = await studentBusiness.getStudents(semesterId);
             res.json({
                 success: true,
-                data: students,
+                data: { students, registrationMap },
                 message: 'Students fetched successfully'
             });
         } catch (error) {
@@ -31,6 +32,15 @@ export const studentController = {
                 message: 'Student created successfully'
             });
         } catch (error) {
+            console.error('Error creating student:', error);
+            // Handle specific email/MSSV duplication error
+            if (error instanceof Error && (error.message.includes('trùng email') || error.message.includes('trùng MSSV'))) {
+                return res.status(400).json({ 
+                    success: false,
+                    data: null,
+                    error: error.message 
+                });
+            }
             res.status(500).json({ 
                 success: false,
                 data: null,
@@ -48,6 +58,17 @@ export const studentController = {
                 message: 'Student updated successfully'
             });
         } catch (error) {
+            console.error('Error updating student:', error);
+            
+            // Handle specific email duplication error
+            if (error instanceof Error && error.message.includes('trùng email')) {
+                return res.status(400).json({ 
+                    success: false,
+                    data: null,
+                    error: error.message 
+                });
+            }
+            
             res.status(500).json({ 
                 success: false,
                 data: null,
@@ -401,14 +422,14 @@ export const studentController = {
 
             const { DatabaseService } = await import('../../services/database/databaseService');
             
-            // Kiểm tra xem sinh viên đã có PHIEUDANGKY cho học kỳ này chưa
+            // Sử dụng đúng tên cột thường như trong database
             const registrationStatus = await DatabaseService.query(`
                 SELECT COUNT(*) as count
-                FROM PHIEUDANGKY 
+                FROM phieudangky
                 WHERE masosinhvien = $1 AND mahocky = $2
             `, [studentId, semesterId]);
             
-            const hasRegistration = registrationStatus[0].count > 0;
+            const hasRegistration = Number(registrationStatus[0].count) > 0;
             
             res.json({
                 success: true,

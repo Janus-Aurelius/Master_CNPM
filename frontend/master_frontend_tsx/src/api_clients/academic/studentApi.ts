@@ -21,7 +21,6 @@ export interface Student {
     email?: string;
     phone?: string;
     address?: string;           // Add address field
-    status?: 'active' | 'inactive' | 'đang học' | 'thôi học';
     
     // Computed fields from JOINs (for display)
     districtName?: string;     // from HUYEN.TenHuyen
@@ -29,6 +28,7 @@ export interface Student {
     priorityName?: string;     // from DOITUONGUUTIEN.TenDoiTuong
     majorName?: string;        // from NGANHHOC.TenNganh
     facultyName?: string;      // from KHOA.TenKhoa
+    hasRegistration?: boolean; // trạng thái phiếu đăng ký
 }
 
 // Interfaces for dropdown data
@@ -76,31 +76,50 @@ interface ApiResponse<T> {
     success: boolean;
     data: T;
     message?: string;
+    error?: string;
 }
 
 export const studentApi = {
-    getStudents: async (): Promise<Student[]> => {
-        const { data } = await axiosInstance.get<ApiResponse<Student[]>>('/academic/students');
+    getStudents: async (semesterId?: string): Promise<{ students: Student[], registrationMap: Record<string, boolean> }> => {
+        const { data } = await axiosInstance.get<ApiResponse<{ students: Student[], registrationMap: Record<string, boolean> }>>('/academic/students', {
+            params: semesterId ? { semesterId } : {}
+        });
         if (!data || !data.success) {
             throw new Error(data?.message || 'No data received from server');
         }
-        return data.data || [];
+        return data.data;
     },
 
     createStudent: async (student: Omit<Student, 'id'>): Promise<Student> => {
-        const { data } = await axiosInstance.post<ApiResponse<Student>>('/academic/students', student);
-        if (!data || !data.success) {
-            throw new Error(data?.message || 'Failed to create student');
+        try {
+            const { data } = await axiosInstance.post<ApiResponse<Student>>('/academic/students', student);
+            if (!data || !data.success) {
+                throw new Error(data?.error || data?.message || 'Failed to create student');
+            }
+            return data.data;
+        } catch (error: any) {
+            // Handle email duplication error specifically
+            if (error.response?.data?.error && error.response.data.error.includes('trùng email')) {
+                throw new Error(error.response.data.error);
+            }
+            throw new Error(error.response?.data?.error || error.response?.data?.message || 'Failed to create student');
         }
-        return data.data;
     },
 
     updateStudent: async (id: string, student: Student): Promise<Student> => {
-        const { data } = await axiosInstance.put<ApiResponse<Student>>(`/academic/students/${id}`, student);
-        if (!data || !data.success) {
-            throw new Error(data?.message || 'Failed to update student');
+        try {
+            const { data } = await axiosInstance.put<ApiResponse<Student>>(`/academic/students/${id}`, student);
+            if (!data || !data.success) {
+                throw new Error(data?.error || data?.message || 'Failed to update student');
+            }
+            return data.data;
+        } catch (error: any) {
+            // Handle email duplication error specifically
+            if (error.response?.data?.error && error.response.data.error.includes('trùng email')) {
+                throw new Error(error.response.data.error);
+            }
+            throw new Error(error.response?.data?.error || error.response?.data?.message || 'Failed to update student');
         }
-        return data.data;
     },
 
     deleteStudent: async (id: string): Promise<void> => {
@@ -215,10 +234,27 @@ export const studentApi = {
     // Kiểm tra trạng thái PHIEUDANGKY của sinh viên cho học kỳ hiện tại
     checkStudentRegistrationStatus: async (studentId: string, semesterId: string): Promise<boolean> => {
         try {
+            console.log('🔍 [studentApi] Checking registration status for:', { studentId, semesterId });
+            
             const { data } = await axiosInstance.get<ApiResponse<{hasRegistration: boolean}>>(`/academic/students/registration-status?studentId=${studentId}&semesterId=${semesterId}`);
-            return data.data.hasRegistration;
-        } catch (error) {
-            console.error('Error checking student registration status:', error);
+            
+            console.log('✅ [studentApi] Response from backend:', data);
+            
+            if (data && data.success && data.data) {
+                console.log('✅ [studentApi] hasRegistration value:', data.data.hasRegistration);
+                return data.data.hasRegistration;
+            } else {
+                console.log('❌ [studentApi] Invalid response structure:', data);
+                return false;
+            }
+        } catch (error: any) {
+            console.error('❌ [studentApi] Error checking student registration status:', {
+                error,
+                studentId,
+                semesterId,
+                response: error?.response?.data,
+                status: error?.response?.status
+            });
             return false;
         }
     },

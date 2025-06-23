@@ -2,8 +2,8 @@ import { IStudent } from '../../models/student_related/studentInterface';
 import { studentService } from '../../services/academicService/student.service';
 
 export const studentBusiness = {
-    getStudents: async (): Promise<IStudent[]> => {
-        return await studentService.getAllStudents();
+    getStudents: async (semesterId?: string): Promise<{ students: IStudent[], registrationMap: Record<string, boolean> }> => {
+        return await studentService.getAllStudents(semesterId);
     },
 
     createStudent: async (student: Omit<IStudent, 'id'>): Promise<IStudent> => {

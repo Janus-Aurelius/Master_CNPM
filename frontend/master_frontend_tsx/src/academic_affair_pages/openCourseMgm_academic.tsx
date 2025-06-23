@@ -21,7 +21,7 @@ interface OpenCourseMgmAcademicProps {
     onLogout: () => void;
 }
 
-const dayOfWeekNames = ['Chủ Nhật', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
+const dayOfWeekNames = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
 
 export default function OpenCourseMgmAcademic({ user, onLogout }: OpenCourseMgmAcademicProps) {
     const [courses, setCourses] = useState<OpenCourse[]>([]);
@@ -282,7 +282,7 @@ export default function OpenCourseMgmAcademic({ user, onLogout }: OpenCourseMgmA
             { bgcolor: '#e8f5e9', color: '#2e7d32' } : 
             { bgcolor: '#ffebee', color: '#c62828' };
     };const formatTimeSlot = (dayOfWeek: number, startPeriod: number, endPeriod: number) => {
-        const dayName = dayOfWeekNames[dayOfWeek] || `Thứ ${dayOfWeek}`;
+        const dayName = dayOfWeekNames[dayOfWeek - 2] || `Thứ ${dayOfWeek}`;
         return `${dayName}, tiết ${startPeriod}-${endPeriod}`;
     };
 
@@ -723,14 +723,15 @@ export default function OpenCourseMgmAcademic({ user, onLogout }: OpenCourseMgmA
                                     {/* Day of Week */}
                                     <Grid item xs={12} md={4}>
                                         <FormControl fullWidth required>
-                                            <InputLabel>Thứ</InputLabel>                                            <Select
+                                            <InputLabel>Thứ</InputLabel>
+                                            <Select
                                                 value={formData.dayOfWeek}
                                                 label="Thứ"
                                                 onChange={(e) => setFormData({...formData, dayOfWeek: parseInt(e.target.value as string)})}
                                                 disabled={isEditing && Boolean(currentCourse?.currentStudents && currentCourse.currentStudents > 0)}
                                             >
-                                                {dayOfWeekNames.slice(1).map((day, index) => (
-                                                    <MenuItem key={index + 1} value={index + 1}>
+                                                {dayOfWeekNames.map((day, index) => (
+                                                    <MenuItem key={index + 2} value={index + 2}>
                                                         {day}
                                                     </MenuItem>
                                                 ))}

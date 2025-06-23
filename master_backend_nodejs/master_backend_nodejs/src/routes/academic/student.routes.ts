@@ -3,25 +3,25 @@ import { studentController } from '../../controllers/academicController/student.
 
 const router = Router();
 
-router.get('/', studentController.getStudents);
-router.post('/', studentController.createStudent);
-router.put('/:id', studentController.updateStudent);
-router.delete('/:id', studentController.deleteStudent);
-router.get('/search', studentController.searchStudents);
+// Basic CRUD operations
+router.get('/', studentController.getStudents as any);
+router.post('/', studentController.createStudent as any);
+router.put('/:id', studentController.updateStudent as any);
+router.delete('/:id', studentController.deleteStudent as any);
+router.get('/search', studentController.searchStudents as any);
 
-// GET /api/academic/students/form-data
-router.get('/form-data', studentController.getStudentFormData);
+// Form data and dropdown endpoints
+router.get('/form-data', studentController.getStudentFormData as any);
+router.get('/majors', studentController.getMajors as any);
+router.get('/majors/:facultyId', studentController.getMajorsByFaculty as any);
+router.get('/provinces', studentController.getProvinces as any);
+router.get('/districts/province/:provinceId', studentController.getDistrictsByProvince as any);
+router.get('/priority-groups', studentController.getPriorityGroups as any);
 
-// POST /api/academic/students/bulk-registration
+// Registration related endpoints
 router.post('/bulk-registration', studentController.createBulkRegistrations as any);
-
-// GET /api/academic/students/registration-status
-router.get('/registration-status', studentController.checkStudentRegistrationStatus as any);
-
-// GET /api/academic/students/semesters
+router.get('/registration-status', studentController.checkRegistrationStatus as any);
 router.get('/semesters', studentController.getSemesters as any);
-
-// GET /api/academic/students/current-semester
 router.get('/current-semester', studentController.getCurrentSemester as any);
 
 export default router; 

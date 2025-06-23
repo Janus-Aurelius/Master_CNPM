@@ -142,6 +142,7 @@ CREATE TABLE PHIEUDANGKY (
     NgayLap DATE,
     MaSoSinhVien VARCHAR NOT NULL,
     MaHocKy VARCHAR NOT NULL,
+    XacNhan boolean DEFAULT false,
     SoTienConLai DECIMAL DEFAULT 0,
     SoTinChiToiDa INT DEFAULT 30,
     FOREIGN KEY (MaSoSinhVien) REFERENCES SINHVIEN(MaSoSinhVien),

@@ -23,9 +23,43 @@ const convertNameToCode = async (name: string, table: string, nameColumn: string
     }
 };
 
-export const studentService = {    getAllStudents: async (): Promise<IStudent[]> => {
+// Helper function to check email duplication
+const checkEmailDuplicate = async (email: string, excludeStudentId?: string): Promise<boolean> => {
+    if (!email || email.trim() === '') return false;
+    
+    try {
+        let query = 'SELECT MaSoSinhVien FROM SINHVIEN WHERE LOWER(TRIM(Email)) = LOWER($1)';
+        let params = [email.trim()];
+        
+        if (excludeStudentId) {
+            query += ' AND MaSoSinhVien != $2';
+            params.push(excludeStudentId);
+        }
+        
+        const result = await db.query(query, params);
+        return result.rows.length > 0;
+    } catch (error) {
+        console.error('Error checking email duplicate:', error);
+        throw error;
+    }
+};
+
+// Helper function to check MSSV duplication
+const checkStudentIdDuplicate = async (studentId: string): Promise<boolean> => {
+    if (!studentId || studentId.trim() === '') return false;
+    try {
+        const result = await db.query('SELECT MaSoSinhVien FROM SINHVIEN WHERE MaSoSinhVien = $1', [studentId.trim()]);
+        return result.rows.length > 0;
+    } catch (error) {
+        console.error('Error checking MSSV duplicate:', error);
+        throw error;
+    }
+};
+
+export const studentService = {    getAllStudents: async (semesterId?: string): Promise<{ students: IStudent[], registrationMap: Record<string, boolean> }> => {
         try {
-            const result = await db.query(`
+            // Lấy danh sách sinh viên như cũ
+            let query = `
                 SELECT 
                     s.MaSoSinhVien as studentId,
                     s.HoTen as fullName,
@@ -50,8 +84,9 @@ export const studentService = {    getAllStudents: async (): Promise<IStudent[]>
                 LEFT JOIN NGANHHOC n ON s.MaNganh = n.MaNganh
                 LEFT JOIN KHOA k ON n.MaKhoa = k.MaKhoa
                 ORDER BY s.MaSoSinhVien
-            `);
-              return result.rows.map(row => ({
+            `;
+            const studentsResult = await db.query(query, []);
+            const students = studentsResult.rows.map((row: any) => ({
                 studentId: row.studentid,
                 fullName: row.fullname,
                 dateOfBirth: row.dateofbirth,
@@ -69,6 +104,16 @@ export const studentService = {    getAllStudents: async (): Promise<IStudent[]>
                 majorName: row.majorname,
                 facultyName: row.facultyname
             }));
+
+            // Tạo map trạng thái phiếu đăng ký
+            const registrationMap: Record<string, boolean> = {};
+            if (semesterId) {
+                for (const sv of students) {
+                    const exists = await db.query('SELECT 1 FROM PHIEUDANGKY WHERE masosinhvien = $1 AND mahocky = $2 LIMIT 1', [sv.studentId, semesterId]);
+                    registrationMap[sv.studentId] = exists.rows.length > 0;
+                }
+            }
+            return { students, registrationMap };
         } catch (error) {
             console.error('Error fetching students:', error);
             throw new Error('Failed to fetch students');
@@ -130,11 +175,27 @@ export const studentService = {    getAllStudents: async (): Promise<IStudent[]>
 
     createStudent: async (student: Omit<IStudent, "studentId"> & { studentId: string }): Promise<IStudent> => {
         try {
+            // Check for MSSV duplication
+            if (student.studentId && student.studentId.trim()) {
+                const isIdDuplicate = await checkStudentIdDuplicate(student.studentId);
+                if (isIdDuplicate) {
+                    throw new Error('Không thể thêm sinh viên này do trùng MSSV');
+                }
+            }
+            
             console.log('Original student data:', {
                 majorId: student.majorId,
                 districtId: student.districtId,
                 priorityObjectId: student.priorityObjectId
             });
+            
+            // Check for email duplication
+            if (student.email && student.email.trim()) {
+                const isEmailDuplicate = await checkEmailDuplicate(student.email);
+                if (isEmailDuplicate) {
+                    throw new Error('Không thể thêm sinh viên này do trùng email');
+                }
+            }
             
             // Convert names to codes
             const districtCode = await convertNameToCode(student.districtName || '', 'HUYEN', 'TenHuyen', 'MaHuyen');
@@ -165,12 +226,24 @@ export const studentService = {    getAllStudents: async (): Promise<IStudent[]>
             };
         } catch (error) {
             console.error('Error in createStudent:', error);
+            const err = error as Error;
+            if ((err.message && err.message.includes('trùng email')) || (err.message && err.message.includes('trùng MSSV'))) {
+                throw err;
+            }
             throw new Error('Failed to create student');
         }
     },
 
     updateStudent: async (id: string, student: IStudent): Promise<IStudent> => {
         try {
+            // Check for email duplication (excluding current student)
+            if (student.email && student.email.trim()) {
+                const isEmailDuplicate = await checkEmailDuplicate(student.email, id);
+                if (isEmailDuplicate) {
+                    throw new Error('Không thể sửa sinh viên này do trùng email');
+                }
+            }
+            
             // Convert names to codes
             const districtCode = await convertNameToCode(student.districtName || '', 'HUYEN', 'TenHuyen', 'MaHuyen');
             const priorityCode = await convertNameToCode(student.priorityName || '', 'DOITUONGUUTIEN', 'TenDoiTuong', 'MaDoiTuong');
@@ -203,6 +276,9 @@ export const studentService = {    getAllStudents: async (): Promise<IStudent[]>
             };
         } catch (error) {
             console.error('Error in updateStudent:', error);
+            if (error instanceof Error && error.message.includes('trùng email')) {
+                throw error;
+            }
             throw new Error('Failed to update student');
         }
     },
@@ -283,47 +359,42 @@ export const studentService = {    getAllStudents: async (): Promise<IStudent[]>
 
             for (const studentId of studentIds) {
                 try {
-                    // Kiểm tra xem sinh viên đã có phiếu chưa
-                    const alreadyExists = await registrationService.checkRegistrationExists(studentId, semesterId);
-                    
-                    const registrationId = await registrationService.createRegistration(studentId, semesterId, maxCredits);
-                    
-                    if (alreadyExists) {
+                    // Gọi createRegistration, nếu đã có phiếu sẽ throw lỗi
+                    await registrationService.createRegistration(studentId, semesterId, maxCredits);
+                    results.push({ 
+                        studentId, 
+                        success: true, 
+                        message: 'Tạo phiếu đăng ký thành công',
+                        alreadyExists: false
+                    });
+                    successCount++;
+                } catch (error) {
+                    const errorMessage = error instanceof Error ? error.message : 'Lỗi không xác định';
+                    if (errorMessage.includes('đã có phiếu đăng ký cho học kỳ này')) {
                         results.push({ 
                             studentId, 
-                            success: true, 
-                            message: 'Sinh viên đã có phiếu đăng ký (sử dụng phiếu hiện tại)',
-                            registrationId,
+                            success: false, 
+                            message: errorMessage,
                             alreadyExists: true
                         });
                         alreadyExistsCount++;
                     } else {
-                        results.push({ 
-                            studentId, 
-                            success: true, 
-                            message: 'Tạo phiếu đăng ký thành công',
-                            registrationId,
-                            alreadyExists: false
-                        });
+                        results.push({ studentId, success: false, message: errorMessage });
+                        failCount++;
                     }
-                    successCount++;
-                } catch (error) {
-                    const errorMessage = error instanceof Error ? error.message : 'Lỗi không xác định';
-                    results.push({ studentId, success: false, message: errorMessage });
-                    failCount++;
                 }
             }
 
             return {
                 success: successCount > 0,
-                message: `Xử lý thành công ${successCount}/${studentIds.length} sinh viên. ${alreadyExistsCount} sinh viên đã có phiếu, ${successCount - alreadyExistsCount} sinh viên được tạo phiếu mới. ${failCount} sinh viên thất bại.`,
+                message: `Xử lý thành công ${successCount}/${studentIds.length} sinh viên. ${alreadyExistsCount} sinh viên đã có phiếu, ${successCount} sinh viên được tạo phiếu mới. ${failCount} sinh viên thất bại.`,
                 details: results,
                 summary: {
                     total: studentIds.length,
                     success: successCount,
                     failed: failCount,
                     alreadyExists: alreadyExistsCount,
-                    newlyCreated: successCount - alreadyExistsCount
+                    newlyCreated: successCount
                 }
             };
         } catch (error) {

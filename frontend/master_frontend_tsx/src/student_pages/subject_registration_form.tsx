@@ -34,7 +34,9 @@ const mapBackendCourseToFrontendSubject = (course: any): Subject => {
         lecturer: course.lecturer || 'Chưa có thông tin',
         day: dayOfWeek,
         fromTo: fromTo,
-        courseType: course.courseType || 'Chưa xác định'
+        courseType: course.courseType || 'Chưa xác định',
+        currentEnrollment: course.currentEnrollment ?? course.SoSVDaDangKy ?? 'N/A',
+        maxEnrollment: course.maxStudents ?? course.maxEnrollment ?? course.SiSoToiDa ?? course.maxStudents ?? 'N/A',
     };
 };
 
@@ -423,20 +425,22 @@ const SubjectsList = ({ subjects, onEnroll, tableType, enrolledSubjectIds }: {
                         <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '1.25rem', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: headerColor, width: '15%' }}>Giảng viên</TableCell>
                         <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '1.25rem', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: headerColor, width: '8%' }}>Tín chỉ</TableCell>
                         <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '1.25rem', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: headerColor, width: '16%' }}>Thời gian</TableCell>
+                        <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '1.25rem', textAlign: 'left', fontFamily: '"Varela Round", sans-serif', backgroundColor: headerColor, width: '10%' }}>Sĩ số</TableCell>
                         <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '1.25rem', textAlign: 'left', fontFamily: '"Varela Round", sans-serif', backgroundColor: headerColor, width: '12%' }}>Hành động</TableCell>
                     </TableRow>
                 </TableHead>
                 <TableBody>
                     {subjects.map((subject, index) => {
                         const isEnrolled = enrolledSubjectIds.has(subject.id);
+                        const isFull = Number(subject.currentEnrollment) >= Number(subject.maxEnrollment);
                         return (
                             <TableRow
                                 key={index}
                                 sx={{
-                                    opacity: isEnrolled ? 0.5 : 1, // Làm mờ nếu đã đăng ký
-                                    backgroundColor: isEnrolled ? '#f0f0f0' : 'transparent',
+                                    opacity: isEnrolled || isFull ? 0.5 : 1, // Làm mờ nếu đã đăng ký hoặc đã đầy
+                                    backgroundColor: isEnrolled || isFull ? '#f0f0f0' : 'transparent',
                                     '&:hover': {
-                                        backgroundColor: isEnrolled ? '#f0f0f0' : '#f5f5f5',
+                                        backgroundColor: isEnrolled || isFull ? '#f0f0f0' : '#f5f5f5',
                                     },
                                     '&:last-child td, &:last-child th': { borderBottom: 'none' }
                                 }}
@@ -455,33 +459,37 @@ const SubjectsList = ({ subjects, onEnroll, tableType, enrolledSubjectIds }: {
                                 <TableCell sx={{ fontSize: '1rem', fontFamily: '"Varela Round", sans-serif', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                     {subject.day}: {subject.fromTo}
                                 </TableCell>
+                                <TableCell sx={{ fontSize: '1rem', fontFamily: '"Varela Round", sans-serif', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                    {subject.currentEnrollment}/{subject.maxEnrollment}
+                                </TableCell>
                                 <TableCell sx={{ textAlign: 'left', fontFamily: '"Varela Round", sans-serif', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                    <Button
-                                        variant="contained"
-                                        color="primary"
-                                        size="large"
-                                        onClick={() => onEnroll(subject)}
-                                        disabled={isEnrolled} // Vô hiệu hóa nếu đã đăng ký
-                                        sx={{
-                                            textTransform: 'none',
-                                            borderRadius: '0.5rem',
-                                            boxShadow: 'none',
-                                            backgroundColor: isEnrolled 
-                                                ? '#cccccc' 
-                                                : tableType === 'required' ? '#2e7d32' : '#1976d2',
-                                            '&:hover': {
-                                                backgroundColor: isEnrolled 
-                                                    ? '#cccccc' 
-                                                    : tableType === 'required' ? '#388e3c' : 'hsl(223, 100.00%, 70.20%)',
-                                            },
-                                            '&:disabled': {
-                                                backgroundColor: '#cccccc',
-                                                color: '#888888'
-                                            }
-                                        }}
-                                    >
-                                        {isEnrolled ? 'Đã đăng ký' : 'Đăng ký'}
-                                    </Button>
+                                    {isEnrolled ? (
+                                        <Button variant="contained" size="large" disabled sx={{ backgroundColor: '#cccccc', color: '#888888', borderRadius: '0.5rem' }}>
+                                            Đã đăng ký
+                                        </Button>
+                                    ) : isFull ? (
+                                        <Button variant="contained" size="large" disabled sx={{ backgroundColor: '#cccccc', color: '#888888', borderRadius: '0.5rem' }}>
+                                            Đã đầy
+                                        </Button>
+                                    ) : (
+                                        <Button
+                                            variant="contained"
+                                            color="primary"
+                                            size="large"
+                                            onClick={() => onEnroll(subject)}
+                                            sx={{
+                                                textTransform: 'none',
+                                                borderRadius: '0.5rem',
+                                                boxShadow: 'none',
+                                                backgroundColor: tableType === 'required' ? '#2e7d32' : '#1976d2',
+                                                '&:hover': {
+                                                    backgroundColor: tableType === 'required' ? '#388e3c' : 'hsl(223, 100.00%, 70.20%)',
+                                                }
+                                            }}
+                                        >
+                                            Đăng ký
+                                        </Button>
+                                    )}
                                 </TableCell>
                             </TableRow>
                         );

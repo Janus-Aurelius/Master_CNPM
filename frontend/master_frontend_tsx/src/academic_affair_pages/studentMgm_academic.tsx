@@ -103,16 +103,19 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
     });
     const [snackbarMessage, setSnackbarMessage] = useState('');
     const [snackbarSeverity, setSnackbarSeverity] = useState<'success' | 'error' | 'warning'>('success');
+    const [registrationMap, setRegistrationMap] = useState<Record<string, boolean>>({});
 
     // Fetch students on component mount
     useEffect(() => {
         const fetchStudents = async () => {
             try {
                 setLoading(true);
-                const apiStudents = await studentApi.getStudents();
+                const { students: apiStudents, registrationMap: apiRegistrationMap } = await studentApi.getStudents(currentSemester);
+                console.log('=== DEBUG: Fetched students ===');
+                apiStudents.forEach(sv => console.log(sv.studentId, sv.fullName));
                 setStudents(apiStudents);
+                setRegistrationMap(apiRegistrationMap || {});
                 setError(null);
-                console.log('Fetched students:', apiStudents);
             } catch (err) {
                 setError('Không thể tải danh sách sinh viên');
                 console.error('Error fetching students:', err);
@@ -121,8 +124,10 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
             }
         };
 
-        fetchStudents();
-    }, []);
+        if (currentSemester) {
+            fetchStudents();
+        }
+    }, [currentSemester]);
 
     // Fetch dropdown data on component mount
     useEffect(() => {
@@ -332,7 +337,33 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
     const handleSaveStudent = async () => {
         try {
             setLoading(true);
-              const studentData = {
+            // Validate required fields
+            if (!formData.studentId.trim()) {
+                setSnackbarMessage('MSSV không được để trống');
+                setSnackbarSeverity('error');
+                return;
+            }
+            if (!formData.fullName.trim()) {
+                setSnackbarMessage('Họ tên không được để trống');
+                setSnackbarSeverity('error');
+                return;
+            }
+            if (!formData.email.trim()) {
+                setSnackbarMessage('Email không được để trống');
+                setSnackbarSeverity('error');
+                return;
+            }
+            if (!formData.dateOfBirth) {
+                setSnackbarMessage('Ngày sinh không được để trống');
+                setSnackbarSeverity('error');
+                return;
+            }
+            if (!formData.majorId) {
+                setSnackbarMessage('Ngành học không được để trống');
+                setSnackbarSeverity('error');
+                return;
+            }
+            const studentData = {
                 studentId: formData.studentId,
                 fullName: formData.fullName,
                 email: formData.email,
@@ -350,21 +381,26 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
                 priorityName: formData.priorityName,
                 majorName: formData.majorName
             };
-
             if (addEditDialog.isEdit && addEditDialog.student) {
                 await studentApi.updateStudent(addEditDialog.student.studentId, studentData);
             } else {
                 await studentApi.createStudent(studentData);
             }
-            
-            // Refresh the students list
-            const apiStudents = await studentApi.getStudents();
-            setStudents(apiStudents);
-            
+            await refreshStudents();
             closeAddEditDialog();
             setError(null);
-        } catch (err) {
-            setError(addEditDialog.isEdit ? 'Không thể cập nhật sinh viên' : 'Không thể thêm sinh viên');
+        } catch (err: any) {
+            // Hiển thị lỗi qua snackbar
+            if (err.message && err.message.includes('trùng email')) {
+                setSnackbarMessage(err.message);
+                setSnackbarSeverity('error');
+            } else if (err.message && err.message.includes('trùng MSSV')) {
+                setSnackbarMessage(err.message);
+                setSnackbarSeverity('error');
+            } else {
+                setSnackbarMessage(addEditDialog.isEdit ? 'Không thể cập nhật sinh viên' : 'Không thể thêm sinh viên');
+                setSnackbarSeverity('error');
+            }
             console.error('Error saving student:', err);
         } finally {
             setLoading(false);
@@ -383,9 +419,7 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
             setLoading(true);
             await studentApi.deleteStudent(deleteDialog.student.studentId);
             
-            // Refresh the students list
-            const apiStudents = await studentApi.getStudents();
-            setStudents(apiStudents);
+            await refreshStudents();
             
             setDeleteDialog({ open: false, student: null });
             setError(null);
@@ -415,7 +449,9 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
             // Kiểm tra trạng thái PHIEUDANGKY cho từng sinh viên
             const studentsWithRegistrationStatus = await Promise.all(
                 students.map(async (student) => {
+                    console.log('Check phiếu:', student.studentId, currentSemester);
                     const hasRegistration = await studentApi.checkStudentRegistrationStatus(student.studentId, currentSemester);
+                    console.log('Kết quả:', student.studentId, 'semester:', currentSemester, 'hasRegistration:', hasRegistration);
                     return {
                         ...student,
                         hasRegistration
@@ -440,7 +476,6 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
         setBulkRegistrationStudents([]);
         setSelectedStudentIds([]);
         setMaxCredits(24);
-        setCurrentSemester('');
         setBulkRegistrationFilters({ majorId: '', studentId: '' });
     };
 
@@ -511,6 +546,12 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
     // Hàm đóng snackbar
     const handleCloseSnackbar = () => {
         setSnackbarMessage('');
+    };
+
+    const refreshStudents = async () => {
+        const { students: apiStudents, registrationMap: apiRegistrationMap } = await studentApi.getStudents(currentSemester);
+        setStudents(apiStudents);
+        setRegistrationMap(apiRegistrationMap || {});
     };
 
     if (loading) {
@@ -902,9 +943,9 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
                                             MSSV: {detailDialog.student.studentId}
                                         </Typography>
                                         <Chip
-                                            label="Đang học"
+                                            label={registrationMap[detailDialog.student.studentId] ? "Đã có phiếu" : "Chưa có phiếu"}
                                             size="small"
-                                            color={getStatusChipColor('Đang học')}
+                                            color={registrationMap[detailDialog.student.studentId] ? "success" : "warning"}
                                         />
                                     </Box>
                                 </Box>
@@ -1071,6 +1112,7 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
                                             borderRadius: '8px'
                                         }
                                     }}
+                                    disabled={addEditDialog.isEdit}
                                 />
                             </Grid>
                             <Grid item xs={12} md={6}>
@@ -1336,9 +1378,18 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
                                         </Grid><Grid item xs={12}>                                            <FormControl fullWidth size="medium">
                                                 <InputLabel id="province-select-label">Tỉnh/Thành phố</InputLabel>                                                <Select
                                                     labelId="province-select-label"                                                    value={provinces.length > 0 && formData.provinceName ? 
-                                                        provinces.find(p => (p as any).tentinh === formData.provinceName)?.maTinh || '' : ''}
+                                                        provinces.find(p => (p as any).tentinh === formData.provinceName)?.matinh || '' : ''}
                                                     label="Tỉnh/Thành phố"
-                                                    onChange={(e) => handleProvinceChange(e.target.value)}
+                                                    onChange={(e) => {
+                                                        const selectedProvince = provinces.find(p => (p as any).matinh === e.target.value);
+                                                        setFormData(prev => ({
+                                                            ...prev,
+                                                            provinceName: (selectedProvince as any)?.tentinh || '',
+                                                            districtId: '',
+                                                            districtName: ''
+                                                        }));
+                                                        handleProvinceChange(e.target.value);
+                                                    }}
                                                     sx={{
                                                         backgroundColor: 'white',
                                                         borderRadius: '8px'
@@ -1423,90 +1474,6 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
                         '& .MuiPaper-root': {
                             borderRadius: '12px',
                             padding: 0,
-                        },
-                    }}
-                >
-                    <DialogTitle id="delete-dialog-title" sx={{ 
-                        textAlign: 'center',
-                        fontWeight: 'bold',
-                        color: '#d32f2f',
-                        position: 'relative',
-                        py: 3,
-                        '&::after': {
-                            content: '""',
-                            position: 'absolute',
-                            width: '100%',
-                            height: '2px',
-                            bottom: 0,
-                            left: 0,
-                            background: 'linear-gradient(to right, transparent, #d32f2f, transparent)',
-                        }
-                    }}>
-                        Xóa sinh viên
-                    </DialogTitle>
-                    <DialogContent sx={{ p: 3, textAlign: 'center' }}>
-                        <Typography variant="body1" sx={{ mb: 2 }}>
-                            Bạn có chắc chắn muốn xóa sinh viên <strong>{deleteDialog.student?.fullName}</strong> (MSSV: <strong>{deleteDialog.student?.studentId}</strong>)?
-                        </Typography>
-                        <Typography variant="body2" color="textSecondary" sx={{ mb: 3 }}>
-                            Hành động này không thể hoàn tác.
-                        </Typography>
-                        <Button
-                            variant="contained"
-                            color="error"
-                            onClick={confirmDeleteStudent}
-                            sx={{ 
-                                borderRadius: '8px',
-                                px: 3,
-                                py: 1,
-                                fontWeight: 'bold',
-                                width: '100%',
-                                '&:hover': {
-                                    backgroundColor: '#c62828'
-                                }
-                            }}
-                        >
-                            Xóa sinh viên
-                        </Button>
-                    </DialogContent>
-                    <DialogActions sx={{ 
-                        p: 2, 
-                        justifyContent: 'center', 
-                        gap: 2,
-                        backgroundColor: '#f8f9fa',
-                        borderTop: '1px solid #e0e0e0' 
-                    }}>
-                        <Button 
-                            variant="outlined" 
-                            onClick={cancelDeleteStudent}
-                            sx={{ 
-                                borderRadius: '8px',
-                                textTransform: 'none',
-                                px: 3,
-                                py: 1,
-                                fontWeight: 'bold',
-                                borderColor: '#bdbdbd',
-                                color: '#757575',
-                                '&:hover': {
-                                    borderColor: '#9e9e9e',
-                                    backgroundColor: '#f5f5f5'
-                                }
-                            }}
-                        >
-                            HỦY                        </Button>
-                    </DialogActions>
-                </Dialog>
-
-                {/* Delete Confirmation Dialog */}
-                <Dialog
-                    open={deleteDialog.open}
-                    onClose={cancelDeleteStudent}
-                    aria-labelledby="delete-dialog-title"
-                    aria-describedby="delete-dialog-description"
-                    sx={{
-                        '& .MuiPaper-root': {
-                            borderRadius: '16px',
-                            minWidth: '400px'
                         },
                     }}
                 >
@@ -1739,7 +1706,7 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
                                                 <TableCell>{student.fullName}</TableCell>
                                                 <TableCell>{student.majorName}</TableCell>
                                                 <TableCell>
-                                                    {student.hasRegistration ? (
+                                                    {registrationMap[student.studentId] ? (
                                                         <Chip 
                                                             label="Đã có phiếu" 
                                                             color="success" 

@@ -272,7 +272,7 @@ export default function TuitionAdjustment({ user, onLogout }: FinancialPageProps
                         {courseTypes.map((courseType) => (
                             <Box key={courseType.courseTypeId} sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap', p: 2, backgroundColor: '#f8f9fa', borderRadius: '8px' }}>
                                 <Typography variant="body1" sx={{ fontWeight: 600, color: '#333', fontFamily: 'Varela Round, sans-serif', minWidth: 200 }}>
-                                    {courseType.courseTypeName} ({courseType.hoursPerCredit}h/TC):
+                                    {courseType.courseTypeName} ({courseType.hoursPerCredit} tiết /TC):
                                 </Typography>
                                 {editFee[courseType.courseTypeId] ? (
                                     <>

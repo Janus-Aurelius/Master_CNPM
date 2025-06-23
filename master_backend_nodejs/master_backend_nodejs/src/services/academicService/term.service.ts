@@ -68,6 +68,14 @@ export const semesterService = {
         }
     },    createSemester: async (semester: ISemesterCreate): Promise<ISemester> => {
         try {
+            // Kiểm tra trùng năm học + học kỳ
+            const dupCheck = await db.query(
+                `SELECT 1 FROM HOCKYNAMHOC WHERE NamHoc = $1 AND HocKyThu = $2`,
+                [semester.academicYear, semester.termNumber]
+            );
+            if (dupCheck.rows.length > 0) {
+                throw new Error('Đã tồn tại một kỳ học này rồi');
+            }
             // Auto set status to "Đóng" for new semesters
             const semesterData = {
                 ...semester,
@@ -98,6 +106,33 @@ export const semesterService = {
         const client = await db.connect();
         
         try {
+            // Lấy thông tin hiện tại nếu thiếu academicYear hoặc termNumber
+            let academicYear: number | undefined = undefined;
+            let termNumber: number | undefined = undefined;
+            if ("academicYear" in semester && "termNumber" in semester) {
+                academicYear = (semester as any).academicYear;
+                termNumber = (semester as any).termNumber;
+            } else {
+                const current = await client.query(
+                    `SELECT NamHoc, HocKyThu FROM HOCKYNAMHOC WHERE MaHocKy = $1`,
+                    [id]
+                );
+                if (current.rows.length > 0) {
+                    academicYear = current.rows[0].namhoc;
+                    termNumber = current.rows[0].hockythu;
+                }
+            }
+            // Kiểm tra trùng năm học + học kỳ (loại trừ chính bản ghi đang sửa)
+            if (academicYear !== undefined && termNumber !== undefined) {
+                const dupCheck = await client.query(
+                    `SELECT 1 FROM HOCKYNAMHOC WHERE NamHoc = $1 AND HocKyThu = $2 AND MaHocKy != $3`,
+                    [academicYear, termNumber, id]
+                );
+                if (dupCheck.rows.length > 0) {
+                    throw new Error('Đã tồn tại một kỳ học này rồi');
+                }
+            }
+            
             await client.query('BEGIN');              // If changing status to "Đang diễn ra", update current semester in ACADEMIC_SETTINGS
             // and change any other "Đang diễn ra" semester to "Đóng"
             if (semester.status === 'Đang diễn ra') {

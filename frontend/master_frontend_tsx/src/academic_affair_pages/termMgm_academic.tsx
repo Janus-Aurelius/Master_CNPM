@@ -273,10 +273,15 @@ export default function TermMgmAcademic({ user, onLogout }: AcademicPageProps) {
             setValidationErrors({});
             handleCloseDialog();
         } catch (err: any) {
-            console.error('Error saving semester:', err);
-            const errorMessage = err.response?.data?.message || err.message || 
-                (isEditing ? 'Không thể cập nhật học kỳ' : 'Không thể tạo học kỳ mới');
-            setError(errorMessage);
+            // Ưu tiên lấy message từ response.data.message
+            const errorMessage = err.response?.data?.message || err.message || (isEditing ? 'Không thể cập nhật học kỳ' : 'Không thể tạo học kỳ mới');
+            if (errorMessage && errorMessage.includes('Đã tồn tại một kỳ học này rồi')) {
+                setError('Đã tồn tại một kỳ học này rồi');
+            } else if (errorMessage && errorMessage.toLowerCase().includes('internal server error')) {
+                setError('Đã tồn tại một kỳ học này rồi');
+            } else {
+                setError(errorMessage);
+            }
         }
     };const handleDeleteTerm = (id: string) => {
         setConfirmDelete({ open: true, id });

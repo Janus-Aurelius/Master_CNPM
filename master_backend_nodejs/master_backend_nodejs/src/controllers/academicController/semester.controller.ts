@@ -75,6 +75,13 @@ export const semesterController = {
             });
         } catch (error) {
             console.error('Error in createSemester:', error);
+            if (error instanceof Error && error.message === 'Đã tồn tại một kỳ học này rồi') {
+                res.status(400).json({
+                    success: false,
+                    message: 'Đã tồn tại một kỳ học này rồi'
+                });
+                return;
+            }
             res.status(500).json({
                 success: false,
                 message: 'Internal server error',
@@ -95,7 +102,13 @@ export const semesterController = {
             });
         } catch (error) {
             console.error('Error in updateSemester:', error);
-            
+            if (error instanceof Error && error.message === 'Đã tồn tại một kỳ học này rồi') {
+                res.status(400).json({
+                    success: false,
+                    message: 'Đã tồn tại một kỳ học này rồi'
+                });
+                return;
+            }
             if (error instanceof Error && error.message === 'Semester not found') {
                 res.status(404).json({
                     success: false,
@@ -103,7 +116,6 @@ export const semesterController = {
                 });
                 return;
             }
-
             res.status(500).json({
                 success: false,
                 message: 'Internal server error',
