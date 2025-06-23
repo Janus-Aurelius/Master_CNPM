@@ -13,8 +13,10 @@ function mapAction(method: string, path: string): string | null {
     if (method === 'DELETE' && path.startsWith('/api/academic/programsMgm')) return 'Xóa chương trình đào tạo';
 
     // Quản lý user (admin)
-    if (method === 'PUT' && path.startsWith('/api/admin/users/')) return 'Cập nhật người dùng';
-    if (method === 'PATCH' && path.startsWith('/api/admin/users/')) return 'Đổi trạng thái người dùng';
+    if (method === 'PATCH' && path.startsWith('/api/admin/users/:id/status')) return 'Đổi trạng thái người dùng';
+    if (method === 'POST' && path.startsWith('/api/admin/users')) return 'Thêm người dùng';
+    if (method === 'DELETE' && path.startsWith('/api/admin/users/:id')) return 'Xóa người dùng';
+    if (method === 'PUT' && path.startsWith('/api/admin/users/:id')) return 'Cập nhật người dùng';
 
     // Quản lý yêu cầu đăng ký môn học
     if (method === 'POST' && path.startsWith('/api/academic/studentSubjectReq')) return 'Gửi yêu cầu đăng ký môn học';

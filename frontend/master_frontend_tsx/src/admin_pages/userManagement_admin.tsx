@@ -105,9 +105,17 @@ export default function UserManagement({user, onLogout}: UserManagementProps) {
             console.log('Frontend received data:', response); // Debug log
             setUsers(response.users);
             setError(null);
-        } catch (err) {
+        } catch (err: any) {
             console.error("Error fetching users:", err);
-            setError("Không thể tải dữ liệu người dùng");
+            if (err.response && err.response.data) {
+                if (err.response.data.message === 'User already exists') {
+                    setError('User already exists');
+                } else {
+                    setError(err.response.data.message || "Có lỗi xảy ra");
+                }
+            } else {
+                setError("Có lỗi xảy ra");
+            }
         } finally {
             setIsLoading(false);
         }
@@ -173,29 +181,35 @@ export default function UserManagement({user, onLogout}: UserManagementProps) {
     const handleSaveUser = async () => {
         try {
             setIsLoading(true);
+            const userPayload = {
+                ...currentUser,
+                department: currentUser.role === 'N3' ? currentUser.department : null,
+            };
+
+            if (currentUser.role === 'N3') {
+                userPayload.studentId = currentUser.studentid;
+            }
+
             if (dialogType === "add") {
-                await userAdminApi.createUser({
-                    ...currentUser,
-                    studentId: currentUser.studentid,
-                });
+                await userAdminApi.createUser(userPayload);
             } else if (dialogType === "edit") {
                 const majorId = departmentMap[currentUser.department as keyof typeof departmentMap];
                 await userAdminApi.updateUser(currentUser.id, {
-                    ...currentUser,
-                    department: majorId,
+                    ...userPayload,
+                    department: currentUser.role === 'N3' ? majorId : null,
                 });
             }
             await fetchUsers();
             handleCloseDialog();
             showSnackbar("Thao tác thành công");
-        } catch (err) {
+        } catch (err: any) {
             console.error("Error:", err);
-            if (typeof err === "object" && err !== null && "response" in err) {
-                // @ts-ignore
-                setError(err.response?.data?.message || "Có lỗi xảy ra");
+            if (err.response && err.response.data) {
+                setSnackbarMessage(err.response.data.message || "Có lỗi xảy ra");
             } else {
-                setError("Có lỗi xảy ra");
+                setSnackbarMessage("Có lỗi xảy ra");
             }
+            setSnackbarOpen(true);
         } finally {
             setIsLoading(false);
         }
@@ -228,10 +242,6 @@ export default function UserManagement({user, onLogout}: UserManagementProps) {
     const showSnackbar = (message: string) => {
         setSnackbarMessage(message);
         setSnackbarOpen(true);
-    };
-
-    const handleCloseSnackbar = () => {
-        setSnackbarOpen(false);
     };
 
     const handleSearch = async (value: string) => {
@@ -603,11 +613,30 @@ export default function UserManagement({user, onLogout}: UserManagementProps) {
                                         }}
                                     />
                                 </Grid>                                <Grid item xs={12} md={6}>
+                                {currentUser?.role === 'N3' && (
+                                    <Grid item xs={12}>
+                                        <TextField
+                                            label="Mã số sinh viên"
+                                            fullWidth
+                                            value={currentUser?.studentid || ''}
+                                            disabled={dialogType === "edit"}
+                                            onChange={(e) => setCurrentUser({...currentUser, studentid: e.target.value})}
+                                            sx={{
+                                                borderRadius: '12px',
+                                                background: '#f7faff',
+                                                '& .MuiOutlinedInput-root': { borderRadius: '12px' },
+                                                '& .MuiInputLabel-root': { fontWeight: 500 },
+                                                '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d8d8d8' },
+                                            }}
+                                        />
+                                    </Grid>
+                                )}
+                                <Grid item xs={12} md={6}>
                                     <FormControl fullWidth sx={{ background: '#f7faff', borderRadius: '12px' }}>
                                         <InputLabel sx={{ fontWeight: 500 }}>Vai trò</InputLabel>
                                         <Select
                                             value={currentUser?.role || 'N3'}
-                                            disabled
+                                            disabled={dialogType === "edit"}
                                             label="Vai trò"
                                             onChange={(e: SelectChangeEvent) => setCurrentUser({...currentUser, role: e.target.value})}
                                             sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '12px', '& .MuiOutlinedInput-notchedOutline': { borderRadius: '12px', borderColor: '#d8d8d8' } }}
@@ -756,11 +785,11 @@ export default function UserManagement({user, onLogout}: UserManagementProps) {
                     {/* Snackbar for notifications */}
                     <Snackbar
                         open={snackbarOpen}
-                        autoHideDuration={4000}
-                        onClose={handleCloseSnackbar}
+                        autoHideDuration={6000}
+                        onClose={() => setSnackbarOpen(false)}
                         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
                     >
-                        <Alert severity="success" onClose={handleCloseSnackbar}>
+                        <Alert onClose={() => setSnackbarOpen(false)} severity="success">
                             {snackbarMessage}
                         </Alert>
                     </Snackbar>
