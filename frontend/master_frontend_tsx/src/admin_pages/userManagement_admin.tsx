@@ -175,16 +175,22 @@ export default function UserManagement({user, onLogout}: UserManagementProps) {
     const handleSaveUser = async () => {
         try {
             setIsLoading(true);
+            const userPayload = {
+                ...currentUser,
+                department: currentUser.role === 'N3' ? currentUser.department : null,
+            };
+
+            if (currentUser.role === 'N3') {
+                userPayload.studentId = currentUser.studentid;
+            }
+
             if (dialogType === "add") {
-                await userAdminApi.createUser({
-                    ...currentUser,
-                    studentId: currentUser.studentid,
-                });
+                await userAdminApi.createUser(userPayload);
             } else if (dialogType === "edit") {
                 const majorId = departmentMap[currentUser.department as keyof typeof departmentMap];
                 await userAdminApi.updateUser(currentUser.id, {
-                    ...currentUser,
-                    department: majorId,
+                    ...userPayload,
+                    department: currentUser.role === 'N3' ? majorId : null,
                 });
             }
             await fetchUsers();
@@ -620,28 +626,30 @@ export default function UserManagement({user, onLogout}: UserManagementProps) {
                                         }}
                                     />
                                 </Grid>
-                                <Grid item xs={12}>
-                                    <TextField
-                                        label="Mã số sinh viên"
-                                        fullWidth
-                                        value={currentUser?.studentid || ''}
-                                        disabled={dialogType === "edit"}
-                                        onChange={(e) => setCurrentUser({...currentUser, studentid: e.target.value})}
-                                        sx={{
-                                            borderRadius: '12px',
-                                            background: '#f7faff',
-                                            '& .MuiOutlinedInput-root': { borderRadius: '12px' },
-                                            '& .MuiInputLabel-root': { fontWeight: 500 },
-                                            '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d8d8d8' },
-                                        }}
-                                    />
-                                </Grid>
+                                {currentUser?.role === 'N3' && (
+                                    <Grid item xs={12}>
+                                        <TextField
+                                            label="Mã số sinh viên"
+                                            fullWidth
+                                            value={currentUser?.studentid || ''}
+                                            disabled={dialogType === "edit"}
+                                            onChange={(e) => setCurrentUser({...currentUser, studentid: e.target.value})}
+                                            sx={{
+                                                borderRadius: '12px',
+                                                background: '#f7faff',
+                                                '& .MuiOutlinedInput-root': { borderRadius: '12px' },
+                                                '& .MuiInputLabel-root': { fontWeight: 500 },
+                                                '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d8d8d8' },
+                                            }}
+                                        />
+                                    </Grid>
+                                )}
                                 <Grid item xs={12} md={6}>
                                     <FormControl fullWidth sx={{ background: '#f7faff', borderRadius: '12px' }}>
                                         <InputLabel sx={{ fontWeight: 500 }}>Vai trò</InputLabel>
                                         <Select
                                             value={currentUser?.role || 'N3'}
-                                            disabled
+                                            disabled={dialogType === "edit"}
                                             label="Vai trò"
                                             onChange={(e: SelectChangeEvent) => setCurrentUser({...currentUser, role: e.target.value})}
                                         >
