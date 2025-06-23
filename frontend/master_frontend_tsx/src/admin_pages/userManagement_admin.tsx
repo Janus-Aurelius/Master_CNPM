@@ -467,7 +467,7 @@ export default function UserManagement({user, onLogout}: UserManagementProps) {
                                     mt: 1, 
                                     borderRadius: '8px', 
                                     boxShadow: '0 4px 10px rgba(0, 0, 0, 0.1)', 
-                                    border: '1px solid #e0e0e0', 
+                                    border: 'none', 
                                     width: '100%', 
                                     maxWidth: '100%', 
                                     minWidth: 1100,
