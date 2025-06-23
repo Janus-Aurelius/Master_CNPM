@@ -21,7 +21,7 @@ const UserInfoContainer = styled(Box)(({ theme }) => ({
 }));
 
 interface UserInfoProps {
-    user: { name?: string; role?: string } | null;
+    user: { name?: string; role?: string; username?: string; } | null;
 }
 
 const roleDisplayName: Record<string, string> = {
@@ -32,8 +32,12 @@ const roleDisplayName: Record<string, string> = {
 };
 
 const UserInfo = ({ user }: UserInfoProps) => {
-    const userInitial = user?.name ? user.name.charAt(0).toUpperCase() : 'S';
+    // Use username as name if name is not available
+    const userName = user?.name || user?.username || "Student";
+    const userInitial = userName.charAt(0).toUpperCase();
     const roleName = user?.role ? roleDisplayName[user.role] || user.role : 'Sinh viên';
+
+    console.log('UserInfo rendering with user:', user);
 
     return (
         <UserInfoContainer>
@@ -59,7 +63,7 @@ const UserInfo = ({ user }: UserInfoProps) => {
                         lineHeight: 1.2
                     }}
                 >
-                    {user?.name || "Student"}
+                    {userName}
                 </Typography>
                 <Typography 
                     variant="caption" 
