@@ -33,8 +33,8 @@ import {
     Alert,
     Snackbar,
     Divider,
-    Pagination,
     CircularProgress,
+    Pagination,
     Autocomplete
 } from "@mui/material";
 import { SelectChangeEvent } from '@mui/material/Select';
@@ -94,24 +94,30 @@ export default function UserManagement({user, onLogout}: UserManagementProps) {
     const [snackbarMessage, setSnackbarMessage] = useState("");
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [userToDelete, setUserToDelete] = useState<any>(null);
-    const [page, setPage] = useState(1);
-    const [totalPages, setTotalPages] = useState(1);
     const [isLoading, setIsLoading] = useState(false);
     const [searchResults, setSearchResults] = useState<AdminUser[]>([]);
     const [isSearching, setIsSearching] = useState(false);
     const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null);
 
+
     const fetchUsers = async () => {
         try {
             setIsLoading(true);
-            const response = await userAdminApi.getUsers(page, 10, filterRole);
+            const response = await userAdminApi.getUsers(undefined, 1000, filterRole); // fetch all users, large limit
             console.log('Frontend received data:', response); // Debug log
             setUsers(response.users);
-            setTotalPages(response.totalPages);
             setError(null);
-        } catch (err) {
+        } catch (err: any) {
             console.error("Error fetching users:", err);
-            setError("Không thể tải dữ liệu người dùng");
+            if (err.response && err.response.data) {
+                if (err.response.data.message === 'User already exists') {
+                    setError('User already exists');
+                } else {
+                    setError(err.response.data.message || "Có lỗi xảy ra");
+                }
+            } else {
+                setError("Có lỗi xảy ra");
+            }
         } finally {
             setIsLoading(false);
         }
@@ -119,10 +125,12 @@ export default function UserManagement({user, onLogout}: UserManagementProps) {
 
     useEffect(() => {
         fetchUsers();
-    }, [page, filterRole]);
+    }, [filterRole]);
 
+    // Update filteredUsers to search by both name and studentid
     const filteredUsers = users.filter(user => {
-        const matchesSearch = (user.name?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
+        const matchesSearch =
+            (user.name?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
             (user.studentid?.toLowerCase() || "").includes(searchTerm.toLowerCase());
         const matchesRole = filterRole === "all" || user.role === filterRole;
         return matchesSearch && matchesRole;
@@ -175,29 +183,35 @@ export default function UserManagement({user, onLogout}: UserManagementProps) {
     const handleSaveUser = async () => {
         try {
             setIsLoading(true);
+            const userPayload = {
+                ...currentUser,
+                department: currentUser.role === 'N3' ? currentUser.department : null,
+            };
+
+            if (currentUser.role === 'N3') {
+                userPayload.studentId = currentUser.studentid;
+            }
+
             if (dialogType === "add") {
-                await userAdminApi.createUser({
-                    ...currentUser,
-                    studentId: currentUser.studentid,
-                });
+                await userAdminApi.createUser(userPayload);
             } else if (dialogType === "edit") {
                 const majorId = departmentMap[currentUser.department as keyof typeof departmentMap];
                 await userAdminApi.updateUser(currentUser.id, {
-                    ...currentUser,
-                    department: majorId,
+                    ...userPayload,
+                    department: currentUser.role === 'N3' ? majorId : null,
                 });
             }
             await fetchUsers();
             handleCloseDialog();
             showSnackbar("Thao tác thành công");
-        } catch (err) {
+        } catch (err: any) {
             console.error("Error:", err);
-            if (typeof err === "object" && err !== null && "response" in err) {
-                // @ts-ignore
-                setError(err.response?.data?.message || "Có lỗi xảy ra");
+            if (err.response && err.response.data) {
+                setSnackbarMessage(err.response.data.message || "Có lỗi xảy ra");
             } else {
-                setError("Có lỗi xảy ra");
+                setSnackbarMessage("Có lỗi xảy ra");
             }
+            setSnackbarOpen(true);
         } finally {
             setIsLoading(false);
         }
@@ -232,10 +246,6 @@ export default function UserManagement({user, onLogout}: UserManagementProps) {
         setSnackbarOpen(true);
     };
 
-    const handleCloseSnackbar = () => {
-        setSnackbarOpen(false);
-    };
-
     const handleSearch = async (value: string) => {
         if (searchTimeout) {
             clearTimeout(searchTimeout);
@@ -246,9 +256,8 @@ export default function UserManagement({user, onLogout}: UserManagementProps) {
             setSearchTerm(""); // Reset search term
             try {
                 setIsLoading(true);
-                const response = await userAdminApi.getUsers(page, 10, filterRole);
+                const response = await userAdminApi.getUsers(undefined, 1000, filterRole); // fetch all users
                 setUsers(response.users);
-                setTotalPages(response.totalPages);
             } catch (err) {
                 console.error("Error fetching users:", err);
                 setError("Không thể tải dữ liệu người dùng");
@@ -351,27 +360,23 @@ export default function UserManagement({user, onLogout}: UserManagementProps) {
                             <Grid container spacing={2} alignItems="center" sx={{ mb: 2 }}>
                                 <Grid item xs={12} md={8.5}>
                                     <Box sx={{ display: 'flex', gap: 1 }}>
+                                        {/* Search and filter row */}
                                         <Autocomplete
                                             freeSolo
-                                            options={searchResults.length > 0 ? searchResults : users}
-                                            getOptionLabel={(option) => 
-                                                typeof option === 'string' ? option : option.name
-                                            }
+                                            options={[]}
+                                            // No suggestions, just a plain search
+                                            getOptionLabel={() => ""}
                                             filterOptions={(x) => x}
-                                            loading={isSearching}
+                                            loading={false}
                                             onInputChange={(_, newValue) => {
-                                                handleSearch(newValue);
+                                                setSearchTerm(newValue);
                                             }}
-                                            onChange={(_, newValue) => {
-                                                if (typeof newValue === 'object' && newValue) {
-                                                    setSearchTerm(newValue.name);
-                                                }
-                                            }}
+                                            inputValue={searchTerm}
                                             renderInput={(params) => (
                                                 <TextField
                                                     {...params}
                                                     fullWidth
-                                                    placeholder="Tìm kiếm người dùng..."
+                                                    placeholder="Tìm kiếm theo mã số sinh viên hoặc họ tên..."
                                                     variant="outlined"
                                                     size="small"
                                                     InputProps={{
@@ -384,14 +389,6 @@ export default function UserManagement({user, onLogout}: UserManagementProps) {
                                                                 {params.InputProps.startAdornment}
                                                             </>
                                                         ),
-                                                        endAdornment: (
-                                                            <>
-                                                                {isSearching ? (
-                                                                    <CircularProgress color="inherit" size={20} />
-                                                                ) : null}
-                                                                {params.InputProps.endAdornment}
-                                                            </>
-                                                        ),
                                                     }}
                                                     sx={{
                                                         fontFamily: '"Varela Round", sans-serif',
@@ -401,21 +398,8 @@ export default function UserManagement({user, onLogout}: UserManagementProps) {
                                                     }}
                                                 />
                                             )}
-                                            renderOption={(props, option) => (
-                                                <li {...props}>
-                                                    <Box>
-                                                        <Typography variant="body1">{option.name}</Typography>
-                                                        <Typography variant="caption" color="text.secondary">
-                                                            {option.studentid} - {option.department}
-                                                        </Typography>
-                                                    </Box>
-                                                </li>
-                                            )}
                                             sx={{
                                                 width: '100%',
-                                                '& .MuiAutocomplete-listbox': {
-                                                    maxHeight: '200px',
-                                                },
                                             }}
                                         />
                                         <FormControl size="small" sx={{ minWidth: 180 }}>
@@ -458,12 +442,11 @@ export default function UserManagement({user, onLogout}: UserManagementProps) {
                                                         },
                                                     },
                                                 }}
-                                            >
-                                                <MenuItem value="all">Tất cả</MenuItem>
-                                                <MenuItem value="N3">Sinh viên</MenuItem>
-                                                <MenuItem value="N2">Phòng đào tạo</MenuItem>
-                                                <MenuItem value="N4">Phòng tài chính</MenuItem>
-                                                <MenuItem value="N1">Quản trị viên</MenuItem>
+                                            >                                                <MenuItem value="all" sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>Tất cả</MenuItem>
+                                                <MenuItem value="N3" sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>Sinh viên</MenuItem>
+                                                <MenuItem value="N2" sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>Phòng đào tạo</MenuItem>
+                                                <MenuItem value="N4" sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>Phòng tài chính</MenuItem>
+                                                <MenuItem value="N1" sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>Quản trị viên</MenuItem>
                                             </Select>
                                         </FormControl>
                                     </Box>
@@ -484,12 +467,13 @@ export default function UserManagement({user, onLogout}: UserManagementProps) {
                                     mt: 1, 
                                     borderRadius: '8px', 
                                     boxShadow: '0 4px 10px rgba(0, 0, 0, 0.1)', 
-                                    border: '1px solid #e0e0e0', 
+                                    border: 'none', 
                                     width: '100%', 
-                                    maxWidth: 950,
-                                    minWidth: 700,
+                                    maxWidth: '100%', 
+                                    minWidth: 1100,
                                     maxHeight: 'calc(100vh - 350px)',
-                                    overflowX: 'auto',
+                                    height: 'auto',
+                                    overflowY: 'auto',
                                     '&::-webkit-scrollbar': {
                                         width: '6px'
                                     },
@@ -499,15 +483,14 @@ export default function UserManagement({user, onLogout}: UserManagementProps) {
                                     }
                                 }}
                             >
-                                <Table stickyHeader size="small" sx={{ tableLayout: 'fixed' }}>
-                                    <TableHead>
+                                <Table stickyHeader size="small" sx={{ tableLayout: 'fixed' }}>                                    <TableHead>
                                         <TableRow>
-                                            <TableCell>Họ tên</TableCell>
-                                            <TableCell>Mã số sinh viên</TableCell>
-                                            <TableCell>Vai trò</TableCell>
-                                            <TableCell>Khoa/Phòng ban</TableCell>
-                                            <TableCell>Trạng thái</TableCell>
-                                            <TableCell>Thao tác</TableCell>
+                                            <TableCell sx={{ minWidth: columnWidths.email, height: '50px', fontWeight: 'bold', color: '#FFFFFF', fontSize: '16px', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6' }}>Mã số sinh viên</TableCell>
+                                            <TableCell sx={{ minWidth: columnWidths.name, height: '50px', fontWeight: 'bold', color: '#FFFFFF', fontSize: '16px', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6' }}>Họ tên</TableCell>
+                                            <TableCell sx={{ minWidth: columnWidths.role, height: '50px', fontWeight: 'bold', color: '#FFFFFF', fontSize: '16px', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6' }}>Vai trò</TableCell>
+                                            <TableCell sx={{ minWidth: columnWidths.department, height: '50px', fontWeight: 'bold', color: '#FFFFFF', fontSize: '16px', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6' }}>Khoa/Phòng ban</TableCell>
+                                            <TableCell sx={{ minWidth: columnWidths.status, height: '50px', fontWeight: 'bold', color: '#FFFFFF', fontSize: '16px', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6' }}>Trạng thái</TableCell>
+                                            <TableCell sx={{ minWidth: columnWidths.actions, height: '50px', fontWeight: 'bold', color: '#FFFFFF', fontSize: '16px', fontFamily: '"Varela Round", sans-serif', textAlign: 'center', backgroundColor: '#6ebab6' }}>Thao tác</TableCell>
                                         </TableRow>
                                     </TableHead>
                                     <TableBody>
@@ -523,22 +506,24 @@ export default function UserManagement({user, onLogout}: UserManagementProps) {
                                                     key={user.id}
                                                     sx={{ '&:hover': { backgroundColor: '#f5f5f5' }, '&:last-child td, &:last-child th': { borderBottom: 'none' } }}
                                                 >
-                                                    <TableCell sx={{ minWidth: 120, height: '50px', fontSize: '14px', fontFamily: '"Varela Round", sans-serif', fontWeight: 800 }}>{user.name}</TableCell>
-                                                    <TableCell sx={{ minWidth: 160, height: '50px', fontSize: '14px', fontFamily: '"Varela Round", sans-serif' }}>{user.studentid}</TableCell>
-                                                    <TableCell sx={{ minWidth: 110, height: '50px', fontSize: '14px', fontFamily: '"Varela Round", sans-serif' }}>
+                                                    <TableCell sx={{ minWidth: columnWidths.email, height: '50px', fontSize: '14px', fontFamily: '"Varela Round", sans-serif' }}>{user.studentid}</TableCell>
+                                                    <TableCell sx={{ minWidth: columnWidths.name, height: '50px', fontSize: '14px', fontFamily: '"Varela Round", sans-serif', fontWeight: 800 }}>{user.name}</TableCell>
+                                                    <TableCell sx={{ minWidth: columnWidths.role, height: '50px', fontSize: '14px', fontFamily: '"Varela Round", sans-serif' }}>
                                                         {user.role === 'N3' && 'Sinh viên'}
                                                         {user.role === 'N2' && 'Phòng đào tạo'}
                                                         {user.role === 'N4' && 'Phòng tài chính'}
                                                         {user.role === 'N1' && 'Quản trị viên'}
                                                     </TableCell>
-                                                    <TableCell sx={{ minWidth: 140, height: '50px', fontSize: '14px', fontFamily: '"Varela Round", sans-serif' }}>{user.department}</TableCell>
-                                                    <TableCell sx={{ minWidth: 100, height: '50px', fontSize: '14px', fontFamily: '"Varela Round", sans-serif' }}>
+                                                    <TableCell sx={{ minWidth: columnWidths.department, height: '50px', fontSize: '14px', fontFamily: '"Varela Round", sans-serif' }}>{user.department}</TableCell>
+                                                    <TableCell sx={{ minWidth: columnWidths.status, height: '50px', fontSize: '14px', fontFamily: '"Varela Round", sans-serif' }}>
                                                         <Box
                                                             sx={{
                                                                 display: 'inline-block',
                                                                 px: 2,
                                                                 py: 1,
                                                                 borderRadius: '20px',
+                                                                fontWeight: 700,
+                                                                fontSize: '14px',
                                                                 ...(user.status === 'active' ? 
                                                                     { bgcolor: '#e0f7fa', color: '#00838f' } : 
                                                                     { bgcolor: '#ffebee', color: '#c62828' })
@@ -547,7 +532,7 @@ export default function UserManagement({user, onLogout}: UserManagementProps) {
                                                             {user.status === 'active' ? 'Hoạt động' : 'Vô hiệu'}
                                                         </Box>
                                                     </TableCell>
-                                                    <TableCell align="center" sx={{ minWidth: 90, height: '50px', fontSize: '14px', fontFamily: '"Varela Round", sans-serif' }}>
+                                                    <TableCell align="center" sx={{ minWidth: columnWidths.actions, height: '50px', fontSize: '14px', fontFamily: '"Varela Round", sans-serif' }}>
                                                         <IconButton size="small" onClick={() => handleOpenEditDialog(user)}>
                                                             <EditIcon fontSize="small" />
                                                         </IconButton>
@@ -560,12 +545,6 @@ export default function UserManagement({user, onLogout}: UserManagementProps) {
                                         )}
                                     </TableBody>
                                 </Table>
-                                <Pagination
-                                    count={totalPages}
-                                    page={page}
-                                    onChange={(_e, value) => setPage(value)}
-                                    sx={{ mt: 2, display: 'flex', justifyContent: 'center' }}
-                                />
                             </TableContainer>
                         </Box>
                     )}
@@ -641,14 +620,36 @@ export default function UserManagement({user, onLogout}: UserManagementProps) {
                                         <InputLabel sx={{ fontWeight: 500 }}>Vai trò</InputLabel>
                                         <Select
                                             value={currentUser?.role || 'N3'}
-                                            disabled
+                                            disabled={dialogType === "edit"}
                                             label="Vai trò"
                                             onChange={(e: SelectChangeEvent) => setCurrentUser({...currentUser, role: e.target.value})}
+                                            sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '12px', '& .MuiOutlinedInput-notchedOutline': { borderRadius: '12px', borderColor: '#d8d8d8' } }}
+                                            MenuProps={{
+                                                PaperProps: {
+                                                    elevation: 4,
+                                                    sx: {
+                                                        borderRadius: 3,
+                                                        minWidth: 200,
+                                                        boxShadow: '0 4px 24px 0 rgba(0,0,0,0.10)',
+                                                        p: 1,
+                                                    },
+                                                },
+                                                MenuListProps: {
+                                                    sx: {
+                                                        display: 'flex',
+                                                        flexDirection: 'column',
+                                                        gap: 0.5,
+                                                        fontFamily: '"Varela Round", sans-serif',
+                                                        borderRadius: 3,
+                                                        p: 0,
+                                                    },
+                                                },
+                                            }}
                                         >
-                                            <MenuItem value="N3">Sinh viên</MenuItem>
-                                            <MenuItem value="N2">Phòng đào tạo</MenuItem>
-                                            <MenuItem value="N4">Phòng tài chính</MenuItem>
-                                            <MenuItem value="N1">Quản trị viên</MenuItem>
+                                            <MenuItem value="N3" sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>Sinh viên</MenuItem>
+                                            <MenuItem value="N2" sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>Phòng đào tạo</MenuItem>
+                                            <MenuItem value="N4" sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>Phòng tài chính</MenuItem>
+                                            <MenuItem value="N1" sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>Quản trị viên</MenuItem>
                                         </Select>
                                     </FormControl>
                                 </Grid>
@@ -659,9 +660,31 @@ export default function UserManagement({user, onLogout}: UserManagementProps) {
                                             value={currentUser?.status || 'active'}
                                             label="Trạng thái"
                                             onChange={(e: SelectChangeEvent) => setCurrentUser({...currentUser, status: e.target.value})}
+                                            sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '12px', '& .MuiOutlinedInput-notchedOutline': { borderRadius: '12px', borderColor: '#d8d8d8' } }}
+                                            MenuProps={{
+                                                PaperProps: {
+                                                    elevation: 4,
+                                                    sx: {
+                                                        borderRadius: 3,
+                                                        minWidth: 200,
+                                                        boxShadow: '0 4px 24px 0 rgba(0,0,0,0.10)',
+                                                        p: 1,
+                                                    },
+                                                },
+                                                MenuListProps: {
+                                                    sx: {
+                                                        display: 'flex',
+                                                        flexDirection: 'column',
+                                                        gap: 0.5,
+                                                        fontFamily: '"Varela Round", sans-serif',
+                                                        borderRadius: 3,
+                                                        p: 0,
+                                                    },
+                                                },
+                                            }}
                                         >
-                                            <MenuItem value="active">Hoạt động</MenuItem>
-                                            <MenuItem value="inactive">Vô hiệu</MenuItem>
+                                            <MenuItem value="active" sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>Hoạt động</MenuItem>
+                                            <MenuItem value="inactive" sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>Vô hiệu</MenuItem>
                                         </Select>
                                     </FormControl>
                                 </Grid>
@@ -692,9 +715,8 @@ export default function UserManagement({user, onLogout}: UserManagementProps) {
                             justifyContent: 'flex-end',
                             gap: 2,
                             background: 'transparent',
-                        }}>
-                            <Button onClick={handleCloseDialog}>Hủy</Button>
-                            <Button variant="contained" onClick={handleSaveUser} sx={{ borderRadius: '8px', boxShadow: 'none' }}>
+                        }}>                            <Button onClick={handleCloseDialog} sx={{ fontFamily: '"Varela Round", sans-serif' }}>Hủy</Button>
+                            <Button variant="contained" onClick={handleSaveUser} sx={{ borderRadius: '8px', boxShadow: 'none', fontFamily: '"Varela Round", sans-serif' }}>
                                 {dialogType === "add" ? "Tạo người dùng" : "Lưu thay đổi"}
                             </Button>
                         </DialogActions>
@@ -728,10 +750,17 @@ export default function UserManagement({user, onLogout}: UserManagementProps) {
                             >
                                 Bạn có chắc chắn muốn xóa tài khoản {userToDelete?.name}?
                             </Typography>
-                        </DialogContent>
-                        <DialogActions>
-                            <Button onClick={handleCloseDeleteDialog}>Hủy</Button>
-                            <Button variant="contained" color="error" onClick={handleConfirmDelete}>
+                        </DialogContent>                        <DialogActions sx={{
+                            px: 4,
+                            pb: 3,
+                            pt: 2,
+                            display: 'flex',
+                            justifyContent: 'flex-end',
+                            gap: 2,
+                            background: 'transparent',
+                        }}>
+                            <Button onClick={handleCloseDeleteDialog} sx={{ fontFamily: '"Varela Round", sans-serif' }}>Hủy</Button>
+                            <Button variant="contained" color="error" onClick={handleConfirmDelete} sx={{ borderRadius: '8px', boxShadow: 'none', fontFamily: '"Varela Round", sans-serif' }}>
                                 Xóa
                             </Button>
                         </DialogActions>
@@ -740,11 +769,11 @@ export default function UserManagement({user, onLogout}: UserManagementProps) {
                     {/* Snackbar for notifications */}
                     <Snackbar
                         open={snackbarOpen}
-                        autoHideDuration={4000}
-                        onClose={handleCloseSnackbar}
+                        autoHideDuration={6000}
+                        onClose={() => setSnackbarOpen(false)}
                         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
                     >
-                        <Alert severity="success" onClose={handleCloseSnackbar}>
+                        <Alert onClose={() => setSnackbarOpen(false)} severity="success">
                             {snackbarMessage}
                         </Alert>
                     </Snackbar>

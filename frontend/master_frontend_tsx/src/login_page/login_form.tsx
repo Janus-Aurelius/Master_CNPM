@@ -45,6 +45,7 @@ interface UserData {
 
 export default function LoginForm({ onLogin }: LoginFormProps) {
     const [showPassword, setShowPassword] = useState<boolean>(false);
+    const [selectedRole, setSelectedRole] = useState<string>('student');
     const navigate = useNavigate();
 
     const handleClickShowPassword = () => setShowPassword((prev) => !prev);
@@ -139,7 +140,7 @@ export default function LoginForm({ onLogin }: LoginFormProps) {
                         position: 'relative',
                         zIndex: 2,
                         width: { xs: '90%', md: '50%' },
-                        maxWidth: '37.5rem',
+                        maxWidth: '33.5rem',
                         backgroundColor: 'rgba(255, 255, 255, 0.68)',
                         backdropFilter: 'blur(12px)',
                         borderRadius: '1.25rem',
@@ -151,7 +152,7 @@ export default function LoginForm({ onLogin }: LoginFormProps) {
                         component="header"
                         sx={{ py: '1.875rem', display: 'flex', justifyContent: 'space-between' }}
                     >
-                        <Box sx={{ gap: '0.125rem', display: 'flex', alignItems: 'center', ml: '1rem' }}>
+                        <Box sx={{ gap: '0.125rem', display: 'flex', alignItems: 'center', ml: '0.7rem' }}>
                             <IconButton variant="soft" color="primary" size="sm" sx={{ backgroundColor: 'transparent' }}>
                                 <img
                                     src="https://upload.wikimedia.org/wikipedia/commons/0/00/Logo_UIT_updated.svg"
@@ -159,7 +160,7 @@ export default function LoginForm({ onLogin }: LoginFormProps) {
                                     style={{ width: '4.375rem', height: '4.375rem'}}
                                 />
                             </IconButton>
-                            <Typography level="title-lg" sx={{ fontWeight: 'bold', fontSize: '1.875rem' }}>  
+                            <Typography level="title-lg" sx={{ fontWeight: 'bold', fontSize: '1.875rem' , ml: '1rem'}}>  
                                 <span style={{ color: '#4299e1' }}>UIT</span> 
                                 <span style={{ color: '#b2f5ea' }}> - </span> 
                                 <span style={{ color: '#38b2ac' }}>ĐĂNG KÍ HỌC PHẦN</span>
@@ -167,56 +168,96 @@ export default function LoginForm({ onLogin }: LoginFormProps) {
                         </Box>
                     </Box>
                     <Box
-                        component="form"
-                        onSubmit={handleFormSubmit}
+                        component="main"
                         sx={{
+                            my: 'auto',
+                            py: '0.5rem',
+                            pb: '1.25rem',
                             display: 'flex',
                             flexDirection: 'column',
-                            gap: '1rem',
-                            width: '100%',
+                            gap: '0.5rem',
+                            width: '26.875rem',
                             maxWidth: '100%',
                             mx: 'auto',
-                            p: '1rem',
+                            borderRadius: 'sm',
+                            '& form': {
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: '0.5rem'
+                            },
+                            [`& .MuiFormLabel-asterisk`]: {
+                                visibility: 'hidden'
+                            },
+                            '& *': {
+                                fontSize: '1rem' 
+                            }
                         }}
                     >
-                        <FormControl required>
-                            <FormLabel>Tên đăng nhập</FormLabel>
-                            <Input
-                                name="username"
-                                type="text"
-                                placeholder="Nhập tên đăng nhập"
-                                required
-                            />
-                        </FormControl>
-                        <FormControl required>
-                            <FormLabel>Mật khẩu</FormLabel>
-                            <Input
-                                name="password"
-                                type={showPassword ? 'text' : 'password'}
-                                placeholder="Nhập mật khẩu"
-                                required
-                                endDecorator={
-                                    <IconButton
-                                        onClick={handleClickShowPassword}
-                                    >
-                                        {showPassword ? <VisibilityOff /> : <Visibility />}
-                                    </IconButton>
-                                }
-                            />
-                        </FormControl>
-                        <Button
-                            type="submit"
-                            fullWidth
-                            sx={{
-                                mt: 2,
-                                backgroundColor: '#4299e1',
-                                '&:hover': {
-                                    backgroundColor: '#3182ce',
-                                },
-                            }}
-                        >
-                            Đăng nhập
-                        </Button>
+                        <Stack sx={{ gap: '0.5rem', mb: '1.25rem' }}>
+                            <Stack sx={{ gap: '1rem' }}>
+                                <Typography 
+                                    component="h1" 
+                                    level="h3" 
+                                    sx={{ 
+                                        fontSize: '2.7rem', 
+                                        fontWeight: 'bold', 
+                                        textAlign: 'center',
+                                    }}
+                                >
+                                    Đăng nhập
+                                </Typography> 
+                            </Stack>
+                        </Stack>
+                        <Stack sx={{  gap: '0.0625rem', mt: '0.125rem' }}>
+                            <form onSubmit={handleFormSubmit} autoComplete="off">
+                                <FormControl required  sx={{ mb: '0.09375rem' }}>
+                                    <FormLabel sx={{ fontSize: '1.25rem', color: '#606060' }}>Tên đăng nhập</FormLabel>
+                                    <Input
+                                        name="username"
+                                        type="text"
+                                        autoComplete="new-username"
+                                        sx={{ height: '2.8125rem', borderRadius: '0.625rem', boxShadow: 'none' }}
+                                        required
+                                    />
+                                </FormControl>
+                                <FormControl required  sx={{ mb: '0.09375rem' }}>
+                                    <FormLabel sx={{ fontSize: '1.25rem', color: '#606060' }}>Mật khẩu</FormLabel>
+                                    <Input
+                                        name="password"
+                                        type={showPassword ? 'text' : 'password'}
+                                        autoComplete="new-password"
+                                        sx={{ height: '2.8125rem', borderRadius: '0.625rem', boxShadow: 'none' }}
+                                        required
+                                        endDecorator={
+                                            <IconButton
+                                                variant="plain"
+                                                onClick={handleClickShowPassword}
+                                                sx={{ ml: '-0.09375rem' }}
+                                            >
+                                                {showPassword ? <VisibilityOff /> : <Visibility />}
+                                            </IconButton>
+                                        }
+                                    />
+                                </FormControl>
+                                <Box
+                                    sx={{
+                                        display: 'flex',
+                                        justifyContent: 'space-between',
+                                        alignItems: 'center',
+                                        mb: '0.5rem'
+                                    }}
+                                >
+                                </Box>
+                                <Button type="submit" fullWidth sx={{borderRadius: '0.625rem', backgroundColor: '#2f6bff', color: 'white'}}>
+                                    Đăng nhập
+                                </Button>
+                            </form>
+                        </Stack>
+                    </Box>
+                    <Box component="footer" sx={{ py: '1.875rem' }}>
+                        <Typography level="body-xs" sx={{ textAlign: 'center' }}>
+                            © A Project of Group 4 - {new Date().getFullYear()}
+                        </Typography>
                     </Box>
                 </Box>
             </Box>

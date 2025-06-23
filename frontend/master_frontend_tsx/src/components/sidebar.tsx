@@ -25,8 +25,7 @@ interface SideBarProps {
     children: ReactNode;
 }
 
-export const SideBar = ({ children }: SideBarProps) => {
-    return (
+export const SideBar = ({ children }: SideBarProps) => {    return (
         <Box
             sx={{
                 position: 'relative',
@@ -35,7 +34,7 @@ export const SideBar = ({ children }: SideBarProps) => {
                 justifyContent: 'left',
                 alignItems: 'center',
                 minHeight: '100vh',
-                overflow: 'hidden',
+                overflow: 'hidden',  /* This is already correct but keeping it for clarity */
                 backgroundColor: '#edf5fb',
             }}
         >

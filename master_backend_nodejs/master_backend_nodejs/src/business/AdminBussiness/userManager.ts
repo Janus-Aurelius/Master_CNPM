@@ -74,19 +74,21 @@ class UserManager {
     }
 
     async createUser(userData: Omit<IUser, 'id' | 'createdAt' | 'updatedAt'>): Promise<IUser> {
-        // Validate studentId thay vì email
-        if (!userData.studentId) throw new AppError(400, 'Student ID is required');
+        // Chỉ kiểm tra studentId nếu vai trò là sinh viên
+        if (userData.role === 'N3' && !userData.studentId) {
+            throw new AppError(400, 'Student ID is required for students');
+        }
         
-        // Check duplicate username (mã số sinh viên)
-        const existingUser = await userService.getUserByUsername(userData.studentId);
-        if (existingUser) throw new AppError(400, 'User already exists');
-
-        // Nếu là sinh viên thì kiểm tra tồn tại trong bảng SINHVIEN
-        if (userData.role === 'N3') {
+        // Kiểm tra trùng lặp username (mã số sinh viên) chỉ khi vai trò là sinh viên
+        if (userData.role === 'N3'&& userData.studentId) {
+            const existingUser = await userService.getUserByUsername(userData.studentId);
+            if (existingUser) throw new AppError(400, 'User already exists');
+    
+            // Kiểm tra tồn tại trong bảng SINHVIEN
             const student = await userService.getStudentById(userData.studentId);
             if (!student) throw new AppError(400, 'Student does not exist');
         }
-
+    
         // Sinh mã UserID mới
         const lastUser = await userService.getLastUser();
         let newUserId = 'U001';
@@ -94,14 +96,14 @@ class UserManager {
             const num = parseInt(lastUser.UserID.replace('U', '')) + 1;
             newUserId = 'U' + num.toString().padStart(3, '0');
         }
-
-        // Gọi service để insert - dùng studentId làm TenDangNhap
+    
+        // Gọi service để insert - dùng studentId làm TenDangNhap nếu là sinh viên
         const result = await userService.createUser({
-            username: userData.studentId,
+            username: userData.role === 'N3' ? userData.studentId! : (userData.name || 'defaultUsername'),
             userId: newUserId,
-            password: '123456',
+            password: '123',
             role: userData.role || '',
-            studentId: userData.studentId,
+            studentId: userData.role === 'N3' ? userData.studentId : undefined,
             status: userData.status ? 'active' : 'inactive'
         });
         if (!result) throw new AppError(500, 'Failed to create user');

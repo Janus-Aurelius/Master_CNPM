@@ -12,10 +12,10 @@ const ThemeContainer = styled.div`
     display: flex;
     min-height: 100vh;
     width: 100%;
-    overflow: auto;
+    overflow: hidden; /* Changed from auto to hidden to prevent duplicate scrollbars */
     
     &::-webkit-scrollbar {
-        width: 0;  /* Hide horizontal scrollbar but allow scrolling */
+        width: 0;
         height: 0;
     }
 `;

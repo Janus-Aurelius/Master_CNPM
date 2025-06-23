@@ -99,7 +99,9 @@ export class FinancialPaymentService {
             } else if (row.dueDate && new Date(row.dueDate) < new Date()) {
                 paymentStatus = 'overdue';
             }
-            
+            else {
+                paymentStatus = 'not_enough';
+            }
             // Get payment history for each student
             const paymentHistory = await this.getPaymentHistory(row.studentId, row.semesterId);
             

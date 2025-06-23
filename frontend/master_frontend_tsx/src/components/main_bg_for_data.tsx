@@ -8,7 +8,7 @@ const StyledMainBg = styled.main`
     background:#edf5fb;
     padding: 20px;
     position: relative;
-    overflow: auto;
+    overflow: hidden; /* Changed from auto to hidden to prevent duplicate scrollbars */
     
     &::-webkit-scrollbar {
         width: 6px;

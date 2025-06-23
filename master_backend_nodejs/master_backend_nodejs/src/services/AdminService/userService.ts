@@ -126,11 +126,17 @@ export const getStudentById = async (studentId: string) => {
 export const createUser = async (user: {
     username: string, userId: string, password: string, role: string, studentId?: string, status?: string
 }) => {
-    return await DatabaseService.queryOne<IUser>(
-        `INSERT INTO NGUOIDUNG (TenDangNhap, UserID, MatKhau, MaNhom, MaSoSinhVien, TrangThai)
-         VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
-        [user.username, user.userId, user.password, user.role, user.studentId || null, user.status || 'active']
-    );
+    const query = user.role === 'N3' 
+        ? `INSERT INTO NGUOIDUNG (TenDangNhap, UserID, MatKhau, MaNhom, MaSoSinhVien, TrangThai)
+           VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`
+        : `INSERT INTO NGUOIDUNG (TenDangNhap, UserID, MatKhau, MaNhom, TrangThai)
+           VALUES ($1, $2, $3, $4, $5) RETURNING *`;
+
+    const params = user.role === 'N3' 
+        ? [user.username, user.userId, user.password, user.role, user.studentId, user.status || 'active']
+        : [user.username, user.userId, user.password, user.role, user.status || 'active'];
+
+    return await DatabaseService.queryOne<IUser>(query, params);
 };
 
 export const updateUser = async (id: string, user: { name?: string, departmentId?: string, status?: string }) => {
