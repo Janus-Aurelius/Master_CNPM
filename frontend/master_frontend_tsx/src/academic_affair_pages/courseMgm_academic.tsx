@@ -281,14 +281,16 @@ const CourseMgmAcademic: React.FC<AcademicPageProps> = ({ user, onLogout }) => {
                             {error}
                         </Typography>
                     )}                    <Box sx={{ marginBottom: '24px' }}>
-                        {/* Search and Filter Row */}
-                        <Grid container spacing={2} sx={{ mb: 2 }}>
-                            <Grid item xs={12} md={3}>
+                        {/* Search and Filter Row */}                        <Grid container spacing={2} sx={{ mb: 2 }}>
+                            <Grid item xs={12} md={6}>
                                 <TextField
                                     fullWidth
-                                    placeholder="Tìm kiếm theo mã môn học"
+                                    placeholder="Tìm kiếm theo mã môn học hoặc tên môn học"
                                     value={searchMaMonHoc}
-                                    onChange={e => setSearchMaMonHoc(e.target.value)}
+                                    onChange={e => {
+                                        setSearchMaMonHoc(e.target.value);
+                                        setSearchTenMonHoc(e.target.value); // Update both search states
+                                    }}
                                     InputProps={{
                                         startAdornment: (
                                             <InputAdornment position="start">
@@ -301,50 +303,12 @@ const CourseMgmAcademic: React.FC<AcademicPageProps> = ({ user, onLogout }) => {
                                     sx={{ 
                                         fontFamily: '"Varela Round", sans-serif',
                                         '& .MuiOutlinedInput-root': {
-                                            borderRadius: '12px',
-                                            backgroundColor: '#fafafa',
-                                            '&:hover': {
-                                                backgroundColor: '#f5f5f5',
-                                            },
-                                            '&.Mui-focused': {
-                                                backgroundColor: '#fff',
-                                            }
+                                            borderRadius: '9px',
                                         }
                                     }}
                                 />
                             </Grid>
-                            <Grid item xs={12} md={3}>
-                                <TextField
-                                    fullWidth
-                                    placeholder="Tìm kiếm theo tên môn học"
-                                    value={searchTenMonHoc}
-                                    onChange={e => setSearchTenMonHoc(e.target.value)}
-                                    InputProps={{
-                                        startAdornment: (
-                                            <InputAdornment position="start">
-                                                <SearchIcon sx={{ color: '#9e9e9e' }} />
-                                            </InputAdornment>
-                                        ),
-                                    }}
-                            variant="outlined"
-                                    size="small"
-                                    sx={{ 
-                                        fontFamily: '"Varela Round", sans-serif',
-                                        '& .MuiOutlinedInput-root': {
-                                            borderRadius: '12px',
-                                            backgroundColor: '#fafafa',
-                                            '&:hover': {
-                                                backgroundColor: '#f5f5f5',
-                                            },
-                                            '&.Mui-focused': {
-                                                backgroundColor: '#fff',
-                                            }
-                                        }
-                                    }}
-                                />
-                            </Grid>
-                            <Grid item xs={12} md={2}>
-                                <TextField
+                            <Grid item xs={12} md={2}>                                <TextField
                                     select
                                     label="Mã loại môn"
                                     value={maLoaiMonFilter}
@@ -354,25 +318,43 @@ const CourseMgmAcademic: React.FC<AcademicPageProps> = ({ user, onLogout }) => {
                                     sx={{ 
                                         fontFamily: '"Varela Round", sans-serif',
                                         '& .MuiOutlinedInput-root': {
-                                            borderRadius: '12px',
-                                            backgroundColor: '#fafafa',
-                                            '&:hover': {
-                                                backgroundColor: '#f5f5f5',
+                                            borderRadius: '9px',
+                                        },
+                                        '& .MuiOutlinedInput-notchedOutline': {
+                                            borderRadius: '9px',
+                                        }
+                                    }}
+                                    SelectProps={{
+                                        MenuProps: {
+                                            PaperProps: {
+                                                elevation: 4,
+                                                sx: {
+                                                    borderRadius: 3,
+                                                    minWidth: 200,
+                                                    boxShadow: '0 4px 24px 0 rgba(0,0,0,0.10)',
+                                                    p: 1,
+                                                },
                                             },
-                                            '&.Mui-focused': {
-                                                backgroundColor: '#fff',
-                                            }
+                                            MenuListProps: {
+                                                sx: {
+                                                    display: 'flex',
+                                                    flexDirection: 'column',
+                                                    gap: 0.5,
+                                                    fontFamily: '"Varela Round", sans-serif',
+                                                    borderRadius: 3,
+                                                    p: 0,
+                                                },
+                                            },
                                         }
                                     }}
                                 >
-                                    <MenuItem value="all">Tất cả</MenuItem>
+                                    <MenuItem value="all" sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>Tất cả</MenuItem>
                                     {uniqueMaLoaiMon.map(ma => (
-                                        <MenuItem key={ma} value={ma}>{ma}</MenuItem>
+                                        <MenuItem key={ma} value={ma} sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>{ma}</MenuItem>
                                     ))}
                                 </TextField>
                             </Grid>
-                            <Grid item xs={12} md={2}>
-                                <TextField
+                            <Grid item xs={12} md={2}>                                <TextField
                                     select
                                     label="Số tiết"
                                     value={soTietFilter}
@@ -382,25 +364,43 @@ const CourseMgmAcademic: React.FC<AcademicPageProps> = ({ user, onLogout }) => {
                                     sx={{ 
                                         fontFamily: '"Varela Round", sans-serif',
                                         '& .MuiOutlinedInput-root': {
-                                            borderRadius: '12px',
-                                            backgroundColor: '#fafafa',
-                                            '&:hover': {
-                                                backgroundColor: '#f5f5f5',
+                                            borderRadius: '9px',
+                                        },
+                                        '& .MuiOutlinedInput-notchedOutline': {
+                                            borderRadius: '9px',
+                                        }
+                                    }}
+                                    SelectProps={{
+                                        MenuProps: {
+                                            PaperProps: {
+                                                elevation: 4,
+                                                sx: {
+                                                    borderRadius: 3,
+                                                    minWidth: 200,
+                                                    boxShadow: '0 4px 24px 0 rgba(0,0,0,0.10)',
+                                                    p: 1,
+                                                },
                                             },
-                                            '&.Mui-focused': {
-                                                backgroundColor: '#fff',
-                                            }
+                                            MenuListProps: {
+                                                sx: {
+                                                    display: 'flex',
+                                                    flexDirection: 'column',
+                                                    gap: 0.5,
+                                                    fontFamily: '"Varela Round", sans-serif',
+                                                    borderRadius: 3,
+                                                    p: 0,
+                                                },
+                                            },
                                         }
                                     }}
                                 >
-                                    <MenuItem value="all">Tất cả</MenuItem>
+                                    <MenuItem value="all" sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>Tất cả</MenuItem>
                                     {uniqueSoTiet.map(st => (
-                                        <MenuItem key={st} value={st}>{st}</MenuItem>
+                                        <MenuItem key={st} value={st} sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>{st}</MenuItem>
                                     ))}
                                 </TextField>
                             </Grid>
-                            <Grid item xs={12} md={2}>
-                                <TextField
+                            <Grid item xs={12} md={2}>                                <TextField
                                     select
                                     label="Số tín chỉ"
                                     value={creditsFilter}
@@ -410,46 +410,53 @@ const CourseMgmAcademic: React.FC<AcademicPageProps> = ({ user, onLogout }) => {
                                     sx={{ 
                                         fontFamily: '"Varela Round", sans-serif',
                                         '& .MuiOutlinedInput-root': {
-                                            borderRadius: '12px',
-                                            backgroundColor: '#fafafa',
-                                            '&:hover': {
-                                                backgroundColor: '#f5f5f5',
+                                            borderRadius: '9px',
+                                        },
+                                        '& .MuiOutlinedInput-notchedOutline': {
+                                            borderRadius: '9px',
+                                        }
+                                    }}
+                                    SelectProps={{
+                                        MenuProps: {
+                                            PaperProps: {
+                                                elevation: 4,
+                                                sx: {
+                                                    borderRadius: 3,
+                                                    minWidth: 200,
+                                                    boxShadow: '0 4px 24px 0 rgba(0,0,0,0.10)',
+                                                    p: 1,
+                                                },
                                             },
-                                            '&.Mui-focused': {
-                                                backgroundColor: '#fff',
-                                            }
+                                            MenuListProps: {
+                                                sx: {
+                                                    display: 'flex',
+                                                    flexDirection: 'column',
+                                                    gap: 0.5,
+                                                    fontFamily: '"Varela Round", sans-serif',
+                                                    borderRadius: 3,
+                                                    p: 0,
+                                                },
+                                            },
                                         }
                                     }}
                                 >
-                                    <MenuItem value="all">Tất cả</MenuItem>
+                                    <MenuItem value="all" sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>Tất cả</MenuItem>
                                     {uniqueCredits.map(cr => (
-                                        <MenuItem key={cr} value={cr}>{cr}</MenuItem>
+                                        <MenuItem key={cr} value={cr} sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>{cr}</MenuItem>
                                     ))}
                                 </TextField>
                             </Grid>
                         </Grid>
                         
                         {/* Action Button Row */}
-                        <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
-                        <Button
+                        <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2 }}>                        <Button
                             variant="contained"
                             color="primary"
                             startIcon={<AddIcon />}
                             onClick={() => handleOpenDialog(false)}
                                 sx={{ 
                                     fontFamily: '"Varela Round", sans-serif', 
-                                    borderRadius: '12px',
-                                    px: 3,
-                                    py: 1,
-                                    fontSize: '14px',
-                                    fontWeight: 600,
-                                    textTransform: 'none',
-                                    boxShadow: '0 4px 12px rgba(25, 118, 210, 0.3)',
-                                    '&:hover': {
-                                        boxShadow: '0 6px 16px rgba(25, 118, 210, 0.4)',
-                                        transform: 'translateY(-1px)',
-                                    },
-                                    transition: 'all 0.2s ease-in-out'
+                                    borderRadius: '8px'
                                 }}
                         >
                             Thêm môn học
@@ -457,98 +464,64 @@ const CourseMgmAcademic: React.FC<AcademicPageProps> = ({ user, onLogout }) => {
                         </Box>
                     </Box>
                     {loading ? (
-                        <Typography sx={{ textAlign: 'center', mt: 4 }}>Loading...</Typography>                    ) : (
-                        <TableContainer component={Paper} sx={{ 
-                            mt: 2, 
-                            borderRadius: '16px', 
-                            boxShadow: '0 8px 24px rgba(0, 0, 0, 0.08)',
-                            border: '1px solid rgba(224, 224, 224, 0.3)',
-                            overflow: 'auto',
-                            maxHeight: 'calc(100vh - 400px)',
-                            '&::-webkit-scrollbar': {
-                                width: '8px',
-                                height: '8px'
-                            },
-                            '&::-webkit-scrollbar-track': {
-                                backgroundColor: '#f1f1f1',
-                                borderRadius: '8px'
-                            },
-                            '&::-webkit-scrollbar-thumb': {
-                                backgroundColor: 'rgba(0,0,0,0.3)',
-                                borderRadius: '8px',
-                                '&:hover': {
-                                    backgroundColor: 'rgba(0,0,0,0.5)'
-                                }
-                            },
-                            '&::-webkit-scrollbar-corner': {
-                                backgroundColor: '#f1f1f1'
-                            }
+                        <Typography sx={{ textAlign: 'center', mt: 4 }}>Loading...</Typography>                    ) : (                        <TableContainer component={Paper} sx={{ 
+                            borderRadius: '12px', 
+                            boxShadow: '0 4px 10px rgba(0, 0, 0, 0.1)',
+                            maxHeight: '600px',
+                            overflow: 'auto'
                         }}>
                             <Table size="medium" stickyHeader>
                                 <TableHead>
-                                    <TableRow>
-                                        <TableCell sx={{ 
-                                            fontWeight: 700,
-                                            backgroundColor: '#f8f9fa',
-                                            color: '#2c3e50',
-                                            fontFamily: '"Montserrat", sans-serif',
-                                            fontSize: '14px',
-                                            borderBottom: '2px solid #e9ecef',
+                                    <TableRow>                                        <TableCell sx={{ 
+                                            fontWeight: 'bold',
+                                            color: '#FFFFFF',
+                                            fontSize: '16px',
+                                            backgroundColor: '#6ebab6',
                                             py: 2
                                         }}>
                                             Mã môn học
                                         </TableCell>
                                         <TableCell sx={{ 
-                                            fontWeight: 700,
-                                            backgroundColor: '#f8f9fa',
-                                            color: '#2c3e50',
-                                            fontFamily: '"Montserrat", sans-serif',
-                                            fontSize: '14px',
-                                            borderBottom: '2px solid #e9ecef',
+                                            fontWeight: 'bold',
+                                            color: '#FFFFFF',
+                                            fontSize: '16px',
+                                            backgroundColor: '#6ebab6',
                                             py: 2
                                         }}>
                                             Tên môn học
                                         </TableCell>
                                         <TableCell sx={{ 
-                                            fontWeight: 700,
-                                            backgroundColor: '#f8f9fa',
-                                            color: '#2c3e50',
-                                            fontFamily: '"Montserrat", sans-serif',
-                                            fontSize: '14px',
-                                            borderBottom: '2px solid #e9ecef',
+                                            fontWeight: 'bold',
+                                            color: '#FFFFFF',
+                                            fontSize: '16px',
+                                            backgroundColor: '#6ebab6',
                                             py: 2
                                         }}>
                                             Mã loại môn
                                         </TableCell>
                                         <TableCell sx={{ 
-                                            fontWeight: 700,
-                                            backgroundColor: '#f8f9fa',
-                                            color: '#2c3e50',
-                                            fontFamily: '"Montserrat", sans-serif',
-                                            fontSize: '14px',
-                                            borderBottom: '2px solid #e9ecef',
+                                            fontWeight: 'bold',
+                                            color: '#FFFFFF',
+                                            fontSize: '16px',
+                                            backgroundColor: '#6ebab6',
                                             py: 2
                                         }}>
                                             Số tiết
                                         </TableCell>
                                         <TableCell sx={{ 
-                                            fontWeight: 700,
-                                            backgroundColor: '#f8f9fa',
-                                            color: '#2c3e50',
-                                            fontFamily: '"Montserrat", sans-serif',
-                                            fontSize: '14px',
-                                            borderBottom: '2px solid #e9ecef',
+                                            fontWeight: 'bold',
+                                            color: '#FFFFFF',
+                                            fontSize: '16px',
+                                            backgroundColor: '#6ebab6',
                                             py: 2
                                         }}>
                                             Số tín chỉ
                                         </TableCell>
                                         <TableCell sx={{ 
-                                            fontWeight: 700,
-                                            backgroundColor: '#f8f9fa',
-                                            color: '#2c3e50',
-                                            fontFamily: '"Montserrat", sans-serif',
-                                            fontSize: '14px',
-                                            borderBottom: '2px solid #e9ecef',
+                                            fontWeight: 'bold',
+                                            color: '#FFFFFF',
+                                            fontSize: '16px',
+                                            backgroundColor: '#6ebab6',
                                             py: 2,
                                             textAlign: 'center'
                                         }}>
@@ -557,131 +530,28 @@ const CourseMgmAcademic: React.FC<AcademicPageProps> = ({ user, onLogout }) => {
                                     </TableRow>
                                 </TableHead>
                                 <TableBody>
-                                    {filteredSubjects.map((subject) => (
-                                        <TableRow
+                                    {filteredSubjects.map((subject) => (                                        <TableRow
                                             key={subject.maMonHoc}
-                                            sx={{
-                                                '&:nth-of-type(odd)': {
-                                                    backgroundColor: 'rgba(0, 0, 0, 0.02)',
-                                                },
-                                                '&:hover': {
-                                                    backgroundColor: 'rgba(25, 118, 210, 0.04)',
-                                                    transform: 'translateY(-1px)',
-                                                    boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)',
-                                                },
-                                                transition: 'all 0.2s ease-in-out',
-                                                cursor: 'pointer'
-                                            }}
-                                        >
-                                            <TableCell sx={{ 
-                                                fontFamily: '"Varela Round", sans-serif',
-                                                fontWeight: 600,
-                                                color: '#1976d2',
-                                                py: 2
-                                            }}>
-                                                {subject.maMonHoc}
-                                            </TableCell>
-                                            <TableCell sx={{ 
-                                                fontFamily: '"Varela Round", sans-serif',
-                                                color: '#2c3e50',
-                                                py: 2,
-                                                maxWidth: '200px'
-                                            }}>
-                                                {subject.tenMonHoc}
-                                            </TableCell>
-                                            <TableCell sx={{ 
-                                                fontFamily: '"Varela Round", sans-serif',
-                                                color: '#2c3e50',
-                                                py: 2
-                                            }}>
-                                                <Box sx={{
-                                                    display: 'inline-block',
-                                                    backgroundColor: '#e3f2fd',
-                                                    color: '#1976d2',
-                                                    px: 2,
-                                                    py: 0.5,
-                                                    borderRadius: '20px',
-                                                    fontSize: '12px',
-                                                    fontWeight: 600
-                                                }}>
-                                                    {subject.maLoaiMon}
-                                                </Box>
-                                            </TableCell>
-                                            <TableCell sx={{ 
-                                                fontFamily: '"Varela Round", sans-serif',
-                                                color: '#2c3e50',
-                                                py: 2,
-                                                textAlign: 'center'
-                                            }}>
-                                                <Box sx={{
-                                                    display: 'inline-block',
-                                                    backgroundColor: '#f3e5f5',
-                                                    color: '#7b1fa2',
-                                                    px: 2,
-                                                    py: 0.5,
-                                                    borderRadius: '20px',
-                                                    fontSize: '12px',
-                                                    fontWeight: 600,
-                                                    minWidth: '40px'
-                                                }}>
-                                                    {subject.soTiet}
-                                                </Box>
-                                            </TableCell>
-                                            <TableCell sx={{ 
-                                                fontFamily: '"Varela Round", sans-serif',
-                                                color: '#2c3e50',
-                                                py: 2,
-                                                textAlign: 'center'
-                                            }}>
-                                                <Box sx={{
-                                                    display: 'inline-block',
-                                                    backgroundColor: '#e8f5e8',
-                                                    color: '#2e7d32',
-                                                    px: 2,
-                                                    py: 0.5,
-                                                    borderRadius: '20px',
-                                                    fontSize: '12px',
-                                                    fontWeight: 600,
-                                                    minWidth: '30px'
-                                                }}>
-                                                    {parseInt(subject.credits.toString(), 10)}
-                                                </Box>
-                                            </TableCell>
-                                            <TableCell sx={{ py: 2, textAlign: 'center' }}>
-                                                <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1 }}>
+                                            hover
+                                        >                                            <TableCell sx={{ fontWeight: 500 }}>{subject.maMonHoc}</TableCell>
+                                            <TableCell sx={{ fontWeight: 500 }}>{subject.tenMonHoc}</TableCell>
+                                            <TableCell>{subject.maLoaiMon}</TableCell>
+                                            <TableCell>{subject.soTiet}</TableCell>
+                                            <TableCell>{parseInt(subject.credits.toString(), 10)}</TableCell><TableCell align="center">
                                                 <IconButton
                                                     size="small"
                                                     onClick={() => handleOpenDialog(true, subject)}
-                                                        sx={{
-                                                            color: '#1976d2',
-                                                            backgroundColor: 'rgba(25, 118, 210, 0.1)',
-                                                            borderRadius: '8px',
-                                                            '&:hover': {
-                                                                backgroundColor: 'rgba(25, 118, 210, 0.2)',
-                                                                transform: 'scale(1.1)',
-                                                            },
-                                                            transition: 'all 0.2s ease-in-out'
-                                                        }}
+                                                    sx={{ mr: 1, color: '#ed6c02' }}
                                                 >
                                                     <EditIcon fontSize="small" />
                                                 </IconButton>
                                                 <IconButton
                                                     size="small"
-                                                        onClick={() => handleDeleteSubject(subject.maMonHoc)}
-                                                        sx={{
-                                                            color: '#d32f2f',
-                                                            backgroundColor: 'rgba(211, 47, 47, 0.1)',
-                                                            borderRadius: '8px',
-                                                            '&:hover': {
-                                                                backgroundColor: 'rgba(211, 47, 47, 0.2)',
-                                                                transform: 'scale(1.1)',
-                                                            },
-                                                            transition: 'all 0.2s ease-in-out'
-                                                        }}
+                                                    onClick={() => handleDeleteSubject(subject.maMonHoc)}
+                                                    sx={{ color: '#d32f2f' }}
                                                 >
                                                     <DeleteIcon fontSize="small" />
                                                 </IconButton>
-                                                </Box>
                                             </TableCell>
                                         </TableRow>
                                     ))}
@@ -691,8 +561,7 @@ const CourseMgmAcademic: React.FC<AcademicPageProps> = ({ user, onLogout }) => {
                     )}
                 </Paper>
             </Box>
-            {/* Dialog for adding/editing subjects */}
-            <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="md" fullWidth
+            {/* Dialog for adding/editing subjects */}            <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="md" fullWidth
                 sx={{
                     '& .MuiPaper-root': {
                         borderRadius: '20px',
@@ -715,12 +584,11 @@ const CourseMgmAcademic: React.FC<AcademicPageProps> = ({ user, onLogout }) => {
                 </DialogTitle>                <DialogContent dividers sx={{
                     border: 'none',
                     px: 4,
-                    pt: 3,
-                    pb: 2,
+                    pt: 2,
+                    pb: 0,
                     background: 'transparent',
                 }}>
-                    <Grid container spacing={3} sx={{ mt: 0.5 }}>
-                        <Grid item xs={12} md={6}>
+                    <Grid container spacing={3} sx={{ mt: 0.5 }}>                        <Grid item xs={12} md={6}>
                             <TextField
                                 name="maMonHoc"
                                 label="Mã môn học"
@@ -731,18 +599,6 @@ const CourseMgmAcademic: React.FC<AcademicPageProps> = ({ user, onLogout }) => {
                                 value={currentSubject.maMonHoc}
                                 onChange={handleInputChange}
                                 disabled={isEditing}
-                                sx={{
-                                    '& .MuiOutlinedInput-root': {
-                                    borderRadius: '12px',
-                                        backgroundColor: isEditing ? '#f5f5f5' : '#fafafa',
-                                        '&:hover': {
-                                            backgroundColor: isEditing ? '#f5f5f5' : '#f0f0f0',
-                                        },
-                                        '&.Mui-focused': {
-                                            backgroundColor: '#fff',
-                                        }
-                                    }
-                                }}
                             />
                         </Grid>
                         <Grid item xs={12} md={6}>
@@ -755,18 +611,6 @@ const CourseMgmAcademic: React.FC<AcademicPageProps> = ({ user, onLogout }) => {
                                 variant="outlined"
                                 value={currentSubject.tenMonHoc}
                                 onChange={handleInputChange}
-                                sx={{
-                                    '& .MuiOutlinedInput-root': {
-                                    borderRadius: '12px',
-                                        backgroundColor: '#fafafa',
-                                        '&:hover': {
-                                            backgroundColor: '#f0f0f0',
-                                        },
-                                        '&.Mui-focused': {
-                                            backgroundColor: '#fff',
-                                        }
-                                    }
-                                }}
                             />                        </Grid>
                         <Grid item xs={12} md={6}>
                             <TextField
@@ -778,18 +622,6 @@ const CourseMgmAcademic: React.FC<AcademicPageProps> = ({ user, onLogout }) => {
                                 variant="outlined"
                                 value={currentSubject.maLoaiMon}
                                 onChange={handleInputChange}
-                                sx={{
-                                    '& .MuiOutlinedInput-root': {
-                                    borderRadius: '12px',
-                                        backgroundColor: '#fafafa',
-                                        '&:hover': {
-                                            backgroundColor: '#f0f0f0',
-                                        },
-                                        '&.Mui-focused': {
-                                            backgroundColor: '#fff',
-                                        }
-                                    }
-                                }}
                             />
                         </Grid>
                         <Grid item xs={12} md={6}>
@@ -804,20 +636,8 @@ const CourseMgmAcademic: React.FC<AcademicPageProps> = ({ user, onLogout }) => {
                                 value={currentSubject.soTiet}
                                 onChange={handleInputChange}
                                 inputProps={{ min: 0 }}
-                                sx={{
-                                    '& .MuiOutlinedInput-root': {
-                                    borderRadius: '12px',
-                                        backgroundColor: '#fafafa',
-                                        '&:hover': {
-                                            backgroundColor: '#f0f0f0',
-                                        },
-                                        '&.Mui-focused': {
-                                            backgroundColor: '#fff',
-                                        }
-                                    }
-                                }}                            />                        </Grid>
-                        {/* Chỉ hiển thị trường credits khi đang chỉnh sửa và set read-only */}
-                        {isEditing && (
+                            />                        </Grid>
+                        {/* Chỉ hiển thị trường credits khi đang chỉnh sửa và set read-only */}                        {isEditing && (
                             <Grid item xs={12} md={6}>
                                 <TextField
                                     name="credits"
@@ -830,36 +650,16 @@ const CourseMgmAcademic: React.FC<AcademicPageProps> = ({ user, onLogout }) => {
                                     InputProps={{
                                         readOnly: true,
                                     }}
-                                    sx={{
-                                        '& .MuiOutlinedInput-root': {
-                                            borderRadius: '12px',
-                                            backgroundColor: '#f5f5f5',
-                                            '& input': {
-                                                color: '#666',
-                                            }
-                                        },
-                                        '& .MuiInputLabel-root': {
-                                            color: '#666',
-                                        }
-                                    }}
                                     helperText="Được tính tự động từ số tiết và loại môn"
                                 />
                             </Grid>
                         )}
                     </Grid>
-                </DialogContent>
-                <DialogActions sx={{
-                    px: 4,
-                    pb: 3,
-                    pt: 2,
-                    display: 'flex',
-                    justifyContent: 'flex-end',
-                    gap: 2,
-                    background: 'transparent',
-                }}>
+                </DialogContent>                <DialogActions>
                     <Button onClick={handleCloseDialog} color="primary">
                         Hủy
-                    </Button>                    <Button variant="contained" color="primary" onClick={async () => {
+                    </Button>
+                    <Button variant="contained" color="primary" onClick={async () => {
                         if (isEditing) {
                             await handleUpdate(currentSubject);
                         } else {
@@ -870,15 +670,14 @@ const CourseMgmAcademic: React.FC<AcademicPageProps> = ({ user, onLogout }) => {
                     </Button>
                 </DialogActions>
             </Dialog>
-            {/* Confirm Delete Dialog */}
-            <Dialog
+            {/* Confirm Delete Dialog */}            <Dialog
                 open={confirmDelete.open}
                 onClose={handleCancelDelete}
                 aria-labelledby="delete-dialog-title"
                 aria-describedby="delete-dialog-description"
                 sx={{
                     '& .MuiPaper-root': {
-                        borderRadius: '16px',
+                        borderRadius: '12px',
                     },
                 }}
             >
@@ -890,7 +689,7 @@ const CourseMgmAcademic: React.FC<AcademicPageProps> = ({ user, onLogout }) => {
                         id="delete-dialog-description"
                         component="div"
                         sx={{
-                            fontSize: '17px',
+                            fontSize: '16px',
                             color: '#5c6c7c',
                             textAlign: 'center',
                             fontWeight: 400
