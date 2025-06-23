@@ -29,7 +29,7 @@ import {
     AccountBalanceWalletOutlined
 } from "@mui/icons-material";
 import UserInfo from "../components/UserInfo";
-import { financialDashboardApi, OverviewData, RecentPayment, FacultyStat } from "../api_clients/dashboardApi";
+import { financialDashboardApi, OverviewData, RecentPayment, FacultyStat, Semester } from "../api_clients/financialDashboardApi";
 
 // TODO: Temporary mock function to prevent build errors - replace with actual API when ready
 const getFinancialDashboard = async () => ({ 
@@ -58,25 +58,40 @@ export default function DashboardFinancial({ user, onLogout }: FinancialPageProp
     const [overview, setOverview] = useState<OverviewData | null>(null);
     const [recentPayments, setRecentPayments] = useState<RecentPayment[]>([]);
     const [facultyStats, setFacultyStats] = useState<FacultyStat[]>([]);
+    const [semesters, setSemesters] = useState<Semester[]>([]);
+    const [selectedSemesterIdx, setSelectedSemesterIdx] = useState(0);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         setLoading(true);
-        Promise.all([
+        Promise.allSettled([
             financialDashboardApi.getOverview(),
             financialDashboardApi.getRecentPayments(),
-            financialDashboardApi.getFacultyStats()
+            financialDashboardApi.getSemesters()
         ])
-        .then(([overview, recentPayments, facultyStats]) => {
-            setOverview(overview);
-            setRecentPayments(recentPayments);
-            setFacultyStats(facultyStats);
-            setError(null);
+        .then((results) => {
+            if (results[0].status === 'fulfilled') setOverview(results[0].value);
+            if (results[1].status === 'fulfilled') setRecentPayments(results[1].value);
+            if (results[2].status === 'fulfilled') setSemesters(results[2].value);
+            if (results.some(r => r.status === 'rejected')) {
+                setError("Không thể tải đủ dữ liệu dashboard");
+            } else {
+                setError(null);
+            }
         })
-        .catch(() => setError("Không thể tải dữ liệu dashboard"))
         .finally(() => setLoading(false));
     }, []);
+
+    useEffect(() => {
+        if (semesters.length > 0) {
+            setLoading(true);
+            financialDashboardApi.getFacultyStatsBySemester(semesters[selectedSemesterIdx].semesterId)
+                .then(setFacultyStats)
+                .catch(() => setError("Không thể tải thống kê theo khoa"))
+                .finally(() => setLoading(false));
+        }
+    }, [semesters, selectedSemesterIdx]);
 
     return (
         <ThemeLayout role="financial" onLogout={onLogout}>
@@ -108,7 +123,7 @@ export default function DashboardFinancial({ user, onLogout }: FinancialPageProp
                                     <Typography variant="h6" component="div" fontWeight="bold">
                                         {overview.totalDebtStudents}
                                     </Typography>
-                                    <Typography variant="body2">Sinh viên nợ học phí</Typography>
+                                    <Typography variant="body2">Số sinh viên nợ học phí ở tất cả các kì</Typography>
                                 </Box>
                                 <Avatar sx={{ bgcolor: '#ff9800' }}>
                                     <WarningOutlined />
@@ -146,34 +161,6 @@ export default function DashboardFinancial({ user, onLogout }: FinancialPageProp
                     </Grid>
                     <Grid item xs={12} sm={6} md={3}>
                         <Paper sx={{
-                            bgcolor: '#e8f5e9',
-                            color: '#2e7d32',
-                            borderRadius: '16px',
-                            boxShadow: '0 2px 5px rgba(0, 0, 0, 0.1)',
-                            transition: 'all 0.25s ease',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            flexGrow: 1,
-                            '&:hover': {
-                                boxShadow: '0 5px 15px rgba(0, 0, 0, 0.1)',
-                                transform: 'translateY(-2px)'
-                            }
-                        }}>
-                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', p: 2 }}>
-                                <Box>
-                                    <Typography variant="h6" component="div" fontWeight="bold">
-                                        {overview.todayTransactions}
-                                    </Typography>
-                                    <Typography variant="body2">Giao dịch hôm nay</Typography>
-                                </Box>
-                                <Avatar sx={{ bgcolor: '#4caf50' }}>
-                                    <TrendingUpOutlined />
-                                </Avatar>
-                            </Box>
-                        </Paper>
-                    </Grid>
-                    <Grid item xs={12} sm={6} md={3}>
-                        <Paper sx={{
                             bgcolor: '#e3f2fd',
                             color: '#1565c0',
                             borderRadius: '16px',
@@ -190,9 +177,9 @@ export default function DashboardFinancial({ user, onLogout }: FinancialPageProp
                             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', p: 2 }}>
                                 <Box>
                                     <Typography variant="h6" component="div" fontWeight="bold">
-                                        {(overview.todayRevenue / 1e6).toFixed(0)}M
+                                        {(overview.totalCollected / 1e6).toFixed(0)}M
                                     </Typography>
-                                    <Typography variant="body2">Số tiền thu hôm nay</Typography>
+                                    <Typography variant="body2">Tổng số tiền thu</Typography>
                                 </Box>
                                 <Avatar sx={{ bgcolor: '#1976d2' }}>
                                     <PaymentOutlined />
@@ -232,8 +219,9 @@ export default function DashboardFinancial({ user, onLogout }: FinancialPageProp
                             Các giao dịch đóng học phí gần đây
                         </Typography>
                         <TableContainer sx={{
+                            maxHeight: 370,
                             borderRadius: '16px',
-                            overflow: 'auto',
+                            overflowY: 'auto',
                             backgroundColor: '#ffffff',
                             border: '1px solid rgba(224, 224, 224, 0.4)',
                             '&::-webkit-scrollbar': {
@@ -326,9 +314,40 @@ export default function DashboardFinancial({ user, onLogout }: FinancialPageProp
                             boxShadow: '0 5px 15px rgba(0, 0, 0, 0.1)',
                         }
                     }}>
-                        <Typography variant="h6" fontWeight="bold" mb={2} sx={{ fontFamily: '"Varela Round", sans-serif' }}>
-                            Thống kê theo khoa
-                        </Typography>
+                        {/* Tiêu đề + nút chuyển kỳ */}
+                        <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                            <Typography variant="h6" fontWeight="bold" sx={{ flexGrow: 1, fontFamily: '"Varela Round", sans-serif' }}>
+                                Thống kê theo khoa
+                            </Typography>
+                            <Box>
+                                <button
+                                    disabled={selectedSemesterIdx === 0}
+                                    onClick={() => setSelectedSemesterIdx(idx => Math.max(0, idx - 1))}
+                                    style={{ marginRight: 8 }}
+                                >
+                                    {'<'}
+                                </button>
+                                <button
+                                    disabled={selectedSemesterIdx === semesters.length - 1}
+                                    onClick={() => setSelectedSemesterIdx(idx => Math.min(semesters.length - 1, idx + 1))}
+                                >
+                                    {'>'}
+                                </button>
+                            </Box>
+                        </Box>
+                        {/* Hiển thị học kỳ/năm học nổi bật */}
+                        {semesters.length > 0 && (
+                            <Typography
+                                variant="subtitle1"
+                                color="secondary"
+                                fontWeight="bold"
+                                sx={{ mb: 2, fontSize: '1rem' }}
+                            >
+                                {semesters[selectedSemesterIdx]?.HocKyThu && semesters[selectedSemesterIdx]?.NamHoc
+                                    ? `Học kỳ ${semesters[selectedSemesterIdx].HocKyThu} - Năm học ${semesters[selectedSemesterIdx].NamHoc}`
+                                    : semesters[selectedSemesterIdx]?.semesterName}
+                            </Typography>
+                        )}
                         <List>
                             {facultyStats.map((faculty, index) => (
                                 <Box key={faculty.facultyname || index}>

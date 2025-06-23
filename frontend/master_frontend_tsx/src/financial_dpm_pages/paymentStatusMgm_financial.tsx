@@ -27,6 +27,7 @@ interface PaymentHistory {
     date: string;
     amount: number;
     method: string;
+    status?: 'Chưa nộp đủ' | 'Đã nộp đủ' | 'Quá hạn' | 'Nộp dư';
 }
 
 // Updated Invoice type with payment history and total amount included.
@@ -38,7 +39,7 @@ interface Invoice {
     year: string;
     semester: string;
     semesterId?: string;
-    status: 'Chưa nộp đủ' | 'Đã nộp đủ' | 'Quá hạn';
+    status: 'Chưa nộp đủ' | 'Đã nộp đủ' | 'Quá hạn' | 'Nộp dư';
     paymentHistory: PaymentHistory[];
     sotienphaidong: number; // Tổng số tiền phải đóng
     sotienconlai: number;   // Số tiền còn lại
@@ -51,7 +52,7 @@ interface FinancialPageProps {
     onLogout: () => void;
 }
 
-const statusOptions = ['Tất cả', 'Chưa nộp đủ', 'Đã nộp đủ', 'Quá hạn'];
+const statusOptions = ['Tất cả', 'Chưa nộp đủ', 'Đã nộp đủ', 'Quá hạn', 'Nộp dư'];
 
 // Define the mapping between display labels and backend values
 const paymentMethodOptions = [
@@ -112,6 +113,7 @@ export default function PaymentStatusMgm({ user, onLogout }: FinancialPageProps)
             case 'Đã nộp đủ': return { bg: '#d9fade', text: '#4caf50' };
             case 'Quá hạn': return { bg: '#fff8e1', text: '#f57c00' };
             case 'Chưa nộp đủ': return { bg: '#ffebee', text: '#ef5350' };
+            case 'Nộp dư': return { bg: '#e3f2fd', text: '#1976d2' };
             default: return { bg: '#e0e0e0', text: '#616161' };
         }
     };
@@ -126,10 +128,15 @@ export default function PaymentStatusMgm({ user, onLogout }: FinancialPageProps)
     const handleAddTransaction = async () => {
         if (selectedInvoice && newTransaction.amount) {
             try {
+                const amountNumber = Number(newTransaction.amount);
+                if (isNaN(amountNumber) || amountNumber <= 0) {
+                    alert('Số tiền thanh toán phải là số lớn hơn 0');
+                    return;
+                }
                 await submitTuitionPayment({
                     studentId: selectedInvoice.studentId,
                     semester: selectedInvoice.semesterId || selectedInvoice.semester,
-                    amount: parseFloat(newTransaction.amount),
+                    amount: amountNumber,
                     paymentDate: newTransaction.date,
                     paymentMethod: newTransaction.method
                 });
@@ -221,14 +228,14 @@ export default function PaymentStatusMgm({ user, onLogout }: FinancialPageProps)
                 year: item.year,
                 semester: item.semester,
                 semesterId: item.semesterId,
-                status: mapPaymentStatusToVietnamese(item.paymentStatus),
+                status: mapPaymentStatusToVietnamese(item.paymentStatus, item.remainingAmount),
                 paymentHistory: item.paymentHistory || [],
                 sotienphaidong: item.totalAmount || 0,
-                sotienconlai: item.remainingAmount || 0,
+                sotienconlai: typeof item.remainingAmount === 'number' ? item.remainingAmount : 0,
                 sotiendadong: item.paidAmount || 0
             };
             
-            console.log('✅ Mapped item:', mapped);
+            console.log(`[INVOICE MAP] studentId=${mapped.studentId}, semesterId=${mapped.semesterId}, sotienconlai=${mapped.sotienconlai}, status=${mapped.status}`);
             return mapped;
         });
         
@@ -237,7 +244,13 @@ export default function PaymentStatusMgm({ user, onLogout }: FinancialPageProps)
     };
 
     // Helper function to map payment status from backend to Vietnamese
-    const mapPaymentStatusToVietnamese = (paymentStatus: string): 'Chưa nộp đủ' | 'Đã nộp đủ' | 'Quá hạn' => {
+    const mapPaymentStatusToVietnamese = (paymentStatus: string, remainingAmount?: number): 'Chưa nộp đủ' | 'Đã nộp đủ' | 'Quá hạn' | 'Nộp dư' => {
+        const numRemain = Number(remainingAmount);
+        if (!isNaN(numRemain)) {
+            if (numRemain < 0) return 'Nộp dư';
+            if (numRemain === 0) return 'Đã nộp đủ';
+            if (numRemain > 0) return 'Chưa nộp đủ';
+        }
         switch (paymentStatus) {
             case 'paid':
                 return 'Đã nộp đủ';
@@ -339,6 +352,11 @@ export default function PaymentStatusMgm({ user, onLogout }: FinancialPageProps)
         
         loadAllSemesterData();
     }, []);
+
+    // Thêm log khi render bảng invoices
+    useEffect(() => {
+        console.log('🖨️ Rendering invoices table:', invoices.map(inv => ({ studentId: inv.studentId, semesterId: inv.semesterId, sotienconlai: inv.sotienconlai, status: inv.status })));
+    }, [invoices]);
 
     return (
         <ThemeLayout role="financial" onLogout={onLogout}>

@@ -25,7 +25,14 @@ axiosInstance.interceptors.request.use(
             console.warn('No token found in localStorage');
         }
 
-        // Check if any auto-injection of user params is happening
+        // Chỉ tự động thêm studentId cho các API bắt đầu bằng /student/
+        if (config.url && config.url.startsWith('/student/')) {
+            const user = JSON.parse(localStorage.getItem('user') || '{}');
+            if (user?.studentId) {
+                config.params = Object.assign({}, config.params, { studentId: user.studentId });
+            }
+        }
+
         console.log('  Final config before send:', {
             url: config.url,
             method: config.method,

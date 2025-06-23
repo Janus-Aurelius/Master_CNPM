@@ -140,7 +140,7 @@ class TuitionManager {
         }
     }    /**
      * Get tuition status for all semesters of a student
-     * Returns formatted data for frontend display, including unopened semesters
+     * Returns formatted data for frontend display, ONLY for registered semesters
      */    public async getAllTuitionStatus(studentId: string): Promise<any[]> {
         try {
             if (!studentId) {
@@ -152,53 +152,14 @@ class TuitionManager {
 
             console.log('📊 Getting all tuition status for student:', actualStudentId);
 
-            // Get all semesters from HOCKYNAMHOC
-            const allSemesters = await DatabaseService.query(`
-                SELECT 
-                    MaHocKy as "semesterId",
-                    HocKyThu as "semesterNumber", 
-                    NamHoc as "year",
-                    TrangThaiHocKy as "semesterStatus",
-                    ThoiHanDongHP as "dueDate"
-                FROM HOCKYNAMHOC 
-                ORDER BY NamHoc DESC, HocKyThu DESC
-            `);
-
-            // Get all registrations using service
+            // Get all registrations using service (ONLY registered semesters)
             const registrations = await tuitionService.getAllRegistrations(actualStudentId);
 
-            console.log('📋 Found all semesters:', allSemesters.length);
             console.log('📋 Found registrations:', registrations.length);
 
-            // Create a map of registrations by semesterId for quick lookup
-            const registrationMap = new Map();
-            registrations.forEach(reg => {
-                registrationMap.set(reg.semesterId, reg);
-            });            // Process all semesters
+            // Process only registered semesters
             const tuitionRecords = await Promise.all(
-                allSemesters.map(async (semester: any) => {
-                    const registration = registrationMap.get(semester.semesterId);
-                    
-                    if (!registration) {
-                        // This is an unopened semester (no registration)
-                        const formattedSemesterName = this.formatSemesterName(semester.semesterId);
-                        return {
-                            registrationId: null,
-                            semester: semester.semesterId,
-                            semesterName: formattedSemesterName,
-                            year: semester.year,
-                            dueDate: semester.dueDate,
-                            status: 'not_opened',
-                            courses: [],
-                            originalAmount: 0,
-                            totalAmount: 0,
-                            paidAmount: 0,
-                            remainingAmount: 0,
-                            registrationDate: null,
-                            discount: null
-                        };
-                    }
-
+                registrations.map(async (registration: any) => {
                     // This semester has registration - process normally
                     let subjects = await tuitionService.getRegisteredCoursesWithFees(registration.registrationId);
                     if (!subjects || subjects.length === 0) {
@@ -206,12 +167,14 @@ class TuitionManager {
                         subjects = [];
                     }
 
-                    const formattedSemesterName = this.formatSemesterName(registration.semesterName);                    return {
+                    const formattedSemesterName = this.formatSemesterName(registration.semesterName);
+                    
+                    return {
                         registrationId: registration.registrationId,
                         semester: registration.semesterId,
                         semesterName: formattedSemesterName,
-                        year: registration.year || semester.year,
-                        dueDate: registration.dueDate || semester.dueDate,
+                        year: registration.year,
+                        dueDate: registration.dueDate,
                         status: registration.status || 'unpaid',
                         courses: subjects.map(subject => ({
                             courseId: subject.courseId,
@@ -226,15 +189,30 @@ class TuitionManager {
                         originalAmount: registration.originalAmount || 0,
                         totalAmount: registration.totalAmount || 0,
                         paidAmount: registration.paidAmount || 0,
-                        remainingAmount: registration.remainingAmount || (registration.totalAmount || 0),
+                        remainingAmount: registration.remainingAmount || 0,
                         registrationDate: registration.registrationDate,
                         discount: registration.discount
                     };
                 })
             );
 
-            console.log('✅ Formatted tuition records with unopened semesters:', tuitionRecords.length);
-            return tuitionRecords;} catch (error) {
+            console.log('✅ Formatted tuition records (registered semesters only):', tuitionRecords.length);
+
+            // Sort tuitionRecords by year (desc), then by semester (HK2 > HK1)
+            tuitionRecords.sort((a, b) => {
+                // So sánh năm học (year) giảm dần
+                if (a.year !== b.year) {
+                    return parseInt(b.year) - parseInt(a.year);
+                }
+                // Nếu cùng năm, so sánh học kỳ (HK2 > HK1)
+                const getSemesterNumber = (semester: string) => {
+                    const match = semester.match(/HK(\d)/);
+                    return match ? parseInt(match[1]) : 0;
+                };
+                return getSemesterNumber(b.semester) - getSemesterNumber(a.semester);
+            });
+            return tuitionRecords;
+        } catch (error) {
             console.error('❌ Error getting all tuition status:', error);
             
             // Log detailed error for debugging
@@ -348,9 +326,10 @@ class TuitionManager {
             throw new Error('Registration not found');
         }
 
-        if (request.amount > registration.remainingAmount) {
-            throw new Error('Payment amount exceeds remaining balance');
-        }
+        // Cho phép đóng dư, không kiểm tra vượt số dư nữa
+        // if (request.amount > registration.remainingAmount) {
+        //     throw new Error('Payment amount exceeds remaining balance');
+        // }
     }
 
     /**

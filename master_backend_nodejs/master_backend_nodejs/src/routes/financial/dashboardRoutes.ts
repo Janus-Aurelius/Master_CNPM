@@ -13,4 +13,8 @@ router.get('/overview', financialDashboardController.getOverview.bind(financialD
 router.get('/recent-payments', financialDashboardController.getRecentPayments.bind(financialDashboardController));
 router.get('/faculty-stats', financialDashboardController.getFacultyStats.bind(financialDashboardController));
 
+// Thêm 2 route mới cho dashboard
+router.get('/semesters', financialDashboardController.getSemesters.bind(financialDashboardController));
+router.get('/faculty-stats', financialDashboardController.getFacultyStatsBySemester.bind(financialDashboardController));
+
 export default router;

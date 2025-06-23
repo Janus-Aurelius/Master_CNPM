@@ -37,21 +37,31 @@ export const tuitionService = {    /**
             const courses = await this.getRegisteredCoursesWithFees(registration.registrationId);
             
             // Calculate registration amount from courses
-            const registrationAmount = courses.reduce((total, course) => total + course.totalFee, 0);
+            const registrationAmount = Math.round(courses.reduce((total, course) => total + course.totalFee, 0));
             
             // Get student discount
             const discount = await this.getStudentDiscount(studentId);
             
             // Calculate required amount after discount
             const discountMultiplier = discount ? (1 - discount.percentage) : 1;
-            const requiredAmount = registrationAmount * discountMultiplier;
+            const requiredAmount = Math.round(registrationAmount * discountMultiplier);
             
             // Get payment history and calculate paid amount
             const paymentHistory = await this.getPaymentHistory(registration.registrationId);
-            const paidAmount = paymentHistory.reduce((total, payment) => total + (payment.amount || 0), 0);
+            const paidAmount = Math.round(paymentHistory.reduce((total, payment) => total + (payment.amount || 0), 0));
             
             // Calculate remaining amount
-            const remainingAmount = Math.max(0, requiredAmount - paidAmount);
+            let remainingAmount = requiredAmount - paidAmount;
+            remainingAmount = Math.round(remainingAmount);
+
+            console.log(`💰 [getTuitionStatus] Payment calculation details:`, {
+                registrationId: registration.registrationId,
+                registrationAmount: registrationAmount,
+                requiredAmount: requiredAmount,
+                paymentHistoryCount: paymentHistory.length,
+                paidAmount: paidAmount,
+                calculatedRemainingAmount: remainingAmount
+            });
 
             // Add calculated amounts to registration object
             const enhancedRegistration = {
@@ -61,6 +71,7 @@ export const tuitionService = {    /**
                 paidAmount,
                 remainingAmount
             };
+            console.log(`[BACKEND][getTuitionStatus] studentId=${studentId}, semesterId=${semesterId}, requiredAmount=${requiredAmount}, paidAmount=${paidAmount}, remainingAmount=${remainingAmount}`);
 
             return {
                 registration: enhancedRegistration,
@@ -149,6 +160,8 @@ export const tuitionService = {    /**
      */
     async getPaymentHistory(registrationId: string): Promise<IPaymentHistory[]> {
         try {
+            console.log(`📋 [getPaymentHistory] Getting payment history for registration: ${registrationId}`);
+            
             const payments = await DatabaseService.query(`
                 SELECT 
                     MaPhieuThu as "paymentId",
@@ -160,7 +173,17 @@ export const tuitionService = {    /**
                 ORDER BY NgayLap DESC
             `, [registrationId]);
 
-            return payments;
+            console.log(`📋 [getPaymentHistory] Raw payments from DB:`, payments);
+
+            const mappedPayments = payments.map(payment => ({
+                ...payment,
+                amount: typeof payment.amount === 'string' ? parseFloat(payment.amount) : payment.amount
+            }));
+
+            console.log(`📋 [getPaymentHistory] Mapped payments:`, mappedPayments);
+            console.log(`📋 [getPaymentHistory] Total paid amount: ${mappedPayments.reduce((total, payment) => total + (payment.amount || 0), 0)}`);
+
+            return mappedPayments;
         } catch (error) {
             console.error('Error getting payment history:', error);
             throw error;
@@ -184,16 +207,13 @@ export const tuitionService = {    /**
                 throw new Error('Registration not found');
             }
 
-            // Get current tuition status (with calculated amounts)
+            // Get current tuition status (with calculated amounts) BEFORE payment
             const tuitionStatus = await this.getTuitionStatus(registration.studentId, registration.semesterId);
             if (!tuitionStatus) {
                 throw new Error('Unable to calculate tuition status');
             }
 
-            // Validate payment amount
-            if (paymentRequest.amount > tuitionStatus.registration.remainingAmount) {
-                throw new Error('Payment amount exceeds remaining amount');
-            }            // Generate payment ID based on existing pattern (PT + number)
+            // Generate payment ID based on existing pattern (PT + number)
             const nextIdResult = await DatabaseService.queryOne(`
                 SELECT COALESCE(MAX(CAST(SUBSTRING(MaPhieuThu FROM 3) AS INTEGER)), 0) + 1 as next_id
                 FROM PHIEUTHUHP 
@@ -208,11 +228,24 @@ export const tuitionService = {    /**
             await DatabaseService.query(`
                 INSERT INTO PHIEUTHUHP (MaPhieuThu, NgayLap, MaPhieuDangKy, SoTienDong)
                 VALUES ($1, CURRENT_DATE, $2, $3)
-            `, [paymentId, paymentRequest.registrationId, paymentRequest.amount]);console.log('✅ Payment record created successfully');
+            `, [paymentId, paymentRequest.registrationId, paymentRequest.amount]);
 
-            // Calculate new amounts first
-            const newPaidAmount = tuitionStatus.registration.paidAmount + paymentRequest.amount;
-            const newRemainingAmount = Math.max(0, tuitionStatus.registration.requiredAmount - newPaidAmount);
+            console.log('✅ Payment record created successfully');
+
+            // Calculate new amounts AFTER payment
+            const paymentAmount = Math.round(Number(paymentRequest.amount));
+            const currentPaidAmount = Math.round(tuitionStatus.registration.paidAmount);
+            const newPaidAmount = currentPaidAmount + paymentAmount;
+            let newRemainingAmount = tuitionStatus.registration.requiredAmount - newPaidAmount;
+            newRemainingAmount = Math.round(newRemainingAmount); // Làm tròn về số nguyên, cho phép âm nếu đóng dư
+
+            console.log('💰 Payment calculation:', {
+                requiredAmount: tuitionStatus.registration.requiredAmount,
+                currentPaidAmount: currentPaidAmount,
+                paymentAmount: paymentAmount,
+                newPaidAmount: newPaidAmount,
+                newRemainingAmount: newRemainingAmount
+            });
 
             // Update PHIEUDANGKY with new remaining amount
             console.log('💰 Updating PHIEUDANGKY with new remaining amount:', newRemainingAmount);
@@ -223,7 +256,9 @@ export const tuitionService = {    /**
                 WHERE MaPhieuDangKy = $2
             `, [newRemainingAmount, paymentRequest.registrationId]);
 
-            console.log('✅ PHIEUDANGKY updated successfully');// Determine status - simplified to only 3 states
+            console.log('✅ PHIEUDANGKY updated successfully');
+
+            // Determine status - simplified to only 3 states
             let status: PaymentStatus = 'unpaid';
             if (newRemainingAmount <= 0) {
                 status = 'paid';
@@ -362,7 +397,6 @@ export const tuitionService = {    /**
             const registrationsWithAmounts = await Promise.all(
                 registrations.map(async (reg) => {
                     const tuitionStatus = await this.getTuitionStatus(studentId, reg.semesterId);
-                    
                     if (!tuitionStatus) {
                         return {
                             ...reg,
@@ -372,12 +406,12 @@ export const tuitionService = {    /**
                             remainingAmount: 0,
                             status: 'error'
                         };
-                    }                    // Determine status - simplified to only 3 states
+                    }
                     let status = 'unpaid';
                     if (tuitionStatus.registration.remainingAmount <= 0) {
                         status = 'paid';
                     }
-                    // Removed overdue and partial status - now only unpaid/paid for opened semesters
+                    console.log(`[BACKEND][getAllRegistrations] studentId=${studentId}, semesterId=${reg.semesterId}, requiredAmount=${tuitionStatus.registration.requiredAmount}, paidAmount=${tuitionStatus.registration.paidAmount}, remainingAmount=${tuitionStatus.registration.remainingAmount}, status=${status}`);
 
                     return {
                         ...reg,
