@@ -228,7 +228,7 @@ export class FinancialPaymentService {
                     paymentData.paymentMethod                ]);
                 const paymentId = paymentResult.rows[0].maphieuthu;
 
-                // 3. Update PHIEUDANGKY - using your logic: only update SoTienConLai
+                // 3. Update PHIEUDANGKY - using your logic: only update SoTienConLai (có thể âm nếu đóng dư)
                 // SoTienDaDong is calculated dynamically, not stored
                 const updateRegistrationQuery = `
                     UPDATE PHIEUDANGKY

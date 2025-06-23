@@ -166,6 +166,28 @@ export class FinancialDashboardController {
             res.status(500).json({ success: false, message: 'Server error' });
         }
     }
+
+    async getSemesters(req: Request, res: Response) {
+        try {
+            console.log('[getSemesters] Called');
+            const data = await this.service.getSemestersWithRegistration();
+            console.log('[getSemesters] Data:', data);
+            res.json({ success: true, data });
+        } catch (err) {
+            console.error('[getSemesters] Error:', err);
+            res.status(500).json({ success: false, message: 'Server error' });
+        }
+    }
+
+    async getFacultyStatsBySemester(req: Request, res: Response) {
+        try {
+            const semesterId = req.query.semesterId as string;
+            const data = await this.service.getFacultyStatsBySemester(semesterId);
+            res.json({ success: true, data });
+        } catch (err) {
+            res.status(500).json({ success: false, message: 'Server error' });
+        }
+    }
 }
 
 export const financialDashboardController = new FinancialDashboardController();

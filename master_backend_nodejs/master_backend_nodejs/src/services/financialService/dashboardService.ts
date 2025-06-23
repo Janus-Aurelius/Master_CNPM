@@ -253,29 +253,53 @@ export class FinancialDashboardService {
 
     async getOverview() {
         try {
-            console.log('[getOverview Service] Querying totalDebtStudents and totalDebt');
-            const [debtRow] = await DatabaseService.query(`
-                SELECT COUNT(DISTINCT pd.MaSoSinhVien) AS totalDebtStudents,
-                       SUM(pd.SoTienConLai) AS totalDebt
-                FROM PHIEUDANGKY pd
-                WHERE pd.SoTienConLai > 0
+            // Tính toán động tổng nợ, tổng đã thu, số sinh viên nợ, ...
+            const [row] = await DatabaseService.query(`
+                WITH PaymentCalculations AS (
+                    SELECT 
+                        pd.masosinhvien,
+                        -- Tổng phải đóng động
+                        COALESCE((
+                            SELECT SUM((mh.sotiet::decimal / lm.sotietmottc) * lm.sotienmottc * (1 - COALESCE(dt.mucgiamhocphi, 0)))
+                            FROM ct_phieudangky ct
+                            JOIN monhoc mh ON ct.mamonhoc = mh.mamonhoc
+                            JOIN loaimon lm ON mh.maloaimon = lm.maloaimon
+                            JOIN sinhvien sv2 ON pd.masosinhvien = sv2.masosinhvien
+                            JOIN doituonguutien dt ON sv2.madoituongut = dt.madoituong
+                            WHERE ct.maphieudangky = pd.maphieudangky
+                        ), 0) AS total_amount,
+                        -- Tổng đã đóng động
+                        COALESCE((
+                            SELECT SUM(pt.sotiendong)
+                            FROM phieuthuhp pt
+                            WHERE pt.maphieudangky = pd.maphieudangky
+                        ), 0) AS paid_amount
+                    FROM phieudangky pd
+                )
+                SELECT
+                    COUNT(*) FILTER (WHERE (total_amount - paid_amount) > 0) AS totaldebtstudents,
+                    SUM(total_amount - paid_amount) AS totaldebt,
+                    SUM(paid_amount) AS totalcollected,
+                    COUNT(*) FILTER (WHERE (total_amount - paid_amount) <= 0) AS totalpaidstudents,
+                    COUNT(*) AS totalstudents
+                FROM PaymentCalculations
             `);
-            console.log('[getOverview Service] debtRow:', debtRow);
 
-            console.log('[getOverview Service] Querying todayTransactions and todayRevenue');
+            // Giao dịch và doanh thu hôm nay (tính động)
             const [todayRow] = await DatabaseService.query(`
-                SELECT COUNT(*) AS todayTransactions,
-                       SUM(SoTienDong) AS todayRevenue
-                FROM PHIEUTHUHP
-                WHERE NgayLap = CURRENT_DATE
+                SELECT COUNT(*) AS todaytransactions, SUM(sotiendong) AS todayrevenue
+                FROM phieuthuhp
+                WHERE ngaylap = CURRENT_DATE
             `);
-            console.log('[getOverview Service] todayRow:', todayRow);
 
             return {
-                totalDebtStudents: Number(debtRow.totaldebtstudents) || 0,
-                totalDebt: Number(debtRow.totaldebt) || 0,
+                totalDebtStudents: Number(row.totaldebtstudents) || 0,
+                totalDebt: Number(row.totaldebt) || 0,
                 todayTransactions: Number(todayRow.todaytransactions) || 0,
                 todayRevenue: Number(todayRow.todayrevenue) || 0,
+                totalCollected: Number(row.totalcollected) || 0,
+                totalPaidStudents: Number(row.totalpaidstudents) || 0,
+                totalStudents: Number(row.totalstudents) || 0,
             };
         } catch (err) {
             console.error('[getOverview Service] Error:', err);
@@ -284,36 +308,116 @@ export class FinancialDashboardService {
     }
 
     async getRecentPayments(limit = 5) {
-        return await DatabaseService.query(`
-            SELECT pd.MaSoSinhVien AS studentId,
-                   sv.HoTen AS studentName,
-                   pt.SoTienDong AS amount,
-                   pt.PhuongThuc AS method,
-                   pt.NgayLap AS time
-            FROM PHIEUTHUHP pt
-            JOIN PHIEUDANGKY pd ON pt.MaPhieuDangKy = pd.MaPhieuDangKy
-            JOIN SINHVIEN sv ON pd.MaSoSinhVien = sv.MaSoSinhVien
-            ORDER BY pt.NgayLap DESC
+        // Lấy các giao dịch gần đây, mapping động
+        const rows = await DatabaseService.query(`
+            SELECT pd.masosinhvien AS studentid,
+                   sv.hoten AS studentname,
+                   pt.sotiendong AS amount,
+                   pt.phuongthuc AS method,
+                   pt.ngaylap AS time
+            FROM phieuthuhp pt
+            JOIN phieudangky pd ON pt.maphieudangky = pd.maphieudangky
+            JOIN sinhvien sv ON pd.masosinhvien = sv.masosinhvien
+            ORDER BY pt.ngaylap DESC
             LIMIT $1
         `, [limit]);
+        return rows;
     }
 
     async getFacultyStats() {
-        return await DatabaseService.query(`
-            SELECT k.TenKhoa AS facultyName,
-                   COUNT(DISTINCT sv.MaSoSinhVien) AS totalStudents,
-                   COUNT(DISTINCT CASE WHEN pd.SoTienConLai > 0 THEN sv.MaSoSinhVien END) AS debtStudents,
-                   ROUND(
-                       COUNT(DISTINCT CASE WHEN pd.SoTienConLai > 0 THEN sv.MaSoSinhVien END)::numeric
-                       / NULLIF(COUNT(DISTINCT sv.MaSoSinhVien), 0) * 100, 1
-                   ) AS debtPercent
-            FROM KHOA k
-            JOIN NGANHHOC nh ON k.MaKhoa = nh.MaKhoa
-            JOIN SINHVIEN sv ON nh.MaNganh = sv.MaNganh
-            LEFT JOIN PHIEUDANGKY pd ON sv.MaSoSinhVien = pd.MaSoSinhVien
-            GROUP BY k.TenKhoa
-            ORDER BY k.TenKhoa
+        // Thống kê theo khoa, tính động tổng nợ, tổng đã thu, ...
+        const rows = await DatabaseService.query(`
+            WITH FacultyPayments AS (
+                SELECT 
+                    k.makhoa,
+                    k.tenkhoa AS facultyname,
+                    pd.masosinhvien,
+                    COALESCE((
+                        SELECT SUM((mh.sotiet::decimal / lm.sotietmottc) * lm.sotienmottc * (1 - COALESCE(dt.mucgiamhocphi, 0)))
+                        FROM ct_phieudangky ct
+                        JOIN monhoc mh ON ct.mamonhoc = mh.mamonhoc
+                        JOIN loaimon lm ON mh.maloaimon = lm.maloaimon
+                        JOIN sinhvien sv2 ON pd.masosinhvien = sv2.masosinhvien
+                        JOIN doituonguutien dt ON sv2.madoituongut = dt.madoituong
+                        WHERE ct.maphieudangky = pd.maphieudangky
+                    ), 0) AS total_amount,
+                    COALESCE((
+                        SELECT SUM(pt.sotiendong)
+                        FROM phieuthuhp pt
+                        WHERE pt.maphieudangky = pd.maphieudangky
+                    ), 0) AS paid_amount
+                FROM phieudangky pd
+                JOIN sinhvien sv ON pd.masosinhvien = sv.masosinhvien
+                JOIN nganhhoc nh ON sv.manganh = nh.manganh
+                JOIN khoa k ON nh.makhoa = k.makhoa
+            )
+            SELECT 
+                facultyname,
+                COUNT(DISTINCT masosinhvien) AS totalstudents,
+                COUNT(DISTINCT masosinhvien) FILTER (WHERE (total_amount - paid_amount) > 0) AS debtstudents,
+                ROUND(
+                    COUNT(DISTINCT masosinhvien) FILTER (WHERE (total_amount - paid_amount) > 0)::numeric
+                    / NULLIF(COUNT(DISTINCT masosinhvien), 0) * 100, 1
+                ) AS debtpercent
+            FROM FacultyPayments
+            GROUP BY facultyname
+            ORDER BY facultyname
         `);
+        return rows;
+    }
+
+    async getSemestersWithRegistration() {
+        // Chỉ lấy các học kỳ mà có PHIEUDANGKY, trả về đúng tên trường camelCase
+        const rows = await DatabaseService.query(`
+            SELECT hk.MaHocKy AS "semesterId", CONCAT('HK', hk.HocKyThu, ' ', hk.NamHoc) AS "semesterName", hk.HocKyThu AS "HocKyThu", hk.NamHoc AS "NamHoc"
+            FROM HOCKYNAMHOC hk
+            JOIN PHIEUDANGKY pd ON hk.MaHocKy = pd.MaHocKy
+            GROUP BY hk.MaHocKy, hk.HocKyThu, hk.NamHoc
+            ORDER BY hk.NamHoc DESC, hk.HocKyThu DESC
+        `);
+        return rows;
+    }
+
+    async getFacultyStatsBySemester(semesterId: string) {
+        // Luôn lấy tất cả các khoa, số liệu theo từng học kỳ
+        const rows = await DatabaseService.query(`
+            WITH FacultyPayments AS (
+                SELECT 
+                    k.makhoa,
+                    k.tenkhoa AS facultyname,
+                    pd.masosinhvien,
+                    COALESCE((
+                        SELECT SUM((mh.sotiet::decimal / lm.sotietmottc) * lm.sotienmottc * (1 - COALESCE(dt.mucgiamhocphi, 0)))
+                        FROM ct_phieudangky ct
+                        JOIN monhoc mh ON ct.mamonhoc = mh.mamonhoc
+                        JOIN loaimon lm ON mh.maloaimon = lm.maloaimon
+                        JOIN sinhvien sv2 ON pd.masosinhvien = sv2.masosinhvien
+                        JOIN doituonguutien dt ON sv2.madoituongut = dt.madoituong
+                        WHERE ct.maphieudangky = pd.maphieudangky
+                    ), 0) AS total_amount,
+                    COALESCE((
+                        SELECT SUM(pt.sotiendong)
+                        FROM phieuthuhp pt
+                        WHERE pt.maphieudangky = pd.maphieudangky
+                    ), 0) AS paid_amount
+                FROM khoa k
+                LEFT JOIN nganhhoc nh ON k.makhoa = nh.makhoa
+                LEFT JOIN sinhvien sv ON nh.manganh = sv.manganh
+                LEFT JOIN phieudangky pd ON sv.masosinhvien = pd.masosinhvien AND pd.mahocky = $1
+            )
+            SELECT 
+                facultyname,
+                COUNT(DISTINCT masosinhvien) AS totalstudents,
+                COUNT(DISTINCT masosinhvien) FILTER (WHERE (total_amount - paid_amount) > 0) AS debtstudents,
+                ROUND(
+                    COUNT(DISTINCT masosinhvien) FILTER (WHERE (total_amount - paid_amount) > 0)::numeric
+                    / NULLIF(COUNT(DISTINCT masosinhvien), 0) * 100, 1
+                ) AS debtpercent
+            FROM FacultyPayments
+            GROUP BY facultyname
+            ORDER BY facultyname
+        `, [semesterId]);
+        return rows;
     }
 }
 

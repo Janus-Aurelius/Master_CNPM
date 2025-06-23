@@ -91,79 +91,89 @@ export const tuitionApi = {
             
             const registeredSemesters = response.data.data || [];
             
-            // Định nghĩa tất cả các kỳ từ HK1_2023 đến hiện tại và tương lai
-            const allSemesters = [
-                { id: 'HK1_2027', name: 'HK1_2027', year: '2027', status: 'not_opened' },
-                { id: 'HK2_2026', name: 'HK2_2026', year: '2026', status: 'not_opened' },
-                { id: 'HK1_2026', name: 'HK1_2026', year: '2026', status: 'not_opened' },
-                { id: 'HK2_2025', name: 'HK2_2025', year: '2025', status: 'not_opened' },
-                { id: 'HK1_2025', name: 'HK1_2025', year: '2025', status: 'not_opened' },
-                { id: 'HK2_2024', name: 'HK2_2024', year: '2024', status: 'not_opened' },
-                { id: 'HK1_2024', name: 'HK1_2024', year: '2024', status: 'unpaid' },
-                { id: 'HK2_2023', name: 'HK2_2023', year: '2023', status: 'unpaid' },
-                { id: 'HK1_2023', name: 'HK1_2023', year: '2023', status: 'unpaid' }
-            ];              // Tạo map của các kỳ đã đăng ký
-            const registeredMap = new Map();
-            registeredSemesters.forEach((reg: any) => {
-                registeredMap.set(reg.semester || reg.id, reg);
+            console.log('📊 [tuitionApi] Raw data from backend:', registeredSemesters);
+            
+            // Thêm logging chi tiết cho từng record trước khi mapping
+            registeredSemesters.forEach((record: any, index: number) => {
+                console.log(`🔍 [tuitionApi] Raw record ${index + 1} from backend:`, {
+                    registrationId: record.registrationId,
+                    semester: record.semester,
+                    semesterName: record.semesterName,
+                    originalAmount: record.originalAmount,
+                    totalAmount: record.totalAmount,
+                    paidAmount: record.paidAmount,
+                    remainingAmount: record.remainingAmount,
+                    status: record.status,
+                    // Log toàn bộ object để debug
+                    fullRecord: record
+                });
             });
             
-            // Tạo danh sách kết hợp
-            const combinedSemesters = allSemesters.map(semester => {
-                const registered = registeredMap.get(semester.id);
-                  if (registered) {
-                    // Kỳ đã đăng ký - sử dụng dữ liệu thực
-                    return {
-                        id: registered.registrationId || semester.id,
-                        semester: semester.id,
-                        semesterName: semester.name,
-                        year: semester.year,
-                        dueDate: registered.dueDate || '',
-                        status: mapToSimplifiedStatus(registered.status || 'unpaid'),
-                        subjects: registered.courses?.map((course: any) => ({
-                            courseId: course.courseId,
-                            courseName: course.courseName,
-                            credits: course.credits,
-                            totalPeriods: course.totalPeriods,
-                            periodsPerCredit: course.periodsPerCredit,
-                            pricePerCredit: course.pricePerCredit,
-                            totalFee: course.totalFee,
-                            courseType: course.courseType
-                        })) || [],
-                        originalAmount: registered.originalAmount || 0,
-                        totalAmount: registered.totalAmount || 0,
-                        paidAmount: registered.paidAmount || 0,
-                        remainingAmount: registered.remainingAmount || 0,
-                        registrationDate: registered.registrationDate || '',                        discountInfo: registered.discount ? {
-                            type: registered.discount.type,
-                            percentage: registered.discount.percentage,
-                            amount: registered.discount.amount,
-                            code: registered.discount.code
-                        } : undefined
-                    };
+            // Chỉ trả về các kỳ đã đăng ký (có registered)
+            const combinedSemesters = registeredSemesters.map((registered: any, index: number) => {
+                // Sử dụng remainingAmount từ backend thay vì tính toán lại
+                const remainingAmount = Number(registered.remainingAmount) || 0;
+                const paidAmount = Number(registered.paidAmount) || 0;
+                const totalAmount = Number(registered.totalAmount) || 0;
+                
+                // Sử dụng status từ backend nếu có, nếu không thì tính toán
+                let status: "paid" | "unpaid" = "unpaid";
+                if (registered.status === "paid" || remainingAmount <= 0) {
+                    status = "paid";
                 } else {
-                    // Kỳ chưa mở - tạo dữ liệu placeholder
-                    const isNotOpened = ['HK2_2024', 'HK1_2025', 'HK2_2025', 'HK1_2026', 'HK2_2026', 'HK1_2027'].includes(semester.id);
-                    
-                    return {
-                        id: semester.id,
-                        semester: semester.id,
-                        semesterName: semester.name,
-                        year: semester.year,
-                        dueDate: '',
-                        status: isNotOpened ? 'not_opened' as const : 'unpaid' as const,
-                        subjects: [],
-                        originalAmount: 0,
-                        totalAmount: 0,
-                        paidAmount: 0,
-                        remainingAmount: 0,
-                        registrationDate: '',
-                        discountInfo: undefined
-                    };
+                    status = "unpaid";
                 }
+                
+                console.log(`📊 [tuitionApi] Mapping semester ${index + 1}:`, {
+                    registrationId: registered.registrationId,
+                    semester: registered.semester,
+                    semesterName: registered.semesterName,
+                    originalAmount: registered.originalAmount,
+                    totalAmount: totalAmount,
+                    paidAmount: paidAmount,
+                    remainingAmount: remainingAmount,
+                    calculatedStatus: status,
+                    backendStatus: registered.status,
+                    // Thêm log chi tiết hơn
+                    rawRemainingAmount: registered.remainingAmount,
+                    rawPaidAmount: registered.paidAmount,
+                    rawTotalAmount: registered.totalAmount,
+                    // Thêm toàn bộ dữ liệu raw từ backend
+                    rawData: registered
+                });
+                
+                return {
+                    id: registered.registrationId || registered.semester || registered.id,
+                    semester: registered.semester || registered.id,
+                    semesterName: registered.semesterName || registered.semester || registered.id,
+                    year: registered.year,
+                    dueDate: registered.dueDate || '',
+                    status,
+                    subjects: registered.courses?.map((course: any) => ({
+                        courseId: course.courseId,
+                        courseName: course.courseName,
+                        credits: course.credits,
+                        totalPeriods: course.totalPeriods,
+                        periodsPerCredit: course.periodsPerCredit,
+                        pricePerCredit: course.pricePerCredit,
+                        totalFee: course.totalFee,
+                        courseType: course.courseType
+                    })) || [],
+                    originalAmount: registered.originalAmount || 0,
+                    totalAmount: totalAmount,
+                    paidAmount: paidAmount,
+                    remainingAmount: remainingAmount,
+                    registrationDate: registered.registrationDate || '',
+                    discountInfo: registered.discount ? {
+                        type: registered.discount.type,
+                        percentage: registered.discount.percentage,
+                        amount: registered.discount.amount,
+                        code: registered.discount.code
+                    } : undefined
+                };
             });
             
-            console.log('📊 [tuitionApi] Combined semesters:', combinedSemesters);
+            console.log('📊 [tuitionApi] Final mapped data:', combinedSemesters);
             return combinedSemesters;
             
         } catch (error: any) {

@@ -11,30 +11,17 @@ export class FinancialDashboardBusiness {
      */
     async getDashboardOverview(semesterId?: string) {
         try {
-            const stats = await this.dashboardService.getDashboardStatsEnhanced(semesterId);
-            
-            // Calculate percentages and format data using dynamic calculation results
-            const totalStudents = stats.overview.total_students || 0;
-            const paidStudents = stats.overview.paid_students || 0;
-            const unpaidStudents = stats.overview.unpaid_students || 0;
-            
+            const stats = await this.dashboardService.getOverview();
             return {
                 success: true,
                 data: {
-                    semester: stats.semester,
-                    overview: {
-                        totalStudents,
-                        paidStudents,
-                        unpaidStudents,
-                        paymentRate: totalStudents ? (paidStudents / totalStudents) * 100 : 0,
-                    },
-                    financial: {
-                        totalTuition: stats.overview.total_tuition || 0,
-                        totalCollected: stats.overview.total_collected || 0,
-                        totalOutstanding: stats.overview.total_outstanding || 0
-                    },
-                    monthlyTrends: stats.monthlyTrends,
-                    facultyStats: stats.facultyStats
+                    totalDebtStudents: stats.totalDebtStudents,
+                    totalDebt: stats.totalDebt,
+                    totalCollected: stats.totalCollected,
+                    todayTransactions: stats.todayTransactions,
+                    todayRevenue: stats.todayRevenue,
+                    totalPaidStudents: stats.totalPaidStudents,
+                    totalStudents: stats.totalStudents,
                 }
             };
         } catch (error: any) {
