@@ -26,6 +26,10 @@ function mapAction(method: string, path: string): string | null {
     if (method === 'DELETE' && path.startsWith('/api/financial/tuition-settings')) return 'Xóa thiết lập học phí';
     if (method === 'POST' && path.startsWith('/api/financial/receipts')) return 'Tạo phiếu thu';
 
+    if (method === 'POST' && path.startsWith('/api/student/subjects/register')) return 'Đăng ký môn học';
+    if (method === 'POST' && path.startsWith('/api/student/enrolled-courses/cancel')) return 'Hủy đăng ký môn học';
+    if (method === 'POST' && path.startsWith('/api/student/tuition/payment')) return 'Thanh toán học phí';
+    
     // ... mapping thêm nếu cần ...
     return null; // Không log các hành động không quan trọng
 }
