@@ -34,8 +34,8 @@ import {
     Snackbar,
     Divider,
     CircularProgress,
-    Autocomplete,
-    Pagination
+    Pagination,
+    Autocomplete
 } from "@mui/material";
 import { SelectChangeEvent } from '@mui/material/Select';
 import { User } from "../types";
@@ -98,27 +98,34 @@ export default function UserManagement({user, onLogout}: UserManagementProps) {
     const [searchResults, setSearchResults] = useState<AdminUser[]>([]);
     const [isSearching, setIsSearching] = useState(false);
     const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null);
-    const [page, setPage] = useState(1);
-    const [totalPages, setTotalPages] = useState(1);
 
-    const fetchUsers = async (page: number = 1, limit: number = 10) => {
+
+    const fetchUsers = async () => {
         try {
             setIsLoading(true);
-            const response = await userAdminApi.getUsers(page, limit, filterRole);
+            const response = await userAdminApi.getUsers(undefined, 1000, filterRole); // fetch all users, large limit
+            console.log('Frontend received data:', response); // Debug log
             setUsers(response.users);
-            setTotalPages(response.totalPages);
             setError(null);
         } catch (err: any) {
             console.error("Error fetching users:", err);
-            setError("Có lỗi xảy ra");
+            if (err.response && err.response.data) {
+                if (err.response.data.message === 'User already exists') {
+                    setError('User already exists');
+                } else {
+                    setError(err.response.data.message || "Có lỗi xảy ra");
+                }
+            } else {
+                setError("Có lỗi xảy ra");
+            }
         } finally {
             setIsLoading(false);
         }
     };
 
     useEffect(() => {
-        fetchUsers(page);
-    }, [page, filterRole]);
+        fetchUsers();
+    }, [filterRole]);
 
     // Update filteredUsers to search by both name and studentid
     const filteredUsers = users.filter(user => {
@@ -539,12 +546,6 @@ export default function UserManagement({user, onLogout}: UserManagementProps) {
                                     </TableBody>
                                 </Table>
                             </TableContainer>
-                            <Pagination
-                                count={totalPages}
-                                page={page}
-                                onChange={(_e, value) => setPage(value)}
-                                sx={{ mt: 2, display: 'flex', justifyContent: 'center' }}
-                            />
                         </Box>
                     )}
 
