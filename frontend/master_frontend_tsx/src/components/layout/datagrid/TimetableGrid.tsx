@@ -5,53 +5,90 @@ import Table from '@mui/joy/Table';
 import { TableRow } from "@mui/material";
 import { Card, CardContent, Chip } from '@mui/material';
 
-// Component SubjectCard đơn giản chỉ hiển thị mã môn và tên môn
+// Component SubjectCard hiển thị thông tin môn học với thời gian
 const SubjectCard = ({ subject }: { subject: TimetableSubject }) => {
-    return (
+    // Helper function để lấy thời gian từ fromTo
+    const getTimeRange = (fromTo: string) => {
+        const timeMap: Record<string, string> = {
+            '1': '7:30-8:15',
+            '2': '8:15-9:00', 
+            '3': '9:00-9:45',
+            '4': '10:00-10:45',
+            '5': '10:45-11:30',
+            '6': '13:00-13:45',
+            '7': '13:45-14:30',
+            '8': '14:30-15:15',
+            '9': '15:30-16:15',
+            '10': '16:15-17:00'
+        };
+        
+        const match = fromTo.match(/(\d+)(?:-(\d+))?/);
+        if (match) {
+            const start = parseInt(match[1]);
+            const end = match[2] ? parseInt(match[2]) : start;
+            
+            const startTime = timeMap[start.toString()]?.split('-')[0];
+            const endTime = timeMap[end.toString()]?.split('-')[1];
+            
+            if (startTime && endTime) {
+                return `${startTime} - ${endTime}`;
+            }
+        }
+        return '';
+    };    return (
         <Card
             sx={{
-                background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)',
-                borderRadius: '8px',
-                border: '1px solid #dee2e6',
+                background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
+                borderRadius: '10px',
+                border: '1px solid rgba(148, 163, 184, 0.2)',
                 height: '100%',
                 minHeight: '70px',
                 position: 'relative',
                 overflow: 'hidden',
                 cursor: 'pointer',
                 transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+                boxShadow: '0 1px 3px rgba(0, 0, 0, 0.08)',
                 '&:hover': {
                     transform: 'translateY(-1px)',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.12)',
-                    background: 'linear-gradient(135deg, #ffffff 0%, #f1f3f4 100%)',
+                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.12)',
+                    background: 'linear-gradient(135deg, #ffffff 0%, #f1f5f9 100%)',
+                    borderColor: 'rgba(148, 163, 184, 0.3)',
                 },
+                '&:before': {
+                    content: '""',
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    height: '2px',
+                    background: 'linear-gradient(90deg, #6366f1 0%, #8b5cf6 100%)',
+                }
             }}
-        >
-            <CardContent sx={{ 
-                p: 1, 
-                color: '#495057', 
+        >            <CardContent sx={{ 
+                p: 1.5, 
+                color: '#475569', 
                 height: '100%',
                 display: 'flex',
                 flexDirection: 'column',
                 justifyContent: 'center',
                 alignItems: 'center',
                 textAlign: 'center',
-                '&:last-child': { pb: 1 }
+                '&:last-child': { pb: 1.5 }
             }}>
                 {/* Mã môn học */}
                 <Chip
                     label={subject.id}
                     size="small"
                     sx={{
-                        backgroundColor: '#6c757d',
-                        color: 'white',
-                        fontWeight: 'bold',
-                        fontSize: '0.75rem',
-                        height: '22px',
-                        mb: 1,
+                        backgroundColor: '#6366f1',
+                        color: '#ffffff',
+                        fontWeight: '600',
+                        fontSize: '0.7rem',
+                        height: '20px',
+                        mb: 0.8,
                         '& .MuiChip-label': {
-                            px: 0.8,
-                            fontFamily: '"Inter", sans-serif',
+                            px: 0.6,
+                            fontFamily: '"Varela Round", sans-serif',
                             letterSpacing: '0.3px',
                         }
                     }}
@@ -60,20 +97,34 @@ const SubjectCard = ({ subject }: { subject: TimetableSubject }) => {
                 {/* Tên môn học */}
                 <Typography
                     sx={{
-                        fontWeight: 'bold',
-                        fontSize: '0.85rem',
-                        lineHeight: 1.3,
-                        color: '#212529',
+                        fontWeight: '600',
+                        fontSize: '0.8rem',
+                        lineHeight: 1.2,
+                        color: '#334155',
                         display: '-webkit-box',
-                        WebkitLineClamp: 3,
+                        WebkitLineClamp: 2,
                         WebkitBoxOrient: 'vertical',
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
-                        fontFamily: '"Inter", sans-serif',
+                        fontFamily: '"Varela Round", sans-serif',
                         textAlign: 'center',
+                        mb: 0.5,
                     }}
                 >
                     {subject.name}
+                </Typography>
+
+                {/* Thời gian học */}
+                <Typography
+                    sx={{
+                        fontSize: '0.65rem',
+                        color: '#64748b',
+                        fontFamily: '"Varela Round", sans-serif',
+                        fontWeight: '500',
+                        letterSpacing: '0.2px',
+                    }}
+                >
+                    {getTimeRange(subject.fromTo)}
                 </Typography>
             </CardContent>
         </Card>
@@ -212,29 +263,29 @@ export function TimetableGrid({ subjects }: TimetableGridProps) {
                     Thời khóa biểu
                 </Typography>
                 <Box sx={{ overflow: 'auto', flexGrow: 1, width: '100%' }}>
-                    <Table
+                    <Table 
                         stickyHeader
                         sx={{
                             width: '100%',
                             tableLayout: 'fixed',
-                            '--Table-headerHeight': '3.125rem',
-                            '--Table-cellHeight': '3.125rem',
+                            '--Table-headerHeight': '3.3rem', // 1.5x of 2.2rem
+                            '--Table-cellHeight': '3.3rem',   // 1.5x of 2.2rem
                             '& thead th': {
                                 textAlign: 'center',
                                 backgroundColor: '#6ebab6',
-                                padding: '0.625rem 0.375rem',
+                                padding: '0.45rem 0.3rem', // 1.5x of 0.3rem 0.2rem
                                 fontWeight: 'bold',
-                                fontSize: '1rem',
+                                fontSize: '1.425rem', // 1.5x of 0.95rem
                                 color: '#FFFFFF',
                                 borderRight: '0.0625rem solid #cccccc',
                             },                            '& tbody td': {
                                 textAlign: 'center',
-                                padding: '0.2rem',
-                                fontSize: '0.875rem',
+                                padding: '0.15rem', // 1.5x of 0.1rem
+                                fontSize: '1.2rem', // 1.5x of 0.8rem
                                 color: '#4a4a4a',
                                 backgroundColor: '#FFFFFF',
                                 verticalAlign: 'top',
-                                height: '80px',
+                                height: '57px', // 1.5x of 38px
                                 position: 'relative',
                             },
                             '& tr > *:first-child': {
@@ -243,7 +294,7 @@ export function TimetableGrid({ subjects }: TimetableGridProps) {
                                 backgroundColor: '#f9fafc',
                                 fontWeight: 'bold',
                                 color: '#2f4f4f',
-                                width: '8.75rem',
+                                width: '11.25rem', // 1.5x of 7.5rem
                             },
                         }}
                     >
@@ -273,7 +324,7 @@ export function TimetableGrid({ subjects }: TimetableGridProps) {
                         <tbody>
                             {timeSlots.map((timeSlot, rowIdx) => (
                                 <TableRow key={rowIdx}>
-                                    <td>
+                                    <td style={{ verticalAlign: 'middle', height: '57px' }}>
                                         <Typography
                                             level="body-md"
                                             sx={{
@@ -281,11 +332,16 @@ export function TimetableGrid({ subjects }: TimetableGridProps) {
                                                 color: '#2f4f4f',
                                                 whiteSpace: 'pre-line',
                                                 fontFamily: '"Varela Round", sans-serif',
+                                                height: '100%',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
                                             }}
                                         >
                                             {timeSlot}
                                         </Typography>
-                                    </td>                                    {days.slice(1).map((_, colIdx) => {
+                                    </td>
+                                    {days.slice(1).map((_, colIdx) => {
                                         const spanKey = `${rowIdx}-${colIdx + 1}`;
                                         const span = spanInfo[spanKey];
                                         
