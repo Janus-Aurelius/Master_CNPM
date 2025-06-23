@@ -41,7 +41,6 @@ interface UserData {
     username: string;
     role: string;
     studentId?: string;
-    name?: string;
 }
 
 export default function LoginForm({ onLogin }: LoginFormProps) {
@@ -72,14 +71,11 @@ export default function LoginForm({ onLogin }: LoginFormProps) {
                 // Hiển thị thông báo bảo trì
                 alert(data.message || 'Hệ thống đang bảo trì');
                 return;
-            }            if (data.success) {
+            }
+
+            if (data.success) {
                 console.log('👤 User data from backend:', data.data.user);
                 console.log('🔑 Token from backend:', data.data.token);
-                
-                // Make sure username is set as name if it doesn't exist
-                if (!data.data.user.name && data.data.user.username) {
-                    data.data.user.name = data.data.user.username;
-                }
                 
                 // Save user data and tokens to localStorage
                 localStorage.setItem('user', JSON.stringify(data.data.user));

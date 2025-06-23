@@ -36,7 +36,6 @@ interface UserData {
     username: string;
     role: string;
     studentId?: string;
-    name?: string;
 }
 
 export default function App() {
@@ -54,25 +53,13 @@ export default function App() {
         if (userData) {
             const parsedUser = JSON.parse(userData);
             console.log('👤 Parsed user data:', parsedUser);
-            
-            // Ensure username is used as name if name doesn't exist
-            if (!parsedUser.name && parsedUser.username) {
-                parsedUser.name = parsedUser.username;
-            }
-            
             setUser(parsedUser);
         } else {
             console.log('❌ No user data in localStorage');
         }
         setIsAuthChecked(true);
-    }, []);const handleLogin = (userData: UserData) => {
+    }, []);    const handleLogin = (userData: UserData) => {
         console.log('🔄 handleLogin called with:', userData);
-        
-        // If user data doesn't have a name but has username, use username as name
-        if (!userData.name && userData.username) {
-            userData.name = userData.username;
-        }
-        
         const userWithIndex = userData as User;
         console.log('👤 Setting user state:', userWithIndex);
         setUser(userWithIndex);
@@ -87,13 +74,14 @@ export default function App() {
         navigate("/login");
     };
 
-    // Protected route component    const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) => {
+    // Protected route component
+    const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) => {
         console.log('ProtectedRoute', { user, allowedRoles });
         if (!user) {
             return <Navigate to="/login" replace />;
         }
 
-        if (allowedRoles && user.role && !allowedRoles.includes(user.role)) {
+        if (allowedRoles && !allowedRoles.includes(user.role)) {
             return <Navigate to="/unauthorized" replace />;
         }
 
