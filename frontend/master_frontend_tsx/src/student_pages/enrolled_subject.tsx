@@ -7,7 +7,7 @@ import Slide from "@mui/material/Slide";
 import { EnrolledSubjectProps } from "../types";
 import Paper from "@mui/material/Paper";
 import { useState, useEffect } from "react";
-import { Box, Button, Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from "@mui/material";
+import { Box, Button, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Dialog, DialogTitle, DialogContent, DialogActions } from "@mui/material";
 import UserInfo from "../components/UserInfo";
 import { enrolledSubjectApi, type EnrolledSubjectData } from "../api_clients/student/enrolledSubjectApi";
 import { enrollmentApi, parseSemesterInfo } from "../api_clients/student/enrollmentApi";
@@ -15,9 +15,12 @@ import { enrollmentApi, parseSemesterInfo } from "../api_clients/student/enrollm
 export const EnrolledSubject = ({ user, onLogout }: Omit<EnrolledSubjectProps, 'handleUnenroll'>) => {
     const [open, setOpen] = useState(false);
     const [subjects, setSubjects] = useState<EnrolledSubjectData[]>([]);
-    const [loading, setLoading] = useState(true);    const [error, setError] = useState<string | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
     const [studentInfo, setStudentInfo] = useState<{ studentId: any; name: any; major: any; majorName: any; } | null>(null);
     const [currentSemester, setCurrentSemester] = useState<string>("");
+    const [isConfirmed, setIsConfirmed] = useState<boolean>(false);
+    const [confirmDialogOpen, setConfirmDialogOpen] = useState<boolean>(false);
     
     // Parse semester info only if currentSemester is available
     const semesterInfo = currentSemester ? parseSemesterInfo(currentSemester) : null;    useEffect(() => {
@@ -31,19 +34,24 @@ export const EnrolledSubject = ({ user, onLogout }: Omit<EnrolledSubjectProps, '
         
         console.log('✅ User found, starting to load data...');
         setLoading(true);
-        setError(null);        // Load current semester, student info and enrolled subjects
+        setError(null);
+        
+        // Load current semester, student info and enrolled subjects
         Promise.all([
             enrollmentApi.getCurrentSemester(),
             enrollmentApi.getStudentInfo(),
-            enrolledSubjectApi.getEnrolledSubjects() // No semester parameter - backend uses current
+            enrolledSubjectApi.getEnrolledSubjects(), // No semester parameter - backend uses current
+            enrollmentApi.checkConfirmationStatus(currentSemester || 'HK1_2024')
         ])
-        .then(([currentSemesterStr, studentData, enrolledSubjects]) => {
+        .then(([currentSemesterStr, studentData, enrolledSubjects, confirmationStatus]) => {
             console.log('✅ Successfully loaded current semester:', currentSemesterStr);
             console.log('✅ Successfully loaded student info:', studentData);
             console.log('✅ Successfully loaded enrolled subjects:', enrolledSubjects);
+            console.log('✅ Successfully loaded confirmation status:', confirmationStatus);
             setCurrentSemester(currentSemesterStr);
             setStudentInfo(studentData);
             setSubjects(enrolledSubjects);
+            setIsConfirmed(confirmationStatus.isConfirmed);
             setLoading(false);
         })
         .catch((err: any) => {
@@ -51,7 +59,9 @@ export const EnrolledSubject = ({ user, onLogout }: Omit<EnrolledSubjectProps, '
             setError(err.message || 'Không thể tải dữ liệu');
             setLoading(false);
         });
-    }, [user]);const [snackbarMessage, setSnackbarMessage] = useState<string>('');
+    }, [user]);
+
+    const [snackbarMessage, setSnackbarMessage] = useState<string>('');
     const [snackbarSeverity, setSnackbarSeverity] = useState<'success' | 'error'>('success');
 
     const handleClose = (_: React.SyntheticEvent | Event, reason?: string) => {
@@ -84,6 +94,43 @@ export const EnrolledSubject = ({ user, onLogout }: Omit<EnrolledSubjectProps, '
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleConfirmRegistration = async () => {
+        if (!user || !user.id || !currentSemester) return;
+        
+        try {
+            setLoading(true);
+            setError(null);
+            
+            const result = await enrollmentApi.confirmRegistration(currentSemester);
+            
+            if (result.success) {
+                setIsConfirmed(true);
+                setSnackbarMessage(result.message);
+                setSnackbarSeverity('success');
+                setOpen(true);
+                setConfirmDialogOpen(false);
+            } else {
+                setSnackbarMessage(result.message);
+                setSnackbarSeverity('error');
+                setOpen(true);
+            }
+        } catch (err: any) {
+            setSnackbarMessage(err.message || 'Xác nhận đăng ký thất bại');
+            setSnackbarSeverity('error');
+            setOpen(true);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleOpenConfirmDialog = () => {
+        setConfirmDialogOpen(true);
+    };
+
+    const handleCloseConfirmDialog = () => {
+        setConfirmDialogOpen(false);
     };
 
     return (
@@ -140,9 +187,44 @@ export const EnrolledSubject = ({ user, onLogout }: Omit<EnrolledSubjectProps, '
                             <Typography sx={{ fontWeight: 'bold', mb: 1, color: '#495057' }}>
                                 Ngành: {studentInfo.majorName}
                             </Typography>
-                            <Typography sx={{ fontWeight: 'bold', color: '#495057' }}>
+                            <Typography sx={{ fontWeight: 'bold', color: '#495057', mb: 1 }}>
                                 {semesterInfo.fullName}
                             </Typography>
+                            {isConfirmed ? (
+                                <Typography sx={{ fontWeight: 'bold', color: '#28a745' }}>
+                                    ✅ Đã xác nhận đăng ký
+                                </Typography>
+                            ) : (
+                                <Typography sx={{ fontWeight: 'bold', color: '#ffc107' }}>
+                                    ⚠️ Chưa xác nhận đăng ký
+                                </Typography>
+                            )}
+                        </Box>
+                    )}
+
+                    {/* Nút xác nhận đăng ký */}
+                    {!loading && !error && subjects.length > 0 && !isConfirmed && (
+                        <Box sx={{ mb: 2, display: 'flex', justifyContent: 'center' }}>
+                            <Button
+                                variant="contained"
+                                color="primary"
+                                size="large"
+                                onClick={handleOpenConfirmDialog}
+                                sx={{
+                                    textTransform: 'none',
+                                    borderRadius: '0.5rem',
+                                    backgroundColor: '#28a745',
+                                    '&:hover': {
+                                        backgroundColor: '#218838',
+                                    },
+                                    px: 3,
+                                    py: 1.5,
+                                    fontSize: '1.1rem',
+                                    fontWeight: 'bold'
+                                }}
+                            >
+                                ✅ Xác nhận đăng ký
+                            </Button>
                         </Box>
                     )}
 
@@ -217,7 +299,82 @@ export const EnrolledSubject = ({ user, onLogout }: Omit<EnrolledSubjectProps, '
                     </TableContainer>
                     )}
                 </Paper>
-            </Box>            <Snackbar
+            </Box>
+            
+            {/* Dialog xác nhận đăng ký */}
+            <Dialog
+                open={confirmDialogOpen}
+                onClose={handleCloseConfirmDialog}
+                maxWidth="sm"
+                fullWidth
+            >
+                <DialogTitle sx={{ 
+                    textAlign: 'center', 
+                    color: '#d32f2f',
+                    fontWeight: 'bold',
+                    fontSize: '1.5rem'
+                }}>
+                    ⚠️ Xác nhận đăng ký
+                </DialogTitle>
+                <DialogContent>
+                    <Typography sx={{ mb: 2, fontSize: '1.1rem', textAlign: 'center' }}>
+                        Bạn đã chắc chắn đăng ký những môn này chưa?
+                    </Typography>
+                    <Typography sx={{ 
+                        mb: 2, 
+                        fontSize: '1rem', 
+                        textAlign: 'center',
+                        color: '#d32f2f',
+                        fontWeight: 'bold',
+                        backgroundColor: '#ffebee',
+                        p: 2,
+                        borderRadius: 1
+                    }}>
+                        ⚠️ Lưu ý: Một khi bấm xác nhận sẽ không được thu hồi!
+                    </Typography>
+                    <Typography sx={{ fontSize: '1rem', textAlign: 'center' }}>
+                        Danh sách môn học đã đăng ký ({subjects.length} môn):
+                    </Typography>
+                    <Box sx={{ mt: 2, maxHeight: '200px', overflowY: 'auto' }}>
+                        {subjects.map((subject, index) => (
+                            <Typography key={index} sx={{ 
+                                fontSize: '0.9rem', 
+                                mb: 0.5,
+                                p: 1,
+                                backgroundColor: '#f5f5f5',
+                                borderRadius: 0.5
+                            }}>
+                                • {subject.id} - {subject.name}
+                            </Typography>
+                        ))}
+                    </Box>
+                </DialogContent>
+                <DialogActions sx={{ p: 2, justifyContent: 'center' }}>
+                    <Button 
+                        onClick={handleCloseConfirmDialog}
+                        variant="outlined"
+                        sx={{ mr: 2 }}
+                    >
+                        Hủy
+                    </Button>
+                    <Button 
+                        onClick={handleConfirmRegistration}
+                        variant="contained"
+                        color="error"
+                        disabled={loading}
+                        sx={{
+                            backgroundColor: '#d32f2f',
+                            '&:hover': {
+                                backgroundColor: '#b71c1c',
+                            }
+                        }}
+                    >
+                        {loading ? 'Đang xác nhận...' : 'Xác nhận đăng ký'}
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            <Snackbar
                 open={open}
                 autoHideDuration={4000}
                 onClose={handleClose}

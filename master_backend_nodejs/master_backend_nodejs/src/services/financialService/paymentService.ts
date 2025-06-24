@@ -47,7 +47,7 @@ export class FinancialPaymentService {
                 CONCAT('Học kỳ ', hk.hockythu) AS "semester",
                 pd.mahocky AS "semesterId",
                 hk.thoihandonghp AS "dueDate",
-                
+                pd.xacnhan AS "isConfirmed",
                 -- SoTienPhaiDong calculation using your formula
                 COALESCE(
                     (SELECT SUM(
@@ -125,7 +125,8 @@ export class FinancialPaymentService {
                     amount: p.amount,
                     method: p.method || ''
                 })),
-                isOverdue: paymentStatus === 'overdue'
+                isOverdue: paymentStatus === 'overdue',
+                isConfirmed: row.isConfirmed
             };
         }));
 

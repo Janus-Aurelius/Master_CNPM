@@ -43,6 +43,12 @@ interface IStudentController {
 
     // Check registration status
     checkRegistrationStatus(req: Request, res: Response): Promise<Response>;
+
+    // Confirm registration
+    confirmRegistration(req: Request, res: Response): Promise<Response>;
+
+    // Check confirmation status
+    checkConfirmationStatus(req: Request, res: Response): Promise<Response>;
 }
 
 // Helper function to resolve studentId from request
@@ -450,7 +456,9 @@ class StudentController implements IStudentController {    public async getDashb
             console.error('❌ Error canceling registration:', error);
             return res.status(500).json({ success: false, message: 'Lỗi hệ thống', error: error.message });
         }
-    }public async getRecommendedSubjects(req: Request, res: Response): Promise<Response> {
+    }
+
+    public async getRecommendedSubjects(req: Request, res: Response): Promise<Response> {
         try {
             // Lấy studentId từ request body/params trước, sau đó từ token
             let studentId = req.body?.studentId || req.params?.studentId || req.user?.studentId;
@@ -576,6 +584,67 @@ class StudentController implements IStudentController {    public async getDashb
         } catch (error: any) {
             console.error('❌ Error checking registration status:', error);
             return res.status(500).json({ success: false, message: 'Lỗi hệ thống', error: error.message });
+        }
+    }
+
+    // Confirm registration
+    public async confirmRegistration(req: Request, res: Response): Promise<Response> {
+        try {
+            const studentId = await getStudentIdFromRequest(req);
+            if (!studentId) {
+                return res.status(400).json({ success: false, message: 'Không thể xác định mã số sinh viên.' });
+            }
+
+            const { DatabaseService } = await import('../../services/database/databaseService');
+            const semesterId = (req.query.semesterId as string) || await DatabaseService.getCurrentSemester();
+
+            console.log('✅ Confirming registration for studentId:', studentId, 'semesterId:', semesterId);
+            
+            const { registrationService } = await import('../../services/studentService/registrationService');
+            const result = await registrationService.confirmRegistration(studentId, semesterId);
+            
+            return res.status(200).json({
+                success: result.success,
+                message: result.message
+            });
+        } catch (error: any) {
+            console.error('❌ Error confirming registration:', error);
+            return res.status(500).json({ 
+                success: false, 
+                message: error.message || 'Lỗi hệ thống' 
+            });
+        }
+    }
+
+    // Check confirmation status
+    public async checkConfirmationStatus(req: Request, res: Response): Promise<Response> {
+        try {
+            const studentId = await getStudentIdFromRequest(req);
+            if (!studentId) {
+                return res.status(400).json({ success: false, message: 'Không thể xác định mã số sinh viên.' });
+            }
+
+            const { DatabaseService } = await import('../../services/database/databaseService');
+            const semesterId = (req.query.semesterId as string) || await DatabaseService.getCurrentSemester();
+
+            console.log('🔍 Checking confirmation status for studentId:', studentId, 'semesterId:', semesterId);
+            
+            const { registrationService } = await import('../../services/studentService/registrationService');
+            const result = await registrationService.checkConfirmationStatus(studentId, semesterId);
+            
+            return res.status(200).json({
+                success: true,
+                data: {
+                    isConfirmed: result.isConfirmed,
+                    message: result.message
+                }
+            });
+        } catch (error: any) {
+            console.error('❌ Error checking confirmation status:', error);
+            return res.status(500).json({ 
+                success: false, 
+                message: error.message || 'Lỗi hệ thống' 
+            });
         }
     }
 }

@@ -198,13 +198,19 @@ export const tuitionService = {    /**
                 SELECT 
                     MaPhieuDangKy as "registrationId",
                     MaSoSinhVien as "studentId",
-                    MaHocKy as "semesterId"
+                    MaHocKy as "semesterId",
+                    XacNhan as "isConfirmed"
                 FROM PHIEUDANGKY 
                 WHERE MaPhieuDangKy = $1
             `, [paymentRequest.registrationId]);
 
             if (!registration) {
                 throw new Error('Registration not found');
+            }
+
+            // Kiểm tra trạng thái xác nhận
+            if (!registration.isconfirmed && !registration.isConfirmed) {
+                throw new Error('Bạn chưa xác nhận danh sách môn học. Vui lòng xác nhận trước khi thanh toán.');
             }
 
             // Get current tuition status (with calculated amounts) BEFORE payment

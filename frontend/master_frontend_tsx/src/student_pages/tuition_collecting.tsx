@@ -27,6 +27,7 @@ import PaymentIcon from "@mui/icons-material/Payment";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import ExpandLessIcon from "@mui/icons-material/ExpandLess";
 import { tuitionApi, TuitionRecord, PaymentHistoryItem, formatCurrency, getStatusText, getStatusChipColor } from "../api_clients/student/tuitionApi";
+import { enrollmentApi, parseSemesterInfo } from "../api_clients/student/enrollmentApi";
 
 const TuitionCollecting = ({ user, onLogout }: StudentPageProps) => {
     const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -38,7 +39,13 @@ const TuitionCollecting = ({ user, onLogout }: StudentPageProps) => {
     const [historyDialog, setHistoryDialog] = useState<{ open: boolean; tuitionId: string | null }>({ open: false, tuitionId: null });
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-
+    const [studentInfo, setStudentInfo] = useState<{ studentId: any; name: any; major: any; majorName: any; } | null>(null);
+    const [currentSemester, setCurrentSemester] = useState<string>("");
+    const [confirmationStatusMap, setConfirmationStatusMap] = useState<{ [semesterId: string]: boolean }>({});
+    
+    // Parse semester info only if currentSemester is available
+    const semesterInfo = currentSemester ? parseSemesterInfo(currentSemester) : null;
+    
     useEffect(() => {
         if (!user || !user.id) return;
         loadTuitionData();
@@ -70,29 +77,25 @@ const TuitionCollecting = ({ user, onLogout }: StudentPageProps) => {
                 tuitionApi.getPaymentHistory(String(user.id))
             ]);
             
-            console.log('🎓 [TuitionCollecting] Loaded tuition data:', tuitionList);
-            console.log('💰 [TuitionCollecting] Sample discount info:', tuitionList[0]?.discountInfo);
-            console.log('📋 [TuitionCollecting] Loaded payment history:', paymentHistoryList);
-            
-            // Thêm log chi tiết cho từng kỳ học
-            tuitionList.forEach((tuition, index) => {
-                console.log(`📊 [TuitionCollecting] Semester ${index + 1}:`, {
-                    id: tuition.id,
-                    semesterName: tuition.semesterName,
-                    year: tuition.year,
-                    status: tuition.status,
-                    originalAmount: tuition.originalAmount,
-                    totalAmount: tuition.totalAmount,
-                    paidAmount: tuition.paidAmount,
-                    remainingAmount: tuition.remainingAmount,
-                    subjectsCount: tuition.subjects.length
-                });
-            });
-            
-            console.log('💾 [TuitionCollecting] Setting tuition data state...');
             setTuitionDataState(tuitionList);
             setPaymentHistory(paymentHistoryList);
-            console.log('✅ [TuitionCollecting] Data loaded and state updated successfully');
+
+            // Load trạng thái xác nhận cho từng kỳ
+            const statusMap: { [semesterId: string]: boolean } = {};
+            await Promise.all(
+                tuitionList.map(async (tuition) => {
+                    try {
+                        const status = await enrollmentApi.checkConfirmationStatus(tuition.semester);
+                        statusMap[tuition.id] = !!status.isConfirmed;
+                        console.log(`🔍 [TuitionCollecting] Confirmation status for ${tuition.id}:`, status.isConfirmed);
+                    } catch (error) {
+                        console.error(`❌ [TuitionCollecting] Error checking confirmation for ${tuition.id}:`, error);
+                        statusMap[tuition.id] = false;
+                    }
+                })
+            );
+            setConfirmationStatusMap(statusMap);
+            console.log('📊 [TuitionCollecting] Confirmation status map:', statusMap);
         } catch (err: any) {
             console.error('❌ [TuitionCollecting] Error loading tuition data:', err);
             setError(err.message || 'Lỗi khi tải dữ liệu học phí');
@@ -107,6 +110,13 @@ const TuitionCollecting = ({ user, onLogout }: StudentPageProps) => {
     };
 
     const handleOpenPaymentDialog = (tuition: TuitionRecord) => {
+        // Kiểm tra trạng thái xác nhận cho kỳ học cụ thể
+        const isConfirmedForSemester = confirmationStatusMap[tuition.id];
+        if (!isConfirmedForSemester) {
+            setError('Bạn chưa xác nhận danh sách môn học cho kỳ này. Vui lòng xác nhận trước khi thanh toán.');
+            return;
+        }
+
         console.log('💳 [TuitionCollecting] Opening payment dialog for tuition:', {
             id: tuition.id,
             semesterName: tuition.semesterName,
@@ -115,7 +125,8 @@ const TuitionCollecting = ({ user, onLogout }: StudentPageProps) => {
             originalAmount: tuition.originalAmount,
             totalAmount: tuition.totalAmount,
             paidAmount: tuition.paidAmount,
-            remainingAmount: tuition.remainingAmount
+            remainingAmount: tuition.remainingAmount,
+            isConfirmed: isConfirmedForSemester
         });
         
         setPaymentDialog({ open: true, tuition });
@@ -223,6 +234,48 @@ const TuitionCollecting = ({ user, onLogout }: StudentPageProps) => {
                     >
                         Tình trạng học phí
                     </Typography>
+
+                    {/* Thông báo khi chưa xác nhận đăng ký */}
+                    {!loading && !error && tuitionDataState.length > 0 && 
+                     tuitionDataState.every(tuition => !confirmationStatusMap[tuition.id]) && (
+                        <Alert 
+                            severity="warning" 
+                            sx={{ 
+                                mb: 2,
+                                backgroundColor: '#fff3cd',
+                                border: '1px solid #ffeaa7',
+                                color: '#856404'
+                            }}
+                        >
+                            <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
+                                ⚠️ Bạn chưa xác nhận danh sách môn học!
+                            </Typography>
+                            <Typography variant="body2" sx={{ mt: 1 }}>
+                                Vui lòng vào trang "Danh sách môn học đã đăng ký" để xác nhận trước khi thanh toán học phí.
+                            </Typography>
+                        </Alert>
+                    )}
+
+                    {/* Thông báo khi đã xác nhận đăng ký */}
+                    {!loading && !error && tuitionDataState.length > 0 && 
+                     tuitionDataState.some(tuition => confirmationStatusMap[tuition.id]) && (
+                        <Alert 
+                            severity="success" 
+                            sx={{ 
+                                mb: 2,
+                                backgroundColor: '#d4edda',
+                                border: '1px solid #c3e6cb',
+                                color: '#155724'
+                            }}
+                        >
+                            <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
+                                ✅ Bạn đã xác nhận danh sách môn học cho một số kỳ!
+                            </Typography>
+                            <Typography variant="body2" sx={{ mt: 1 }}>
+                                Bây giờ bạn có thể thanh toán học phí cho các kỳ đã xác nhận.
+                            </Typography>
+                        </Alert>
+                    )}
 
                     {loading && (
                         <Box display="flex" justifyContent="center" m={3}>
@@ -414,23 +467,44 @@ const TuitionCollecting = ({ user, onLogout }: StudentPageProps) => {
                                                 <Button variant="outlined" onClick={() => handleOpenHistoryDialog(tuition.id)}>
                                                     Xem lịch sử thanh toán
                                                 </Button>
+                                                {/* Thông báo khi chưa xác nhận đăng ký cho kỳ này */}
+                                                {confirmationStatusMap[tuition.id] === false && (
+                                                    <Alert 
+                                                        severity="warning" 
+                                                        sx={{ 
+                                                            mb: 2,
+                                                            backgroundColor: '#fff3cd',
+                                                            border: '1px solid #ffeaa7',
+                                                            color: '#856404'
+                                                        }}
+                                                    >
+                                                        <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
+                                                            ⚠️ Bạn chưa xác nhận danh sách môn học cho kỳ này!
+                                                        </Typography>
+                                                        <Typography variant="body2" sx={{ mt: 1 }}>
+                                                            Vui lòng vào trang "Danh sách môn học đã đăng ký" để xác nhận trước khi thanh toán học phí.
+                                                        </Typography>
+                                                    </Alert>
+                                                )}
+
                                                 {tuition.status !== "paid" && (
                                                     <Button 
                                                         variant="contained" 
                                                         color="primary" 
                                                         startIcon={<PaymentIcon />} 
                                                         onClick={() => handleOpenPaymentDialog(tuition)}
-                                                        disabled={tuition.status === 'not_opened' || paymentInProgress === tuition.id}
+                                                        disabled={tuition.status === 'not_opened' || paymentInProgress === tuition.id || confirmationStatusMap[tuition.id] === false}
                                                         sx={{
                                                             textTransform: "none",
                                                             borderRadius: "0.5rem",
-                                                            backgroundColor: tuition.status === 'not_opened' ? '#ccc' : "#4880FF",
+                                                            backgroundColor: tuition.status === 'not_opened' || confirmationStatusMap[tuition.id] === false ? '#ccc' : "#4880FF",
                                                             '&:hover': {
-                                                                backgroundColor: tuition.status === 'not_opened' ? '#ccc' : "rgb(103, 146, 255)",
+                                                                backgroundColor: tuition.status === 'not_opened' || confirmationStatusMap[tuition.id] === false ? '#ccc' : "rgb(103, 146, 255)",
                                                             },
                                                         }}
                                                     >
-                                                        {paymentInProgress === tuition.id ? <CircularProgress size={20} /> : "Thanh toán học phí"}
+                                                        {paymentInProgress === tuition.id ? <CircularProgress size={20} /> : 
+                                                         confirmationStatusMap[tuition.id] === false ? "Chưa xác nhận đăng ký" : "Thanh toán học phí"}
                                                     </Button>
                                                 )}
                                             </Box>

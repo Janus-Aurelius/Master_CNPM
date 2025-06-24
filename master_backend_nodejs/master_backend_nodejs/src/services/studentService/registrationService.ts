@@ -578,10 +578,12 @@ export const registrationService = {
             const registration = await DatabaseService.queryOne(`
                 SELECT 
                     pd.MaPhieuDangKy as "registrationId",
-                    pd.NgayLap as "registrationDate",                    pd.MaSoSinhVien as "studentId",
+                    pd.NgayLap as "registrationDate",
+                    pd.MaSoSinhVien as "studentId",
                     pd.MaHocKy as "semesterId",
                     pd.SoTienConLai as "remainingAmount",
-                    pd.SoTinChiToiDa as "maxCredits"
+                    pd.SoTinChiToiDa as "maxCredits",
+                    pd.XacNhan as "isConfirmed"
                 FROM PHIEUDANGKY pd
                 WHERE pd.MaSoSinhVien = $1 AND pd.MaHocKy = $2
             `, [studentId, semesterId]);
@@ -591,13 +593,99 @@ export const registrationService = {
             console.error('Error getting registration info:', error);
             throw error;
         }
-    },    // Lấy môn học theo chương trình học của sinh viên
+    },
+
+    // Xác nhận đăng ký (cập nhật trường XacNhan)
+    async confirmRegistration(studentId: string, semesterId: string): Promise<{ success: boolean; message: string }> {
+        try {
+            console.log(`🔵 [RegistrationService] confirmRegistration called with:`, {
+                studentId,
+                semesterId
+            });
+
+            // Kiểm tra phiếu đăng ký có tồn tại không
+            const registration = await DatabaseService.queryOne(`
+                SELECT MaPhieuDangKy, XacNhan
+                FROM PHIEUDANGKY 
+                WHERE MaSoSinhVien = $1 AND MaHocKy = $2
+            `, [studentId, semesterId]);
+
+            if (!registration) {
+                throw new Error('Không tìm thấy phiếu đăng ký cho học kỳ này');
+            }
+
+            // Kiểm tra đã xác nhận chưa
+            if (registration.xacnhan || registration.XacNhan) {
+                throw new Error('Phiếu đăng ký đã được xác nhận trước đó');
+            }
+
+            // Kiểm tra có môn học nào được đăng ký không
+            const enrolledCourses = await DatabaseService.query(`
+                SELECT COUNT(*) as count
+                FROM CT_PHIEUDANGKY
+                WHERE MaPhieuDangKy = $1
+            `, [registration.maphieudangky || registration.MaPhieuDangKy]);
+
+            if (enrolledCourses[0].count === 0) {
+                throw new Error('Không thể xác nhận khi chưa đăng ký môn học nào');
+            }
+
+            // Cập nhật trạng thái xác nhận
+            await DatabaseService.query(`
+                UPDATE PHIEUDANGKY 
+                SET XacNhan = true 
+                WHERE MaPhieuDangKy = $1
+            `, [registration.maphieudangky || registration.MaPhieuDangKy]);
+
+            console.log(`✅ [RegistrationService] Registration confirmed successfully`);
+            
+            return {
+                success: true,
+                message: 'Xác nhận đăng ký thành công'
+            };
+        } catch (error) {
+            console.error('Error confirming registration:', error);
+            throw error;
+        }
+    },
+
+    // Kiểm tra trạng thái xác nhận
+    async checkConfirmationStatus(studentId: string, semesterId: string): Promise<{ isConfirmed: boolean; message: string }> {
+        try {
+            const registration = await DatabaseService.queryOne(`
+                SELECT XacNhan
+                FROM PHIEUDANGKY 
+                WHERE MaSoSinhVien = $1 AND MaHocKy = $2
+            `, [studentId, semesterId]);
+
+            if (!registration) {
+                return {
+                    isConfirmed: false,
+                    message: 'Không tìm thấy phiếu đăng ký'
+                };
+            }
+
+            const isConfirmed = registration.xacnhan || registration.XacNhan || false;
+            
+            return {
+                isConfirmed,
+                message: isConfirmed ? 'Đã xác nhận đăng ký' : 'Chưa xác nhận đăng ký'
+            };
+        } catch (error) {
+            console.error('Error checking confirmation status:', error);
+            throw error;
+        }
+    },
+
+    // Lấy môn học theo chương trình học của sinh viên
     async getRecommendedCourses(studentId: string, semesterId: string): Promise<any[]> {
         try {
             console.log('🎯 [RegistrationService] Getting recommended courses for student:', studentId, 'semester:', semesterId);
             
             // Kiểm tra xem có cần convert từ User ID sang Student ID không
-            let actualStudentId = studentId;            // Nếu studentId bắt đầu bằng 'U' (User ID), convert sang Student ID
+            let actualStudentId = studentId;
+            
+            // Nếu studentId bắt đầu bằng 'U' (User ID), convert sang Student ID
             if (studentId.startsWith('U')) {
                 console.log('🔄 [RegistrationService] Converting User ID to Student ID...');
                 const userMapping = await DatabaseService.queryOne(`
@@ -644,7 +732,11 @@ export const registrationService = {
             if (!student) {
                 console.log('❌ [RegistrationService] Student not found with ID:', actualStudentId);
                 return [];
-            }            console.log('👨‍🎓 [RegistrationService] Student major:', student);            // Lấy tất cả môn học mở trong học kỳ và phân loại theo chương trình đào tạo
+            }
+            
+            console.log('👨‍🎓 [RegistrationService] Student major:', student);
+            
+            // Lấy tất cả môn học mở trong học kỳ và phân loại theo chương trình đào tạo
             console.log('🔍 [RegistrationService] Getting all available courses with program classification...');
             console.log('🔍 [RegistrationService] Query parameters:', [semesterId, student.manganh]);
             

@@ -44,6 +44,7 @@ interface Invoice {
     sotienphaidong: number; // Tổng số tiền phải đóng
     sotienconlai: number;   // Số tiền còn lại
     sotiendadong?: number;  // Số tiền đã đóng
+    isConfirmed: boolean;
 }
 
 // Props definition for the Financial page component.
@@ -232,7 +233,8 @@ export default function PaymentStatusMgm({ user, onLogout }: FinancialPageProps)
                 paymentHistory: item.paymentHistory || [],
                 sotienphaidong: item.totalAmount || 0,
                 sotienconlai: typeof item.remainingAmount === 'number' ? item.remainingAmount : 0,
-                sotiendadong: item.paidAmount || 0
+                sotiendadong: item.paidAmount || 0,
+                isConfirmed: item.isConfirmed,
             };
             
             console.log(`[INVOICE MAP] studentId=${mapped.studentId}, semesterId=${mapped.semesterId}, sotienconlai=${mapped.sotienconlai}, status=${mapped.status}`);
@@ -596,6 +598,7 @@ export default function PaymentStatusMgm({ user, onLogout }: FinancialPageProps)
                                         <TableCell sx={{ width: '8%', backgroundColor: '#6ebab6', color: '#fff', fontWeight: 'bold', fontSize: '16px', fontFamily: '"Varela Round", sans-serif' }}>Học kỳ</TableCell>
                                         <TableCell sx={{ width: '15%', backgroundColor: '#6ebab6', color: '#fff', fontWeight: 'bold', fontSize: '16px', fontFamily: '"Varela Round", sans-serif' }}>Số tiền còn lại</TableCell>
                                         <TableCell sx={{ width: '12%', backgroundColor: '#6ebab6', color: '#fff', fontWeight: 'bold', fontSize: '16px', fontFamily: '"Varela Round", sans-serif' }}>Trạng thái</TableCell>
+                                        <TableCell sx={{ width: '10%', backgroundColor: '#6ebab6', color: '#fff', fontWeight: 'bold', fontSize: '16px', fontFamily: '"Varela Round", sans-serif' }}>Xác nhận ĐKHP</TableCell>
                                     </TableRow>
                                 </TableHead>
                                 <TableBody>                                    {filteredInvoices.map((invoice) => (
@@ -632,6 +635,18 @@ export default function PaymentStatusMgm({ user, onLogout }: FinancialPageProps)
                                                         fontWeight: 'bold', 
                                                         fontFamily: '"Varela Round", sans-serif',
                                                         fontSize: '12px'
+                                                    }}
+                                                />
+                                            </TableCell>
+                                            <TableCell sx={{ width: '10%' }}>
+                                                <Chip
+                                                    label={invoice.isConfirmed ? "Đã xác nhận" : "Chưa xác nhận"}
+                                                    sx={{
+                                                        bgcolor: invoice.isConfirmed ? "#e0f7fa" : "#eeeeee",
+                                                        color: invoice.isConfirmed ? "#009688" : "#757575",
+                                                        fontWeight: "bold",
+                                                        fontFamily: '"Varela Round", sans-serif',
+                                                        fontSize: "12px"
                                                     }}
                                                 />
                                             </TableCell>

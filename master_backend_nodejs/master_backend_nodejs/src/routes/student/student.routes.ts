@@ -159,7 +159,29 @@ router.get('/current-semester', (req: Request, res: Response) => {
 
 // Check registration status
 router.get('/registration-status', (req: Request, res: Response) => {
+    // Thêm studentId từ token JWT vào request
+    if (req.user) {
+        req.query.studentId = req.user.id.toString();
+    }
     studentController.checkRegistrationStatus(req, res);
+});
+
+// Confirm registration
+router.post('/confirm-registration', (req: Request, res: Response) => {
+    // Thêm studentId từ token JWT vào request
+    if (req.user) {
+        req.query.studentId = req.user.id.toString();
+    }
+    studentController.confirmRegistration(req, res);
+});
+
+// Check confirmation status
+router.get('/confirmation-status', (req: Request, res: Response) => {
+    // Thêm studentId từ token JWT vào request
+    if (req.user) {
+        req.query.studentId = req.user.id.toString();
+    }
+    studentController.checkConfirmationStatus(req, res);
 });
 
 export default router;

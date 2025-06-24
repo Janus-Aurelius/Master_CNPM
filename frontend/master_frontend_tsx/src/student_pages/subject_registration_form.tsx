@@ -54,6 +54,7 @@ const SubjectRegistrationForm = ({ user, onLogout }: { user: { id?: string; name
     const [hasRegistration, setHasRegistration] = useState<boolean | null>(null);
     const [maxCredits, setMaxCredits] = useState(0);
     const [registeredCredits, setRegisteredCredits] = useState(0);
+    const [isConfirmed, setIsConfirmed] = useState<boolean>(false);
     
     // Parse semester info
     const semesterInfo = parseSemesterInfo(currentSemester);
@@ -78,17 +79,19 @@ const SubjectRegistrationForm = ({ user, onLogout }: { user: { id?: string; name
                 }
 
                 // Luôn fetch tất cả dữ liệu, bất kể trạng thái đăng ký
-                const [statusResult, studentData, subjectsData, enrolledData] = await Promise.all([
+                const [statusResult, studentData, subjectsData, enrolledData, confirmationStatus] = await Promise.all([
                     checkRegistrationStatus(currentSemesterData),
                     enrollmentApi.getStudentInfo(),
                     enrollmentApi.getClassifiedSubjects(currentSemesterData),
-                    enrollmentApi.getEnrolledSubjects(currentSemesterData)
+                    enrollmentApi.getEnrolledSubjects(currentSemesterData),
+                    enrollmentApi.checkConfirmationStatus(currentSemesterData)
                 ]);
 
                 // Cập nhật trạng thái đăng ký để hiển thị UI
                 setHasRegistration(statusResult.hasRegistration);
                 setMaxCredits(statusResult.maxCredits);
                 setRegisteredCredits(statusResult.registeredCredits);
+                setIsConfirmed(confirmationStatus.isConfirmed);
 
                 // Map và cập nhật state môn học như bình thường
                 const mappedRequired = (subjectsData.required || []).map(mapBackendCourseToFrontendSubject);
@@ -213,7 +216,7 @@ const SubjectRegistrationForm = ({ user, onLogout }: { user: { id?: string; name
                     >
                         Đăng ký học phần
                     </Typography>                    {/* Thông tin ngành và học kỳ */}
-                    {studentInfo && (
+                    {studentInfo && semesterInfo && (
                         <Box sx={{ mb: 2, p: 2, backgroundColor: '#f8f9fa', borderRadius: '0.5rem', border: '1px solid #e9ecef' }}>
                             <Typography sx={{ fontWeight: 'bold', mb: 1, color: '#495057' }}>
                                 Ngành: {studentInfo.majorName}
@@ -221,9 +224,17 @@ const SubjectRegistrationForm = ({ user, onLogout }: { user: { id?: string; name
                             <Typography sx={{ fontWeight: 'bold', color: '#495057', mb: 1 }}>
                                 {semesterInfo.fullName}
                             </Typography>
-                            {hasRegistration && (
-                                <Typography sx={{ fontWeight: 'bold', color: '#1976d2' }}>
-                                    Tín chỉ đã đăng ký: {registeredCredits} / {maxCredits}
+                            {isConfirmed && (
+                                <Typography sx={{ 
+                                    fontWeight: 'bold', 
+                                    color: '#d32f2f',
+                                    backgroundColor: '#ffebee',
+                                    p: 2,
+                                    borderRadius: 1,
+                                    textAlign: 'center',
+                                    fontSize: '1.1rem'
+                                }}>
+                                    ⚠️ Bạn đã xác nhận đăng ký! Không thể đăng ký thêm môn học.
                                 </Typography>
                             )}
                         </Box>
@@ -231,7 +242,7 @@ const SubjectRegistrationForm = ({ user, onLogout }: { user: { id?: string; name
                     
                     {loading && (
                         <Typography sx={{ textAlign: 'center', mt: 2 }}>
-                            Đang tải dữ liệu...
+                            Đang tải danh sách môn học...
                         </Typography>
                     )}
 
@@ -241,74 +252,60 @@ const SubjectRegistrationForm = ({ user, onLogout }: { user: { id?: string; name
                         </Typography>
                     )}
 
-                    {!loading && !error && (
-                    <>
-                    {/* Kiểm tra registration status */}
-                    {!hasRegistration && (
-                        <Typography sx={{ 
-                            textAlign: 'center', 
-                            mt: 4, 
-                            p: 2,
-                            backgroundColor: 'warning.light',
-                            borderRadius: 2,
-                            fontWeight: 'bold'
-                        }}>
-                            Chưa mở đăng ký học phần cho học kỳ này.
-                        </Typography>
-                    )}
+                    {/* Hiển thị form đăng ký chỉ khi chưa xác nhận */}
+                    {!loading && !error && !isConfirmed && (
+                        <>
+                            {/* Search box */}
+                            <Box sx={{ mb: 2 }}>
+                                <CustomSearchBox 
+                                    onSearch={handleSearch}
+                                    placeholder="Tìm kiếm môn học..."
+                                />
+                            </Box>
 
-                    {hasRegistration === true && (
-                    <>
-                    <Box sx={{ marginBottom: '1rem' }}>
-                        <CustomSearchBox
-                            onSearch={handleSearch}
-                            placeholder="Tìm kiếm theo mã môn học hoặc tên môn học"
-                        />
-                    </Box>
+                            {/* Thông tin đăng ký */}
+                            {hasRegistration !== null && (
+                                <Box sx={{ mb: 2, p: 2, backgroundColor: '#e3f2fd', borderRadius: '0.5rem', border: '1px solid #2196f3' }}>
+                                    <Typography sx={{ fontWeight: 'bold', color: '#1976d2' }}>
+                                        Tín chỉ đã đăng ký: {registeredCredits}/{maxCredits}
+                                    </Typography>
+                                </Box>
+                            )}
 
-                    {/* Bảng môn học thuộc chương trình */}
-                    <Typography
-                        component="h2"
-                        sx={{
-                            fontWeight: "bold",
-                            fontFamily: "Montserrat, sans-serif",
-                            color: "rgba(33, 33, 33, 0.8)",
-                            marginBottom: '1rem',
-                            marginTop: '1.5rem',
-                            fontSize: "1.5rem",
-                        }}
-                    >
-                        Môn học mở thuộc ngành của bạn ({filteredRequiredSubjects.length} môn)
-                    </Typography>                    <SubjectsList
-                        subjects={filteredRequiredSubjects}
-                        onEnroll={handleEnroll}
-                        tableType="required"
-                        enrolledSubjectIds={enrolledSubjectIds}
-                    />
+                            {/* Môn học bắt buộc */}
+                            <Typography sx={{ 
+                                fontWeight: 'bold', 
+                                fontSize: '1.25rem', 
+                                color: '#2e7d32', 
+                                mb: 1,
+                                mt: 2
+                            }}>
+                                Môn học bắt buộc
+                            </Typography>
+                            <SubjectsList 
+                                subjects={filteredRequiredSubjects}
+                                onEnroll={handleEnroll}
+                                tableType="required"
+                                enrolledSubjectIds={enrolledSubjectIds}
+                            />
 
-                    {/* Bảng môn học tự chọn */}
-                    <Typography
-                        component="h2"
-                        sx={{
-                            fontWeight: "bold",
-                            fontFamily: "Montserrat, sans-serif",
-                            color: "rgba(33, 33, 33, 0.8)",
-                            marginBottom: '1rem',
-                            marginTop: '2rem',
-                            fontSize: "1.5rem",
-                        }}
-                    >
-                        Môn học mở không thuộc ngành của bạn ({filteredElectiveSubjects.length} môn)
-                    </Typography>
-                    <SubjectsList
-                        subjects={filteredElectiveSubjects}
-                        onEnroll={handleEnroll}
-                        tableType="elective"
-                        enrolledSubjectIds={enrolledSubjectIds}
-                    />
-                    </>
-                    )}
-                    </>
+                            {/* Môn học tự chọn */}
+                            <Typography sx={{ 
+                                fontWeight: 'bold', 
+                                fontSize: '1.25rem', 
+                                color: '#6ebab6', 
+                                mb: 1,
+                                mt: 3
+                            }}>
+                                Môn học tự chọn
+                            </Typography>
+                            <SubjectsList 
+                                subjects={filteredElectiveSubjects}
+                                onEnroll={handleEnroll}
+                                tableType="elective"
+                                enrolledSubjectIds={enrolledSubjectIds}
+                            />
+                        </>
                     )}
                 </Paper>
             </Box>            <Snackbar

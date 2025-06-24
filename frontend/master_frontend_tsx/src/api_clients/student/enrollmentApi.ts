@@ -457,6 +457,45 @@ export const enrollmentApi = {
             return { hasRegistration: false, maxCredits: 0, registeredCredits: 0 };
         }
     },
+
+    // Xác nhận đăng ký
+    confirmRegistration: async (semesterId: string): Promise<{ success: boolean; message: string }> => {
+        try {
+            const response = await axiosInstance.post<ApiResponse<any>>('/student/confirm-registration', {
+                semesterId
+            });
+            
+            if (response.data && response.data.success) {
+                return {
+                    success: true,
+                    message: response.data.message || 'Xác nhận đăng ký thành công'
+                };
+            } else {
+                throw new Error(response.data?.message || 'Xác nhận đăng ký thất bại');
+            }
+        } catch (error: any) {
+            console.error('API Error: confirmRegistration failed.', error);
+            throw new Error(error.response?.data?.message || error.message || 'Xác nhận đăng ký thất bại');
+        }
+    },
+
+    // Kiểm tra trạng thái xác nhận
+    checkConfirmationStatus: async (semesterId: string): Promise<{ isConfirmed: boolean; message: string }> => {
+        try {
+            const response = await axiosInstance.get<ApiResponse<{ isConfirmed: boolean; message: string }>>('/student/confirmation-status', {
+                params: { semesterId }
+            });
+            
+            if (response.data && response.data.success) {
+                return response.data.data;
+            }
+            
+            return { isConfirmed: false, message: 'Không thể kiểm tra trạng thái xác nhận' };
+        } catch (error) {
+            console.error('API Error: checkConfirmationStatus failed.', error);
+            return { isConfirmed: false, message: 'Không thể kiểm tra trạng thái xác nhận' };
+        }
+    }
 };
 
 // Helper function để parse mã học kỳ thành năm học và học kỳ
