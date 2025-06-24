@@ -844,19 +844,18 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
                         </TableHead>
                         <TableBody>
                             {filteredStudents.map((student, index) => (
-                                <TableRow key={student.studentId || index} hover>
+                                <TableRow 
+                                    key={student.studentId || index} 
+                                    hover
+                                    onClick={() => openStudentDetails(student)}
+                                    style={{ cursor: 'pointer' }}
+                                >
                                     <TableCell sx={{ fontWeight: 500 }}>{student.studentId}</TableCell>
                                     <TableCell sx={{ fontWeight: 500 }}>{student.fullName}</TableCell>
                                     <TableCell>{student.email || 'N/A'}</TableCell>
                                     <TableCell>{student.majorName || 'N/A'}</TableCell>
                                     <TableCell align="center">
                                         <IconButton
-                                            size="small"
-                                            onClick={() => openStudentDetails(student)}
-                                            sx={{ mr: 1, color: '#1976d2' }}
-                                        >
-                                            <VisibilityIcon fontSize="small" />
-                                        </IconButton>                                        <IconButton
                                             size="small"
                                             onClick={async (e) => {
                                                 e.stopPropagation();
@@ -1039,21 +1038,46 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
                             </Box>
                         )}
                     </DialogContent>
-                    <DialogActions sx={{ p: 3, justifyContent: 'center' }}>
+                    <DialogActions sx={{
+                    px: 3,
+                    py: 2,
+                    borderTop: '1px solid #f0f0f0',
+                    display: 'flex',
+                    justifyContent: 'flex-end',
+                    gap: 2,
+                    background: 'transparent',
+                }}>
                         <Button 
                             variant="outlined" 
+                            onClick={() => {
+                                if (detailDialog.student) {
+                                    openAddEditDialog(detailDialog.student);
+                                }
+                                closeStudentDetails();
+                            }}
                             startIcon={<EditIcon />}
-                            sx={{ mr: 2 }}
+                            sx={{ 
+                                borderRadius: '6px', 
+                                textTransform: 'none',
+                                fontWeight: 500
+                            }}
                         >
                             Chỉnh sửa
                         </Button>
                         <Button 
                             variant="contained" 
                             onClick={closeStudentDetails}
-                            sx={{ backgroundColor: '#6ebab6' }}
+                            sx={{ 
+                                borderRadius: '6px', 
+                                bgcolor: '#6ebab6', 
+                                '&:hover': { bgcolor: '#5da9a5' },
+                                textTransform: 'none',
+                                fontWeight: 500
+                            }}
                         >
                             Đóng
-                        </Button>                    </DialogActions>
+                        </Button>
+                    </DialogActions>
                 </Dialog>
 
                 {/* Add/Edit Student Dialog */}                <Dialog 
@@ -1068,34 +1092,24 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
                             minHeight: '700px',
                         },
                     }}
-                >
-                    <DialogTitle sx={{ 
-                        position: 'relative',
+                >                    <DialogTitle sx={{
+                        fontFamily: '"Montserrat", sans-serif',
+                        fontWeight: 700,
+                        fontSize: '2rem',
+                        color: '#4c4c4c',
                         textAlign: 'center',
-                        backgroundColor: '#f8f9fa',
-                        borderBottom: '1px solid #e0e0e0',
-                        py: 2
+                        pb: 0,
+                        pt: 3
                     }}>
-                        <Typography variant="h5" sx={{ 
-                            fontWeight: 'bold',
-                            color: '#1976d2',
-                            fontSize: '1.5rem'
-                        }}>
-                            {addEditDialog.isEdit ? 'CHỈNH SỬA THÔNG TIN SINH VIÊN' : 'THÊM SINH VIÊN MỚI'}
-                        </Typography>
-                        <IconButton 
-                            onClick={closeAddEditDialog}
-                            sx={{
-                                position: 'absolute',
-                                right: 16,
-                                top: '50%',
-                                transform: 'translateY(-50%)',
-                                color: '#757575'
-                            }}
-                        >
-                            <CloseIcon />
-                        </IconButton>
-                    </DialogTitle>                    <DialogContent sx={{ p: 4, backgroundColor: '#fafafa' }}>
+                        {addEditDialog.isEdit ? "Chỉnh sửa thông tin sinh viên" : "Thêm sinh viên mới"}
+                    </DialogTitle>
+                    <DialogContent dividers sx={{
+                        border: 'none',
+                        px: 4,
+                        pt: 2,
+                        pb: 0,
+                        background: 'transparent',
+                    }}>
                         <Grid container spacing={3}>
                             {/* Row 1 */}
                             <Grid item xs={12} md={6}>
@@ -1185,8 +1199,7 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
                                         }
                                     }}
                                 />
-                            </Grid>
-                            <Grid item xs={12} md={6}>
+                            </Grid>                            <Grid item xs={12} md={6}>
                                 <FormControl fullWidth size="medium">
                                     <InputLabel>Giới tính</InputLabel>
                                     <Select
@@ -1195,22 +1208,49 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
                                         onChange={(e) => handleInputChange('gender', e.target.value)}
                                         sx={{
                                             backgroundColor: 'white',
-                                            borderRadius: '8px'
+                                            borderRadius: '8px',
+                                            fontFamily: '"Varela Round", sans-serif',
+                                            '& .MuiOutlinedInput-notchedOutline': {
+                                                borderRadius: '8px',
+                                            }
+                                        }}
+                                        MenuProps={{
+                                            PaperProps: {
+                                                elevation: 4,
+                                                sx: {
+                                                    borderRadius: 3,
+                                                    minWidth: 200,
+                                                    boxShadow: '0 4px 24px 0 rgba(0,0,0,0.10)',
+                                                    p: 1,
+                                                },
+                                            },
+                                            MenuListProps: {
+                                                sx: {
+                                                    display: 'flex',
+                                                    flexDirection: 'column',
+                                                    gap: 0.5,
+                                                    fontFamily: '"Varela Round", sans-serif',
+                                                    borderRadius: 3,
+                                                    p: 0,
+                                                },
+                                            },
                                         }}
                                     >
-                                        <MenuItem value="Nam">Nam</MenuItem>
-                                        <MenuItem value="Nữ">Nữ</MenuItem>
-                                        <MenuItem value="Khác">Khác</MenuItem>
+                                        <MenuItem value="Nam" sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>Nam</MenuItem>
+                                        <MenuItem value="Nữ" sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>Nữ</MenuItem>
+                                        <MenuItem value="Khác" sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>Khác</MenuItem>
                                     </Select>
                                 </FormControl>
                             </Grid>
 
                             {/* Row 4 */}                            <Grid item xs={12} md={6}>
                                 <FormControl fullWidth size="medium">
-                                    <InputLabel id="major-select-label">Ngành học *</InputLabel>                                    <Select
+                                    <InputLabel id="major-select-label">Ngành học *</InputLabel>
+                                    <Select
                                         labelId="major-select-label"
                                         value={formData.majorId || ''}
-                                        label="Ngành học *"                                        onChange={(e) => {
+                                        label="Ngành học *"
+                                        onChange={(e) => {
                                             const selectedMajor = majors.find(m => (m as any).manganh === e.target.value);
                                             setFormData(prev => ({
                                                 ...prev,
@@ -1220,20 +1260,46 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
                                         }}
                                         sx={{
                                             backgroundColor: 'white',
-                                            borderRadius: '8px'
+                                            borderRadius: '8px',
+                                            fontFamily: '"Varela Round", sans-serif',
+                                            '& .MuiOutlinedInput-notchedOutline': {
+                                                borderRadius: '8px',
+                                            }
+                                        }}
+                                        MenuProps={{
+                                            PaperProps: {
+                                                elevation: 4,
+                                                sx: {
+                                                    borderRadius: 3,
+                                                    minWidth: 200,
+                                                    boxShadow: '0 4px 24px 0 rgba(0,0,0,0.10)',
+                                                    p: 1,
+                                                },
+                                            },
+                                            MenuListProps: {
+                                                sx: {
+                                                    display: 'flex',
+                                                    flexDirection: 'column',
+                                                    gap: 0.5,
+                                                    fontFamily: '"Varela Round", sans-serif',
+                                                    borderRadius: 3,
+                                                    p: 0,
+                                                },
+                                            },
                                         }}
                                     >
-                                        <MenuItem value="">
+                                        <MenuItem value="" sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>
                                             <em>-- Chọn ngành học --</em>
                                         </MenuItem>
                                         {majors.length === 0 && (
-                                            <MenuItem value="" disabled>
+                                            <MenuItem value="" disabled sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>
                                                 <em>Đang tải ngành học...</em>
                                             </MenuItem>
-                                        )}                                        {majors.map((major) => {
+                                        )}
+                                        {majors.map((major) => {
                                             console.log('Rendering major:', major, 'tennganh:', (major as any).tennganh);
                                             return (
-                                                <MenuItem key={(major as any).manganh} value={(major as any).manganh}>
+                                                <MenuItem key={(major as any).manganh} value={(major as any).manganh} sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>
                                                     {(major as any).tennganh}
                                                 </MenuItem>
                                             );
@@ -1260,10 +1326,12 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
 
                             {/* Row 6 */}                            <Grid item xs={12} md={6}>
                                 <FormControl fullWidth size="medium">
-                                    <InputLabel id="priority-select-label">Đối tượng ưu tiên</InputLabel>                                    <Select
+                                    <InputLabel id="priority-select-label">Đối tượng ưu tiên</InputLabel>
+                                    <Select
                                         labelId="priority-select-label"
                                         value={formData.priorityObjectId || ''}
-                                        label="Đối tượng ưu tiên"                                        onChange={(e) => {
+                                        label="Đối tượng ưu tiên"
+                                        onChange={(e) => {
                                             const selectedPriority = priorityGroups.find(p => (p as any).madoituong === e.target.value);
                                             setFormData(prev => ({
                                                 ...prev,
@@ -1273,20 +1341,46 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
                                         }}
                                         sx={{
                                             backgroundColor: 'white',
-                                            borderRadius: '8px'
+                                            borderRadius: '8px',
+                                            fontFamily: '"Varela Round", sans-serif',
+                                            '& .MuiOutlinedInput-notchedOutline': {
+                                                borderRadius: '8px',
+                                            }
+                                        }}
+                                        MenuProps={{
+                                            PaperProps: {
+                                                elevation: 4,
+                                                sx: {
+                                                    borderRadius: 3,
+                                                    minWidth: 200,
+                                                    boxShadow: '0 4px 24px 0 rgba(0,0,0,0.10)',
+                                                    p: 1,
+                                                },
+                                            },
+                                            MenuListProps: {
+                                                sx: {
+                                                    display: 'flex',
+                                                    flexDirection: 'column',
+                                                    gap: 0.5,
+                                                    fontFamily: '"Varela Round", sans-serif',
+                                                    borderRadius: 3,
+                                                    p: 0,
+                                                },
+                                            },
                                         }}
                                     >
-                                        <MenuItem value="">
+                                        <MenuItem value="" sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>
                                             <em>-- Không có --</em>
                                         </MenuItem>
                                         {priorityGroups.length === 0 && (
-                                            <MenuItem value="" disabled>
+                                            <MenuItem value="" disabled sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>
                                                 <em>Đang tải đối tượng ưu tiên...</em>
                                             </MenuItem>
-                                        )}                                        {priorityGroups.map((priority) => {
+                                        )}
+                                        {priorityGroups.map((priority) => {
                                             console.log('Rendering priority:', priority, 'tendoituong:', (priority as any).tendoituong);
                                             return (
-                                                <MenuItem key={(priority as any).madoituong} value={(priority as any).madoituong}>
+                                                <MenuItem key={(priority as any).madoituong} value={(priority as any).madoituong} sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>
                                                     {(priority as any).tendoituong}
                                                 </MenuItem>
                                             );
@@ -1336,10 +1430,12 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
                                             />
                                         </Grid>                                        <Grid item xs={12} md={6}>
                                             <FormControl fullWidth size="medium">
-                                                <InputLabel id="district-select-label">Quận/Huyện</InputLabel>                                                <Select
+                                                <InputLabel id="district-select-label">Quận/Huyện</InputLabel>
+                                                <Select
                                                     labelId="district-select-label"
                                                     value={formData.districtId || ''}
-                                                    label="Quận/Huyện"                                                    onChange={(e) => {
+                                                    label="Quận/Huyện"
+                                                    onChange={(e) => {
                                                         const selectedDistrict = districts.find(d => (d as any).mahuyen === e.target.value);
                                                         setFormData(prev => ({
                                                             ...prev,
@@ -1350,34 +1446,63 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
                                                     disabled={!formData.provinceName} // Disable until province is selected
                                                     sx={{
                                                         backgroundColor: 'white',
-                                                        borderRadius: '8px'
+                                                        borderRadius: '8px',
+                                                        fontFamily: '"Varela Round", sans-serif',
+                                                        '& .MuiOutlinedInput-notchedOutline': {
+                                                            borderRadius: '8px',
+                                                        }
+                                                    }}
+                                                    MenuProps={{
+                                                        PaperProps: {
+                                                            elevation: 4,
+                                                            sx: {
+                                                                borderRadius: 3,
+                                                                minWidth: 200,
+                                                                boxShadow: '0 4px 24px 0 rgba(0,0,0,0.10)',
+                                                                p: 1,
+                                                            },
+                                                        },
+                                                        MenuListProps: {
+                                                            sx: {
+                                                                display: 'flex',
+                                                                flexDirection: 'column',
+                                                                gap: 0.5,
+                                                                fontFamily: '"Varela Round", sans-serif',
+                                                                borderRadius: 3,
+                                                                p: 0,
+                                                            },
+                                                        },
                                                     }}
                                                 >
-                                                    <MenuItem value="">
+                                                    <MenuItem value="" sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>
                                                         <em>-- Chọn quận/huyện --</em>
                                                     </MenuItem>
                                                     {districts.length === 0 && !formData.provinceName && (
-                                                        <MenuItem value="" disabled>
+                                                        <MenuItem value="" disabled sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>
                                                             <em>Chọn tỉnh trước</em>
                                                         </MenuItem>
                                                     )}
                                                     {districts.length === 0 && formData.provinceName && (
-                                                        <MenuItem value="" disabled>
+                                                        <MenuItem value="" disabled sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>
                                                             <em>Đang tải quận/huyện...</em>
                                                         </MenuItem>
-                                                    )}                                                    {districts.map((district) => {
+                                                    )}
+                                                    {districts.map((district) => {
                                                         console.log('Rendering district:', district, 'tenhuyen:', (district as any).tenhuyen);
                                                         return (
-                                                            <MenuItem key={(district as any).mahuyen} value={(district as any).mahuyen}>
+                                                            <MenuItem key={(district as any).mahuyen} value={(district as any).mahuyen} sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>
                                                                 {(district as any).tenhuyen}
                                                             </MenuItem>
                                                         );
                                                     })}
                                                 </Select>
                                             </FormControl>
-                                        </Grid><Grid item xs={12}>                                            <FormControl fullWidth size="medium">
-                                                <InputLabel id="province-select-label">Tỉnh/Thành phố</InputLabel>                                                <Select
-                                                    labelId="province-select-label"                                                    value={provinces.length > 0 && formData.provinceName ? 
+                                        </Grid>                                        <Grid item xs={12}>
+                                            <FormControl fullWidth size="medium">
+                                                <InputLabel id="province-select-label">Tỉnh/Thành phố</InputLabel>
+                                                <Select
+                                                    labelId="province-select-label"
+                                                    value={formData.provinceName ? 
                                                         provinces.find(p => (p as any).tentinh === formData.provinceName)?.matinh || '' : ''}
                                                     label="Tỉnh/Thành phố"
                                                     onChange={(e) => {
@@ -1392,25 +1517,50 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
                                                     }}
                                                     sx={{
                                                         backgroundColor: 'white',
-                                                        borderRadius: '8px'
+                                                        borderRadius: '8px',
+                                                        fontFamily: '"Varela Round", sans-serif',
+                                                        '& .MuiOutlinedInput-notchedOutline': {
+                                                            borderRadius: '8px',
+                                                        }
+                                                    }}
+                                                    MenuProps={{
+                                                        PaperProps: {
+                                                            elevation: 4,
+                                                            sx: {
+                                                                borderRadius: 3,
+                                                                minWidth: 200,
+                                                                boxShadow: '0 4px 24px 0 rgba(0,0,0,0.10)',
+                                                                p: 1,
+                                                            },
+                                                        },
+                                                        MenuListProps: {
+                                                            sx: {
+                                                                display: 'flex',
+                                                                flexDirection: 'column',
+                                                                gap: 0.5,
+                                                                fontFamily: '"Varela Round", sans-serif',
+                                                                borderRadius: 3,
+                                                                p: 0,
+                                                            },
+                                                        },
                                                     }}
                                                 >
-                                                    <MenuItem value="">
+                                                    <MenuItem value="" sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>
                                                         <em>-- Chọn tỉnh/thành phố --</em>
                                                     </MenuItem>
                                                     {provinces.length === 0 && (
-                                                        <MenuItem value="" disabled>
+                                                        <MenuItem value="" disabled sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>
                                                             <em>Đang tải tỉnh/thành phố...</em>
                                                         </MenuItem>
                                                     )}
-                                                    {                                                        provinces.map((province) => {
-                                                            console.log('Rendering province:', province, 'tentinh:', (province as any).tentinh);
-                                                            return (
-                                                                <MenuItem key={(province as any).matinh} value={(province as any).matinh}>
-                                                                    {(province as any).tentinh}
-                                                                </MenuItem>
-                                                            );
-                                                        })}
+                                                    {provinces.map((province) => {
+                                                        console.log('Rendering province:', province, 'tentinh:', (province as any).tentinh);
+                                                        return (
+                                                            <MenuItem key={(province as any).matinh} value={(province as any).matinh} sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>
+                                                                {(province as any).tentinh}
+                                                            </MenuItem>
+                                                        );
+                                                    })}
                                                 </Select>
                                             </FormControl>
                                         </Grid>
@@ -1532,9 +1682,7 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
                             Xóa
                         </Button>
                     </DialogActions>
-                </Dialog>
-
-                {/* Bulk Registration Dialog */}
+                </Dialog>                {/* Bulk Registration Dialog */}
                 <Dialog
                     open={isBulkRegistrationDialogOpen}
                     onClose={closeBulkRegistrationDialog}
@@ -1542,35 +1690,71 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
                     fullWidth
                     sx={{
                         '& .MuiPaper-root': {
-                            borderRadius: '16px',
+                            borderRadius: '12px',
                             minHeight: '600px'
                         },
                     }}
                 >
-                    <DialogTitle sx={{ 
-                        fontFamily: '"Roboto", sans-serif', 
-                        fontWeight: 600,
-                        color: '#1976d2',
+                    <DialogTitle sx={{
+                        fontFamily: '"Montserrat", sans-serif',
+                        fontWeight: 700,
+                        fontSize: '2rem',
+                        color: '#4c4c4c',
                         textAlign: 'center',
-                        borderBottom: '2px solid #e3f2fd',
-                        pb: 2
+                        pb: 0,
+                        pt: 3
                     }}>
-                        Mở đăng ký học phần - Tạo hàng loạt PHIEUDANGKY
+                        Mở đăng ký học phần
                     </DialogTitle>
                     
-                    <DialogContent sx={{ p: 3 }}>
+                    <DialogContent dividers sx={{
+                        border: 'none',
+                        px: 4,
+                        pt: 2,
+                        pb: 0,
+                        background: 'transparent',
+                    }}>
                         {/* Thông tin học kỳ và cấu hình */}
-                        <Box sx={{ mb: 3, p: 2, backgroundColor: '#f8f9fa', borderRadius: '8px' }}>
-                            <Typography variant="h6" sx={{ mb: 2, color: '#1976d2' }}>
+                        <Box sx={{ 
+                            mt: 1, 
+                            mb: 3, 
+                            p: 2, 
+                            backgroundColor: 'white',
+                            borderRadius: '12px',
+                            border: '1px solid #e0e0e0'
+                        }}>
+                            <Typography variant="h6" sx={{ 
+                                fontWeight: 600,
+                                color: '#1976d2',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 1,
+                                mb: 2
+                            }}>
+                                <SchoolIcon sx={{ fontSize: '1.4rem' }} />
                                 Thông tin học kỳ hiện tại
                             </Typography>
                             <Grid container spacing={2}>
                                 <Grid item xs={12} md={6}>
-                                    <Box sx={{ p: 2, backgroundColor: '#e3f2fd', borderRadius: '8px', border: '1px solid #bbdefb' }}>
-                                        <Typography variant="subtitle1" sx={{ fontWeight: 'bold', color: '#1976d2', mb: 1 }}>
+                                    <Box sx={{ 
+                                        p: 2, 
+                                        backgroundColor: '#f8f9fa', 
+                                        borderRadius: '8px', 
+                                        border: '1px solid #dee2e6' 
+                                    }}>
+                                        <Typography variant="subtitle2" sx={{ 
+                                            fontWeight: 'bold', 
+                                            color: '#495057', 
+                                            mb: 1, 
+                                            fontFamily: '"Varela Round", sans-serif' 
+                                        }}>
                                             Học kỳ đang mở đăng ký:
                                         </Typography>
-                                        <Typography variant="body1" sx={{ color: '#1565c0' }}>
+                                        <Typography variant="body2" sx={{ 
+                                            color: '#1976d2', 
+                                            fontFamily: '"Varela Round", sans-serif',
+                                            fontWeight: 500
+                                        }}>
                                             {currentSemester ? (
                                                 Array.isArray(semesterOptions) && semesterOptions.find(s => s.value === currentSemester)?.label || currentSemester
                                             ) : (
@@ -1587,7 +1771,13 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
                                         value={maxCredits}
                                         onChange={(e) => setMaxCredits(Number(e.target.value))}
                                         InputProps={{ inputProps: { min: 1, max: 50 } }}
-                                        sx={{ fontFamily: '"Varela Round", sans-serif' }}
+                                        sx={{ 
+                                            fontFamily: '"Varela Round", sans-serif',
+                                            '& .MuiOutlinedInput-root': {
+                                                borderRadius: '8px',
+                                                backgroundColor: 'white'
+                                            }
+                                        }}
                                     />
                                 </Grid>
                             </Grid>
@@ -1595,7 +1785,12 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
 
                         {/* Bộ lọc tìm kiếm */}
                         <Box sx={{ mb: 3 }}>
-                            <Typography variant="h6" sx={{ mb: 2, color: '#1976d2' }}>
+                            <Typography variant="h6" sx={{ 
+                                mb: 2, 
+                                color: '#1976d2',
+                                fontFamily: '"Varela Round", sans-serif',
+                                fontWeight: 600
+                            }}>
                                 Bộ lọc tìm kiếm
                             </Typography>
                             <Grid container spacing={2} alignItems="center">
@@ -1605,21 +1800,55 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
                                         placeholder="Tìm theo MSSV"
                                         value={bulkRegistrationFilters.studentId}
                                         onChange={(e) => setBulkRegistrationFilters(prev => ({ ...prev, studentId: e.target.value }))}
-                                        sx={{ fontFamily: '"Varela Round", sans-serif' }}
+                                        variant="outlined"
+                                        size="small"
+                                        sx={{
+                                            fontFamily: '"Varela Round", sans-serif',
+                                            '& .MuiOutlinedInput-root': {
+                                                borderRadius: '8px',
+                                            },
+                                        }}
                                     />
                                 </Grid>
                                 <Grid item xs={12} md={4}>
-                                    <FormControl fullWidth>
+                                    <FormControl fullWidth size="small">
                                         <InputLabel>Ngành học</InputLabel>
                                         <Select
                                             value={bulkRegistrationFilters.majorId}
                                             label="Ngành học"
                                             onChange={(e) => setBulkRegistrationFilters(prev => ({ ...prev, majorId: e.target.value }))}
-                                            sx={{ fontFamily: '"Varela Round", sans-serif' }}
+                                            sx={{ 
+                                                fontFamily: '"Varela Round", sans-serif',
+                                                borderRadius: '9px',
+                                                '& .MuiOutlinedInput-notchedOutline': {
+                                                    borderRadius: '9px',
+                                                }
+                                            }}
+                                            MenuProps={{
+                                                PaperProps: {
+                                                    elevation: 4,
+                                                    sx: {
+                                                        borderRadius: 3,
+                                                        minWidth: 200,
+                                                        boxShadow: '0 4px 24px 0 rgba(0,0,0,0.10)',
+                                                        p: 1,
+                                                    },
+                                                },
+                                                MenuListProps: {
+                                                    sx: {
+                                                        display: 'flex',
+                                                        flexDirection: 'column',
+                                                        gap: 0.5,
+                                                        fontFamily: '"Varela Round", sans-serif',
+                                                        borderRadius: 3,
+                                                        p: 0,
+                                                    },
+                                                },
+                                            }}
                                         >
-                                            <MenuItem value="">Tất cả ngành</MenuItem>
+                                            <MenuItem value="" sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>Tất cả ngành</MenuItem>
                                             {majors.map((major: any) => (
-                                                <MenuItem key={major.manganh} value={major.manganh}>
+                                                <MenuItem key={major.manganh} value={major.manganh} sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>
                                                     {major.tennganh}
                                                 </MenuItem>
                                             ))}
@@ -1631,7 +1860,13 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
                                         variant="contained"
                                         onClick={filterBulkRegistrationStudents}
                                         disabled={bulkRegistrationLoading}
-                                        sx={{ fontFamily: '"Varela Round", sans-serif' }}
+                                        sx={{ 
+                                            fontFamily: '"Varela Round", sans-serif',
+                                            borderRadius: '8px',
+                                            textTransform: 'none',
+                                            px: 3,
+                                            py: 1
+                                        }}
                                     >
                                         {bulkRegistrationLoading ? <CircularProgress size={20} /> : 'Lọc'}
                                     </Button>
@@ -1640,12 +1875,16 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
                         </Box>
 
                         {/* Nút chọn tất cả */}
-                        <Box sx={{ mb: 2, display: 'flex', gap: 1 }}>
+                        <Box sx={{ mb: 2, display: 'flex', gap: 1, alignItems: 'center' }}>
                             <Button
                                 variant="outlined"
                                 onClick={selectAllStudents}
                                 disabled={bulkRegistrationLoading}
-                                sx={{ fontFamily: '"Varela Round", sans-serif' }}
+                                sx={{ 
+                                    fontFamily: '"Varela Round", sans-serif',
+                                    borderRadius: '8px',
+                                    textTransform: 'none'
+                                }}
                             >
                                 Chọn tất cả
                             </Button>
@@ -1653,31 +1892,74 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
                                 variant="outlined"
                                 onClick={deselectAllStudents}
                                 disabled={bulkRegistrationLoading}
-                                sx={{ fontFamily: '"Varela Round", sans-serif' }}
+                                sx={{ 
+                                    fontFamily: '"Varela Round", sans-serif',
+                                    borderRadius: '8px',
+                                    textTransform: 'none'
+                                }}
                             >
                                 Bỏ chọn tất cả
                             </Button>
-                            <Typography variant="body2" sx={{ ml: 2, alignSelf: 'center', color: '#666' }}>
+                            <Typography variant="body2" sx={{ 
+                                ml: 2, 
+                                color: '#666',
+                                fontFamily: '"Varela Round", sans-serif'
+                            }}>
                                 Đã chọn: {selectedStudentIds.length} sinh viên
                             </Typography>
                         </Box>
 
                         {/* Bảng danh sách sinh viên */}
-                        <TableContainer component={Paper} sx={{ maxHeight: '400px', overflow: 'auto' }}>
+                        <TableContainer component={Paper} sx={{ 
+                            maxHeight: '350px', 
+                            overflow: 'auto',
+                            borderRadius: '12px', 
+                            boxShadow: '0 4px 10px rgba(0, 0, 0, 0.1)',
+                        }}>
                             <Table stickyHeader>
                                 <TableHead>
                                     <TableRow>
-                                        <TableCell padding="checkbox">
+                                        <TableCell padding="checkbox" sx={{ 
+                                            fontWeight: 'bold', 
+                                            color: '#FFFFFF', 
+                                            backgroundColor: '#6ebab6',
+                                        }}>
                                             <Checkbox
                                                 indeterminate={selectedStudentIds.length > 0 && selectedStudentIds.length < bulkRegistrationStudents.length}
                                                 checked={selectedStudentIds.length === bulkRegistrationStudents.length && bulkRegistrationStudents.length > 0}
                                                 onChange={(e) => e.target.checked ? selectAllStudents() : deselectAllStudents()}
+                                                sx={{ color: '#FFFFFF' }}
                                             />
                                         </TableCell>
-                                        <TableCell sx={{ fontWeight: 'bold' }}>MSSV</TableCell>
-                                        <TableCell sx={{ fontWeight: 'bold' }}>Họ tên</TableCell>
-                                        <TableCell sx={{ fontWeight: 'bold' }}>Ngành</TableCell>
-                                        <TableCell sx={{ fontWeight: 'bold' }}>Trạng thái</TableCell>
+                                        <TableCell sx={{ 
+                                            fontWeight: 'bold', 
+                                            color: '#FFFFFF', 
+                                            fontSize: '16px',
+                                            backgroundColor: '#6ebab6',
+                                            minWidth: '120px'
+                                        }}>MSSV</TableCell>
+                                        <TableCell sx={{ 
+                                            fontWeight: 'bold', 
+                                            color: '#FFFFFF', 
+                                            fontSize: '16px',
+                                            backgroundColor: '#6ebab6',
+                                            minWidth: '200px'
+                                        }}>Họ tên</TableCell>
+                                        <TableCell sx={{ 
+                                            fontWeight: 'bold', 
+                                            color: '#FFFFFF', 
+                                            fontSize: '16px',
+                                            backgroundColor: '#6ebab6',
+                                            minWidth: '180px'
+                                        }}>Ngành</TableCell>
+                                        <TableCell sx={{ 
+                                            fontWeight: 'bold', 
+                                            color: '#FFFFFF', 
+                                            fontSize: '16px',
+                                            backgroundColor: '#6ebab6',
+                                            textAlign: 'center',
+                                            minWidth: '120px'
+                                        }}>Trạng thái</TableCell>
                                     </TableRow>
                                 </TableHead>
                                 <TableBody>
@@ -1690,23 +1972,25 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
                                     ) : bulkRegistrationStudents.length === 0 ? (
                                         <TableRow>
                                             <TableCell colSpan={5} sx={{ textAlign: 'center', py: 4 }}>
-                                                Không có sinh viên nào
+                                                <Typography sx={{ fontFamily: '"Varela Round", sans-serif' }}>
+                                                    Không có sinh viên nào
+                                                </Typography>
                                             </TableCell>
                                         </TableRow>
                                     ) : (
                                         bulkRegistrationStudents.map((student) => (
-                                            <TableRow key={student.studentId}>
+                                            <TableRow key={student.studentId} hover>
                                                 <TableCell padding="checkbox">
                                                     <Checkbox
                                                         checked={selectedStudentIds.includes(student.studentId)}
                                                         onChange={() => toggleStudentSelection(student.studentId)}
                                                     />
                                                 </TableCell>
-                                                <TableCell>{student.studentId}</TableCell>
-                                                <TableCell>{student.fullName}</TableCell>
-                                                <TableCell>{student.majorName}</TableCell>
-                                                <TableCell>
-                                                    {registrationMap[student.studentId] ? (
+                                                <TableCell sx={{ fontWeight: 500, fontFamily: '"Varela Round", sans-serif' }}>{student.studentId}</TableCell>
+                                                <TableCell sx={{ fontWeight: 500, fontFamily: '"Varela Round", sans-serif' }}>{student.fullName}</TableCell>
+                                                <TableCell sx={{ fontFamily: '"Varela Round", sans-serif' }}>{student.majorName}</TableCell>
+                                                <TableCell align="center">
+                                                    {student.hasRegistration ? (
                                                         <Chip 
                                                             label="Đã có phiếu" 
                                                             color="success" 
@@ -1732,49 +2016,57 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
 
                     <DialogActions sx={{ 
                         p: 3, 
-                        justifyContent: 'space-between',
+                        justifyContent: 'flex-end', 
+                        gap: 2, 
                         backgroundColor: '#f8f9fa',
                         borderTop: '1px solid #e0e0e0' 
                     }}>
-                        <Typography variant="body2" color="textSecondary">
+                        <Typography variant="body2" color="textSecondary" sx={{ 
+                            mr: 'auto',
+                            fontFamily: '"Varela Round", sans-serif'
+                        }}>
                             Tổng: {bulkRegistrationStudents.length} sinh viên | 
                             Đã chọn: {selectedStudentIds.length} sinh viên
                         </Typography>
-                        <Box sx={{ display: 'flex', gap: 2 }}>
-                            <Button 
-                                variant="outlined" 
-                                onClick={closeBulkRegistrationDialog}
-                                sx={{ 
-                                    borderRadius: '8px',
-                                    textTransform: 'none',
-                                    px: 3,
-                                    py: 1,
-                                    fontWeight: 'bold',
-                                    fontFamily: '"Varela Round", sans-serif'
-                                }}
-                            >
-                                HỦY
-                            </Button>
-                            <Button 
-                                variant="contained" 
-                                onClick={createBulkRegistrations}
-                                disabled={selectedStudentIds.length === 0 || bulkRegistrationLoading}
-                                sx={{ 
-                                    backgroundColor: '#1976d2',
-                                    borderRadius: '8px',
-                                    textTransform: 'none',
-                                    px: 3,
-                                    py: 1,
-                                    fontWeight: 'bold',
-                                    fontFamily: '"Varela Round", sans-serif',
-                                    '&:hover': {
-                                        backgroundColor: '#1565c0'
-                                    }
-                                }}
-                            >
-                                {bulkRegistrationLoading ? <CircularProgress size={20} /> : 'TẠO PHIẾU ĐĂNG KÝ'}
-                            </Button>
-                        </Box>
+                        <Button 
+                            variant="outlined" 
+                            onClick={closeBulkRegistrationDialog}
+                            sx={{ 
+                                borderRadius: '8px',
+                                textTransform: 'none',
+                                px: 3,
+                                py: 1,
+                                fontWeight: 'bold',
+                                borderColor: '#bdbdbd',
+                                color: '#757575',
+                                fontFamily: '"Varela Round", sans-serif',
+                                '&:hover': {
+                                    borderColor: '#9e9e9e',
+                                    backgroundColor: '#f5f5f5'
+                                }
+                            }}
+                        >
+                            HỦY
+                        </Button>
+                        <Button 
+                            variant="contained" 
+                            onClick={createBulkRegistrations}
+                            disabled={selectedStudentIds.length === 0 || bulkRegistrationLoading}
+                            sx={{ 
+                                backgroundColor: '#1976d2',
+                                borderRadius: '8px',
+                                textTransform: 'none',
+                                px: 3,
+                                py: 1,
+                                fontWeight: 'bold',
+                                fontFamily: '"Varela Round", sans-serif',
+                                '&:hover': {
+                                    backgroundColor: '#1565c0'
+                                }
+                            }}
+                        >
+                            {bulkRegistrationLoading ? <CircularProgress size={20} color="inherit" /> : 'TẠO PHIẾU ĐĂNG KÝ'}
+                        </Button>
                     </DialogActions>
                 </Dialog>
 
@@ -1783,6 +2075,8 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
                     open={!!snackbarMessage}
                     autoHideDuration={6000}
                     onClose={handleCloseSnackbar}
+                   
+
                     anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
                 >
                     <Alert 

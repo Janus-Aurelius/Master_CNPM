@@ -2,6 +2,8 @@ export interface User {
     id?: string;
     name?: string;
     role?: 'student' | 'academic' | 'financial' | 'admin';
+    username?: string;
+    studentId?: string;
 }
 
 export interface UserData {

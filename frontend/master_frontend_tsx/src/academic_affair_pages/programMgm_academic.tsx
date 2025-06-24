@@ -20,7 +20,6 @@ import {
     TableRow,
     TableCell,
     TableBody,
-    TablePagination,
     Snackbar,
     Alert,
     FormControl,
@@ -50,11 +49,8 @@ export default function ProgramMgmAcademic({ user, onLogout }: AcademicPageProps
         maNganh: "",
         maMonHoc: "",
         maHocKy: "",
-        ghiChu: ""
-    });
+        ghiChu: ""    });
     const [isEditing, setIsEditing] = useState(false);
-    const [page, setPage] = useState(0);
-    const [rowsPerPage, setRowsPerPage] = useState(5);
     const [confirmDelete, setConfirmDelete] = useState<{ open: boolean; id: number | null }>({ open: false, id: null });
     const [snackbar, setSnackbar] = useState<{
         open: boolean;
@@ -114,9 +110,7 @@ export default function ProgramMgmAcademic({ user, onLogout }: AcademicPageProps
         } finally {
             setLoading(false);
         }
-    };
-
-    useEffect(() => {
+    };    useEffect(() => {
         fetchPrograms();
     }, []);
 
@@ -124,15 +118,6 @@ export default function ProgramMgmAcademic({ user, onLogout }: AcademicPageProps
     useEffect(() => {
         console.log('Current programs state:', programs);
     }, [programs]);
-
-    const handleChangePage = (_event: unknown, newPage: number) => {
-        setPage(newPage);
-    };
-
-    const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
-        setRowsPerPage(parseInt(event.target.value, 10));
-        setPage(0);
-    };
 
     const handleOpenDialog = (edit: boolean = false, program?: ProgramSchedule) => {
         setIsEditing(edit);
@@ -369,10 +354,9 @@ export default function ProgramMgmAcademic({ user, onLogout }: AcademicPageProps
                         }}                    >
                         Danh sách chương trình học
                     </Typography>
-                    
-                    {/* Search and Filter Controls */}
+                      {/* Search and Filter Controls */}
                     <Grid container spacing={2} sx={{ mb: 3 }}>
-                        <Grid item xs={12} md={3}>
+                        <Grid item xs={12} md={6}>
                             <TextField
                                 fullWidth
                                 placeholder="Tìm kiếm theo mã ngành, môn học, tên ngành..."
@@ -391,61 +375,143 @@ export default function ProgramMgmAcademic({ user, onLogout }: AcademicPageProps
                                     }
                                 }}
                             />
-                        </Grid>
-                        <Grid item xs={12} md={3}>
-                            <FormControl fullWidth>
-                                <InputLabel>Mã ngành</InputLabel>
+                        </Grid>                        <Grid item xs={12} md={2}>
+                            <FormControl fullWidth size="small" sx={{ 
+                                background: '#ffffff', 
+                                borderRadius: '12px' 
+                            }}>
+                                <InputLabel sx={{ fontWeight: 500 }}>Mã ngành</InputLabel>
                                 <Select
                                     value={selectedMajor}
                                     label="Mã ngành"
                                     onChange={(e) => setSelectedMajor(e.target.value)}
-                                    sx={{
-                                        borderRadius: '12px'
+                                    sx={{ 
+                                        fontFamily: '"Varela Round", sans-serif', 
+                                        borderRadius: '12px', 
+                                        '& .MuiOutlinedInput-notchedOutline': { 
+                                            borderRadius: '12px', 
+                                            borderColor: '#d8d8d8' 
+                                        } 
+                                    }}
+                                    MenuProps={{
+                                        PaperProps: {
+                                            elevation: 4,
+                                            sx: {
+                                                borderRadius: 3,
+                                                minWidth: 200,
+                                                boxShadow: '0 4px 24px 0 rgba(0,0,0,0.10)',
+                                                p: 1,
+                                            },
+                                        },
+                                        MenuListProps: {
+                                            sx: {
+                                                display: 'flex',
+                                                flexDirection: 'column',
+                                                gap: 0.5,
+                                                fontFamily: '"Varela Round", sans-serif',
+                                                borderRadius: 3,
+                                                p: 0,
+                                            },
+                                        },
                                     }}
                                 >
-                                    <MenuItem value="all">Tất cả</MenuItem>
+                                    <MenuItem value="all" sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>Tất cả</MenuItem>
                                     {uniqueMajors.map((major) => (
-                                        <MenuItem key={major} value={major}>
+                                        <MenuItem key={major} value={major} sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>
                                             {major}
                                         </MenuItem>
                                     ))}
-                                </Select>
-                            </FormControl>
-                        </Grid>
-                        <Grid item xs={12} md={3}>
-                            <FormControl fullWidth>
-                                <InputLabel>Khoa</InputLabel>
+                                </Select>                            </FormControl>
+                        </Grid>                        <Grid item xs={12} md={2}>
+                            <FormControl fullWidth size="small" sx={{ 
+                                background: '#ffffff', 
+                                borderRadius: '12px' 
+                            }}>
+                                <InputLabel sx={{ fontWeight: 500 }}>Khoa</InputLabel>
                                 <Select
                                     value={selectedDepartment}
                                     label="Khoa"
                                     onChange={(e) => setSelectedDepartment(e.target.value)}
-                                    sx={{
-                                        borderRadius: '12px'
+                                    sx={{ 
+                                        fontFamily: '"Varela Round", sans-serif', 
+                                        borderRadius: '12px', 
+                                        '& .MuiOutlinedInput-notchedOutline': { 
+                                            borderRadius: '12px', 
+                                            borderColor: '#d8d8d8' 
+                                        } 
+                                    }}
+                                    MenuProps={{
+                                        PaperProps: {
+                                            elevation: 4,
+                                            sx: {
+                                                borderRadius: 3,
+                                                minWidth: 200,
+                                                boxShadow: '0 4px 24px 0 rgba(0,0,0,0.10)',
+                                                p: 1,
+                                            },
+                                        },
+                                        MenuListProps: {
+                                            sx: {
+                                                display: 'flex',
+                                                flexDirection: 'column',
+                                                gap: 0.5,
+                                                fontFamily: '"Varela Round", sans-serif',
+                                                borderRadius: 3,
+                                                p: 0,
+                                            },
+                                        },
                                     }}
                                 >
-                                    <MenuItem value="all">Tất cả</MenuItem>
+                                    <MenuItem value="all" sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>Tất cả</MenuItem>
                                     {uniqueDepartments.map((dept) => (
-                                        <MenuItem key={dept} value={dept}>
+                                        <MenuItem key={dept} value={dept} sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>
                                             {dept}
                                         </MenuItem>
                                     ))}
                                 </Select>
-                            </FormControl>
-                        </Grid>
-                        <Grid item xs={12} md={3}>
-                            <FormControl fullWidth>
-                                <InputLabel>Học kỳ</InputLabel>
+                            </FormControl>                        </Grid>                        <Grid item xs={12} md={2}>
+                            <FormControl fullWidth size="small" sx={{ 
+                                background: '#ffffff', 
+                                borderRadius: '12px' 
+                            }}>
+                                <InputLabel sx={{ fontWeight: 500 }}>Học kỳ</InputLabel>
                                 <Select
                                     value={selectedSemester}
                                     label="Học kỳ"
                                     onChange={(e) => setSelectedSemester(e.target.value)}
-                                    sx={{
-                                        borderRadius: '12px'
+                                    sx={{ 
+                                        fontFamily: '"Varela Round", sans-serif', 
+                                        borderRadius: '12px', 
+                                        '& .MuiOutlinedInput-notchedOutline': { 
+                                            borderRadius: '12px', 
+                                            borderColor: '#d8d8d8' 
+                                        } 
+                                    }}
+                                    MenuProps={{
+                                        PaperProps: {
+                                            elevation: 4,
+                                            sx: {
+                                                borderRadius: 3,
+                                                minWidth: 200,
+                                                boxShadow: '0 4px 24px 0 rgba(0,0,0,0.10)',
+                                                p: 1,
+                                            },
+                                        },
+                                        MenuListProps: {
+                                            sx: {
+                                                display: 'flex',
+                                                flexDirection: 'column',
+                                                gap: 0.5,
+                                                fontFamily: '"Varela Round", sans-serif',
+                                                borderRadius: 3,
+                                                p: 0,
+                                            },
+                                        },
                                     }}
                                 >
-                                    <MenuItem value="all">Tất cả</MenuItem>
+                                    <MenuItem value="all" sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>Tất cả</MenuItem>
                                     {uniqueSemesters.map((semester) => (
-                                        <MenuItem key={semester} value={semester}>
+                                        <MenuItem key={semester} value={semester} sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>
                                             {semester}
                                         </MenuItem>
                                     ))}
@@ -470,9 +536,23 @@ export default function ProgramMgmAcademic({ user, onLogout }: AcademicPageProps
                     ) : error ? (
                         <Typography color="error" sx={{ textAlign: 'center', mt: 4 }}>{error}</Typography>
                     ) : programs.length === 0 ? (
-                        <Typography sx={{ textAlign: 'center', mt: 4 }}>Không có dữ liệu chương trình học</Typography>
-                    ) : (
-                        <>
+                        <Typography sx={{ textAlign: 'center', mt: 4 }}>Không có dữ liệu chương trình học</Typography>                    ) : (
+                        <Box sx={{ 
+                            flexGrow: 1, 
+                            overflow: 'auto',
+                            maxHeight: 'calc(100vh - 20rem)',
+                            '&::-webkit-scrollbar': {
+                                width: '8px'
+                            },
+                            '&::-webkit-scrollbar-thumb': {
+                                backgroundColor: 'rgba(0,0,0,0.3)',
+                                borderRadius: '4px'
+                            },
+                            '&::-webkit-scrollbar-track': {
+                                backgroundColor: 'rgba(0,0,0,0.1)',
+                                borderRadius: '4px'
+                            }
+                        }}>
                             <TableContainer component={Paper} sx={{ mt: 2, borderRadius: '12px', boxShadow: '0 4px 10px rgba(0, 0, 0, 0.1)' }}>
                                 <Table size="medium">                                    <TableHead>
                                         <TableRow>
@@ -485,11 +565,8 @@ export default function ProgramMgmAcademic({ user, onLogout }: AcademicPageProps
                                             <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '18px', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6' }}>Ghi chú</TableCell>
                                             <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '18px', fontFamily: '"Varela Round", sans-serif', textAlign: 'center', backgroundColor: '#6ebab6' }}>Thao tác</TableCell>
                                         </TableRow>
-                                    </TableHead>
-                                    <TableBody>
-                                        {filteredPrograms
-                                            .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                                            .map((program, index) => (
+                                    </TableHead>                                    <TableBody>
+                                        {filteredPrograms.map((program, index) => (
                                             <TableRow 
                                                 key={program.id || `program-${index}`}
                                                 sx={{
@@ -498,7 +575,7 @@ export default function ProgramMgmAcademic({ user, onLogout }: AcademicPageProps
                                                     },
                                                     '&:last-child td, &:last-child th': { borderBottom: 'none' }
                                                 }}
-                                            >                                                <TableCell sx={{ fontSize: '16px', fontFamily: '"Varela Round", sans-serif', fontWeight: 800}}>{program.maNganh}</TableCell>
+                                            ><TableCell sx={{ fontSize: '16px', fontFamily: '"Varela Round", sans-serif', fontWeight: 800}}>{program.maNganh}</TableCell>
                                                 <TableCell sx={{ fontSize: '16px', fontFamily: '"Varela Round", sans-serif', fontWeight: 600, color: '#2e7d32' }}>{program.tenNganh || 'N/A'}</TableCell>
                                                 <TableCell sx={{ fontSize: '16px', fontFamily: '"Varela Round", sans-serif', fontWeight: 600, color: '#1976d2' }}>{program.tenKhoa || 'N/A'}</TableCell>
                                                 <TableCell sx={{ fontSize: '16px', fontFamily: '"Varela Round", sans-serif' }}>{program.maMonHoc}</TableCell>
@@ -538,19 +615,9 @@ export default function ProgramMgmAcademic({ user, onLogout }: AcademicPageProps
                                                 </TableCell>
                                             </TableRow>
                                         ))}
-                                    </TableBody>
-                                </Table>
+                                    </TableBody>                                </Table>
                             </TableContainer>
-                            <TablePagination
-                                rowsPerPageOptions={[5, 10, 25]}
-                                component="div"
-                                count={filteredPrograms.length}
-                                rowsPerPage={rowsPerPage}
-                                page={page}
-                                onPageChange={handleChangePage}
-                                onRowsPerPageChange={handleChangeRowsPerPage}
-                            />
-                        </>
+                        </Box>
                     )}
                 </Paper>
             </Box>

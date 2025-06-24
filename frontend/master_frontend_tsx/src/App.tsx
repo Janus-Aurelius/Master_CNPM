@@ -37,6 +37,7 @@ interface UserData {
     username: string;
     role: string;
     studentId?: string;
+    name?: string;
 }
 
 export default function App() {
@@ -61,7 +62,17 @@ export default function App() {
         setIsAuthChecked(true);
     }, []);    const handleLogin = (userData: UserData) => {
         console.log('🔄 handleLogin called with:', userData);
-        const userWithIndex = userData as User;
+        
+        // Map UserData to User type, preserving all fields
+        const userWithIndex: User = {
+            id: userData.id,
+            role: userData.role as User['role'],
+            username: userData.username,
+            studentId: userData.studentId,
+            // Keep the name if it exists or use username as fallback
+            name: userData.name || userData.username
+        };
+        
         console.log('👤 Setting user state:', userWithIndex);
         setUser(userWithIndex);
         localStorage.setItem('user', JSON.stringify(userData));

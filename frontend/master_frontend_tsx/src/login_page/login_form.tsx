@@ -41,6 +41,7 @@ interface UserData {
     username: string;
     role: string;
     studentId?: string;
+    name?: string;
 }
 
 export default function LoginForm({ onLogin }: LoginFormProps) {

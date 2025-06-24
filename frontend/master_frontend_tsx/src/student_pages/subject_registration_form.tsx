@@ -6,7 +6,7 @@ import MuiAlert from '@mui/material/Alert';
 import Slide from '@mui/material/Slide';
 import { Subject } from "../types";
 import Paper from '@mui/material/Paper';
-import { useState, ChangeEvent, KeyboardEvent, useEffect } from "react";
+import { useState, ChangeEvent, useEffect } from "react";
 import { Box, TextField, InputAdornment } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import Button from '@mui/material/Button';
@@ -16,6 +16,7 @@ import TableCell from '@mui/material/TableCell';
 import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
+import Chip from '@mui/material/Chip';
 import UserInfo from "../components/UserInfo";
 import { enrollmentApi, parseSemesterInfo, checkRegistrationStatus } from "../api_clients/student/enrollmentApi";
 
@@ -41,11 +42,9 @@ const mapBackendCourseToFrontendSubject = (course: any): Subject => {
 };
 
 const SubjectRegistrationForm = ({ user, onLogout }: { user: { id?: string; name?: string } | null; onLogout: () => void }) => {
-    const [open, setOpen] = useState(false);
-    const [requiredSubjects, setRequiredSubjects] = useState<Subject[]>([]);
+    const [open, setOpen] = useState(false);    const [requiredSubjects, setRequiredSubjects] = useState<Subject[]>([]);
     const [electiveSubjects, setElectiveSubjects] = useState<Subject[]>([]);
-    const [filteredRequiredSubjects, setFilteredRequiredSubjects] = useState<Subject[]>([]);
-    const [filteredElectiveSubjects, setFilteredElectiveSubjects] = useState<Subject[]>([]);
+    const [combinedSubjects, setCombinedSubjects] = useState<(Subject & { subjectType: 'required' | 'elective' })[]>([]);
     const [enrolledSubjectIds, setEnrolledSubjectIds] = useState<Set<string>>(new Set());
     const [studentInfo, setStudentInfo] = useState<{ studentId: any; name: any; major: any; majorName: any; } | null>(null);
     const [loading, setLoading] = useState(true);
@@ -95,15 +94,27 @@ const SubjectRegistrationForm = ({ user, onLogout }: { user: { id?: string; name
 
                 // Map và cập nhật state môn học như bình thường
                 const mappedRequired = (subjectsData.required || []).map(mapBackendCourseToFrontendSubject);
-                const mappedElective = (subjectsData.elective || []).map(mapBackendCourseToFrontendSubject);
-
-                setStudentInfo(studentData);
+                const mappedElective = (subjectsData.elective || []).map(mapBackendCourseToFrontendSubject);                setStudentInfo(studentData);
                 setRequiredSubjects(mappedRequired);
                 setElectiveSubjects(mappedElective);
-                setFilteredRequiredSubjects(mappedRequired);
-                setFilteredElectiveSubjects(mappedElective);
 
+                // Tạo combined subjects với subject type
+                const combinedList = [
+                    ...mappedRequired.map((subject: Subject) => ({ ...subject, subjectType: 'required' as const })),
+                    ...mappedElective.map((subject: Subject) => ({ ...subject, subjectType: 'elective' as const }))
+                ];
+                
+                // Sắp xếp môn đã đăng ký lên đầu
                 const enrolledIds = new Set(enrolledData.map((subject: any) => subject.id));
+                const sortedCombinedList = combinedList.sort((a, b) => {
+                    const aEnrolled = enrolledIds.has(a.id);
+                    const bEnrolled = enrolledIds.has(b.id);
+                    if (aEnrolled && !bEnrolled) return -1;
+                    if (!aEnrolled && bEnrolled) return 1;
+                    return 0;
+                });
+                
+                setCombinedSubjects(sortedCombinedList);
                 setEnrolledSubjectIds(enrolledIds);
 
             } catch (err: any) {
@@ -124,9 +135,7 @@ const SubjectRegistrationForm = ({ user, onLogout }: { user: { id?: string; name
         if (reason === 'clickaway') return;
         setOpen(false);
     };    const handleEnroll = async (subject: Subject) => {
-        if (!user || !user.id) return;
-        try {
-            setLoading(true);
+        if (!user || !user.id) return;        try {
             setError(null);
             
             const result = await enrollmentApi.registerSubject(subject.id, currentSemester);
@@ -139,6 +148,18 @@ const SubjectRegistrationForm = ({ user, onLogout }: { user: { id?: string; name
                 setEnrolledSubjectIds(prev => new Set([...prev, subject.id]));
                 // Cập nhật lại số tín chỉ đã đăng ký
                 setRegisteredCredits(prev => prev + subject.credits);
+                
+                // Sắp xếp lại combinedSubjects để đưa môn vừa đăng ký lên đầu
+                setCombinedSubjects(prev => {
+                    const sortedSubjects = [...prev].sort((a, b) => {
+                        const aEnrolled = a.id === subject.id || enrolledSubjectIds.has(a.id);
+                        const bEnrolled = enrolledSubjectIds.has(b.id);
+                        if (aEnrolled && !bEnrolled) return -1;
+                        if (!aEnrolled && bEnrolled) return 1;
+                        return 0;
+                    });
+                    return sortedSubjects;
+                });
             } else {
                 // Show error message from backend (including conflict messages)
                 setSnackbarMessage(result.message || 'Đăng ký môn học thất bại');
@@ -147,24 +168,35 @@ const SubjectRegistrationForm = ({ user, onLogout }: { user: { id?: string; name
             }
         } catch (err: any) {
             // Handle network errors or unexpected errors
-            console.error('❌ Error during enrollment:', err);
-            setSnackbarMessage(err.message || 'Đăng ký môn học thất bại');
+            console.error('❌ Error during enrollment:', err);            setSnackbarMessage(err.message || 'Đăng ký môn học thất bại');
             setSnackbarSeverity('error');
             setOpen(true);
-        } finally {
-            setLoading(false);
         }
-    };
-
-    const handleSearch = (searchText: string) => {
+    };    const handleSearch = (searchText: string) => {
         const filterSubjects = (subjects: Subject[]) => 
             subjects.filter(subject =>
                 subject.id.toLowerCase().includes(searchText.toLowerCase()) ||
                 subject.name.toLowerCase().includes(searchText.toLowerCase())
             );
         
-        setFilteredRequiredSubjects(filterSubjects(requiredSubjects));
-        setFilteredElectiveSubjects(filterSubjects(electiveSubjects));
+        // Cập nhật combined subjects
+        const filteredRequired = filterSubjects(requiredSubjects);
+        const filteredElective = filterSubjects(electiveSubjects);
+        const filteredCombined = [
+            ...filteredRequired.map((subject: Subject) => ({ ...subject, subjectType: 'required' as const })),
+            ...filteredElective.map((subject: Subject) => ({ ...subject, subjectType: 'elective' as const }))
+        ];
+        
+        // Sắp xếp môn đã đăng ký lên đầu
+        const sortedCombined = filteredCombined.sort((a, b) => {
+            const aEnrolled = enrolledSubjectIds.has(a.id);
+            const bEnrolled = enrolledSubjectIds.has(b.id);
+            if (aEnrolled && !bEnrolled) return -1;
+            if (!aEnrolled && bEnrolled) return 1;
+            return 0;
+        });
+        
+        setCombinedSubjects(sortedCombined);
     };
 
     return (
@@ -186,8 +218,7 @@ const SubjectRegistrationForm = ({ user, onLogout }: { user: { id?: string; name
                         transition: 'all 0.25s ease',
                         display: 'flex',
                         flexDirection: 'column',
-                        position: 'relative',
-                        overflow: 'hidden',
+                        position: 'relative',                        overflow: 'hidden',
                         overflowY: 'auto',
                         overflowX: 'hidden',
                         borderTopRightRadius: '1rem',
@@ -215,26 +246,28 @@ const SubjectRegistrationForm = ({ user, onLogout }: { user: { id?: string; name
                         }}
                     >
                         Đăng ký học phần
-                    </Typography>                    {/* Thông tin ngành và học kỳ */}
-                    {studentInfo && semesterInfo && (
-                        <Box sx={{ mb: 2, p: 2, backgroundColor: '#f8f9fa', borderRadius: '0.5rem', border: '1px solid #e9ecef' }}>
-                            <Typography sx={{ fontWeight: 'bold', mb: 1, color: '#495057' }}>
-                                Ngành: {studentInfo.majorName}
+                    </Typography>                    {/* Thông tin ngành và học kỳ - Thu gọn */}
+                    {studentInfo && (
+                        <Box sx={{ 
+                            mb: 1.5, 
+                            p: 1.5, 
+                            backgroundColor: '#f8f9fa', 
+                            borderRadius: '8px', 
+                            border: '1px solid #e9ecef',
+                            display: 'flex',
+                            flexWrap: 'wrap',
+                            alignItems: 'center',
+                            gap: 2
+                        }}>
+                            <Typography sx={{ fontWeight: 'bold', color: '#495057', fontSize: '0.9rem' }}>
+                                {studentInfo.majorName}
                             </Typography>
-                            <Typography sx={{ fontWeight: 'bold', color: '#495057', mb: 1 }}>
+                            <Typography sx={{ fontWeight: 'bold', color: '#495057', fontSize: '0.9rem' }}>
                                 {semesterInfo.fullName}
                             </Typography>
-                            {isConfirmed && (
-                                <Typography sx={{ 
-                                    fontWeight: 'bold', 
-                                    color: '#d32f2f',
-                                    backgroundColor: '#ffebee',
-                                    p: 2,
-                                    borderRadius: 1,
-                                    textAlign: 'center',
-                                    fontSize: '1.1rem'
-                                }}>
-                                    ⚠️ Bạn đã xác nhận đăng ký! Không thể đăng ký thêm môn học.
+                            {hasRegistration && (
+                                <Typography sx={{ fontWeight: 'bold', color: '#1976d2', fontSize: '0.9rem' }}>
+                                    Tín chỉ: {registeredCredits}/{maxCredits}
                                 </Typography>
                             )}
                         </Box>
@@ -252,59 +285,61 @@ const SubjectRegistrationForm = ({ user, onLogout }: { user: { id?: string; name
                         </Typography>
                     )}
 
-                    {/* Hiển thị form đăng ký chỉ khi chưa xác nhận */}
-                    {!loading && !error && !isConfirmed && (
+                    {isConfirmed ? (
+                        <Typography
+                            sx={{
+                                textAlign: 'center',
+                                mt: 4,
+                                p: 2,
+                                backgroundColor: '#e0f7fa',
+                                borderRadius: 2,
+                                fontWeight: 'bold',
+                                color: '#009688',
+                                fontSize: '1.2rem'
+                            }}
+                        >
+                            ⚠️ Bạn đã xác nhận đăng ký! Không thể đăng ký thêm môn học.
+                        </Typography>
+                    ) : (
                         <>
-                            {/* Search box */}
-                            <Box sx={{ mb: 2 }}>
-                                <CustomSearchBox 
-                                    onSearch={handleSearch}
-                                    placeholder="Tìm kiếm môn học..."
-                                />
-                            </Box>
-
-                            {/* Thông tin đăng ký */}
-                            {hasRegistration !== null && (
-                                <Box sx={{ mb: 2, p: 2, backgroundColor: '#e3f2fd', borderRadius: '0.5rem', border: '1px solid #2196f3' }}>
-                                    <Typography sx={{ fontWeight: 'bold', color: '#1976d2' }}>
-                                        Tín chỉ đã đăng ký: {registeredCredits}/{maxCredits}
-                                    </Typography>
-                                </Box>
+                            {/* Kiểm tra registration status */}
+                            {!hasRegistration && (
+                                <Typography sx={{ 
+                                    textAlign: 'center', 
+                                    mt: 4, 
+                                    p: 2,
+                                    backgroundColor: 'warning.light',
+                                    borderRadius: 2,
+                                    fontWeight: 'bold'
+                                }}>
+                                    Chưa mở đăng ký học phần cho học kỳ này.
+                                </Typography>
                             )}
-
-                            {/* Môn học bắt buộc */}
-                            <Typography sx={{ 
-                                fontWeight: 'bold', 
-                                fontSize: '1.25rem', 
-                                color: '#2e7d32', 
-                                mb: 1,
-                                mt: 2
-                            }}>
-                                Môn học bắt buộc
+                            {hasRegistration === true && (
+                            <>
+                            {/* Bảng môn học với ô tìm kiếm phía trên */}
+                            <Typography
+                                component="h2"
+                                sx={{
+                                    fontWeight: "bold",
+                                    fontFamily: "Montserrat, sans-serif",
+                                    color: "rgba(33, 33, 33, 0.8)",
+                                    marginBottom: '0.5rem',
+                                    marginTop: '0.5rem',
+                                    fontSize: "1.5rem",
+                                }}
+                            >
+                                Danh sách môn học ({combinedSubjects.length} môn)
                             </Typography>
-                            <SubjectsList 
-                                subjects={filteredRequiredSubjects}
-                                onEnroll={handleEnroll}
-                                tableType="required"
-                                enrolledSubjectIds={enrolledSubjectIds}
-                            />
 
-                            {/* Môn học tự chọn */}
-                            <Typography sx={{ 
-                                fontWeight: 'bold', 
-                                fontSize: '1.25rem', 
-                                color: '#6ebab6', 
-                                mb: 1,
-                                mt: 3
-                            }}>
-                                Môn học tự chọn
-                            </Typography>
-                            <SubjectsList 
-                                subjects={filteredElectiveSubjects}
+                            <CombinedSubjectsList
+                                subjects={combinedSubjects}
                                 onEnroll={handleEnroll}
-                                tableType="elective"
                                 enrolledSubjectIds={enrolledSubjectIds}
+                                onSearch={handleSearch}
                             />
+                            </>
+                            )}
                         </>
                     )}
                 </Paper>
@@ -336,164 +371,168 @@ const SubjectRegistrationForm = ({ user, onLogout }: { user: { id?: string; name
 
 export default SubjectRegistrationForm;
 
-interface SearchBoxProps {
-    onSearch?: (searchText: string) => void;
-    placeholder?: string;
-}
-
-const CustomSearchBox = ({ onSearch, placeholder = "Search..." }: SearchBoxProps) => {
+const CombinedSubjectsList = ({ subjects, onEnroll, enrolledSubjectIds, onSearch }: { 
+    subjects: (Subject & { subjectType: 'required' | 'elective' })[]; 
+    onEnroll: (subject: Subject) => void;
+    enrolledSubjectIds: Set<string>;
+    onSearch: (searchText: string) => void;
+}) => {
     const [searchText, setSearchText] = useState("");
 
     const handleTextChange = (e: ChangeEvent<HTMLInputElement>) => {
         setSearchText(e.target.value);
-        if (onSearch) {
-            onSearch(e.target.value);
-        }
-    };
-
-    const handleClick = () => {
-        if (onSearch) {
-            onSearch(searchText);
-        }
-    };
-
-    const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
-        if (e.key === "Enter") {
-            handleClick();
-        }
+        onSearch(e.target.value);
     };
 
     return (
-        <Box
-            sx={{
-                display: "flex",
-                alignItems: "center",
-                gap: "0.5rem",
-                width: "100%",
-                backgroundColor: "#f5f5f5",
-                borderRadius: "0.75rem",
-                boxShadow: "0 4px 10px rgba(0, 0, 0, 0.1)",
-                padding: "0.25rem 0.75rem",
-                transition: "all 0.3s ease",
-                "&:hover": {
-                    boxShadow: "0 6px 15px rgba(0, 0, 0, 0.15)",
+        <Box>
+            {/* Ô tìm kiếm compact */}
+            <Box sx={{ mb: 1.5 }}>
+                <TextField
+                    placeholder="Tìm kiếm theo mã môn học hoặc tên môn học"
+                    value={searchText}
+                    onChange={handleTextChange}
+                    InputProps={{
+                        startAdornment: (
+                            <InputAdornment position="start">
+                                <SearchIcon />
+                            </InputAdornment>
+                        ),
+                    }}
+                    variant="outlined"
+                    size="small"
+                    sx={{
+                        width: '60%',
+                        fontFamily: '"Varela Round", sans-serif',
+                        '& .MuiOutlinedInput-root': {
+                            borderRadius: '12px',
+                            backgroundColor: '#fafafa',
+                            '&:hover': {
+                                backgroundColor: '#f5f5f5',
+                            },
+                            '&.Mui-focused': {
+                                backgroundColor: '#fff',
+                            }
+                        },
+                    }}
+                />
+            </Box>
+            
+            <TableContainer component={Paper} sx={{ 
+                borderRadius: '0.75rem', 
+                boxShadow: '0 4px 10px rgba(0, 0, 0, 0.1)',
+                maxHeight: 'calc(100vh - 400px)',
+                overflow: 'auto',
+                '&::-webkit-scrollbar': {
+                    width: '8px',
+                    height: '8px'
                 },
-            }}
-        >
-            <TextField
-                variant="standard"
-                fullWidth
-                placeholder={placeholder}
-                value={searchText}
-                onChange={handleTextChange}
-                onKeyDown={handleKeyDown}
-                InputProps={{
-                    disableUnderline: true,
-                    startAdornment: (
-                        <InputAdornment position="start">
-                            <SearchIcon sx={{ color: "#888" }} />
-                        </InputAdornment>
-                    ),
-                    sx: {
-                        fontSize: "1rem",
-                        padding: "0.5rem 0",
-                    },
-                }}
-            />
-        </Box>
-    );
-};
-
-const SubjectsList = ({ subjects, onEnroll, tableType, enrolledSubjectIds }: { 
-    subjects: Subject[]; 
-    onEnroll: (subject: Subject) => void;
-    tableType?: 'required' | 'elective';
-    enrolledSubjectIds: Set<string>;
-}) => {
-    const headerColor = tableType === 'required' ? '#2e7d32' : '#6ebab6'; // Xanh đậm cho bắt buộc, xanh nhạt cho tự chọn
-    
-    return (
-        <TableContainer component={Paper} sx={{ mt: 2, borderRadius: '0.75rem', boxShadow: '0 4px 10px rgba(0, 0, 0, 0.1)' }}>
-            <Table size="medium" sx={{ tableLayout: 'fixed' }}>                <TableHead>
-                    <TableRow>
-                        <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '1.25rem', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: headerColor, width: '12%' }}>Mã môn học</TableCell>
-                        <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '1.25rem', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: headerColor, width: '25%' }}>Môn học</TableCell>
-                        <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '1.25rem', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: headerColor, width: '12%' }}>Loại môn</TableCell>
-                        <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '1.25rem', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: headerColor, width: '15%' }}>Giảng viên</TableCell>
-                        <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '1.25rem', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: headerColor, width: '8%' }}>Tín chỉ</TableCell>
-                        <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '1.25rem', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: headerColor, width: '16%' }}>Thời gian</TableCell>
-                        <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '1.25rem', textAlign: 'left', fontFamily: '"Varela Round", sans-serif', backgroundColor: headerColor, width: '10%' }}>Sĩ số</TableCell>
-                        <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '1.25rem', textAlign: 'left', fontFamily: '"Varela Round", sans-serif', backgroundColor: headerColor, width: '12%' }}>Hành động</TableCell>
-                    </TableRow>
-                </TableHead>
-                <TableBody>
-                    {subjects.map((subject, index) => {
-                        const isEnrolled = enrolledSubjectIds.has(subject.id);
-                        const isFull = Number(subject.currentEnrollment) >= Number(subject.maxEnrollment);
-                        return (
-                            <TableRow
-                                key={index}
-                                sx={{
-                                    opacity: isEnrolled || isFull ? 0.5 : 1, // Làm mờ nếu đã đăng ký hoặc đã đầy
-                                    backgroundColor: isEnrolled || isFull ? '#f0f0f0' : 'transparent',
-                                    '&:hover': {
-                                        backgroundColor: isEnrolled || isFull ? '#f0f0f0' : '#f5f5f5',
-                                    },
-                                    '&:last-child td, &:last-child th': { borderBottom: 'none' }
-                                }}
-                            >                                <TableCell sx={{ fontSize: '1rem', fontFamily: '"Varela Round", sans-serif', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{subject.id}</TableCell>
-                                <TableCell sx={{ fontSize: '1rem', fontFamily: '"Varela Round", sans-serif', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                    {subject.name}
-                                    {isEnrolled && <span style={{ color: '#4caf50', fontWeight: 'bold', marginLeft: '8px' }}>(Đã đăng ký)</span>}
-                                </TableCell>
-                                <TableCell sx={{ fontSize: '1rem', fontFamily: '"Varela Round", sans-serif', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                    {subject.courseType}
-                                </TableCell>
-                                <TableCell sx={{ fontSize: '1rem', fontFamily: '"Varela Round", sans-serif', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                    {subject.lecturer}
-                                </TableCell>
-                                <TableCell sx={{ fontSize: '1rem', fontFamily: '"Varela Round", sans-serif', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{subject.credits || 'N/A'}</TableCell>
-                                <TableCell sx={{ fontSize: '1rem', fontFamily: '"Varela Round", sans-serif', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                    {subject.day}: {subject.fromTo}
-                                </TableCell>
-                                <TableCell sx={{ fontSize: '1rem', fontFamily: '"Varela Round", sans-serif', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                    {subject.currentEnrollment}/{subject.maxEnrollment}
-                                </TableCell>
-                                <TableCell sx={{ textAlign: 'left', fontFamily: '"Varela Round", sans-serif', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                    {isEnrolled ? (
-                                        <Button variant="contained" size="large" disabled sx={{ backgroundColor: '#cccccc', color: '#888888', borderRadius: '0.5rem' }}>
-                                            Đã đăng ký
-                                        </Button>
-                                    ) : isFull ? (
-                                        <Button variant="contained" size="large" disabled sx={{ backgroundColor: '#cccccc', color: '#888888', borderRadius: '0.5rem' }}>
-                                            Đã đầy
-                                        </Button>
-                                    ) : (
+                '&::-webkit-scrollbar-track': {
+                    backgroundColor: '#f1f1f1',
+                    borderRadius: '8px'
+                },
+                '&::-webkit-scrollbar-thumb': {
+                    backgroundColor: 'rgba(0,0,0,0.3)',
+                    borderRadius: '8px',
+                    '&:hover': {
+                        backgroundColor: 'rgba(0,0,0,0.5)'
+                    }
+                },
+                '&::-webkit-scrollbar-corner': {
+                    backgroundColor: 'transparent'
+                }
+            }}>
+                <Table size="small" sx={{ tableLayout: 'fixed' }}>                    <TableHead>
+                        <TableRow>
+                            <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '1.25rem', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6', width: '15%' }}>Mã môn học</TableCell>
+                            <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '1.25rem', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6', width: '35%' }}>Môn học</TableCell>
+                            <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '1.25rem', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6', width: '15%' }}>Loại môn</TableCell>
+                            <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '1.25rem', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6', width: '10%' }}>Tín chỉ</TableCell>
+                            <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '1.25rem', fontFamily: '"Varela Round", sans-serif', textAlign: 'left', backgroundColor: '#6ebab6', width: '20%' }}>Thời gian</TableCell>
+                            <TableCell sx={{ fontWeight: 'bold', color: '#FFFFFF', fontSize: '1.25rem', textAlign: 'left', fontFamily: '"Varela Round", sans-serif', backgroundColor: '#6ebab6', width: '15%' }}>Hành động</TableCell>
+                        </TableRow>
+                    </TableHead>
+                    <TableBody>
+                        {subjects.map((subject, index) => {
+                            const isEnrolled = enrolledSubjectIds.has(subject.id);
+                            const isRequired = subject.subjectType === 'required';
+                            
+                            return (
+                                <TableRow
+                                    key={index}
+                                    sx={{
+                                        opacity: isEnrolled ? 0.5 : 1,
+                                        backgroundColor: isEnrolled ? '#f0f0f0' : 'transparent',
+                                        '&:hover': {
+                                            backgroundColor: isEnrolled ? '#f0f0f0' : '#f5f5f5',
+                                        },
+                                        '&:last-child td, &:last-child th': { borderBottom: 'none' },
+                                        // Thêm border màu để phân biệt loại môn
+                                        borderLeft: `4px solid ${isRequired ? '#2e7d32' : '#1976d2'}`,
+                                    }}
+                                >
+                                    <TableCell sx={{ fontSize: '1rem', fontFamily: '"Varela Round", sans-serif', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                        {subject.id}
+                                    </TableCell>
+                                    <TableCell sx={{ fontSize: '1rem', fontFamily: '"Varela Round", sans-serif', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                            {subject.name}
+                                            <Chip 
+                                                label={isRequired ? 'Thuộc ngành' : 'Không thuộc ngành'}
+                                                size="small"
+                                                sx={{ 
+                                                    backgroundColor: isRequired ? '#e8f5e9' : '#e3f2fd',
+                                                    color: isRequired ? '#2e7d32' : '#1976d2',
+                                                    fontSize: '0.75rem',
+                                                    height: '20px'
+                                                }}
+                                            />
+                                        
+                                        </Box>
+                                    </TableCell>                                    <TableCell sx={{ fontSize: '1rem', fontFamily: '"Varela Round", sans-serif', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                        {subject.courseType}
+                                    </TableCell>
+                                    <TableCell sx={{ fontSize: '1rem', fontFamily: '"Varela Round", sans-serif', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                        {subject.credits || 'N/A'}
+                                    </TableCell>
+                                    <TableCell sx={{ fontSize: '1rem', fontFamily: '"Varela Round", sans-serif', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                        {subject.day}: {subject.fromTo}
+                                    </TableCell>
+                                    <TableCell sx={{ textAlign: 'left', fontFamily: '"Varela Round", sans-serif', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                         <Button
                                             variant="contained"
                                             color="primary"
                                             size="large"
                                             onClick={() => onEnroll(subject)}
+                                            disabled={isEnrolled}
                                             sx={{
                                                 textTransform: 'none',
                                                 borderRadius: '0.5rem',
                                                 boxShadow: 'none',
-                                                backgroundColor: tableType === 'required' ? '#2e7d32' : '#1976d2',
+                                                backgroundColor: isEnrolled 
+                                                    ? '#cccccc' 
+                                                    : isRequired ? '#2e7d32' : '#1976d2',
                                                 '&:hover': {
-                                                    backgroundColor: tableType === 'required' ? '#388e3c' : 'hsl(223, 100.00%, 70.20%)',
+                                                    backgroundColor: isEnrolled 
+                                                        ? '#cccccc' 
+                                                        : isRequired ? '#388e3c' : 'hsl(223, 100.00%, 70.20%)',
+                                                },
+                                                '&:disabled': {
+                                                    backgroundColor: '#cccccc',
+                                                    color: '#888888'
                                                 }
                                             }}
                                         >
-                                            Đăng ký
+                                            {isEnrolled ? 'Đã đăng ký' : 'Đăng ký'}
                                         </Button>
-                                    )}
-                                </TableCell>
-                            </TableRow>
-                        );
-                    })}
-                </TableBody>
-            </Table>
-        </TableContainer>
+                                    </TableCell>
+                                </TableRow>
+                            );
+                        })}
+                    </TableBody>
+                </Table>
+            </TableContainer>
+        </Box>
     );
 };
 
