@@ -10,7 +10,6 @@ export interface ProgramSchedule {
     thoiGianKetThuc?: string;
     tenKhoa?: string;
     tenNganh?: string;
-    tenMonHoc?: string;
 }
 
 interface ApiResponse<T> {
