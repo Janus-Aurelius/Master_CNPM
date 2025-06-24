@@ -241,16 +241,25 @@ const TuitionCollecting = ({ user, onLogout }: StudentPageProps) => {
                         <Alert 
                             severity="warning" 
                             sx={{ 
-                                mb: 2,
-                                backgroundColor: '#fff3cd',
+                                mb: 1,
+                                py: 0.5,
+                                px: 1.5,
+                                backgroundColor: '#fffbe6',
                                 border: '1px solid #ffeaa7',
-                                color: '#856404'
+                                color: '#856404',
+                                fontSize: '0.95rem',
+                                alignItems: 'center',
+                                minHeight: 'unset',
+                                borderRadius: '8px',
+                                boxShadow: 'none',
+                                width: 'fit-content',
+                                maxWidth: '100%',
                             }}
                         >
-                            <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
-                                ⚠️ Bạn chưa xác nhận danh sách môn học!
+                            <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.98rem', display: 'flex', alignItems: 'center', mb: 0 }}>
+                                Bạn chưa xác nhận danh sách môn học!
                             </Typography>
-                            <Typography variant="body2" sx={{ mt: 1 }}>
+                            <Typography variant="caption" sx={{ mt: 0.5, fontSize: '0.85rem', display: 'block' }}>
                                 Vui lòng vào trang "Danh sách môn học đã đăng ký" để xác nhận trước khi thanh toán học phí.
                             </Typography>
                         </Alert>
@@ -262,16 +271,25 @@ const TuitionCollecting = ({ user, onLogout }: StudentPageProps) => {
                         <Alert 
                             severity="success" 
                             sx={{ 
-                                mb: 2,
-                                backgroundColor: '#d4edda',
+                                mb: 1,
+                                py: 0.5,
+                                px: 1.5,
+                                backgroundColor: '#eafaf1',
                                 border: '1px solid #c3e6cb',
-                                color: '#155724'
+                                color: '#155724',
+                                fontSize: '0.95rem',
+                                alignItems: 'center',
+                                minHeight: 'unset',
+                                borderRadius: '8px',
+                                boxShadow: 'none',
+                                width: 'fit-content',
+                                maxWidth: '100%',
                             }}
                         >
-                            <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
-                                ✅ Bạn đã xác nhận danh sách môn học cho một số kỳ!
+                            <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.98rem', display: 'flex', alignItems: 'center', mb: 0 }}>
+                                Bạn đã xác nhận danh sách môn học
                             </Typography>
-                            <Typography variant="body2" sx={{ mt: 1 }}>
+                            <Typography variant="caption" sx={{ mt: 0.5, fontSize: '0.85rem', display: 'block' }}>
                                 Bây giờ bạn có thể thanh toán học phí cho các kỳ đã xác nhận.
                             </Typography>
                         </Alert>
