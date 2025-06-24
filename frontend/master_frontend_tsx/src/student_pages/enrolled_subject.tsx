@@ -183,48 +183,80 @@ export const EnrolledSubject = ({ user, onLogout }: Omit<EnrolledSubjectProps, '
                         Danh sách môn học đã đăng ký
                     </Typography>                    {/* Thông tin ngành và học kỳ */}
                     {studentInfo && semesterInfo && (
-                        <Box sx={{ mb: 2, p: 2, backgroundColor: '#f8f9fa', borderRadius: '0.5rem', border: '1px solid #e9ecef' }}>
-                            <Typography sx={{ fontWeight: 'bold', mb: 1, color: '#495057' }}>
-                                Ngành: {studentInfo.majorName}
-                            </Typography>
-                            <Typography sx={{ fontWeight: 'bold', color: '#495057', mb: 1 }}>
-                                {semesterInfo.fullName}
-                            </Typography>
-                            {isConfirmed ? (
-                                <Typography sx={{ fontWeight: 'bold', color: '#28a745' }}>
-                                    ✅ Đã xác nhận đăng ký
+                        <Box sx={{ 
+                            mb: 2, 
+                            display: 'flex', 
+                            flexDirection: 'row', 
+                            alignItems: 'center', 
+                            justifyContent: 'space-between',
+                            backgroundColor: '#f8f9fa', 
+                            borderRadius: '0.5rem', 
+                            border: '1px solid #e9ecef',
+                            p: 1.5
+                        }}>
+                            <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                                <Typography variant="body1" sx={{ fontWeight: 'bold', color: '#495057' }}>
+                                    Ngành: {studentInfo.majorName}
                                 </Typography>
-                            ) : (
-                                <Typography sx={{ fontWeight: 'bold', color: '#ffc107' }}>
-                                    ⚠️ Chưa xác nhận đăng ký
+                                <Typography variant="body1" sx={{ fontWeight: 'bold', color: '#495057' }}>
+                                    {semesterInfo.fullName}
                                 </Typography>
-                            )}
-                        </Box>
-                    )}
-
-                    {/* Nút xác nhận đăng ký */}
-                    {!loading && !error && subjects.length > 0 && !isConfirmed && (
-                        <Box sx={{ mb: 2, display: 'flex', justifyContent: 'center' }}>
-                            <Button
-                                variant="contained"
-                                color="primary"
-                                size="large"
-                                onClick={handleOpenConfirmDialog}
-                                sx={{
-                                    textTransform: 'none',
-                                    borderRadius: '0.5rem',
-                                    backgroundColor: '#28a745',
-                                    '&:hover': {
-                                        backgroundColor: '#218838',
-                                    },
-                                    px: 3,
-                                    py: 1.5,
-                                    fontSize: '1.1rem',
-                                    fontWeight: 'bold'
-                                }}
-                            >
-                                ✅ Xác nhận đăng ký
-                            </Button>
+                            </Box>
+                            
+                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                {isConfirmed ? (
+                                    <Box sx={{ 
+                                        display: 'flex', 
+                                        alignItems: 'center', 
+                                        backgroundColor: '#e8f5e9', 
+                                        px: 2, 
+                                        py: 0.5, 
+                                        borderRadius: '1rem',
+                                    }}>
+                                        <Typography sx={{ fontWeight: 'bold', color: '#2e7d32', fontSize: '0.9rem' }}>
+                                            Đã xác nhận đăng ký
+                                        </Typography>
+                                    </Box>
+                                ) : (
+                                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                        <Box sx={{ 
+                                            display: 'flex', 
+                                            alignItems: 'center', 
+                                            backgroundColor: '#fff3cd', 
+                                            px: 2, 
+                                            py: 0.5, 
+                                            borderRadius: '1rem',
+                                            mr: 2
+                                        }}>
+                                            <Typography sx={{ fontWeight: 'bold', color: '#856404', fontSize: '0.9rem' }}>
+                                                Chưa xác nhận
+                                            </Typography>
+                                        </Box>
+                                        {!loading && !error && subjects.length > 0 && (
+                                            <Button
+                                                variant="contained"
+                                                size="small"
+                                                onClick={handleOpenConfirmDialog}
+                                                sx={{
+                                                    textTransform: 'none',
+                                                    borderRadius: '1rem',
+                                                    backgroundColor: '#28a745',
+                                                    '&:hover': {
+                                                        backgroundColor: '#218838',
+                                                    },
+                                                    px: 2,
+                                                    py: 0.5,
+                                                    fontSize: '0.9rem',
+                                                    fontWeight: 'bold',
+                                                    whiteSpace: 'nowrap'
+                                                }}
+                                            >
+                                                Xác nhận đăng ký
+                                            </Button>
+                                        )}
+                                    </Box>
+                                )}
+                            </Box>
                         </Box>
                     )}
 
@@ -309,65 +341,118 @@ export const EnrolledSubject = ({ user, onLogout }: Omit<EnrolledSubjectProps, '
                 onClose={handleCloseConfirmDialog}
                 maxWidth="sm"
                 fullWidth
+                PaperProps={{
+                    style: {
+                        borderRadius: '1rem',
+                        overflow: 'hidden'
+                    }
+                }}
             >
                 <DialogTitle sx={{ 
                     textAlign: 'center', 
-                    color: '#d32f2f',
+                    color: '#495057',
                     fontWeight: 'bold',
-                    fontSize: '1.5rem'
+                    fontSize: '1.25rem',
+                    backgroundColor: '#f8f9fa',
+                    py: 2
                 }}>
-                    ⚠️ Xác nhận đăng ký
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <Box component="span" sx={{ mr: 1 }}></Box>
+                        Xác nhận đăng ký môn học
+                    </Box>
                 </DialogTitle>
-                <DialogContent>
-                    <Typography sx={{ mb: 2, fontSize: '1.1rem', textAlign: 'center' }}>
+                <DialogContent sx={{ p: 3 }}>
+                    <Typography sx={{ mb: 2, fontSize: '1rem', textAlign: 'center' }}>
                         Bạn đã chắc chắn đăng ký những môn này chưa?
                     </Typography>
-                    <Typography sx={{ 
+                    <Box sx={{ 
                         mb: 2, 
-                        fontSize: '1rem', 
-                        textAlign: 'center',
-                        color: '#d32f2f',
-                        fontWeight: 'bold',
-                        backgroundColor: '#ffebee',
-                        p: 2,
-                        borderRadius: 1
+                        p: 1.5, 
+                        backgroundColor: '#fff3cd',
+                        borderRadius: '0.5rem',
+                        border: '1px solid #ffeeba'
                     }}>
-                        ⚠️ Lưu ý: Một khi bấm xác nhận sẽ không được thu hồi!
-                    </Typography>
-                    <Typography sx={{ fontSize: '1rem', textAlign: 'center' }}>
+                        <Typography sx={{ 
+                            fontSize: '0.9rem', 
+                            textAlign: 'center',
+                            color: '#856404',
+                            fontWeight: 'medium',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                        }}>
+                            <Box component="span" sx={{ mr: 1 }}>⚠️</Box>
+                            Lưu ý: Một khi bấm xác nhận sẽ không được thu hồi!
+                        </Typography>
+                    </Box>
+                    <Typography sx={{ fontSize: '0.95rem', textAlign: 'center', fontWeight: 'medium', color: '#495057' }}>
                         Danh sách môn học đã đăng ký ({subjects.length} môn):
                     </Typography>
-                    <Box sx={{ mt: 2, maxHeight: '200px', overflowY: 'auto' }}>
+                    <Box sx={{ 
+                        mt: 1.5, 
+                        maxHeight: '180px', 
+                        overflowY: 'auto',
+                        border: '1px solid #dee2e6',
+                        borderRadius: '0.5rem',
+                        p: 0.5
+                    }}>
                         {subjects.map((subject, index) => (
                             <Typography key={index} sx={{ 
-                                fontSize: '0.9rem', 
+                                fontSize: '0.85rem', 
                                 mb: 0.5,
                                 p: 1,
-                                backgroundColor: '#f5f5f5',
-                                borderRadius: 0.5
+                                backgroundColor: index % 2 === 0 ? '#f8f9fa' : '#ffffff',
+                                borderRadius: '0.25rem',
+                                display: 'flex',
+                                alignItems: 'center'
                             }}>
-                                • {subject.id} - {subject.name}
+                                <Box component="span" sx={{ 
+                                    minWidth: '1.5rem', 
+                                    height: '1.5rem',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    backgroundColor: '#6ebab6',
+                                    color: 'white',
+                                    borderRadius: '50%',
+                                    fontSize: '0.75rem',
+                                    fontWeight: 'bold',
+                                    mr: 1.5
+                                }}>
+                                    {index + 1}
+                                </Box>
+                                <Box component="span" sx={{ fontWeight: 'medium' }}>{subject.id}</Box> - {subject.name}
                             </Typography>
                         ))}
                     </Box>
                 </DialogContent>
-                <DialogActions sx={{ p: 2, justifyContent: 'center' }}>
+                <DialogActions sx={{ p: 2, justifyContent: 'center', backgroundColor: '#f8f9fa' }}>
                     <Button 
                         onClick={handleCloseConfirmDialog}
                         variant="outlined"
-                        sx={{ mr: 2 }}
+                        sx={{ 
+                            mr: 2, 
+                            borderRadius: '0.75rem',
+                            px: 2,
+                            textTransform: 'none',
+                            fontSize: '0.9rem'
+                        }}
                     >
                         Hủy
                     </Button>
                     <Button 
                         onClick={handleConfirmRegistration}
                         variant="contained"
-                        color="error"
                         disabled={loading}
                         sx={{
-                            backgroundColor: '#d32f2f',
+                            backgroundColor: '#28a745',
+                            borderRadius: '0.75rem',
+                            px: 2,
+                            textTransform: 'none',
+                            fontSize: '0.9rem',
+                            fontWeight: 'bold',
                             '&:hover': {
-                                backgroundColor: '#b71c1c',
+                                backgroundColor: '#218838',
                             }
                         }}
                     >
