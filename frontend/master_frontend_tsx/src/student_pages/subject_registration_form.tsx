@@ -292,13 +292,13 @@ const SubjectRegistrationForm = ({ user, onLogout }: { user: { id?: string; name
                                 mt: 4,
                                 p: 2,
                                 backgroundColor: '#e0f7fa',
-                                borderRadius: 2,
+                                borderRadius: 3,
                                 fontWeight: 'bold',
                                 color: '#009688',
                                 fontSize: '1.2rem'
                             }}
                         >
-                            ⚠️ Bạn đã xác nhận đăng ký! Không thể đăng ký thêm môn học.
+                            Bạn đã xác nhận đăng ký! Không thể đăng ký thêm môn học.
                         </Typography>
                     ) : (
                         <>

@@ -301,29 +301,21 @@ const TuitionCollecting = ({ user, onLogout }: StudentPageProps) => {
                                     <Paper
                                         elevation={1}                                        sx={{
                                             p: 1.5,
-                                            borderLeft: "10px solid",
-                                            borderColor: tuition.status === 'not_opened' ? "#bdbdbd" : // Chưa mở - xám nhạt
+                                            borderLeft: "5px solid",                                            borderColor: tuition.status === 'not_opened' ? "#bdbdbd" : // Chưa mở - xám nhạt
                                                         tuition.remainingAmount === 0 ? "#2e7d32" : // Đã thanh toán đủ - xanh lá đậm
                                                         tuition.remainingAmount > 0 ? "#d32f2f" : // Còn nợ - đỏ đậm
-                                                        "#f57c00", // Đã đóng dư - cam đậm
+                                                        "#2e7d32", // Đã đóng dư - xanh lá đậm giống như đã thanh toán
                                             cursor: tuition.status !== 'not_opened' ? "pointer" : "default",
                                             boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)', 
-                                            borderRadius: '12px',
-                                            backgroundColor: tuition.status === 'not_opened' ? "#fafafa" : 
-                                                           tuition.remainingAmount === 0 ? "#f1f8e9" : // Đã thanh toán - nền xanh nhạt
-                                                           tuition.remainingAmount > 0 ? "#ffebee" : // Còn nợ - nền đỏ nhạt
-                                                           "#fff3e0", // Đã đóng dư - nền cam nhạt
-                                            transition: "all 0.3s ease",
+                                            borderRadius: '12px',                                            backgroundColor: tuition.status === 'not_opened' ? "#f9f9f9" : 
+                                                           tuition.remainingAmount === 0 ? "#f8fdf8" : // Đã thanh toán - nền xanh rất nhạt
+                                                           tuition.remainingAmount > 0 ? "#fef5f5" : // Còn nợ - nền đỏ rất nhạt
+                                                           "#f8fdf8", // Đã đóng dư - nền xanh rất nhạt giống như đã thanh toántransition: "all 0.3s ease",
                                             opacity: tuition.status === 'not_opened' ? 0.8 : 1,
-                                            border: tuition.status === 'not_opened' ? '1px solid rgba(0, 0, 0, 0.12)' : 
-                                                   tuition.remainingAmount === 0 ? '1px solid rgba(46, 125, 50, 0.2)' :
-                                                   tuition.remainingAmount > 0 ? '1px solid rgba(211, 47, 47, 0.2)' :
-                                                   '1px solid rgba(245, 124, 0, 0.2)',
                                             "&:hover": tuition.status !== 'not_opened' ? {
-                                                transform: "translateY(-2px)",
-                                                boxShadow: tuition.remainingAmount === 0 ? "0 8px 25px rgba(46, 125, 50, 0.25)" :
+                                                transform: "translateY(-2px)",                                                boxShadow: tuition.remainingAmount === 0 ? "0 8px 25px rgba(46, 125, 50, 0.25)" :
                                                           tuition.remainingAmount > 0 ? "0 8px 25px rgba(211, 47, 47, 0.25)" :
-                                                          "0 8px 25px rgba(245, 124, 0, 0.25)",
+                                                          "0 8px 25px rgba(46, 125, 50, 0.25)", // Đã đóng dư - shadow xanh
                                                 
                                             } : {},
                                         }}
