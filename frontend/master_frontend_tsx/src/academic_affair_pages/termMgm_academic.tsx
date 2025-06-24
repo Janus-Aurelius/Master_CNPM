@@ -26,7 +26,8 @@ import {
     Select,
     MenuItem,
     CircularProgress,
-    Alert
+    Alert,
+    Snackbar
 } from "@mui/material";
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
@@ -74,6 +75,17 @@ export default function TermMgmAcademic({ user, onLogout }: AcademicPageProps) {
         feeDeadline?: string;
         general?: string;
     }>({});
+
+    // Snackbar state for constraint errors
+    const [snackbar, setSnackbar] = useState<{
+        open: boolean;
+        message: string;
+        severity: 'error' | 'warning' | 'info' | 'success';
+    }>({
+        open: false,
+        message: '',
+        severity: 'error'
+    });
 
     // Function to fetch semesters from API
     const fetchSemesters = async () => {
@@ -261,12 +273,34 @@ export default function TermMgmAcademic({ user, onLogout }: AcademicPageProps) {
                 
                 // Refresh data from server to ensure all updates are reflected
                 await fetchSemesters();
+                
+                // Show success message with specific logic for status change
+                if (semesterData.status === 'Đang diễn ra') {
+                    setSnackbar({
+                        open: true,
+                        message: '✅ Đã set học kỳ thành "Đang diễn ra" và tự động đóng học kỳ hiện tại!',
+                        severity: 'success'
+                    });
+                } else {
+                    setSnackbar({
+                        open: true,
+                        message: 'Cập nhật học kỳ thành công!',
+                        severity: 'success'
+                    });
+                }
             } else {
                 // Create new semester
                 await semesterApi.createSemester(semesterData);
                 
                 // Refresh data from server
                 await fetchSemesters();
+                
+                // Show success message
+                setSnackbar({
+                    open: true,
+                    message: 'Tạo học kỳ mới thành công!',
+                    severity: 'success'
+                });
             }
 
             setError(null);
@@ -275,37 +309,108 @@ export default function TermMgmAcademic({ user, onLogout }: AcademicPageProps) {
         } catch (err: any) {
             // Ưu tiên lấy message từ response.data.message
             const errorMessage = err.response?.data?.message || err.message || (isEditing ? 'Không thể cập nhật học kỳ' : 'Không thể tạo học kỳ mới');
-            if (errorMessage && errorMessage.includes('Đã tồn tại một kỳ học này rồi')) {
-                setError('Đã tồn tại một kỳ học này rồi');
-            } else if (errorMessage && errorMessage.toLowerCase().includes('internal server error')) {
-                setError('Đã tồn tại một kỳ học này rồi');
+            
+            // Xử lý các lỗi constraint cụ thể
+            if (errorMessage.includes('Chỉ được phép set trạng thái "Đang diễn ra" cho các học kỳ sau học kỳ hiện tại')) {
+                setSnackbar({
+                    open: true,
+                    message: '❌ Chỉ được phép set trạng thái "Đang diễn ra" cho các học kỳ sau học kỳ hiện tại.',
+                    severity: 'error'
+                });
+            } else if (errorMessage.includes('Đã có học kỳ đang diễn ra')) {
+                setSnackbar({
+                    open: true,
+                    message: '❌ Đã có học kỳ đang diễn ra. Vui lòng đóng học kỳ hiện tại trước khi mở học kỳ mới.',
+                    severity: 'error'
+                });
+            } else if (errorMessage.includes('Đã tồn tại một kỳ học này rồi')) {
+                setSnackbar({
+                    open: true,
+                    message: '❌ Đã tồn tại một kỳ học này rồi. Vui lòng kiểm tra lại thông tin.',
+                    severity: 'error'
+                });
+            } else if (errorMessage.includes('Không tìm thấy học kỳ')) {
+                setSnackbar({
+                    open: true,
+                    message: '❌ Không tìm thấy học kỳ. Vui lòng thử lại.',
+                    severity: 'error'
+                });
             } else {
-                setError(errorMessage);
+                setSnackbar({
+                    open: true,
+                    message: `❌ ${errorMessage}`,
+                    severity: 'error'
+                });
             }
+            
+            // Vẫn set error state cho Alert cũ
+            setError(errorMessage);
         }
-    };const handleDeleteTerm = (id: string) => {
+    };
+
+    const handleDeleteTerm = (id: string) => {
         setConfirmDelete({ open: true, id });
-    };    const handleConfirmDelete = async () => {
+    };
+
+    const handleConfirmDelete = async () => {
         if (confirmDelete.id !== null) {
             try {
                 await semesterApi.deleteSemester(confirmDelete.id);
-                setTerms(terms.filter(t => t.id !== confirmDelete.id));
-                setError(null);
-                setConfirmDelete({ open: false, id: null }); // Close dialog only on success
+                await fetchSemesters();
+                setSnackbar({
+                    open: true,
+                    message: 'Xóa học kỳ thành công!',
+                    severity: 'success'
+                });
             } catch (err: any) {
                 console.error('Error deleting semester:', err);
+                console.log('Error response:', err.response);
+                console.log('Error message:', err.message);
+                
                 const errorMessage = err.response?.data?.message || err.message || 'Không thể xóa học kỳ';
-                setError(errorMessage);
-                setConfirmDelete({ open: false, id: null }); // Close dialog even on error but show error message
+                console.log('Final error message:', errorMessage);
+                
+                // Xử lý các lỗi cụ thể
+                if (errorMessage.includes('Không thể xóa học kỳ này do đang là học kỳ hiện tại')) {
+                    setSnackbar({
+                        open: true,
+                        message: '❌ Không thể xóa học kỳ này do đang là học kỳ hiện tại',
+                        severity: 'error'
+                    });
+                } else if (errorMessage.includes('Không thể xóa học kỳ đã có phiếu đăng ký')) {
+                    setSnackbar({
+                        open: true,
+                        message: '❌ Không thể xóa học kỳ đã có phiếu đăng ký',
+                        severity: 'error'
+                    });
+                } else if (errorMessage.includes('Semester not found')) {
+                    setSnackbar({
+                        open: true,
+                        message: '❌ Không tìm thấy học kỳ',
+                        severity: 'error'
+                    });
+                } else {
+                    setSnackbar({
+                        open: true,
+                        message: `❌ ${errorMessage}`,
+                        severity: 'error'
+                    });
+                }
             }
-        } else {
             setConfirmDelete({ open: false, id: null });
         }
     };
 
     const handleCancelDelete = () => {
         setConfirmDelete({ open: false, id: null });
-    };    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    };
+
+    // Handle close snackbar
+    const handleCloseSnackbar = () => {
+        setSnackbar(prev => ({ ...prev, open: false }));
+    };
+
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
         
         // Handle special cases for computed fields
@@ -825,11 +930,22 @@ export default function TermMgmAcademic({ user, onLogout }: AcademicPageProps) {
                     <Button onClick={handleCancelDelete} color="primary">
                         Hủy
                     </Button>
-                    <Button onClick={handleConfirmDelete} color="error" variant="contained">
+                    <Button onClick={() => handleConfirmDelete()} color="error" variant="contained">
                         Xóa
                     </Button>
                 </DialogActions>
             </Dialog>
+
+            {/* Snackbar */}
+            <Snackbar
+                open={snackbar.open}
+                autoHideDuration={6000}
+                onClose={handleCloseSnackbar}
+            >
+                <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: '100%' }}>
+                    {snackbar.message}
+                </Alert>
+            </Snackbar>
         </ThemeLayout>
     );
 }

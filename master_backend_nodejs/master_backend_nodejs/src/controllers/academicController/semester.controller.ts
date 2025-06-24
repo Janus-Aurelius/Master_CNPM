@@ -95,27 +95,96 @@ export const semesterController = {
             const semesterData: ISemesterUpdate = req.body;
 
             const updatedSemester = await semesterService.updateSemester(id, semesterData);
+            
+            // Customize success message based on what was updated
+            let successMessage = 'Semester updated successfully';
+            if (semesterData.status === 'Đang diễn ra') {
+                successMessage = 'Đã set học kỳ thành "Đang diễn ra" và tự động đóng học kỳ hiện tại';
+            }
+            
             res.json({
                 success: true,
                 data: updatedSemester,
-                message: 'Semester updated successfully'
+                message: successMessage
             });
         } catch (error) {
             console.error('Error in updateSemester:', error);
-            if (error instanceof Error && error.message === 'Đã tồn tại một kỳ học này rồi') {
-                res.status(400).json({
-                    success: false,
-                    message: 'Đã tồn tại một kỳ học này rồi'
-                });
-                return;
+            
+            // Xử lý các lỗi constraint cụ thể
+            if (error instanceof Error) {
+                if (error.message === 'Semester not found') {
+                    res.status(404).json({
+                        success: false,
+                        message: 'Semester not found'
+                    });
+                    return;
+                }
+                
+                if (error.message === 'Không tìm thấy học kỳ') {
+                    res.status(404).json({
+                        success: false,
+                        message: error.message
+                    });
+                    return;
+                }
+                
+                if (error.message === 'Không thể thay đổi trạng thái của học kỳ đang diễn ra') {
+                    res.status(400).json({
+                        success: false,
+                        message: error.message
+                    });
+                    return;
+                }
+                
+                if (error.message.includes('Đã có học kỳ đang diễn ra')) {
+                    res.status(400).json({
+                        success: false,
+                        message: error.message
+                    });
+                    return;
+                }
+                
+                if (error.message === 'Đã tồn tại một kỳ học này rồi') {
+                    res.status(400).json({
+                        success: false,
+                        message: 'Đã tồn tại một kỳ học này rồi'
+                    });
+                    return;
+                }
+                
+                if (error.message.includes('Chỉ được phép set trạng thái "Đang diễn ra" cho các học kỳ sau học kỳ hiện tại')) {
+                    res.status(400).json({
+                        success: false,
+                        message: error.message
+                    });
+                    return;
+                }
+                
+                if (error.message === 'Không tìm thấy cấu hình học kỳ hiện tại') {
+                    res.status(500).json({
+                        success: false,
+                        message: error.message
+                    });
+                    return;
+                }
+                
+                if (error.message === 'Không tìm thấy học kỳ hiện tại') {
+                    res.status(500).json({
+                        success: false,
+                        message: error.message
+                    });
+                    return;
+                }
+                
+                if (error.message === 'Không tìm thấy học kỳ đang thao tác') {
+                    res.status(404).json({
+                        success: false,
+                        message: error.message
+                    });
+                    return;
+                }
             }
-            if (error instanceof Error && error.message === 'Semester not found') {
-                res.status(404).json({
-                    success: false,
-                    message: 'Semester not found'
-                });
-                return;
-            }
+            
             res.status(500).json({
                 success: false,
                 message: 'Internal server error',
@@ -149,6 +218,24 @@ export const semesterController = {
                     res.status(400).json({
                         success: false,
                         message: 'Không thể xóa học kỳ đã có phiếu đăng ký'
+                    });
+                    return;
+                }
+                
+                if (error.message === 'Không thể xóa học kỳ này do đang là học kỳ hiện tại') {
+                    res.status(400).json({
+                        success: false,
+                        message: 'Không thể xóa học kỳ này do đang là học kỳ hiện tại'
+                    });
+                    return;
+                }
+                
+                // Xử lý lỗi foreign key constraint khi xóa học kỳ đang được tham chiếu (fallback)
+                if (error.message.includes('academic_settings_current_semester_fkey') || 
+                    error.message.includes('is still referenced from table "academic_settings"')) {
+                    res.status(400).json({
+                        success: false,
+                        message: 'Không thể xóa học kỳ này do đang là học kỳ hiện tại'
                     });
                     return;
                 }
@@ -246,13 +333,71 @@ export const semesterController = {
                 return;
             }
 
+            // Customize success message based on status
+            let successMessage = `Semester status updated to "${status}" successfully`;
+            if (status === 'Đang diễn ra') {
+                successMessage = 'Đã set học kỳ thành "Đang diễn ra" và tự động đóng học kỳ hiện tại';
+            }
+
             res.json({
                 success: true,
                 data: result,
-                message: `Semester status updated to "${status}" successfully`
+                message: successMessage
             });
         } catch (error) {
             console.error('Error in updateSemesterStatus:', error);
+            
+            // Xử lý các lỗi constraint cụ thể
+            if (error instanceof Error) {
+                if (error.message.includes('Chỉ được phép set trạng thái "Đang diễn ra" cho các học kỳ sau học kỳ hiện tại')) {
+                    res.status(400).json({
+                        success: false,
+                        message: error.message
+                    });
+                    return;
+                }
+                
+                if (error.message.includes('Đã có học kỳ đang diễn ra')) {
+                    res.status(400).json({
+                        success: false,
+                        message: error.message
+                    });
+                    return;
+                }
+                
+                if (error.message === 'Không tìm thấy học kỳ') {
+                    res.status(404).json({
+                        success: false,
+                        message: error.message
+                    });
+                    return;
+                }
+                
+                if (error.message === 'Không tìm thấy cấu hình học kỳ hiện tại') {
+                    res.status(500).json({
+                        success: false,
+                        message: error.message
+                    });
+                    return;
+                }
+                
+                if (error.message === 'Không tìm thấy học kỳ hiện tại') {
+                    res.status(500).json({
+                        success: false,
+                        message: error.message
+                    });
+                    return;
+                }
+                
+                if (error.message === 'Không tìm thấy học kỳ đang thao tác') {
+                    res.status(404).json({
+                        success: false,
+                        message: error.message
+                    });
+                    return;
+                }
+            }
+            
             res.status(500).json({
                 success: false,
                 message: 'Internal server error',
