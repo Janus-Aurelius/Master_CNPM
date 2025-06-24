@@ -337,7 +337,7 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
     const handleSaveStudent = async () => {
         try {
             setLoading(true);
-            // Validate required fields
+            // Validate required fields - Kiểm tra tất cả các trường bắt buộc
             if (!formData.studentId.trim()) {
                 setSnackbarMessage('MSSV không được để trống');
                 setSnackbarSeverity('error');
@@ -353,13 +353,88 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
                 setSnackbarSeverity('error');
                 return;
             }
+            if (!formData.phone.trim()) {
+                setSnackbarMessage('Số điện thoại không được để trống');
+                setSnackbarSeverity('error');
+                return;
+            }
             if (!formData.dateOfBirth) {
                 setSnackbarMessage('Ngày sinh không được để trống');
                 setSnackbarSeverity('error');
                 return;
             }
+            if (!formData.gender.trim()) {
+                setSnackbarMessage('Giới tính không được để trống');
+                setSnackbarSeverity('error');
+                return;
+            }
+            if (!formData.hometown.trim()) {
+                setSnackbarMessage('Quê quán không được để trống');
+                setSnackbarSeverity('error');
+                return;
+            }
             if (!formData.majorId) {
                 setSnackbarMessage('Ngành học không được để trống');
+                setSnackbarSeverity('error');
+                return;
+            }
+            if (!formData.priorityObjectId) {
+                setSnackbarMessage('Đối tượng ưu tiên không được để trống');
+                setSnackbarSeverity('error');
+                return;
+            }
+            if (!formData.provinceName) {
+                setSnackbarMessage('Tỉnh/Thành phố không được để trống');
+                setSnackbarSeverity('error');
+                return;
+            }
+            if (!formData.districtId) {
+                setSnackbarMessage('Quận/Huyện không được để trống');
+                setSnackbarSeverity('error');
+                return;
+            }
+            if (!formData.address.trim()) {
+                setSnackbarMessage('Địa chỉ cụ thể không được để trống');
+                setSnackbarSeverity('error');
+                return;
+            }
+            
+            // Validate email format
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(formData.email)) {
+                setSnackbarMessage('Email không đúng định dạng');
+                setSnackbarSeverity('error');
+                return;
+            }
+            
+            // Validate phone format (Vietnamese phone number)
+            const phoneRegex = /^(\+84|84|0)(3|5|7|8|9)[0-9]{8}$/;
+            if (!phoneRegex.test(formData.phone.replace(/\s/g, ''))) {
+                setSnackbarMessage('Số điện thoại không đúng định dạng (VD: 0912345678)');
+                setSnackbarSeverity('error');
+                return;
+            }
+            
+            // Validate date of birth (must be at least 16 years old and not in the future)
+            const birthDate = new Date(formData.dateOfBirth);
+            const today = new Date();
+            const age = today.getFullYear() - birthDate.getFullYear();
+            const monthDiff = today.getMonth() - birthDate.getMonth();
+            
+            if (birthDate > today) {
+                setSnackbarMessage('Ngày sinh không thể là ngày trong tương lai');
+                setSnackbarSeverity('error');
+                return;
+            }
+            
+            if (age < 16 || (age === 16 && monthDiff < 0)) {
+                setSnackbarMessage('Sinh viên phải đủ 16 tuổi');
+                setSnackbarSeverity('error');
+                return;
+            }
+            
+            if (age > 100) {
+                setSnackbarMessage('Ngày sinh không hợp lệ');
                 setSnackbarSeverity('error');
                 return;
             }
@@ -380,11 +455,14 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
                 provinceName: formData.provinceName,
                 priorityName: formData.priorityName,
                 majorName: formData.majorName
-            };
-            if (addEditDialog.isEdit && addEditDialog.student) {
+            };            if (addEditDialog.isEdit && addEditDialog.student) {
                 await studentApi.updateStudent(addEditDialog.student.studentId, studentData);
+                setSnackbarMessage('Cập nhật sinh viên thành công!');
+                setSnackbarSeverity('success');
             } else {
                 await studentApi.createStudent(studentData);
+                setSnackbarMessage('Thêm sinh viên mới thành công!');
+                setSnackbarSeverity('success');
             }
             await refreshStudents();
             closeAddEditDialog();
@@ -414,8 +492,7 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
 
     const confirmDeleteStudent = async () => {
         if (!deleteDialog.student) return;
-        
-        try {
+          try {
             setLoading(true);
             await studentApi.deleteStudent(deleteDialog.student.studentId);
             
@@ -423,6 +500,8 @@ export default function StudentMgmAcademic({ user, onLogout }: StudentMgmAcademi
             
             setDeleteDialog({ open: false, student: null });
             setError(null);
+            setSnackbarMessage('Xóa sinh viên thành công!');
+            setSnackbarSeverity('success');
         } catch (err) {
             setError('Không thể xóa sinh viên');
             console.error('Error deleting student:', err);

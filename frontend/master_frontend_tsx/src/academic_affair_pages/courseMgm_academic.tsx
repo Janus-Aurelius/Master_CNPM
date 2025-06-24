@@ -93,9 +93,7 @@ const CourseMgmAcademic: React.FC<AcademicPageProps> = ({ user, onLogout }) => {
             const matchesCredits = creditsFilter === 'all' || parseInt((subject.credits || 0).toString(), 10) === Number(creditsFilter);
             return matchesMaMonHoc && matchesTenMonHoc && matchesMaLoaiMon && matchesSoTiet && matchesCredits;
         });
-    }, [subjects, searchMaMonHoc, searchTenMonHoc, maLoaiMonFilter, soTietFilter, creditsFilter]);
-
-    const [snackbar, setSnackbar] = useState<{
+    }, [subjects, searchMaMonHoc, searchTenMonHoc, maLoaiMonFilter, soTietFilter, creditsFilter]);    const [snackbar, setSnackbar] = useState<{
         open: boolean;
         message: string;
         severity: 'success' | 'error' | 'info' | 'warning';
@@ -105,7 +103,23 @@ const CourseMgmAcademic: React.FC<AcademicPageProps> = ({ user, onLogout }) => {
         severity: 'error'
     });
 
-    const handleOpenDialog = (edit: boolean = false, subject?: Subject) => {
+    // Validation states
+    const [validationErrors, setValidationErrors] = useState<{
+        maMonHoc?: string;
+    }>({});
+
+    // Course type options
+    const courseTypeOptions = [
+        { value: 'LT', label: 'Lý thuyết (LT)' },
+        { value: 'TH', label: 'Thực hành (TH)' }
+    ];
+
+    // Validation function for course code
+    const validateCourseCode = (code: string): boolean => {
+        // Chỉ cho phép chữ hoa và số
+        const regex = /^[A-Z0-9]+$/;
+        return regex.test(code) && code.length > 0;
+    };    const handleOpenDialog = (edit: boolean = false, subject?: Subject) => {
         setIsEditing(edit);
         if (edit && subject) {
             setCurrentSubject(subject);
@@ -120,6 +134,8 @@ const CourseMgmAcademic: React.FC<AcademicPageProps> = ({ user, onLogout }) => {
             });
             setOldMaMonHoc(null);
         }
+        // Clear validation errors when opening dialog
+        setValidationErrors({});
         setOpenDialog(true);
     };
 
@@ -215,10 +231,35 @@ const CourseMgmAcademic: React.FC<AcademicPageProps> = ({ user, onLogout }) => {
         // Không xử lý trường credits vì nó được tính tự động
         if (name === 'credits') return;
         
+        // Validate course code if it's being changed
+        if (name === 'maMonHoc') {
+            const errors = { ...validationErrors };
+            if (value && !validateCourseCode(value)) {
+                errors.maMonHoc = 'Mã môn học chỉ được chứa chữ hoa và số';
+            } else {
+                delete errors.maMonHoc;
+            }
+            setValidationErrors(errors);
+        }
+        
         setCurrentSubject({
             ...currentSubject,
             [name]: name === "soTiet" ? Number(value) : value
         });
+    };
+
+    // Validate before submit
+    const validateForm = (): boolean => {
+        const errors: { maMonHoc?: string } = {};
+        
+        if (!currentSubject.maMonHoc) {
+            errors.maMonHoc = 'Mã môn học là bắt buộc';
+        } else if (!validateCourseCode(currentSubject.maMonHoc)) {
+            errors.maMonHoc = 'Mã môn học chỉ được chứa chữ hoa và số';
+        }
+        
+        setValidationErrors(errors);
+        return Object.keys(errors).length === 0;
     };
 
     return (
@@ -599,6 +640,8 @@ const CourseMgmAcademic: React.FC<AcademicPageProps> = ({ user, onLogout }) => {
                                 value={currentSubject.maMonHoc}
                                 onChange={handleInputChange}
                                 disabled={isEditing}
+                                error={!!validationErrors.maMonHoc}
+                                helperText={validationErrors.maMonHoc || (isEditing ? "Không thể thay đổi mã môn học khi chỉnh sửa" : "Chỉ được phép nhập chữ hoa và số")}
                             />
                         </Grid>
                         <Grid item xs={12} md={6}>
@@ -616,13 +659,43 @@ const CourseMgmAcademic: React.FC<AcademicPageProps> = ({ user, onLogout }) => {
                             <TextField
                                 name="maLoaiMon"
                                 label="Mã loại môn"
+                                select
                                 fullWidth
                                 margin="normal"
                                 required
                                 variant="outlined"
                                 value={currentSubject.maLoaiMon}
                                 onChange={handleInputChange}
-                            />
+                                SelectProps={{
+                                    MenuProps: {
+                                        PaperProps: {
+                                            elevation: 4,
+                                            sx: {
+                                                borderRadius: 3,
+                                                minWidth: 200,
+                                                boxShadow: '0 4px 24px 0 rgba(0,0,0,0.10)',
+                                                p: 1,
+                                            },
+                                        },
+                                        MenuListProps: {
+                                            sx: {
+                                                display: 'flex',
+                                                flexDirection: 'column',
+                                                gap: 0.5,
+                                                fontFamily: '"Varela Round", sans-serif',
+                                                borderRadius: 3,
+                                                p: 0,
+                                            },
+                                        },
+                                    }
+                                }}
+                            >
+                                {courseTypeOptions.map((option) => (
+                                    <MenuItem key={option.value} value={option.value} sx={{ fontFamily: '"Varela Round", sans-serif', borderRadius: '9px' }}>
+                                        {option.label}
+                                    </MenuItem>
+                                ))}
+                            </TextField>
                         </Grid>
                         <Grid item xs={12} md={6}>
                             <TextField
@@ -660,6 +733,15 @@ const CourseMgmAcademic: React.FC<AcademicPageProps> = ({ user, onLogout }) => {
                         Hủy
                     </Button>
                     <Button variant="contained" color="primary" onClick={async () => {
+                        if (!validateForm()) {
+                            setSnackbar({ 
+                                open: true, 
+                                message: 'Vui lòng kiểm tra lại thông tin đã nhập', 
+                                severity: 'error' 
+                            });
+                            return;
+                        }
+                        
                         if (isEditing) {
                             await handleUpdate(currentSubject);
                         } else {
