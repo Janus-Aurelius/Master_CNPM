@@ -33,11 +33,12 @@ export interface Student {
 
 // Interfaces for dropdown data
 export interface Major {
-    maNganh?: string;    // Keep camelCase for backward compatibility
+    // Keep camelCase for backward compatibility
+    maNganh?: string;
     tenNganh?: string;
     maKhoa?: string;
     tenKhoa?: string;
-    // Actual fields from backend (lowercase)
+    // Actual fields from backend (lowercase) - required
     manganh: string;
     tennganh: string;
     makhoa: string;

@@ -33,6 +33,10 @@ import EditIcon from '@mui/icons-material/Edit';
 import AddIcon from '@mui/icons-material/Add';
 import SearchIcon from '@mui/icons-material/Search';
 import { programApi, ProgramSchedule } from "../api_clients/academic/programApi";
+import { studentApi, Major } from "../api_clients/academic/studentApi";
+import { semesterApi, Semester } from "../api_clients/academic/semesterApi";
+import { courseApi } from "../api_clients/academic/courseApi";
+import { Subject } from "../types/course";
 
 interface AcademicPageProps {
     user: User | null;
@@ -62,12 +66,16 @@ export default function ProgramMgmAcademic({ user, onLogout }: AcademicPageProps
         severity: 'error'
     });
     const [oldKeys, setOldKeys] = useState<{ maNganh: string, maMonHoc: string, maHocKy: string } | null>(null);
-    
-    // Search states
+      // Search states
     const [searchTerm, setSearchTerm] = useState("");
     const [selectedMajor, setSelectedMajor] = useState<string>("all");
     const [selectedDepartment, setSelectedDepartment] = useState<string>("all");
     const [selectedSemester, setSelectedSemester] = useState<string>("all");
+
+    // Dropdown data states
+    const [majors, setMajors] = useState<Major[]>([]);
+    const [semesters, setSemesters] = useState<Semester[]>([]);
+    const [courses, setCourses] = useState<Subject[]>([]);
 
     // Filter programs based on search criteria
     const filteredPrograms = programs.filter(program => {
@@ -110,8 +118,28 @@ export default function ProgramMgmAcademic({ user, onLogout }: AcademicPageProps
         } finally {
             setLoading(false);
         }
-    };    useEffect(() => {
+    };    // Fetch dropdown data
+    const fetchDropdownData = async () => {
+        try {
+            const [majorsResponse, semestersResponse, coursesResponse] = await Promise.all([
+                studentApi.getMajors(),
+                semesterApi.getSemesters(),
+                courseApi.getCourses()
+            ]);
+            
+            console.log('Majors API response:', majorsResponse); // Debug log
+            console.log('Courses API response:', coursesResponse); // Debug log
+            setMajors(majorsResponse);
+            setSemesters(semestersResponse);
+            setCourses(coursesResponse);
+        } catch (error) {
+            console.error('Error fetching dropdown data:', error);
+        }
+    };
+
+    useEffect(() => {
         fetchPrograms();
+        fetchDropdownData();
     }, []);
 
     // Debug log cho programs state
@@ -268,6 +296,12 @@ export default function ProgramMgmAcademic({ user, onLogout }: AcademicPageProps
     const handleCancelDelete = () => {
         setConfirmDelete({ open: false, id: null });
     };    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { name, value } = e.target;
+        setCurrentProgram({
+            ...currentProgram,
+            [name]: value
+        });
+    };    const handleSelectChange = (e: { target: { name: string; value: string } }) => {
         const { name, value } = e.target;
         setCurrentProgram({
             ...currentProgram,
@@ -650,56 +684,68 @@ export default function ProgramMgmAcademic({ user, onLogout }: AcademicPageProps
                     pb: 0,
                     background: 'transparent',
                 }}>
-                    <Grid container spacing={2} sx={{ mt: 0.5 }}>
-                        <Grid item xs={12} md={6}>
-                            <TextField
-                                name="maNganh"
-                                label="Mã ngành"
-                                fullWidth
-                                variant="outlined"
-                                value={currentProgram.maNganh}
-                                onChange={handleInputChange}
-                                sx={{
-                                    borderRadius: '12px',
-                                    background: '#f7faff',
-                                    '& .MuiOutlinedInput-root': { borderRadius: '12px' },
-                                    '& .MuiInputLabel-root': { fontWeight: 500 },
-                                    '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d8d8d8' },
-                                }}
-                            />                        </Grid>
-                        <Grid item xs={12} md={6}>
-                            <TextField
-                                name="maMonHoc"
-                                label="Mã môn học"
-                                fullWidth
-                                variant="outlined"
-                                value={currentProgram.maMonHoc}
-                                onChange={handleInputChange}
-                                sx={{
-                                    borderRadius: '12px',
-                                    background: '#f7faff',
-                                    '& .MuiOutlinedInput-root': { borderRadius: '12px' },
-                                    '& .MuiInputLabel-root': { fontWeight: 500 },
-                                    '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d8d8d8' },
-                                }}
-                            />
-                        </Grid>
-                        <Grid item xs={12} md={6}>
-                            <TextField
-                                name="maHocKy"
-                                label="Mã học kỳ"
-                                fullWidth
-                                variant="outlined"
-                                value={currentProgram.maHocKy}
-                                onChange={handleInputChange}
-                                sx={{
-                                    borderRadius: '12px',
-                                    background: '#f7faff',
-                                    '& .MuiOutlinedInput-root': { borderRadius: '12px' },
-                                    '& .MuiInputLabel-root': { fontWeight: 500 },
-                                    '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d8d8d8' },
-                                }}
-                            />
+                    <Grid container spacing={2} sx={{ mt: 0.5 }}>                        <Grid item xs={12} md={6}>
+                            <FormControl fullWidth variant="outlined" sx={{
+                                borderRadius: '12px',
+                                background: '#f7faff',
+                                '& .MuiOutlinedInput-root': { borderRadius: '12px' },
+                                '& .MuiInputLabel-root': { fontWeight: 500 },
+                                '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d8d8d8' },
+                            }}>
+                                <InputLabel>Mã ngành</InputLabel>                                <Select
+                                    name="maNganh"
+                                    value={currentProgram.maNganh}
+                                    onChange={handleSelectChange}
+                                    label="Mã ngành"
+                                >                                    {majors.map((major) => (
+                                        <MenuItem key={major.maNganh || major.manganh} value={major.maNganh || major.manganh}>
+                                            {(major.maNganh || major.manganh)} - {(major.tenNganh || major.tennganh)}
+                                        </MenuItem>
+                                    ))}
+                                </Select>
+                            </FormControl>
+                        </Grid>                        <Grid item xs={12} md={6}>
+                            <FormControl fullWidth variant="outlined" sx={{
+                                borderRadius: '12px',
+                                background: '#f7faff',
+                                '& .MuiOutlinedInput-root': { borderRadius: '12px' },
+                                '& .MuiInputLabel-root': { fontWeight: 500 },
+                                '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d8d8d8' },
+                            }}>
+                                <InputLabel>Mã môn học</InputLabel>
+                                <Select
+                                    name="maMonHoc"
+                                    value={currentProgram.maMonHoc}
+                                    onChange={handleSelectChange}
+                                    label="Mã môn học"
+                                >                                    {courses.map((course) => (
+                                        <MenuItem key={course.maMonHoc || course.mamonhoc} value={course.maMonHoc || course.mamonhoc}>
+                                            {(course.maMonHoc || course.mamonhoc)} - {(course.tenMonHoc || course.tenmonhoc)}
+                                        </MenuItem>
+                                    ))}
+                                </Select>
+                            </FormControl>
+                        </Grid>                        <Grid item xs={12} md={6}>
+                            <FormControl fullWidth variant="outlined" sx={{
+                                borderRadius: '12px',
+                                background: '#f7faff',
+                                '& .MuiOutlinedInput-root': { borderRadius: '12px' },
+                                '& .MuiInputLabel-root': { fontWeight: 500 },
+                                '& .MuiOutlinedInput-notchedOutline': { borderColor: '#d8d8d8' },
+                            }}>
+                                <InputLabel>Mã học kỳ</InputLabel>                                <Select
+                                    name="maHocKy"
+                                    value={currentProgram.maHocKy}
+                                    onChange={handleSelectChange}
+                                    label="Mã học kỳ"
+                                >
+                                    {semesters.map((semester) => (
+                                        <MenuItem key={semester.semesterId} value={semester.semesterId}>
+                                            {semester.semesterId} - {semester.semesterName || `Học kỳ ${semester.termNumber}`}
+                                        </MenuItem>
+                                    ))}
+                                </Select>
+                            </FormControl>
                         </Grid>
                         {isEditing && currentProgram.tenNganh && (
                             <Grid item xs={12} md={6}>
