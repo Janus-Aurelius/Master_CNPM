@@ -828,6 +828,7 @@ export default function PaymentStatusMgm({ user, onLogout }: FinancialPageProps)
                                                 size="small"
                                                 startIcon={<AddIcon />}
                                                 onClick={openAddPaymentFromDetail}
+                                                disabled={!selectedInvoice?.isConfirmed}
                                                 sx={{
                                                     backgroundColor: '#6ebab6',
                                                     '&:hover': { backgroundColor: '#5ba9a5' },
