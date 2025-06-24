@@ -68,10 +68,6 @@ function getPaymentMethodLabel(method: string) {
             return "Chuyển khoản";
         case "cash":
             return "Tiền mặt";
-        case "momo":
-            return "Momo";
-        case "vnpay":
-            return "VNPay";
         default:
             return method;
     }
