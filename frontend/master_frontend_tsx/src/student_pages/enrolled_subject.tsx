@@ -264,29 +264,31 @@ export const EnrolledSubject = ({ user, onLogout }: Omit<EnrolledSubjectProps, '
                                         '&:last-child td, &:last-child th': { borderBottom: 'none' }
                                     }}
                                 >                                    <TableCell sx={{ textAlign: 'center', fontFamily: '"Varela Round", sans-serif', width: '60px', minWidth: '60px', maxWidth: '60px' }}>
-                                        <Button
-                                            variant="contained"
-                                            color="error"
-                                            size="small"
-                                            onClick={() => handleUnenrollClick(subject)}
-                                            sx={{
-                                                textTransform: 'none',
-                                                borderRadius: '0.5625rem', 
-                                                backgroundColor: '#ef5350',
-                                                boxShadow: 'none',
-                                                width: '2.1875rem',
-                                                height: '2.1875rem',
-                                                minWidth: '2.1875rem', 
-                                                padding: '0',
-                                                transition: 'box-shadow 0.2s ease',
-                                                '&:hover': {
-                                                    backgroundColor: '#f73e3e',
-                                                    boxShadow: '0 0 0.5rem 0.125rem rgba(228, 61, 61, 0.8)',
-                                                },
-                                            }}
-                                        >
-                                            —
-                                        </Button>
+                                        {!isConfirmed && (
+                                            <Button
+                                                variant="contained"
+                                                color="error"
+                                                size="small"
+                                                onClick={() => handleUnenrollClick(subject)}
+                                                sx={{
+                                                    textTransform: 'none',
+                                                    borderRadius: '0.5625rem', 
+                                                    backgroundColor: '#ef5350',
+                                                    boxShadow: 'none',
+                                                    width: '2.1875rem',
+                                                    height: '2.1875rem',
+                                                    minWidth: '2.1875rem', 
+                                                    padding: '0',
+                                                    transition: 'box-shadow 0.2s ease',
+                                                    '&:hover': {
+                                                        backgroundColor: '#f73e3e',
+                                                        boxShadow: '0 0 0.5rem 0.125rem rgba(228, 61, 61, 0.8)',
+                                                    },
+                                                }}
+                                            >
+                                                —
+                                            </Button>
+                                        )}
                                     </TableCell>
                                     <TableCell sx={{ fontSize: '1rem', fontFamily: '"Varela Round", sans-serif', width: '120px', minWidth: '120px', maxWidth: '120px' }}>{subject.id}</TableCell>
                                     <TableCell sx={{ fontSize: '1rem', fontFamily: '"Varela Round", sans-serif', width: '240px', minWidth: '240px', maxWidth: '240px' }}>{subject.name}</TableCell>
