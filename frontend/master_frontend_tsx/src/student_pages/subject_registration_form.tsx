@@ -456,6 +456,7 @@ const CombinedSubjectsList = ({ subjects, onEnroll, enrolledSubjectIds, onSearch
                         {subjects.map((subject, index) => {
                             const isEnrolled = enrolledSubjectIds.has(subject.id);
                             const isRequired = subject.subjectType === 'required';
+                            const isFull = Number(subject.currentEnrollment) >= Number(subject.maxEnrollment);
                             
                             return (
                                 <TableRow
@@ -504,17 +505,17 @@ const CombinedSubjectsList = ({ subjects, onEnroll, enrolledSubjectIds, onSearch
                                             color="primary"
                                             size="large"
                                             onClick={() => onEnroll(subject)}
-                                            disabled={isEnrolled}
+                                            disabled={isEnrolled || isFull}
                                             sx={{
                                                 textTransform: 'none',
                                                 borderRadius: '0.5rem',
                                                 boxShadow: 'none',
-                                                backgroundColor: isEnrolled 
-                                                    ? '#cccccc' 
+                                                backgroundColor: isEnrolled || isFull
+                                                    ? '#cccccc'
                                                     : isRequired ? '#2e7d32' : '#1976d2',
                                                 '&:hover': {
-                                                    backgroundColor: isEnrolled 
-                                                        ? '#cccccc' 
+                                                    backgroundColor: isEnrolled || isFull
+                                                        ? '#cccccc'
                                                         : isRequired ? '#388e3c' : 'hsl(223, 100.00%, 70.20%)',
                                                 },
                                                 '&:disabled': {
@@ -523,7 +524,7 @@ const CombinedSubjectsList = ({ subjects, onEnroll, enrolledSubjectIds, onSearch
                                                 }
                                             }}
                                         >
-                                            {isEnrolled ? 'Đã đăng ký' : 'Đăng ký'}
+                                            {isEnrolled ? 'Đã đăng ký' : isFull ? 'Đã đầy' : 'Đăng ký'}
                                         </Button>
                                     </TableCell>
                                 </TableRow>

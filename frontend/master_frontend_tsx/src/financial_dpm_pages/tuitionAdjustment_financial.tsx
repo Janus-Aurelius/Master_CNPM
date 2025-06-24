@@ -343,7 +343,7 @@ export default function TuitionAdjustment({ user, onLogout }: FinancialPageProps
                         {courseTypes.length === 0 && !loading && (
                             <Box sx={{ p: 2, backgroundColor: '#f8f9fa', borderRadius: '8px', textAlign: 'center' }}>
                                 <Typography color="text.secondary" sx={{ fontFamily: 'Varela Round, sans-serif' }}>
-                                    Không tìm thấy loại môn học nào
+                                    Chưa xác định được kỳ
                                 </Typography>
                             </Box>
                         )}
