@@ -55,7 +55,7 @@ export default function ProgramMgmAcademic({ user, onLogout }: AcademicPageProps
         maHocKy: "",
         ghiChu: ""    });
     const [isEditing, setIsEditing] = useState(false);
-    const [confirmDelete, setConfirmDelete] = useState<{ open: boolean; id: number | null }>({ open: false, id: null });
+    const [confirmDelete, setConfirmDelete] = useState<{ open: boolean; maNganh?: string; maMonHoc?: string; maHocKy?: string }>({ open: false });
     const [snackbar, setSnackbar] = useState<{
         open: boolean;
         message: string;
@@ -100,7 +100,8 @@ export default function ProgramMgmAcademic({ user, onLogout }: AcademicPageProps
     const fetchPrograms = async () => {
         try {
             setLoading(true);
-            const response = await programApi.getPrograms();            const formattedPrograms = response.map((program: any) => ({
+            const response = await programApi.getPrograms();
+            const formattedPrograms = response.map((program: any) => ({
                 id: program.id || 0,
                 maNganh: program.maNganh || program.manganh || '',
                 maMonHoc: program.maMonHoc || program.mamonhoc || '',
@@ -111,7 +112,11 @@ export default function ProgramMgmAcademic({ user, onLogout }: AcademicPageProps
                 tenKhoa: program.tenKhoa || program.tenkhoa || '',
                 tenNganh: program.tenNganh || program.tennganh || ''
             }));
-            setPrograms(formattedPrograms);
+            // Lọc unique theo tổ hợp maNganh, maMonHoc, maHocKy
+            const uniquePrograms = Array.from(
+                new Map(formattedPrograms.map(p => [`${p.maNganh}-${p.maMonHoc}-${p.maHocKy}`, p])).values()
+            );
+            setPrograms(uniquePrograms);
             setError(null);
         } catch (err) {
             setError('Failed to fetch programs');
@@ -146,6 +151,11 @@ export default function ProgramMgmAcademic({ user, onLogout }: AcademicPageProps
     useEffect(() => {
         console.log('Current programs state:', programs);
     }, [programs]);
+
+    // Debug log cho filteredPrograms state
+    useEffect(() => {
+        console.log('filteredPrograms to render:', filteredPrograms.length, filteredPrograms);
+    }, [filteredPrograms]);
 
     const handleOpenDialog = (edit: boolean = false, program?: ProgramSchedule) => {
         setIsEditing(edit);
@@ -235,14 +245,19 @@ export default function ProgramMgmAcademic({ user, onLogout }: AcademicPageProps
         }
     };
 
-    const handleDeleteProgram = (id: number) => {
-        setConfirmDelete({ open: true, id });
+    const handleDeleteProgram = (maNganh: string, maMonHoc: string, maHocKy: string) => {
+        setConfirmDelete({ open: true, maNganh, maMonHoc, maHocKy });
     };
 
     const handleConfirmDelete = async () => {
-        if (confirmDelete.id !== null) {
+        if (confirmDelete.maNganh && confirmDelete.maMonHoc && confirmDelete.maHocKy) {
+            const programToDelete = programs.find(
+                p => p.maNganh === confirmDelete.maNganh &&
+                     p.maMonHoc === confirmDelete.maMonHoc &&
+                     p.maHocKy === confirmDelete.maHocKy
+            );
+            console.log('[FRONTEND DELETE] Bắt đầu xóa:', programToDelete, 'Thời điểm:', new Date().toISOString());
             try {
-                const programToDelete = programs.find(p => p.id === confirmDelete.id);
                 if (!programToDelete) {
                     setSnackbar({
                         open: true,
@@ -266,35 +281,27 @@ export default function ProgramMgmAcademic({ user, onLogout }: AcademicPageProps
                     programToDelete.maMonHoc,
                     programToDelete.maHocKy
                 );
-                
-                setPrograms(programs.filter(
-                    p =>
-                        !(
-                            p.maNganh === programToDelete.maNganh &&
-                            p.maMonHoc === programToDelete.maMonHoc &&
-                            p.maHocKy === programToDelete.maHocKy
-                        )
-                ));
+                await fetchPrograms();
                 setSnackbar({
                     open: true,
                     message: 'Xóa chương trình học thành công',
                     severity: 'success'
                 });
             } catch (err: any) {
+                console.error('[DELETE PROGRAM] Error:', err);
                 const errorMessage = err.response?.data?.message || 'Có lỗi xảy ra khi xóa chương trình học';
                 setSnackbar({
                     open: true,
                     message: errorMessage,
                     severity: 'error'
                 });
-                console.error(err);
             }
         }
-        setConfirmDelete({ open: false, id: null });
+        setConfirmDelete({ open: false });
     };
 
     const handleCancelDelete = () => {
-        setConfirmDelete({ open: false, id: null });
+        setConfirmDelete({ open: false });
     };    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
         setCurrentProgram({
@@ -602,7 +609,7 @@ export default function ProgramMgmAcademic({ user, onLogout }: AcademicPageProps
                                     </TableHead>                                    <TableBody>
                                         {filteredPrograms.map((program, index) => (
                                             <TableRow 
-                                                key={program.id || `program-${index}`}
+                                                key={`${program.maNganh}-${program.maMonHoc}-${program.maHocKy}`}
                                                 sx={{
                                                     '&:hover': {
                                                         backgroundColor: '#f5f5f5',
@@ -642,7 +649,7 @@ export default function ProgramMgmAcademic({ user, onLogout }: AcademicPageProps
                                                     <IconButton 
                                                         size="small" 
                                                         color="error"
-                                                        onClick={() => handleDeleteProgram(program.id)}
+                                                        onClick={() => handleDeleteProgram(program.maNganh, program.maMonHoc, program.maHocKy)}
                                                     >
                                                         <DeleteIcon fontSize="small" />
                                                     </IconButton>

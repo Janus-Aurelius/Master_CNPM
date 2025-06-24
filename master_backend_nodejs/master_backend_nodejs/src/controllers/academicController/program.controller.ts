@@ -137,13 +137,18 @@ export class ProgramController {
     static async deleteProgram(req: Request, res: Response): Promise<void> {
         try {
             const { maNganh, maMonHoc, maHocKy } = req.params;
+            console.log('[DELETE PROGRAM] Params:', { maNganh, maMonHoc, maHocKy });
             await ProgramBusiness.deleteProgram(maNganh, maMonHoc, maHocKy);
+            console.log('[DELETE PROGRAM] Success:', { maNganh, maMonHoc, maHocKy });
             res.json({ 
                 success: true, 
                 message: 'Program deleted successfully' 
             });
-        } catch (error) {
-            console.error('Error in deleteProgram:', error);
+        } catch (error: any) {
+            console.error('[DELETE PROGRAM] Error:', error);
+            if (error.code) console.error('[DELETE PROGRAM] Error code:', error.code);
+            if (error.detail) console.error('[DELETE PROGRAM] Error detail:', error.detail);
+            if (error.constraint) console.error('[DELETE PROGRAM] Error constraint:', error.constraint);
             if (error instanceof DatabaseError) {
                 res.status(404).json({ 
                     success: false, 

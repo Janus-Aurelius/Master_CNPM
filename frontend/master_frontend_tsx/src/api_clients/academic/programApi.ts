@@ -47,12 +47,13 @@ export const programApi = {
             // Re-throw axios errors as-is to preserve response structure
             throw error;
         }
-    },    deleteProgram: async (maNganh: string, maMonHoc: string, maHocKy: string): Promise<void> => {
+    },    deleteProgram: async (maNganh: string, maMonHoc: string, maHocKy: string): Promise<any> => {
         try {
             const { data } = await axiosInstance.delete<ApiResponse<void>>(`/academic/programsMgm/${maNganh}/${maMonHoc}/${maHocKy}`);
             if (!data || !data.success) {
                 throw new Error(data?.message || 'Failed to delete program');
             }
+            return data;
         } catch (error) {
             // Re-throw axios errors as-is to preserve response structure
             throw error;
