@@ -25,7 +25,6 @@ import {
 } from "@mui/material";
 import PaymentIcon from "@mui/icons-material/Payment";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
-import ExpandLessIcon from "@mui/icons-material/ExpandLess";
 import { tuitionApi, TuitionRecord, PaymentHistoryItem, formatCurrency, getStatusText, getStatusChipColor } from "../api_clients/student/tuitionApi";
 import { enrollmentApi, parseSemesterInfo } from "../api_clients/student/enrollmentApi";
 
@@ -265,36 +264,7 @@ const TuitionCollecting = ({ user, onLogout }: StudentPageProps) => {
                         </Alert>
                     )}
 
-                    {/* Thông báo khi đã xác nhận đăng ký */}
-                    {!loading && !error && tuitionDataState.length > 0 && 
-                     tuitionDataState.some(tuition => confirmationStatusMap[tuition.id]) && (
-                        <Alert 
-                            severity="success" 
-                            sx={{ 
-                                mb: 1,
-                                py: 0.5,
-                                px: 1.5,
-                                backgroundColor: '#eafaf1',
-                                border: '1px solid #c3e6cb',
-                                color: '#155724',
-                                fontSize: '0.95rem',
-                                alignItems: 'center',
-                                minHeight: 'unset',
-                                borderRadius: '8px',
-                                boxShadow: 'none',
-                                width: 'fit-content',
-                                maxWidth: '100%',
-                            }}
-                        >
-                            <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.98rem', display: 'flex', alignItems: 'center', mb: 0 }}>
-                                Bạn đã xác nhận danh sách môn học
-                            </Typography>
-                            <Typography variant="caption" sx={{ mt: 0.5, fontSize: '0.85rem', display: 'block' }}>
-                                Bây giờ bạn có thể thanh toán học phí cho các kỳ đã xác nhận.
-                            </Typography>
-                        </Alert>
-                    )}
-
+                    
                     {loading && (
                         <Box display="flex" justifyContent="center" m={3}>
                             <CircularProgress />
@@ -327,78 +297,161 @@ const TuitionCollecting = ({ user, onLogout }: StudentPageProps) => {
                                 isExpanded: expandedId === tuition.id
                             });
                             
-                            return (
-                                <Box key={tuition.id} mb={2}>
+                            return (                                <Box key={tuition.id} mb={2}>
                                     <Paper
-                                        elevation={1}
-                                        sx={{
-                                            p: 2,
-                                            borderLeft: "5px solid",
-                                            borderColor: getStatusChipColor(tuition.status).text,
+                                        elevation={1}                                        sx={{
+                                            p: 1.5,
+                                            borderLeft: "10px solid",
+                                            borderColor: tuition.status === 'not_opened' ? "#bdbdbd" : // Chưa mở - xám nhạt
+                                                        tuition.remainingAmount === 0 ? "#2e7d32" : // Đã thanh toán đủ - xanh lá đậm
+                                                        tuition.remainingAmount > 0 ? "#d32f2f" : // Còn nợ - đỏ đậm
+                                                        "#f57c00", // Đã đóng dư - cam đậm
                                             cursor: tuition.status !== 'not_opened' ? "pointer" : "default",
-                                            boxShadow: '0 2px 5px rgba(0, 0, 0, 0.1)', 
-                                            borderRadius: '8px',
-                                            backgroundColor: tuition.status === 'not_opened' ? "#f8f9fa" : "#f7fcfe",
-                                            transition: "all 0.2s",
-                                            opacity: tuition.status === 'not_opened' ? 0.7 : 1,
+                                            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)', 
+                                            borderRadius: '12px',
+                                            backgroundColor: tuition.status === 'not_opened' ? "#fafafa" : 
+                                                           tuition.remainingAmount === 0 ? "#f1f8e9" : // Đã thanh toán - nền xanh nhạt
+                                                           tuition.remainingAmount > 0 ? "#ffebee" : // Còn nợ - nền đỏ nhạt
+                                                           "#fff3e0", // Đã đóng dư - nền cam nhạt
+                                            transition: "all 0.3s ease",
+                                            opacity: tuition.status === 'not_opened' ? 0.8 : 1,
+                                            border: tuition.status === 'not_opened' ? '1px solid rgba(0, 0, 0, 0.12)' : 
+                                                   tuition.remainingAmount === 0 ? '1px solid rgba(46, 125, 50, 0.2)' :
+                                                   tuition.remainingAmount > 0 ? '1px solid rgba(211, 47, 47, 0.2)' :
+                                                   '1px solid rgba(245, 124, 0, 0.2)',
                                             "&:hover": tuition.status !== 'not_opened' ? {
-                                                bgcolor: "rgba(0, 0, 0, 0.02)",
-                                                boxShadow: `0 6px 15px ${getStatusChipColor(tuition.status).text}50`,
+                                                transform: "translateY(-2px)",
+                                                boxShadow: tuition.remainingAmount === 0 ? "0 8px 25px rgba(46, 125, 50, 0.25)" :
+                                                          tuition.remainingAmount > 0 ? "0 8px 25px rgba(211, 47, 47, 0.25)" :
+                                                          "0 8px 25px rgba(245, 124, 0, 0.25)",
+                                                
                                             } : {},
                                         }}
                                         onClick={() => tuition.status !== 'not_opened' && handleExpand(tuition.id)}
                                     >
-                                        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                                            <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-                                                <Typography variant="h6" sx={{ 
-                                                    fontWeight: "bold",
-                                                    color: tuition.status === 'not_opened' ? '#999' : 'inherit'
-                                                }}>
-                                                    {tuition.semesterName} - {tuition.year}
-                                                </Typography>
-                                                <Chip
-                                                    label={getStatusText(tuition.status)}
-                                                    sx={{
-                                                        bgcolor: getStatusChipColor(tuition.status).bg,
-                                                        color: getStatusChipColor(tuition.status).text,
-                                                        fontWeight: "bold",
-                                                        display: "flex",
-                                                        height: "32px",
-                                                    }}
-                                                />
-                                            </Box>
-                                            <Box sx={{ textAlign: "right" }}>
-                                                {tuition.status !== 'not_opened' && (
-                                                    <>
-                                                        <Typography variant="body2" color="text.secondary">
-                                                            Tổng học phí gốc: {formatCurrency(tuition.originalAmount)}
-                                                        </Typography>
-                                                        {tuition.discountInfo && (
-                                                            <Typography variant="body2" color="success.main">
-                                                                Ưu tiên {tuition.discountInfo.code ? `(${tuition.discountInfo.code})` : ''} - {tuition.discountInfo.type}: -{Math.round(tuition.discountInfo.percentage * 100)}%
-                                                            </Typography>
-                                                        )}
-                                                        <Typography variant="body2" color="text.secondary">
-                                                            Phải đóng: {formatCurrency(tuition.totalAmount)}
-                                                        </Typography>
-                                                        <Typography variant="body2" color={tuition.remainingAmount > 0 ? "error" : tuition.remainingAmount < 0 ? "#1976d2" : "success"}>
-                                                            Còn lại: {tuition.remainingAmount < 0 ? `Bạn đã đóng dư: ${formatCurrency(Math.abs(tuition.remainingAmount))}, vui lòng liên hệ phòng tài chính để lấy lại tiền.` : formatCurrency(tuition.remainingAmount)}
-                                                        </Typography>
-                                                        {tuition.remainingAmount < 0 && (
-                                                            <Typography variant="body2" color="primary" sx={{ fontWeight: 'bold', mt: 1 }}>
-                                                                Bạn đã đóng dư tiền, vui lòng liên hệ phòng tài chính để lấy lại tiền.
-                                                            </Typography>
-                                                        )}
-                                                    </>
-                                                )}
-                                                {tuition.status === 'not_opened' && (
-                                                    <Typography variant="body2" color="text.secondary">
-                                                        Kỳ học chưa được mở
+                                        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", minHeight: "52px" }}>
+                                            {/* Left side: Semester info and status */}
+                                            <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, flex: 1 }}>
+                                                <Box>
+                                                    <Typography variant="h6" sx={{ 
+                                                        fontWeight: 600,
+                                                        fontSize: "1.1rem",
+                                                        color: tuition.status === 'not_opened' ? '#999' : '#2c3e50',
+                                                        lineHeight: 1.2,
+                                                        mb: 0.2
+                                                    }}>
+                                                        {tuition.semesterName} - {tuition.year}
                                                     </Typography>
+                                                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                                                        <Chip
+                                                            label={getStatusText(tuition.status)}
+                                                            size="small"
+                                                            sx={{
+                                                                bgcolor: getStatusChipColor(tuition.status).bg,
+                                                                color: getStatusChipColor(tuition.status).text,
+                                                                fontWeight: 600,
+                                                                fontSize: "0.75rem",
+                                                                height: "24px",
+                                                                borderRadius: "6px",
+                                                            }}
+                                                        />
+                                                        {tuition.discountInfo && (
+                                                            <Chip
+                                                                label={`Ưu tiên -${Math.round(tuition.discountInfo.percentage * 100)}%`}
+                                                                size="small"
+                                                                sx={{
+                                                                    bgcolor: "#e8f5e8",
+                                                                    color: "#2e7d32",
+                                                                    fontWeight: 500,
+                                                                    fontSize: "0.7rem",
+                                                                    height: "22px",
+                                                                    borderRadius: "6px",
+                                                                }}
+                                                            />
+                                                        )}
+                                                    </Box>
+                                                </Box>
+                                            </Box>                                            {/* Right side: Payment info */}
+                                            <Box sx={{ 
+                                                display: "flex", 
+                                                alignItems: "center", 
+                                                gap: 2,
+                                                textAlign: "right",
+                                                minWidth: "280px" // Đảm bảo chiều rộng cố định
+                                            }}>
+                                                {tuition.status !== 'not_opened' ? (
+                                                    <Box sx={{ 
+                                                        display: "flex", 
+                                                        alignItems: "center",                                                        gap: 2,
+                                                        width: "240px", // Chiều rộng cố định cho phần thông tin
+                                                        position: "relative" // Để định vị cho text "đã đóng dư"
+                                                    }}>
+                                                        <Box sx={{ 
+                                                            textAlign: "right",
+                                                            minWidth: "100px" // Chiều rộng cố định cho cột "Phải đóng"
+                                                        }}>
+                                                            <Typography variant="caption" color="text.secondary" sx={{ fontSize: "0.7rem", display: "block" }}>
+                                                                Phải đóng
+                                                            </Typography>
+                                                            <Typography variant="body2" sx={{ fontWeight: 600, fontSize: "0.9rem", color: "#1976d2" }}>
+                                                                {formatCurrency(tuition.totalAmount)}
+                                                            </Typography>
+                                                        </Box>
+                                                        <Box sx={{ width: "1px", height: "28px", bgcolor: "#e0e0e0" }} />
+                                                        <Box sx={{ 
+                                                            textAlign: "right",
+                                                            minWidth: "100px" // Chiều rộng cố định cho cột "Còn lại"
+                                                        }}>
+                                                            <Typography variant="caption" color="text.secondary" sx={{ fontSize: "0.7rem", display: "block" }}>
+                                                                Còn lại
+                                                            </Typography>
+                                                            <Typography 
+                                                                variant="body2" 
+                                                                sx={{ 
+                                                                    fontWeight: 600, 
+                                                                    fontSize: "0.9rem",
+                                                                    color: tuition.remainingAmount > 0 ? "#d32f2f" : 
+                                                                           tuition.remainingAmount < 0 ? "#1976d2" : "#2e7d32"
+                                                                }}
+                                                            >
+                                                                {tuition.remainingAmount < 0 ? 
+                                                                    `+${formatCurrency(Math.abs(tuition.remainingAmount))}` : 
+                                                                    formatCurrency(tuition.remainingAmount)
+                                                                }
+                                                            </Typography>
+                                                            {tuition.remainingAmount < 0 && (
+                                                                <Typography variant="caption" color="primary" sx={{ 
+                                                                    fontSize: "0.65rem", 
+                                                                    fontWeight: 500,
+                                                                    display: "block",
+                                                                    mt: 0.2
+                                                                }}>
+                                                                    Đã đóng dư
+                                                                </Typography>
+                                                            )}
+                                                        </Box>
+                                                    </Box>
+                                                ) : (
+                                                    <Box sx={{ 
+                                                        width: "240px",
+                                                        display: "flex",
+                                                        justifyContent: "center"
+                                                    }}>
+                                                        <Typography variant="body2" color="text.secondary" sx={{ fontSize: "0.85rem" }}>
+                                                            Kỳ học chưa mở
+                                                        </Typography>
+                                                    </Box>
                                                 )}
+                                                
                                                 {tuition.status !== 'not_opened' && (
-                                                    <Box sx={{ mt: 1 }}>
-                                                        {expandedId === tuition.id ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                                                    <Box sx={{ 
+                                                        display: "flex", 
+                                                        alignItems: "center",
+                                                        color: "text.secondary",
+                                                        transition: "transform 0.2s ease",
+                                                        transform: expandedId === tuition.id ? "rotate(180deg)" : "rotate(0deg)"
+                                                    }}>
+                                                        <ExpandMoreIcon fontSize="small" />
                                                     </Box>
                                                 )}
                                             </Box>
@@ -479,31 +532,36 @@ const TuitionCollecting = ({ user, onLogout }: StudentPageProps) => {
                                                         Hạn nộp: {new Date(tuition.dueDate).toLocaleDateString('vi-VN')}
                                                     </Typography>
                                                 )}
-                                            </Box>
+                                            </Box>                                            {/* Thông báo khi chưa xác nhận đăng ký cho kỳ này */}
+                                            {confirmationStatusMap[tuition.id] === false && (
+                                                <Alert 
+                                                    severity="warning" 
+                                                    sx={{ 
+                                                        mt: 2,
+                                                        mb: 2,
+                                                        borderRadius: '8px',
+                                                        backgroundColor: '#fffbe6',
+                                                        border: '1px solid #ffeaa7',
+                                                        color: '#856404',
+                                                        boxShadow: 'none',
+                                                        '& .MuiAlert-icon': {
+                                                            color: '#f57c00'
+                                                        }
+                                                    }}
+                                                >
+                                                    <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
+                                                        Bạn chưa xác nhận danh sách môn học cho kỳ này!
+                                                    </Typography>
+                                                    <Typography variant="caption" sx={{ fontSize: '0.85rem', display: 'block' }}>
+                                                        Vui lòng vào trang "Danh sách môn học đã đăng ký" để xác nhận trước khi thanh toán học phí.
+                                                    </Typography>
+                                                </Alert>
+                                            )}
 
                                             <Box mt={2} display="flex" gap={2}>
                                                 <Button variant="outlined" onClick={() => handleOpenHistoryDialog(tuition.id)}>
                                                     Xem lịch sử thanh toán
                                                 </Button>
-                                                {/* Thông báo khi chưa xác nhận đăng ký cho kỳ này */}
-                                                {confirmationStatusMap[tuition.id] === false && (
-                                                    <Alert 
-                                                        severity="warning" 
-                                                        sx={{ 
-                                                            mb: 2,
-                                                            backgroundColor: '#fff3cd',
-                                                            border: '1px solid #ffeaa7',
-                                                            color: '#856404'
-                                                        }}
-                                                    >
-                                                        <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
-                                                            ⚠️ Bạn chưa xác nhận danh sách môn học cho kỳ này!
-                                                        </Typography>
-                                                        <Typography variant="body2" sx={{ mt: 1 }}>
-                                                            Vui lòng vào trang "Danh sách môn học đã đăng ký" để xác nhận trước khi thanh toán học phí.
-                                                        </Typography>
-                                                    </Alert>
-                                                )}
 
                                                 {tuition.status !== "paid" && (
                                                     <Button 
