@@ -74,7 +74,12 @@ export const financialApi = {
     }> {
         const response = await axios.get('/financial/config/summary');
         return (response.data as any).data;
-    }
+    },
+
+    async getCurrentSemester(): Promise<any> {
+        const response = await axios.get('/financial/config/current-semester');
+        return response.data;
+    },
 };
 
 // Helper function to convert API data to component format

@@ -88,20 +88,32 @@ export const tuitionService = {    /**
      */
     async getRegisteredCoursesWithFees(registrationId: string): Promise<ICourseDetail[]> {
         try {
+            // First get the semester ID for this registration
+            const registration = await DatabaseService.queryOne(`
+                SELECT MaHocKy as "semesterId"
+                FROM PHIEUDANGKY 
+                WHERE MaPhieuDangKy = $1
+            `, [registrationId]);
+
+            if (!registration) {
+                throw new Error('Registration not found');
+            }
+
             const courses = await DatabaseService.query(`
                 SELECT 
                     mh.MaMonHoc as "courseId",
                     mh.TenMonHoc as "courseName",
                     mh.SoTiet as "totalPeriods",
-                    lm.SoTienMotTC as "pricePerCredit",
+                    COALESCE(ht.SoTienMotTC, 0) as "pricePerCredit",
                     lm.SoTietMotTC as "periodsPerCredit",
                     lm.TenLoaiMon as "courseType"
                 FROM CT_PHIEUDANGKY ct
                 JOIN MONHOC mh ON ct.MaMonHoc = mh.MaMonHoc
                 JOIN LOAIMON lm ON mh.MaLoaiMon = lm.MaLoaiMon
+                LEFT JOIN HOCPHI_THEOHK ht ON lm.MaLoaiMon = ht.MaLoaiMon AND ht.MaHocKy = $2
                 WHERE ct.MaPhieuDangKy = $1
                 ORDER BY mh.TenMonHoc
-            `, [registrationId]);
+            `, [registrationId, registration.semesterId]);
 
             return courses.map(course => {
                 // Calculate actual credits: SoTiet / SoTietMotTC

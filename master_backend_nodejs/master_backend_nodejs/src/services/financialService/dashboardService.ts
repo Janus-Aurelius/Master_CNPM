@@ -37,11 +37,9 @@ export class FinancialDashboardService {
             let targetSemester = semesterId;
             if (!targetSemester) {
                 const currentSemester = await DatabaseService.queryOne(`
-                    SELECT MaHocKy FROM HOCKYNAMHOC 
-                    WHERE TrangThaiHocKy = 'active' 
-                    LIMIT 1
+                    SELECT current_semester FROM ACADEMIC_SETTINGS WHERE id = 1
                 `);
-                targetSemester = currentSemester?.mahocky;
+                targetSemester = currentSemester?.current_semester;
             }
 
             if (!targetSemester) {
@@ -56,11 +54,12 @@ export class FinancialDashboardService {
                         -- SoTienPhaiDong calculation
                         COALESCE(
                             (SELECT SUM(
-                                (mh.SoTiet::decimal / lm.SoTietMotTC) * lm.SoTienMotTC * (1 - COALESCE(dt.MucGiamHocPhi, 0))
+                                (mh.SoTiet::decimal / lm.SoTietMotTC) * COALESCE(ht.SoTienMotTC, 0) * (1 - COALESCE(dt.MucGiamHocPhi, 0))
                             )
                             FROM CT_PHIEUDANGKY ct
                             JOIN MONHOC mh ON ct.MaMonHoc = mh.MaMonHoc
                             JOIN LOAIMON lm ON mh.MaLoaiMon = lm.MaLoaiMon
+                            LEFT JOIN HOCPHI_THEOHK ht ON lm.MaLoaiMon = ht.MaLoaiMon AND ht.MaHocKy = ct.MaHocKy
                             JOIN SINHVIEN sv2 ON pd.MaSoSinhVien = sv2.MaSoSinhVien
                             JOIN DOITUONGUUTIEN dt ON sv2.MaDoiTuongUT = dt.MaDoiTuong
                             WHERE ct.MaPhieuDangKy = pd.MaPhieuDangKy), 0
@@ -106,11 +105,12 @@ export class FinancialDashboardService {
                         pd.MaSoSinhVien,
                         COALESCE(
                             (SELECT SUM(
-                                (mh.SoTiet::decimal / lm.SoTietMotTC) * lm.SoTienMotTC * (1 - COALESCE(dt.MucGiamHocPhi, 0))
+                                (mh.SoTiet::decimal / lm.SoTietMotTC) * COALESCE(ht.SoTienMotTC, 0) * (1 - COALESCE(dt.MucGiamHocPhi, 0))
                             )
                             FROM CT_PHIEUDANGKY ct
                             JOIN MONHOC mh ON ct.MaMonHoc = mh.MaMonHoc
                             JOIN LOAIMON lm ON mh.MaLoaiMon = lm.MaLoaiMon
+                            LEFT JOIN HOCPHI_THEOHK ht ON lm.MaLoaiMon = ht.MaLoaiMon AND ht.MaHocKy = ct.MaHocKy
                             JOIN SINHVIEN sv2 ON pd.MaSoSinhVien = sv2.MaSoSinhVien
                             JOIN DOITUONGUUTIEN dt ON sv2.MaDoiTuongUT = dt.MaDoiTuong
                             WHERE ct.MaPhieuDangKy = pd.MaPhieuDangKy), 0
@@ -143,7 +143,9 @@ export class FinancialDashboardService {
         } catch (error) {
             throw new Error('Database error in getDashboardStatsEnhanced');
         }
-    }    async getSemesterComparisonData() {
+    }
+
+    async getSemesterComparisonData() {
         try {
             // Using real schema for semester comparison with dynamic calculation
             const query = `
@@ -186,12 +188,12 @@ export class FinancialDashboardService {
         let targetSemester = semesterId;
         if (!targetSemester) {
             const currentSemester = await DatabaseService.queryOne(`
-                SELECT MaHocKy FROM HOCKYNAMHOC 
-                WHERE TrangThaiHocKy = 'active' 
-                LIMIT 1
+                SELECT current_semester FROM ACADEMIC_SETTINGS WHERE id = 1
             `);
-            targetSemester = currentSemester?.MaHocKy;
-        }        return await DatabaseService.query(`
+            targetSemester = currentSemester?.current_semester;
+        }
+        
+        return await DatabaseService.query(`
             WITH OverdueCalculations AS (
                 SELECT 
                     pd.MaPhieuDangKy,
@@ -204,11 +206,12 @@ export class FinancialDashboardService {
                     -- Dynamic SoTienPhaiDong calculation
                     COALESCE(
                         (SELECT SUM(
-                            (mh.SoTiet::decimal / lm.SoTietMotTC) * lm.SoTienMotTC * (1 - COALESCE(dt.MucGiamHocPhi, 0))
+                            (mh.SoTiet::decimal / lm.SoTietMotTC) * COALESCE(ht.SoTienMotTC, 0) * (1 - COALESCE(dt.MucGiamHocPhi, 0))
                         )
                         FROM CT_PHIEUDANGKY ct
                         JOIN MONHOC mh ON ct.MaMonHoc = mh.MaMonHoc
                         JOIN LOAIMON lm ON mh.MaLoaiMon = lm.MaLoaiMon
+                        LEFT JOIN HOCPHI_THEOHK ht ON lm.MaLoaiMon = ht.MaLoaiMon AND ht.MaHocKy = ct.MaHocKy
                         JOIN SINHVIEN sv2 ON pd.MaSoSinhVien = sv2.MaSoSinhVien
                         JOIN DOITUONGUUTIEN dt ON sv2.MaDoiTuongUT = dt.MaDoiTuong
                         WHERE ct.MaPhieuDangKy = pd.MaPhieuDangKy), 0
@@ -231,6 +234,7 @@ export class FinancialDashboardService {
                    (SoTienPhaiDong - SoTienDaDong) AS SoTienConLai
             FROM OverdueCalculations 
             WHERE (SoTienPhaiDong - SoTienDaDong) > 0
+            ORDER BY SoTienConLai DESC
         `, [targetSemester]);
     }
 
@@ -258,12 +262,14 @@ export class FinancialDashboardService {
                 WITH PaymentCalculations AS (
                     SELECT 
                         pd.masosinhvien,
+                        pd.mahocky,
                         -- Tổng phải đóng động
                         COALESCE((
-                            SELECT SUM((mh.sotiet::decimal / lm.sotietmottc) * lm.sotienmottc * (1 - COALESCE(dt.mucgiamhocphi, 0)))
+                            SELECT SUM((mh.sotiet::decimal / lm.sotietmottc) * COALESCE(ht.sotienmottc, 0) * (1 - COALESCE(dt.mucgiamhocphi, 0)))
                             FROM ct_phieudangky ct
                             JOIN monhoc mh ON ct.mamonhoc = mh.mamonhoc
                             JOIN loaimon lm ON mh.maloaimon = lm.maloaimon
+                            LEFT JOIN hocphi_theohk ht ON lm.maloaimon = ht.maloaimon AND ht.mahocky = ct.mahocky
                             JOIN sinhvien sv2 ON pd.masosinhvien = sv2.masosinhvien
                             JOIN doituonguutien dt ON sv2.madoituongut = dt.madoituong
                             WHERE ct.maphieudangky = pd.maphieudangky
@@ -333,10 +339,11 @@ export class FinancialDashboardService {
                     k.tenkhoa AS facultyname,
                     pd.masosinhvien,
                     COALESCE((
-                        SELECT SUM((mh.sotiet::decimal / lm.sotietmottc) * lm.sotienmottc * (1 - COALESCE(dt.mucgiamhocphi, 0)))
+                        SELECT SUM((mh.sotiet::decimal / lm.sotietmottc) * COALESCE(ht.sotienmottc, 0) * (1 - COALESCE(dt.mucgiamhocphi, 0)))
                         FROM ct_phieudangky ct
                         JOIN monhoc mh ON ct.mamonhoc = mh.mamonhoc
                         JOIN loaimon lm ON mh.maloaimon = lm.maloaimon
+                        LEFT JOIN hocphi_theohk ht ON lm.maloaimon = ht.maloaimon AND ht.mahocky = ct.mahocky
                         JOIN sinhvien sv2 ON pd.masosinhvien = sv2.masosinhvien
                         JOIN doituonguutien dt ON sv2.madoituongut = dt.madoituong
                         WHERE ct.maphieudangky = pd.maphieudangky
@@ -387,10 +394,11 @@ export class FinancialDashboardService {
                     k.tenkhoa AS facultyname,
                     pd.masosinhvien,
                     COALESCE((
-                        SELECT SUM((mh.sotiet::decimal / lm.sotietmottc) * lm.sotienmottc * (1 - COALESCE(dt.mucgiamhocphi, 0)))
+                        SELECT SUM((mh.sotiet::decimal / lm.sotietmottc) * COALESCE(ht.sotienmottc, 0) * (1 - COALESCE(dt.mucgiamhocphi, 0)))
                         FROM ct_phieudangky ct
                         JOIN monhoc mh ON ct.mamonhoc = mh.mamonhoc
                         JOIN loaimon lm ON mh.maloaimon = lm.maloaimon
+                        LEFT JOIN hocphi_theohk ht ON lm.maloaimon = ht.maloaimon AND ht.mahocky = ct.mahocky
                         JOIN sinhvien sv2 ON pd.masosinhvien = sv2.masosinhvien
                         JOIN doituonguutien dt ON sv2.madoituongut = dt.madoituong
                         WHERE ct.maphieudangky = pd.maphieudangky

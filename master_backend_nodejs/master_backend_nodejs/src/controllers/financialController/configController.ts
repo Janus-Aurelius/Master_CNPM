@@ -372,6 +372,13 @@ export class FinancialConfigController {
             });
         }
     }
+    async getCurrentSemester(req: Request, res: Response) {
+        const result = await this.configBusiness.getCurrentSemester();
+        if (result.success) {
+            res.json(result.data);
+        } else {
+            res.status(404).json({ message: result.message });
+        }
+    }
 }
-
 export const financialConfigController = new FinancialConfigController();

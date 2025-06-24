@@ -376,4 +376,29 @@ export class FinancialConfigBusiness {
             };
         }
     }
+    async getCurrentSemester() {
+        try {
+            const semester = await this.configService.getCurrentSemesterInfo();
+            if (!semester) {
+                return {
+                    success: false,
+                    message: "Không tìm thấy học kỳ hiện tại"
+                };
+            }
+            // Format lại tên học kỳ nếu muốn
+            return {
+                success: true,
+                data: {
+                    ...semester,
+                    semesterName: `HK${semester.HocKyThu} ${semester.NamHoc}`
+                }
+            };
+        } catch (error: any) {
+            return {
+                success: false,
+                message: `Failed to get current semester: ${error?.message || 'Unknown error'}`
+            };
+        }
+    }
+    
 }

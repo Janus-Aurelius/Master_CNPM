@@ -78,4 +78,9 @@ router.get('/summary', async (req: Request, res: Response) => {
     await financialConfigController.getConfigSummary(req, res);
 });
 
+// Get current semester
+router.get('/current-semester', async (req: Request, res: Response) => {
+    await financialConfigController.getCurrentSemester(req, res);
+});
+
 export default router;

@@ -163,20 +163,32 @@ export class FinancialConfigService {
     }
 
     /**
-     * Get all course types with their pricing
+     * Get all course types with their pricing for current semester
      */
     async getCourseTypes(): Promise<ICourseTypeManagement[]> {
+        // Get current semester first
+        const currentSemester = await DatabaseService.queryOne(`
+            SELECT current_semester FROM ACADEMIC_SETTINGS WHERE id = 1
+        `);
+        
+        const semesterId = currentSemester?.current_semester;
+        
+        if (!semesterId) {
+            throw new Error('Current semester not configured');
+        }
+
         const query = `
             SELECT 
-                MaLoaiMon as course_type_id,
-                TenLoaiMon as course_type_name,
-                SoTietMotTC as hours_per_credit,
-                SoTienMotTC as price_per_credit
-            FROM LOAIMON
-            ORDER BY TenLoaiMon
+                lm.MaLoaiMon as course_type_id,
+                lm.TenLoaiMon as course_type_name,
+                lm.SoTietMotTC as hours_per_credit,
+                COALESCE(ht.SoTienMotTC, 0) as price_per_credit
+            FROM LOAIMON lm
+            LEFT JOIN HOCPHI_THEOHK ht ON lm.MaLoaiMon = ht.MaLoaiMon AND ht.MaHocKy = $1
+            ORDER BY lm.TenLoaiMon
         `;
 
-        const result = await DatabaseService.query(query);
+        const result = await DatabaseService.query(query, [semesterId]);
         
         return result.map(row => ({
             courseTypeId: row.course_type_id,
@@ -187,29 +199,52 @@ export class FinancialConfigService {
     }
 
     /**
-     * Update course type pricing (only allow changing price, not adding new types)
+     * Update course type pricing for current semester
      */
     async updateCourseTypePrice(
         courseTypeId: string,
         newPrice: number
     ): Promise<{ success: boolean, message?: string }> {
         try {
-            const result = await DatabaseService.update(
-                'LOAIMON',
-                { SoTienMotTC: newPrice },
-                { MaLoaiMon: courseTypeId }
-            );
-
-            if (!result) {
+            // Get current semester first
+            const currentSemester = await DatabaseService.queryOne(`
+                SELECT current_semester FROM ACADEMIC_SETTINGS WHERE id = 1
+            `);
+            
+            const semesterId = currentSemester?.current_semester;
+            
+            if (!semesterId) {
                 return {
                     success: false,
-                    message: 'Course type not found'
+                    message: 'Current semester not configured'
                 };
+            }
+
+            // Check if pricing record exists for this semester and course type
+            const existingRecord = await DatabaseService.queryOne(`
+                SELECT MaHocKy FROM HOCPHI_THEOHK 
+                WHERE MaHocKy = $1 AND MaLoaiMon = $2
+            `, [semesterId, courseTypeId]);
+
+            if (existingRecord) {
+                // Update existing record
+                await DatabaseService.update(
+                    'HOCPHI_THEOHK',
+                    { SoTienMotTC: newPrice },
+                    { MaHocKy: semesterId, MaLoaiMon: courseTypeId }
+                );
+            } else {
+                // Insert new record
+                await DatabaseService.insert('HOCPHI_THEOHK', {
+                    MaHocKy: semesterId,
+                    MaLoaiMon: courseTypeId,
+                    SoTienMotTC: newPrice
+                });
             }
 
             return {
                 success: true,
-                message: 'Course type price updated successfully'
+                message: 'Course type price updated successfully for current semester'
             };
 
         } catch (error: any) {
@@ -218,6 +253,44 @@ export class FinancialConfigService {
                 message: `Failed to update course type price: ${error?.message || 'Unknown error'}`
             };
         }
+    }
+
+    /**
+     * Get all course types with pricing for a specific semester
+     */
+    async getAllCourseTypesWithPricing(semesterId?: string): Promise<ICourseTypeManagement[]> {
+        let targetSemester = semesterId;
+        
+        if (!targetSemester) {
+            const currentSemester = await DatabaseService.queryOne(`
+                SELECT current_semester FROM ACADEMIC_SETTINGS WHERE id = 1
+            `);
+            targetSemester = currentSemester?.current_semester;
+        }
+        
+        if (!targetSemester) {
+            throw new Error('Semester not specified and no current semester configured');
+        }
+
+        const query = `
+            SELECT 
+                lm.MaLoaiMon as course_type_id,
+                lm.TenLoaiMon as course_type_name,
+                lm.SoTietMotTC as hours_per_credit,
+                COALESCE(ht.SoTienMotTC, 0) as price_per_credit
+            FROM LOAIMON lm
+            LEFT JOIN HOCPHI_THEOHK ht ON lm.MaLoaiMon = ht.MaLoaiMon AND ht.MaHocKy = $1
+            ORDER BY lm.TenLoaiMon
+        `;
+
+        const result = await DatabaseService.query(query, [targetSemester]);
+        
+        return result.map(row => ({
+            courseTypeId: row.course_type_id,
+            courseTypeName: row.course_type_name,
+            hoursPerCredit: parseInt(row.hours_per_credit),
+            pricePerCredit: parseFloat(row.price_per_credit)
+        }));
     }
 
     /**
@@ -316,5 +389,15 @@ export class FinancialConfigService {
             currentSemester: semesterInfo,
             paymentDeadline: semesterInfo?.payment_deadline || null
         };
+    }
+    async getCurrentSemesterInfo() {
+        const result = await DatabaseService.queryOne(`
+            SELECT hk.MaHocKy, hk.HocKyThu, hk.NamHoc
+            FROM ACADEMIC_SETTINGS s
+            JOIN HOCKYNAMHOC hk ON s.current_semester = hk.MaHocKy
+            WHERE s.id = 1
+        `);
+        console.log("[BACKEND] Current semester from DB:", result);
+        return result;
     }
 }

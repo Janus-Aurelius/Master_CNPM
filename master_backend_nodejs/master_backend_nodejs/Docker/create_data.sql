@@ -136,9 +136,9 @@ INSERT INTO NGANHHOC (MaNganh, TenNganh, MaKhoa) VALUES
 
 
 
-INSERT INTO LOAIMON (MaLoaiMon, TenLoaiMon, SoTietMotTC, SoTienMotTC) VALUES
-  ('LT', 'Lý thuyết',   15, 500000),
-  ('TH', 'Thực hành',    30, 400000);
+INSERT INTO LOAIMON (MaLoaiMon, TenLoaiMon, SoTietMotTC) VALUES
+  ('LT', 'Lý thuyết',   15),
+  ('TH', 'Thực hành',    30);
 
 INSERT INTO MONHOC (MaMonHoc, TenMonHoc, MaLoaiMon, SoTiet) VALUES
   ('BCH058', 'Kỹ năng truyền thông giao tiếp', 'LT', 30),
@@ -306,6 +306,29 @@ INSERT INTO HOCKYNAMHOC
   -- Năm học 2027
   ('HK1_2027', 1, '2027-08-01','2027-12-15','Đóng',2027,'2027-09-15'),
   ('HK2_2027', 2, '2028-01-15','2028-05-30','Đóng',2027,'2028-02-15');
+
+
+INSERT INTO HOCPHI_THEOHK (MaHocKy, MaLoaiMon, SoTienMotTC) VALUES
+  ('HK1_2023', 'LT', 500000),
+  ('HK1_2023', 'TH', 400000),
+  ('HK2_2023', 'LT', 500000),
+  ('HK2_2023', 'TH', 400000),
+  ('HK1_2024', 'LT', 500000),
+  ('HK1_2024', 'TH', 400000),
+  ('HK2_2024', 'LT', 500000),
+  ('HK2_2024', 'TH', 400000),
+  ('HK1_2025', 'LT', 500000),
+  ('HK1_2025', 'TH', 400000),
+  ('HK2_2025', 'LT', 500000),
+  ('HK2_2025', 'TH', 400000),
+  ('HK1_2026', 'LT', 500000),
+  ('HK1_2026', 'TH', 400000),
+  ('HK2_2026', 'LT', 500000),
+  ('HK2_2026', 'TH', 400000),
+  ('HK1_2027', 'LT', 500000),
+  ('HK1_2027', 'TH', 400000),
+  ('HK2_2027', 'LT', 500000),
+  ('HK2_2027', 'TH', 400000);
 
 -- Các môn của ngành CNTT kỳ 1
 INSERT INTO CHUONGTRINHHOC (MaNganh, MaMonHoc, MaHocKy, GhiChu) VALUES
@@ -829,6 +852,7 @@ INSERT INTO PHIEUDANGKY (MaPhieuDangKy, NgayLap, MaSoSinhVien, MaHocKy, XacNhan)
   ('PD298','2024-01-15','SV0098','HK2_2023', true),
   ('PD299','2024-01-15','SV0099','HK2_2023', true),
   ('PD300','2024-01-15','SV0100','HK2_2023', true);
+
 INSERT INTO CT_PHIEUDANGKY (MaPhieuDangKy, MaHocKy, MaMonHoc) VALUES
   -- Chi tiết đăng ký cho HK1_2024 (PD001-PD100)
   -- Chi tiết đăng ký cho HK1_2023 (PD101-PD200)

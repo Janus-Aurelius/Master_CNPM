@@ -5,6 +5,13 @@ import ICourse from "../../models/academic_related/course";
 
 export const getCourses = async (): Promise<any[]> => {
     try {
+        // Get current semester
+        const currentSemester = await DatabaseService.queryOne(`
+            SELECT current_semester FROM ACADEMIC_SETTINGS WHERE id = 1
+        `);
+        
+        const semesterId = currentSemester?.current_semester;
+        
         const courses = await DatabaseService.query(`
             SELECT 
                 c.MaMonHoc as "courseId",
@@ -13,13 +20,14 @@ export const getCourses = async (): Promise<any[]> => {
                 c.SoTiet as "totalHours",
                 l.TenLoaiMon as "courseTypeName",
                 l.SoTietMotTC as "hoursPerCredit",
-                l.SoTienMotTC as "pricePerCredit",
+                COALESCE(ht.SoTienMotTC, 0) as "pricePerCredit",
                 ROUND(c.SoTiet::numeric / NULLIF(l.SoTietMotTC, 0), 2) as "totalCredits",
-                ROUND((c.SoTiet::numeric / NULLIF(l.SoTietMotTC, 0)) * l.SoTienMotTC, 2) as "totalPrice"
+                ROUND((c.SoTiet::numeric / NULLIF(l.SoTietMotTC, 0)) * COALESCE(ht.SoTienMotTC, 0), 2) as "totalPrice"
             FROM MONHOC c
             JOIN LOAIMON l ON c.MaLoaiMon = l.MaLoaiMon
+            LEFT JOIN HOCPHI_THEOHK ht ON l.MaLoaiMon = ht.MaLoaiMon AND ht.MaHocKy = $1
             ORDER BY c.MaMonHoc
-        `);
+        `, [semesterId]);
         return courses;
     } catch (error) {
         console.error('Error fetching courses:', error);
@@ -30,6 +38,14 @@ export const getCourses = async (): Promise<any[]> => {
 export const getCourseById = async (id: string): Promise<any | null> => {
     try {
         console.log('Service - getCourseById called with ID:', id);
+        
+        // Get current semester
+        const currentSemester = await DatabaseService.queryOne(`
+            SELECT current_semester FROM ACADEMIC_SETTINGS WHERE id = 1
+        `);
+        
+        const semesterId = currentSemester?.current_semester;
+        
         const course = await DatabaseService.queryOne(`
             SELECT 
                 c.MaMonHoc as "courseId",
@@ -38,13 +54,14 @@ export const getCourseById = async (id: string): Promise<any | null> => {
                 c.SoTiet as "totalHours",
                 l.TenLoaiMon as "courseTypeName",
                 l.SoTietMotTC as "hoursPerCredit",
-                l.SoTienMotTC as "pricePerCredit",
+                COALESCE(ht.SoTienMotTC, 0) as "pricePerCredit",
                 ROUND(c.SoTiet::numeric / NULLIF(l.SoTietMotTC, 0), 2) as "totalCredits",
-                ROUND((c.SoTiet::numeric / NULLIF(l.SoTietMotTC, 0)) * l.SoTienMotTC, 2) as "totalPrice"
+                ROUND((c.SoTiet::numeric / NULLIF(l.SoTietMotTC, 0)) * COALESCE(ht.SoTienMotTC, 0), 2) as "totalPrice"
             FROM MONHOC c
             JOIN LOAIMON l ON c.MaLoaiMon = l.MaLoaiMon
-            WHERE c.MaMonHoc = $1
-        `, [id]);
+            LEFT JOIN HOCPHI_THEOHK ht ON l.MaLoaiMon = ht.MaLoaiMon AND ht.MaHocKy = $1
+            WHERE c.MaMonHoc = $2
+        `, [semesterId, id]);
         console.log('Service - getCourseById result:', course);
         return course;
     } catch (error) {
@@ -63,6 +80,13 @@ export const addCourse = async (course: any): Promise<any> => {
             SoTiet: course.totalHours
         });
         
+        // Get current semester
+        const currentSemester = await DatabaseService.queryOne(`
+            SELECT current_semester FROM ACADEMIC_SETTINGS WHERE id = 1
+        `);
+        
+        const semesterId = currentSemester?.current_semester;
+        
         // Fetch lại course vừa thêm với đầy đủ thông tin (bao gồm totalCredits)
         const newCourse = await DatabaseService.queryOne(`
             SELECT 
@@ -72,13 +96,14 @@ export const addCourse = async (course: any): Promise<any> => {
                 c.SoTiet as "totalHours",
                 l.TenLoaiMon as "courseTypeName",
                 l.SoTietMotTC as "hoursPerCredit",
-                l.SoTienMotTC as "pricePerCredit",
+                COALESCE(ht.SoTienMotTC, 0) as "pricePerCredit",
                 ROUND(c.SoTiet::numeric / NULLIF(l.SoTietMotTC, 0), 2) as "totalCredits",
-                ROUND((c.SoTiet::numeric / NULLIF(l.SoTietMotTC, 0)) * l.SoTienMotTC, 2) as "totalPrice"
+                ROUND((c.SoTiet::numeric / NULLIF(l.SoTietMotTC, 0)) * COALESCE(ht.SoTienMotTC, 0), 2) as "totalPrice"
             FROM MONHOC c
             JOIN LOAIMON l ON c.MaLoaiMon = l.MaLoaiMon
-            WHERE c.MaMonHoc = $1
-        `, [course.courseId]);
+            LEFT JOIN HOCPHI_THEOHK ht ON l.MaLoaiMon = ht.MaLoaiMon AND ht.MaHocKy = $1
+            WHERE c.MaMonHoc = $2
+        `, [semesterId, course.courseId]);
         
         return newCourse;
     } catch (error) {
@@ -97,6 +122,13 @@ export const updateCourse = async (id: string, courseData: Partial<any>): Promis
         // Update course
         await DatabaseService.update('MONHOC', updateData, { MaMonHoc: id });
         
+        // Get current semester
+        const currentSemester = await DatabaseService.queryOne(`
+            SELECT current_semester FROM ACADEMIC_SETTINGS WHERE id = 1
+        `);
+        
+        const semesterId = currentSemester?.current_semester;
+        
         // Fetch lại course vừa update với đầy đủ thông tin (bao gồm totalCredits)
         const updatedCourse = await DatabaseService.queryOne(`
             SELECT 
@@ -106,13 +138,14 @@ export const updateCourse = async (id: string, courseData: Partial<any>): Promis
                 c.SoTiet as "totalHours",
                 l.TenLoaiMon as "courseTypeName",
                 l.SoTietMotTC as "hoursPerCredit",
-                l.SoTienMotTC as "pricePerCredit",
+                COALESCE(ht.SoTienMotTC, 0) as "pricePerCredit",
                 ROUND(c.SoTiet::numeric / NULLIF(l.SoTietMotTC, 0), 2) as "totalCredits",
-                ROUND((c.SoTiet::numeric / NULLIF(l.SoTietMotTC, 0)) * l.SoTienMotTC, 2) as "totalPrice"
+                ROUND((c.SoTiet::numeric / NULLIF(l.SoTietMotTC, 0)) * COALESCE(ht.SoTienMotTC, 0), 2) as "totalPrice"
             FROM MONHOC c
             JOIN LOAIMON l ON c.MaLoaiMon = l.MaLoaiMon
-            WHERE c.MaMonHoc = $1
-        `, [id]);
+            LEFT JOIN HOCPHI_THEOHK ht ON l.MaLoaiMon = ht.MaLoaiMon AND ht.MaHocKy = $1
+            WHERE c.MaMonHoc = $2
+        `, [semesterId, id]);
         
         return updatedCourse;
     } catch (error) {
@@ -163,6 +196,13 @@ export const deleteCourse = async (id: string): Promise<boolean> => {
 
 export const searchCourses = async (query: string): Promise<ICourse[]> => {
     try {
+        // Get current semester
+        const currentSemester = await DatabaseService.queryOne(`
+            SELECT current_semester FROM ACADEMIC_SETTINGS WHERE id = 1
+        `);
+        
+        const semesterId = currentSemester?.current_semester;
+        
         const courses = await DatabaseService.query(`
             SELECT 
                 c.MaMonHoc as "subjectId",
@@ -171,17 +211,18 @@ export const searchCourses = async (query: string): Promise<ICourse[]> => {
                 c.SoTiet as "totalHours",
                 l.TenLoaiMon as "subjectTypeName",
                 l.SoTietMotTC as "hoursPerCredit",
-                l.SoTienMotTC as "costPerCredit"
+                COALESCE(ht.SoTienMotTC, 0) as "costPerCredit"
             FROM MONHOC c
             JOIN LOAIMON l ON c.MaLoaiMon = l.MaLoaiMon
+            LEFT JOIN HOCPHI_THEOHK ht ON l.MaLoaiMon = ht.MaLoaiMon AND ht.MaHocKy = $1
             WHERE 
                 c.TrangThai = 'active' AND
                 (
-                    LOWER(c.TenMonHoc) LIKE LOWER($1) OR
-                    LOWER(c.MaMonHoc) LIKE LOWER($1)
+                    LOWER(c.TenMonHoc) LIKE LOWER($2) OR
+                    LOWER(c.MaMonHoc) LIKE LOWER($2)
                 )
             ORDER BY c.MaMonHoc
-        `, [`%${query}%`]);
+        `, [semesterId, `%${query}%`]);
         return courses;
     } catch (error) {
         console.error('Error searching courses:', error);

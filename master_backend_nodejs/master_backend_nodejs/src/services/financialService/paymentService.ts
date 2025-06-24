@@ -13,147 +13,154 @@ export class FinancialPaymentService {
         limit?: number;
         semesterId?: string;
     }): Promise<{ data: any[], total: number }> {
-        console.log('[getPaymentStatusList] semesterId:', semesterId);
-        console.log('[getPaymentStatusList] filters:', filters);        // Base where clause - always filter by semester first (your approach)
-        let whereClause = 'WHERE pd.mahocky = $1';
-        const params: any[] = [semesterId];
-        let paramIndex = 2;
+        try {
+            console.log('[getPaymentStatusList] Starting with params:', { semesterId, filters });
 
-        // Add student ID filter if provided
-        if (filters?.studentId) {
-            whereClause += ` AND pd.masosinhvien LIKE $${paramIndex}`;
-            params.push(`%${filters.studentId}%`);
-            paramIndex++;
-        }        // Get total count
-        const countQuery = `
-            SELECT COUNT(*) as total
-            FROM PHIEUDANGKY pd
-            JOIN HOCKYNAMHOC hk ON pd.mahocky = hk.mahocky
-            ${whereClause}
-        `;
-        const countResult = await DatabaseService.queryOne(countQuery, params);
-        const total = countResult?.total || 0;
+            // Build WHERE conditions
+            const whereConditions = ['pd.MaHocKy = $1'];
+            const queryParams = [semesterId];
+            let paramIndex = 2;
 
-        // Get paginated data with dynamic calculation using your logic
-        const offset = filters?.offset || 0;
-        const limit = filters?.limit || 50;
-          const dataQuery = `
-            SELECT 
-                pd.masosinhvien AS "studentId",
-                sv.hoten AS "studentName",
-                k.tenkhoa AS "faculty", 
-                nh.tennganh AS "major",
-                hk.namhoc AS "year",
-                CONCAT('Học kỳ ', hk.hockythu) AS "semester",
-                pd.mahocky AS "semesterId",
-                hk.thoihandonghp AS "dueDate",
-                pd.xacnhan AS "isConfirmed",
-                -- SoTienPhaiDong calculation using your formula
-                COALESCE(
-                    (SELECT SUM(
-                        (mh.sotiet::decimal / lm.sotietmottc) * lm.sotienmottc * (1 - COALESCE(dt.mucgiamhocphi, 0))
-                    )
-                    FROM ct_phieudangky ct
-                    JOIN monhoc mh ON ct.mamonhoc = mh.mamonhoc
-                    JOIN loaimon lm ON mh.maloaimon = lm.maloaimon
-                    JOIN sinhvien sv2 ON pd.masosinhvien = sv2.masosinhvien
-                    JOIN doituonguutien dt ON sv2.madoituongut = dt.madoituong
-                    WHERE ct.maphieudangky = pd.maphieudangky), 0
-                ) AS "totalAmount",
-                
-                -- SoTienDaDong calculation using your formula  
-                COALESCE(
-                    (SELECT SUM(pt.sotiendong) 
-                     FROM phieuthuhp pt 
-                     WHERE pt.maphieudangky = pd.maphieudangky), 0
-                ) AS "paidAmount"
-                
-            FROM phieudangky pd
-            JOIN sinhvien sv ON pd.masosinhvien = sv.masosinhvien
-            JOIN nganhhoc nh ON sv.manganh = nh.manganh
-            JOIN khoa k ON nh.makhoa = k.makhoa
-            JOIN hockynamhoc hk ON pd.mahocky = hk.mahocky
-            ${whereClause}
-            ORDER BY pd.masosinhvien
-            LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
-        `;
-        params.push(limit, offset);
-
-        console.log('[getPaymentStatusList] SQL:', dataQuery);
-        console.log('[getPaymentStatusList] params:', params);
-
-        const data = await DatabaseService.query(dataQuery, params);        
-        // Log dữ liệu từ DB để debug
-        console.log('[getPaymentStatusList] Raw DB data:', data);
-
-        // Map data với calculated values và filter theo payment status
-        const mappedData = await Promise.all(data.map(async (row) => {
-            const totalAmount = parseFloat(row.totalAmount) || 0;
-            const paidAmount = parseFloat(row.paidAmount) || 0;
-            const remainingAmount = totalAmount - paidAmount;
-            
-            // Determine payment status using your logic
-            let paymentStatus = 'unpaid';
-            if (remainingAmount <= 0) {
-                paymentStatus = 'paid';
-            } else if (row.dueDate && new Date(row.dueDate) < new Date()) {
-                paymentStatus = 'overdue';
+            if (filters?.studentId) {
+                whereConditions.push(`pd.MaSoSinhVien = $${paramIndex}`);
+                queryParams.push(filters.studentId);
+                paramIndex++;
             }
-            else {
-                paymentStatus = 'not_enough';
-            }
-            // Get payment history for each student
-            const paymentHistory = await this.getPaymentHistory(row.studentId, row.semesterId);
-            
-            return {
-                id: row.studentId,
-                studentId: row.studentId,
-                studentName: row.studentName,
-                faculty: row.faculty,
-                major: row.major,
-                year: row.year,
-                semester: row.semester,
-                semesterId: row.semesterId,
-                totalAmount,
-                paidAmount,
-                remainingAmount,
-                dueDate: row.dueDate,
-                paymentStatus,
-                paymentHistory: paymentHistory.map(p => ({
-                    id: p.paymentId,
-                    date: p.paymentDate,
-                    amount: p.amount,
-                    method: p.method || ''
-                })),
-                isOverdue: paymentStatus === 'overdue',
-                isConfirmed: row.isConfirmed
-            };
-        }));
 
-        // Filter by payment status if specified
-        let filteredData = mappedData;
-        if (filters?.paymentStatus) {
-            filteredData = mappedData.filter(item => {
-                switch (filters.paymentStatus) {
-                    case 'paid':
-                        return item.paymentStatus === 'paid';
-                    case 'unpaid':
-                        return item.paymentStatus === 'unpaid' || item.paymentStatus === 'overdue';
-                    case 'not_opened':
-                        // Logic for semester not opened yet - check semester status
-                        return false; // Implement logic based on semester state
-                    default:
-                        return true;
+            // Build the main query with dynamic calculation
+            const dataQuery = `
+                SELECT 
+                    pd.MaSoSinhVien as "studentId",
+                    sv.HoTen as "studentName",
+                    k.TenKhoa as "faculty",
+                    nh.TenNganh as "major",
+                    hk.NamHoc as "year",
+                    hk.HocKyThu as "semester",
+                    pd.MaHocKy as "semesterId",
+                    hk.ThoiHanDongHP as "dueDate",
+                    pd.XacNhan as "isConfirmed",
+                    -- Dynamic total amount calculation
+                    COALESCE(
+                        (SELECT SUM(
+                            (mh.SoTiet::decimal / lm.SoTietMotTC) * COALESCE(ht.SoTienMotTC, 0) * (1 - COALESCE(dt.MucGiamHocPhi, 0))
+                        )
+                        FROM CT_PHIEUDANGKY ct
+                        JOIN MONHOC mh ON ct.MaMonHoc = mh.MaMonHoc
+                        JOIN LOAIMON lm ON mh.MaLoaiMon = lm.MaLoaiMon
+                        LEFT JOIN HOCPHI_THEOHK ht ON lm.MaLoaiMon = ht.MaLoaiMon AND ht.MaHocKy = ct.MaHocKy
+                        JOIN SINHVIEN sv2 ON pd.MaSoSinhVien = sv2.MaSoSinhVien
+                        JOIN DOITUONGUUTIEN dt ON sv2.MaDoiTuongUT = dt.MaDoiTuong
+                        WHERE ct.MaPhieuDangKy = pd.MaPhieuDangKy), 0
+                    ) as "totalAmount",
+                    -- Dynamic paid amount calculation
+                    COALESCE(
+                        (SELECT SUM(pt.SoTienDong) 
+                         FROM PHIEUTHUHP pt 
+                         WHERE pt.MaPhieuDangKy = pd.MaPhieuDangKy), 0
+                    ) as "paidAmount"
+                FROM PHIEUDANGKY pd
+                JOIN SINHVIEN sv ON pd.MaSoSinhVien = sv.MaSoSinhVien
+                JOIN NGANHHOC nh ON sv.MaNganh = nh.MaNganh
+                JOIN KHOA k ON nh.MaKhoa = k.MaKhoa
+                JOIN HOCKYNAMHOC hk ON pd.MaHocKy = hk.MaHocKy
+                WHERE ${whereConditions.join(' AND ')}
+                ORDER BY sv.HoTen
+                ${filters?.limit ? `LIMIT ${filters.limit}` : ''}
+                ${filters?.offset ? `OFFSET ${filters.offset}` : ''}
+            `;
+
+            // Count query - chỉ cần semesterId và studentId (nếu có)
+            const countQuery = `
+                SELECT COUNT(DISTINCT pd.MaSoSinhVien) as total
+                FROM PHIEUDANGKY pd
+                JOIN SINHVIEN sv ON pd.MaSoSinhVien = sv.MaSoSinhVien
+                WHERE ${whereConditions.join(' AND ')}
+            `;
+
+            console.log('[getPaymentStatusList] params:', queryParams);
+
+            const [data, totalResult] = await Promise.all([
+                DatabaseService.query(dataQuery, queryParams),
+                DatabaseService.queryOne(countQuery, queryParams)
+            ]);
+            
+            const total = totalResult?.total || 0;
+            
+            // Log dữ liệu từ DB để debug
+            console.log('[getPaymentStatusList] Raw DB data:', data);
+
+            // Map data với calculated values và filter theo payment status
+            const mappedData = await Promise.all(data.map(async (row) => {
+                const totalAmount = parseFloat(row.totalAmount) || 0;
+                const paidAmount = parseFloat(row.paidAmount) || 0;
+                const remainingAmount = totalAmount - paidAmount;
+                
+                // Determine payment status using your logic
+                let paymentStatus = 'unpaid';
+                if (remainingAmount <= 0) {
+                    paymentStatus = 'paid';
+                } else if (row.dueDate && new Date(row.dueDate) < new Date()) {
+                    paymentStatus = 'overdue';
                 }
-            });
+                else {
+                    paymentStatus = 'not_enough';
+                }
+                // Get payment history for each student
+                const paymentHistory = await this.getPaymentHistory(row.studentId, row.semesterId);
+                
+                return {
+                    id: row.studentId,
+                    studentId: row.studentId,
+                    studentName: row.studentName,
+                    faculty: row.faculty,
+                    major: row.major,
+                    year: row.year,
+                    semester: row.semester,
+                    semesterId: row.semesterId,
+                    totalAmount,
+                    paidAmount,
+                    remainingAmount,
+                    dueDate: row.dueDate,
+                    paymentStatus,
+                    paymentHistory: paymentHistory.map(p => ({
+                        id: p.paymentId,
+                        date: p.paymentDate,
+                        amount: p.amount,
+                        method: p.method || ''
+                    })),
+                    isOverdue: paymentStatus === 'overdue',
+                    isConfirmed: row.isConfirmed
+                };
+            }));
+
+            // Filter by payment status if specified
+            let filteredData = mappedData;
+            if (filters?.paymentStatus) {
+                filteredData = mappedData.filter(item => {
+                    switch (filters.paymentStatus) {
+                        case 'paid':
+                            return item.paymentStatus === 'paid';
+                        case 'unpaid':
+                            return item.paymentStatus === 'unpaid' || item.paymentStatus === 'overdue';
+                        case 'not_opened':
+                            // Logic for semester not opened yet - check semester status
+                            return false; // Implement logic based on semester state
+                        default:
+                            return true;
+                    }
+                });
+            }
+
+            console.log('[getPaymentStatusList] Final mapped data:', filteredData);
+
+            return {
+                data: filteredData,
+                total: parseInt(total)
+            };
+        } catch (error) {
+            console.error('[getPaymentStatusList] Error:', error);
+            throw error;
         }
-
-        console.log('[getPaymentStatusList] Final mapped data:', filteredData);
-
-        return {
-            data: filteredData,
-            total: parseInt(total)
-        };
     }
 
     /**

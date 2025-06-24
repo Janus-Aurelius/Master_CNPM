@@ -1,6 +1,7 @@
 import { IOfferedCourse } from '../../models/academic_related/openCourse';
 import { Database } from '../../config/database';
 import { DatabaseError } from '../../utils/errors/database.error';
+import { DatabaseService } from '../database/databaseService';
 
 export class OpenCourseService {    static async getAllCourses(): Promise<IOfferedCourse[]> {
         try {            const query = `
@@ -18,25 +19,28 @@ export class OpenCourseService {    static async getAllCourses(): Promise<IOffer
                     lm.TenLoaiMon as "courseTypeName",
                     mh.SoTiet as "totalHours",
                     lm.SoTietMotTC as "hoursPerCredit",
-                    lm.SoTienMotTC as "pricePerCredit",                    hk.HocKyThu as "semesterNumber",
-                    hk.NamHoc as "academicYear",                    CASE 
+                    COALESCE(ht.SoTienMotTC, 0) as "pricePerCredit",
+                    hk.HocKyThu as "semesterNumber",
+                    hk.NamHoc as "academicYear",
+                    CASE 
                         WHEN dm.SoSVDaDangKy >= dm.SiSoToiDa THEN 'Đầy'
                         ELSE 'Mở'
                     END as "status"
                 FROM DANHSACHMONHOCMO dm
                 JOIN MONHOC mh ON dm.MaMonHoc = mh.MaMonHoc
                 JOIN LOAIMON lm ON mh.MaLoaiMon = lm.MaLoaiMon
+                LEFT JOIN HOCPHI_THEOHK ht ON lm.MaLoaiMon = ht.MaLoaiMon AND ht.MaHocKy = dm.MaHocKy
                 JOIN HOCKYNAMHOC hk ON dm.MaHocKy = hk.MaHocKy
                 ORDER BY hk.NamHoc, hk.HocKyThu, lm.TenLoaiMon, mh.TenMonHoc
             `;
-            const result = await Database.query(query);
+            const result = await DatabaseService.query(query);
             console.log(`Found ${result.length} open courses`);
             return result;
         } catch (error) {
             console.error('Error in getAllCourses:', error);
             throw new DatabaseError('Error fetching open courses');
         }
-    }static async getCourseById(semesterId: string, courseId: string): Promise<IOfferedCourse | null> {        try {            const query = `
+    }static async getCourseById(courseId: string, semesterId: string): Promise<IOfferedCourse | null> {        try {            const query = `
                 SELECT 
                     dm.MaHocKy as "semesterId",
                     dm.MaMonHoc as "courseId",
@@ -51,21 +55,24 @@ export class OpenCourseService {    static async getAllCourses(): Promise<IOffer
                     lm.TenLoaiMon as "courseTypeName",
                     mh.SoTiet as "totalHours",
                     lm.SoTietMotTC as "hoursPerCredit",
-                    lm.SoTienMotTC as "pricePerCredit",                    hk.HocKyThu as "semesterNumber",
-                    hk.NamHoc as "academicYear",                    CASE 
+                    COALESCE(ht.SoTienMotTC, 0) as "pricePerCredit",
+                    hk.HocKyThu as "semesterNumber",
+                    hk.NamHoc as "academicYear",
+                    CASE 
                         WHEN dm.SoSVDaDangKy >= dm.SiSoToiDa THEN 'Đầy'
                         ELSE 'Mở'
                     END as "status"
                 FROM DANHSACHMONHOCMO dm
                 JOIN MONHOC mh ON dm.MaMonHoc = mh.MaMonHoc
                 JOIN LOAIMON lm ON mh.MaLoaiMon = lm.MaLoaiMon
+                LEFT JOIN HOCPHI_THEOHK ht ON lm.MaLoaiMon = ht.MaLoaiMon AND ht.MaHocKy = dm.MaHocKy
                 JOIN HOCKYNAMHOC hk ON dm.MaHocKy = hk.MaHocKy
-                WHERE dm.MaHocKy = $1 AND dm.MaMonHoc = $2
+                WHERE dm.MaMonHoc = $1 AND dm.MaHocKy = $2
             `;
-            const result = await Database.query(query, [semesterId, courseId]);            return result[0] || null;
+            const result = await DatabaseService.queryOne(query, [courseId, semesterId]);            return result;
         } catch (error) {
             console.error('Error in getCourseById:', error);
-            throw new DatabaseError('Error fetching open course by ID');
+            throw new DatabaseError('Error fetching course by ID');
         }
     }    static async createCourse(courseData: IOfferedCourse): Promise<IOfferedCourse> {
         try {
@@ -145,7 +152,7 @@ export class OpenCourseService {    static async getAllCourses(): Promise<IOffer
     }    static async updateCourse(semesterId: string, courseId: string, courseData: Partial<IOfferedCourse>): Promise<IOfferedCourse> {
         try {
             // First get the current course and check if students are registered
-            const currentCourse = await this.getCourseById(semesterId, courseId);
+            const currentCourse = await this.getCourseById(courseId, semesterId);
             if (!currentCourse) {
                 throw new Error('Môn học không tồn tại');
             }
@@ -295,17 +302,19 @@ export class OpenCourseService {    static async getAllCourses(): Promise<IOffer
                     lm.TenLoaiMon as courseTypeName,
                     mh.SoTiet as totalHours,
                     lm.SoTietMotTC as hoursPerCredit,
-                    lm.SoTienMotTC as pricePerCredit,                    CASE 
+                    COALESCE(ht.SoTienMotTC, 0) as pricePerCredit,
+                    CASE 
                         WHEN dm.SoSVDaDangKy >= dm.SiSoToiDa THEN 'Đầy'
                         ELSE 'Mở'
                     END as status
                 FROM DANHSACHMONHOCMO dm
                 JOIN MONHOC mh ON dm.MaMonHoc = mh.MaMonHoc
                 JOIN LOAIMON lm ON mh.MaLoaiMon = lm.MaLoaiMon
+                LEFT JOIN HOCPHI_THEOHK ht ON lm.MaLoaiMon = ht.MaLoaiMon AND ht.MaHocKy = dm.MaHocKy
                 WHERE dm.MaHocKy LIKE $1
                 ORDER BY dm.MaHocKy, dm.MaMonHoc
             `;
-            return await Database.query(query, [`%${semester}%`]);
+            return await DatabaseService.query(query, [`%${semester}%`]);
         } catch (error) {
             throw new DatabaseError('Error fetching courses by semester');
         }

@@ -13,18 +13,19 @@ export const registrationService = {
                     mh.TenMonHoc as "courseName",
                     mh.SoTiet as "credits",
                     lm.TenLoaiMon as "courseType",
-                    lm.SoTienMotTC as "fee",
+                    COALESCE(ht.SoTienMotTC, 0) as "fee",
                     pd.NgayLap as "registrationDate",
                     hk.TenHocKy as "semesterName"
                 FROM CT_PHIEUDANGKY ct
                 JOIN PHIEUDANGKY pd ON ct.MaPhieuDangKy = pd.MaPhieuDangKy
                 JOIN MONHOC mh ON ct.MaMonHoc = mh.MaMonHoc
                 JOIN LOAIMON lm ON mh.MaLoaiMon = lm.MaLoaiMon
+                LEFT JOIN HOCPHI_THEOHK ht ON lm.MaLoaiMon = ht.MaLoaiMon AND ht.MaHocKy = ct.MaHocKy
                 JOIN HOCKYNAMHOC hk ON pd.MaHocKy = hk.MaHocKy
                 WHERE pd.MaSoSinhVien = $1 AND pd.MaHocKy = $2
                 ORDER BY ct.MaMonHoc
             `, [studentId, semesterId]);
-
+    
             return registeredCourses.map(course => ({
                 registrationId: course.registrationId,
                 courseId: course.courseId,
@@ -78,11 +79,11 @@ export const registrationService = {
         }
     },
 
-    // Lấy danh sách môn học đã đăng ký với thông tin chi tiết từ DANHSACHMONHOCMO
+    // Lấy danh sách môn học đã đăng ký với lịch học
     async getEnrolledCoursesWithSchedule(studentId: string, semesterId?: string): Promise<any[]> {
         try {
             // Get current semester if not provided
-            const actualSemesterId = semesterId || await DatabaseService.getCurrentSemester();            console.log('🔍 [RegistrationService] Getting enrolled courses with schedule for student:', studentId, 'semester:', actualSemesterId);
+            const actualSemesterId = semesterId || await DatabaseService.getCurrentSemester();
             
             // Kiểm tra xem có cần convert từ User ID sang Student ID không
             let actualStudentId = studentId;
@@ -114,14 +115,16 @@ export const registrationService = {
                 JOIN PHIEUDANGKY pd ON ct.MaPhieuDangKy = pd.MaPhieuDangKy 
                 WHERE pd.MaSoSinhVien = $1
             `, [actualStudentId]);
-            console.log('🔍 [Debug] CT_PHIEUDANGKY records for student:', debugCtPhieuDangKy);const enrolledCourses = await DatabaseService.query(`
+            console.log('🔍 [Debug] CT_PHIEUDANGKY records for student:', debugCtPhieuDangKy);
+            
+            const enrolledCourses = await DatabaseService.query(`
                 SELECT 
                     ct.MaPhieuDangKy as "registrationId",
                     ct.MaMonHoc as "courseId",
                     mh.TenMonHoc as "courseName",
                     mh.SoTiet as "credits",
                     lm.TenLoaiMon as "courseType",
-                    lm.SoTienMotTC as "feePerCredit",
+                    COALESCE(ht.SoTienMotTC, 0) as "feePerCredit",
                     pd.NgayLap as "registrationDate",
                     pd.MaHocKy as "semesterName",
                     -- Thông tin từ DANHSACHMONHOCMO
@@ -131,9 +134,12 @@ export const registrationService = {
                 FROM CT_PHIEUDANGKY ct
                 JOIN PHIEUDANGKY pd ON ct.MaPhieuDangKy = pd.MaPhieuDangKy
                 JOIN MONHOC mh ON ct.MaMonHoc = mh.MaMonHoc
-                JOIN LOAIMON lm ON mh.MaLoaiMon = lm.MaLoaiMon                LEFT JOIN DANHSACHMONHOCMO dsmhm ON ct.MaMonHoc = dsmhm.MaMonHoc AND ct.MaHocKy = dsmhm.MaHocKy
+                JOIN LOAIMON lm ON mh.MaLoaiMon = lm.MaLoaiMon
+                LEFT JOIN HOCPHI_THEOHK ht ON lm.MaLoaiMon = ht.MaLoaiMon AND ht.MaHocKy = ct.MaHocKy
+                LEFT JOIN DANHSACHMONHOCMO dsmhm ON ct.MaMonHoc = dsmhm.MaMonHoc AND ct.MaHocKy = dsmhm.MaHocKy
                 WHERE pd.MaSoSinhVien = $1 AND pd.MaHocKy = $2
-                ORDER BY ct.MaMonHoc            `, [actualStudentId, actualSemesterId]);
+                ORDER BY ct.MaMonHoc
+            `, [actualStudentId, actualSemesterId]);
 
             console.log('🔍 [RegistrationService] Query parameters:', { actualStudentId, actualSemesterId });
             console.log('✅ [RegistrationService] Found enrolled courses:', enrolledCourses.length);
@@ -167,20 +173,22 @@ export const registrationService = {
 
     // Lấy chi tiết môn học đã đăng ký
     async getCourseRegistrationDetails(studentId: string, courseId: string): Promise<IRegistrationDetail | null> {
-        try {            const courseDetail = await DatabaseService.queryOne(`
+        try {
+            const courseDetail = await DatabaseService.queryOne(`
                 SELECT 
                     ct.MaPhieuDangKy as "registrationId",
                     ct.MaMonHoc as "courseId",
                     mh.TenMonHoc as "courseName",
                     mh.SoTiet as "credits",
                     lm.TenLoaiMon as "courseType",
-                    lm.SoTienMotTC as "fee",
+                    COALESCE(ht.SoTienMotTC, 0) as "fee",
                     pd.NgayLap as "registrationDate",
                     hk.TenHocKy as "semesterName"
                 FROM CT_PHIEUDANGKY ct
                 JOIN PHIEUDANGKY pd ON ct.MaPhieuDangKy = pd.MaPhieuDangKy
                 JOIN MONHOC mh ON ct.MaMonHoc = mh.MaMonHoc
                 JOIN LOAIMON lm ON mh.MaLoaiMon = lm.MaLoaiMon
+                LEFT JOIN HOCPHI_THEOHK ht ON lm.MaLoaiMon = ht.MaLoaiMon AND ht.MaHocKy = ct.MaHocKy
                 JOIN HOCKYNAMHOC hk ON pd.MaHocKy = hk.MaHocKy
                 WHERE pd.MaSoSinhVien = $1 AND ct.MaMonHoc = $2
             `, [studentId, courseId]);
@@ -198,7 +206,10 @@ export const registrationService = {
         } catch (error) {
             console.error('Error getting course registration details:', error);
             throw error;
-        }    },    // Đăng ký môn học cho sinh viên
+        }
+    },
+
+    // Đăng ký môn học cho sinh viên
     async registerCourse(studentId: string, courseId: string, semesterId: string): Promise<boolean> {
         try {
             console.log(`🔵 [RegistrationService] registerCourse called with:`, {
@@ -319,12 +330,18 @@ export const registrationService = {
             // Cập nhật số tiền đăng ký
             console.log(`🔵 [RegistrationService] Getting course info for fee calculation`);
             const courseInfo = await DatabaseService.queryOne(`
-                SELECT lm.SoTienMotTC, mh.SoTiet, lm.SoTietMotTC
+                SELECT 
+                    COALESCE(ht.SoTienMotTC, 0) as "sotienmottc",
+                    mh.SoTiet as "sotiet", 
+                    lm.SoTietMotTC as "sotietmottc"
                 FROM MONHOC mh
                 JOIN LOAIMON lm ON mh.MaLoaiMon = lm.MaLoaiMon
-                WHERE mh.MaMonHoc = $1
-            `, [courseId]);            if (courseInfo) {
-                const courseFee = courseInfo.sotienmottc || courseInfo.SoTienMotTC * ((courseInfo.sotiet || courseInfo.SoTiet) / (courseInfo.sotietmottc || courseInfo.SoTietMotTC) || 1);
+                LEFT JOIN HOCPHI_THEOHK ht ON lm.MaLoaiMon = ht.MaLoaiMon AND ht.MaHocKy = $1
+                WHERE mh.MaMonHoc = $2
+            `, [semesterId, courseId]);
+
+            if (courseInfo) {
+                const courseFee = courseInfo.sotienmottc * ((courseInfo.sotiet / courseInfo.sotietmottc) || 1);
                 
                 // Schema chỉ có SoTienConLai, không có SoTienDangKy/SoTienPhaiDong
                 // Tạm thời skip việc update số tiền, chỉ log
@@ -418,11 +435,15 @@ export const registrationService = {
             }
             */// Cập nhật lại số tiền trong phiếu đăng ký
             const courseInfo = await DatabaseService.queryOne(`
-                SELECT lm.SoTienMotTC, mh.SoTiet, lm.SoTietMotTC
+                SELECT 
+                    COALESCE(ht.SoTienMotTC, 0) as "SoTienMotTC", 
+                    mh.SoTiet, 
+                    lm.SoTietMotTC
                 FROM MONHOC mh
                 JOIN LOAIMON lm ON mh.MaLoaiMon = lm.MaLoaiMon
-                WHERE mh.MaMonHoc = $1
-            `, [courseId]);
+                LEFT JOIN HOCPHI_THEOHK ht ON lm.MaLoaiMon = ht.MaLoaiMon AND ht.MaHocKy = $1
+                WHERE mh.MaMonHoc = $2
+            `, [semesterId, courseId]);
 
             if (courseInfo) {
                 const courseFee = courseInfo.SoTienMotTC * (courseInfo.SoTiet / courseInfo.SoTietMotTC || 1);                // Schema chỉ có SoTienConLai, skip update số tiền tạm thời
@@ -501,12 +522,13 @@ export const registrationService = {
                     mh.TenMonHoc as "courseName",
                     mh.SoTiet as "credits",
                     lm.TenLoaiMon as "courseType",
-                    lm.SoTienMotTC as "feePerCredit",
+                    COALESCE(ht.SoTienMotTC, 0) as "feePerCredit",
                     dsm.SoSVDaDangKy as "currentEnrollment",
                     dsm.SiSoToiDa as "maxEnrollment"
                 FROM DANHSACHMONHOCMO dsm
                 JOIN MONHOC mh ON dsm.MaMonHoc = mh.MaMonHoc
                 JOIN LOAIMON lm ON mh.MaLoaiMon = lm.MaLoaiMon
+                LEFT JOIN HOCPHI_THEOHK ht ON lm.MaLoaiMon = ht.MaLoaiMon AND ht.MaHocKy = dsm.MaHocKy
                 WHERE dsm.MaHocKy = $1
                 ORDER BY mh.TenMonHoc
             `, [semesterId]);
@@ -746,7 +768,7 @@ export const registrationService = {
                     dsmhm.MaMonHoc as "courseId",
                     mh.TenMonHoc as "courseName",
                     mh.SoTiet as "credits",
-                    lm.SoTienMotTC as "pricePerCredit",
+                    COALESCE(ht.SoTienMotTC, 0) as "pricePerCredit",
                     lm.TenLoaiMon as "courseType",
                     dsmhm.Thu as "dayOfWeek",
                     dsmhm.TietBatDau as "startPeriod",
@@ -766,6 +788,7 @@ export const registrationService = {
                 FROM DANHSACHMONHOCMO dsmhm
                 JOIN MONHOC mh ON dsmhm.MaMonHoc = mh.MaMonHoc
                 JOIN LOAIMON lm ON mh.MaLoaiMon = lm.MaLoaiMon
+                LEFT JOIN HOCPHI_THEOHK ht ON lm.MaLoaiMon = ht.MaLoaiMon AND ht.MaHocKy = dsmhm.MaHocKy
                 WHERE dsmhm.MaHocKy = $1
                 ORDER BY 
                     CASE 
@@ -780,28 +803,12 @@ export const registrationService = {
                     mh.TenMonHoc
             `, [semesterId, student.manganh]);
             
-            console.log('📚 [RegistrationService] Found available courses:', availableCourses.length);
-            console.log('🔍 [RegistrationService] Sample courses with raw data:', availableCourses.slice(0, 5));
-            
-            // Xử lý dữ liệu trả về
-            const coursesWithCategory = availableCourses.map((course: any) => ({
-                ...course,
-                fee: course.pricePerCredit ? 
-                    course.pricePerCredit * (course.credits / 15 || 1) : 0,
-                isInProgram: course.courseCategory === 'inProgram',
-                schedule: `Thứ ${course.dayOfWeek}, tiết ${course.startPeriod}-${course.endPeriod}`
-            }));
-            
-            console.log('✅ [RegistrationService] Processed courses with categories:', coursesWithCategory.length);
-            const inProgramCount = coursesWithCategory.filter(c => c.isInProgram).length;
-            const notInProgramCount = coursesWithCategory.filter(c => !c.isInProgram).length;
-            console.log(`📊 [RegistrationService] InProgram: ${inProgramCount}, NotInProgram: ${notInProgramCount}`);
-            
-            return coursesWithCategory;
-
+            console.log('🔍 [RegistrationService] Query result:', availableCourses);
+            return availableCourses;
         } catch (error) {
             console.error('❌ [RegistrationService] Error getting recommended courses:', error);
             throw error;
         }
     }
 };
+            

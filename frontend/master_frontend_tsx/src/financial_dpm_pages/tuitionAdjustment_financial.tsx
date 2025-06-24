@@ -9,11 +9,14 @@ import AddIcon from '@mui/icons-material/Add';
 import UserInfo from '../components/UserInfo';
 import SearchIcon from '@mui/icons-material/Search';
 import { financialApi, convertApiToComponentFormat, convertComponentToApiFormat, type PriorityGroup, type CourseType } from '../api_clients/financial/financialApi';
+import axios from "axios";
 
 interface FinancialPageProps {
     user: User | null;
     onLogout: () => void;
 }
+
+type Semester = { MaHocKy: string; HocKyThu: number; NamHoc: string; };
 
 export default function TuitionAdjustment({ user, onLogout }: FinancialPageProps) {
     const [editFee, setEditFee] = useState<{ [key: string]: boolean }>({});
@@ -28,11 +31,22 @@ export default function TuitionAdjustment({ user, onLogout }: FinancialPageProps
     const [snackbar, setSnackbar] = useState<{ open: boolean, message: string, severity: 'success'|'error' }>({ open: false, message: '', severity: 'success' });
     const [confirmDelete, setConfirmDelete] = useState<{ open: boolean, id: number | null }>({ open: false, id: null });
     const [search, setSearch] = useState("");
+    const [currentSemester, setCurrentSemester] = useState<Semester | null>(null);
 
     // Load data from API on component mount
     useEffect(() => {
         loadData();
-    }, []);    const loadData = async () => {
+        financialApi.getCurrentSemester().then(data => {
+            const startYear = Number(data.namhoc);
+            setCurrentSemester({
+                MaHocKy: data.mahocky,
+                HocKyThu: data.hockythu,
+                NamHoc: isNaN(startYear) ? String(data.namhoc) : `${startYear}-${startYear + 1}`
+            });
+        });
+    }, []);
+
+    const loadData = async () => {
         try {
             setLoading(true);
             console.log('🔄 Starting to load data...');
@@ -76,7 +90,9 @@ export default function TuitionAdjustment({ user, onLogout }: FinancialPageProps
         } finally {
             setLoading(false);
         }
-    };    // Fee edit handlers - updated for multiple course types
+    };
+
+    // Fee edit handlers - updated for multiple course types
     const handleEditFee = (courseTypeId: string) => {
         setEditFee(prev => ({ ...prev, [courseTypeId]: true }));
     };
@@ -263,7 +279,13 @@ export default function TuitionAdjustment({ user, onLogout }: FinancialPageProps
                         }}
                     >
                         Quản lý học phí
-                    </Typography>                    {/* Per-credit fee section - Updated for multiple course types */}
+                    </Typography>
+                    {currentSemester && (
+                        <Typography variant="h6" sx={{ fontWeight: 600, color: '#1976d2', fontFamily: 'Varela Round, sans-serif', mb: 2 }}>
+                            Học kỳ năm học hiện tại: {`HK${currentSemester.HocKyThu} ${currentSemester.NamHoc}`}
+                        </Typography>
+                    )}
+                    {/* Per-credit fee section - Updated for multiple course types */}
                     <Box sx={{ mb: 3 }}>
                         <Typography variant="h6" sx={{ fontWeight: 600, color: '#1976d2', fontFamily: 'Varela Round, sans-serif', mb: 2 }}>
                             Học phí theo loại môn học:

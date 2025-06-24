@@ -1,6 +1,7 @@
 -- ======================================================
 -- DROP existing tables (in reverse-dependency order)
 -- ======================================================
+DROP TABLE IF EXISTS HOCPHI_THEOHK;
 DROP TABLE IF EXISTS ACADEMIC_SETTINGS;
 DROP TABLE IF EXISTS PHIEUTHUHP;
 DROP TABLE IF EXISTS CT_PHIEUDANGKY;
@@ -60,8 +61,7 @@ CREATE TABLE NGANHHOC (
 CREATE TABLE LOAIMON (
     MaLoaiMon VARCHAR PRIMARY KEY,
     TenLoaiMon VARCHAR,
-    SoTietMotTC INT,
-    SoTienMotTC DECIMAL
+    SoTietMotTC INT
 );
 
 CREATE TABLE MONHOC (
@@ -81,7 +81,14 @@ CREATE TABLE HOCKYNAMHOC (
     NamHoc INT,
     ThoiHanDongHP DATE
 );
-
+CREATE TABLE HOCPHI_THEOHK (
+    MaHocKy VARCHAR NOT NULL,
+    MaLoaiMon VARCHAR NOT NULL,
+    SoTienMotTC DECIMAL NOT NULL,
+    PRIMARY KEY (MaHocKy, MaLoaiMon),
+    FOREIGN KEY (MaHocKy) REFERENCES HOCKYNAMHOC(MaHocKy),
+    FOREIGN KEY (MaLoaiMon) REFERENCES LOAIMON(MaLoaiMon)
+);
 -- ======================================================
 -- Curriculum and offerings
 -- ======================================================
@@ -135,7 +142,7 @@ CREATE TABLE PHIEUDANGKY (
     NgayLap DATE,
     MaSoSinhVien VARCHAR NOT NULL,
     MaHocKy VARCHAR NOT NULL,
-    XacNhan BOOLEAN DEFAULT FALSE,
+    XacNhan boolean DEFAULT false,
     SoTienConLai DECIMAL DEFAULT 0,
     SoTinChiToiDa INT DEFAULT 30,
     FOREIGN KEY (MaSoSinhVien) REFERENCES SINHVIEN(MaSoSinhVien),

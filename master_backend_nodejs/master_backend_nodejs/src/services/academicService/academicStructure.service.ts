@@ -77,15 +77,23 @@ export class AcademicStructureService {
     // Course Type Services
     static async getAllCourseTypes(): Promise<CourseType[]> {
         try {
+            // Get current semester
+            const currentSemester = await DatabaseService.queryOne(`
+                SELECT current_semester FROM ACADEMIC_SETTINGS WHERE id = 1
+            `);
+            
+            const semesterId = currentSemester?.current_semester;
+            
             const courseTypes = await DatabaseService.query(`
                 SELECT 
-                    MaLoaiMon as courseTypeId,
-                    TenLoaiMon as courseTypeName,
-                    SoTietMotTC as hoursPerCredit,
-                    SoTienMotTC as pricePerCredit
-                FROM LOAIMON
-                ORDER BY TenLoaiMon
-            `);
+                    lm.MaLoaiMon as courseTypeId,
+                    lm.TenLoaiMon as courseTypeName,
+                    lm.SoTietMotTC as hoursPerCredit,
+                    COALESCE(ht.SoTienMotTC, lm.SoTienMotTC) as pricePerCredit
+                FROM LOAIMON lm
+                LEFT JOIN HOCPHI_THEOHK ht ON lm.MaLoaiMon = ht.MaLoaiMon AND ht.MaHocKy = $1
+                ORDER BY lm.TenLoaiMon
+            `, [semesterId]);
             return courseTypes;
         } catch (error) {
             console.error('Error fetching course types:', error);
