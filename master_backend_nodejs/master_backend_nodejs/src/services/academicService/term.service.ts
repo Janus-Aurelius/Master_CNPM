@@ -133,8 +133,68 @@ export const semesterService = {
                 }
             }
             
-            await client.query('BEGIN');              // If changing status to "Đang diễn ra", update current semester in ACADEMIC_SETTINGS
-            // and change any other "Đang diễn ra" semester to "Đóng"
+            await client.query('BEGIN');
+            
+            // Nếu đang thay đổi trạng thái thành "Đang diễn ra", kiểm tra constraint
+            if (semester.status === 'Đang diễn ra') {
+                // Lấy thông tin học kỳ hiện tại từ ACADEMIC_SETTINGS
+                const currentSemesterSetting = await client.query(`
+                    SELECT current_semester FROM ACADEMIC_SETTINGS WHERE id = 1
+                `);
+                
+                if (currentSemesterSetting.rows.length === 0) {
+                    throw new Error('Không tìm thấy cấu hình học kỳ hiện tại');
+                }
+                
+                const currentSemesterId = currentSemesterSetting.rows[0].current_semester;
+                
+                // Lấy thông tin học kỳ hiện tại
+                const currentSemesterInfo = await client.query(`
+                    SELECT MaHocKy, NamHoc, HocKyThu
+                    FROM HOCKYNAMHOC
+                    WHERE MaHocKy = $1
+                `, [currentSemesterId]);
+                
+                if (currentSemesterInfo.rows.length === 0) {
+                    throw new Error('Không tìm thấy học kỳ hiện tại');
+                }
+                
+                const currentSemester = currentSemesterInfo.rows[0];
+                
+                // Lấy thông tin học kỳ đang thao tác
+                const targetSemesterInfo = await client.query(`
+                    SELECT MaHocKy, NamHoc, HocKyThu
+                    FROM HOCKYNAMHOC
+                    WHERE MaHocKy = $1
+                `, [id]);
+                
+                if (targetSemesterInfo.rows.length === 0) {
+                    throw new Error('Không tìm thấy học kỳ đang thao tác');
+                }
+                
+                const targetSemester = targetSemesterInfo.rows[0];
+                
+                console.log('🔍 Debug constraint check:');
+                console.log('  - Target Semester ID:', id);
+                console.log('  - Current Semester ID:', currentSemesterId);
+                console.log('  - Current Semester Year:', currentSemester.namhoc, 'Term:', currentSemester.hockythu);
+                console.log('  - Target Semester Year:', targetSemester.namhoc, 'Term:', targetSemester.hockythu);
+                
+                // Kiểm tra xem học kỳ đang thao tác có phải sau học kỳ hiện tại không
+                const isAfterCurrent = (targetSemester.namhoc >= currentSemester.namhoc) || 
+                                     (targetSemester.namhoc === currentSemester.namhoc && targetSemester.hockythu >= currentSemester.hockythu);
+                
+                console.log('  - Is After Current Semester:', isAfterCurrent);
+                
+                if (!isAfterCurrent) {
+                    console.log('❌ Constraint violated: Semester is not after current semester');
+                    throw new Error('Chỉ được phép set trạng thái "Đang diễn ra" cho các học kỳ sau học kỳ hiện tại');
+                }
+
+                console.log('✅ Constraint passed: Semester is after current semester, will auto-close current semester');
+            }
+            
+            // If changing status to "Đang diễn ra", automatically close current semester and open new one
             if (semester.status === 'Đang diễn ra') {
                 console.log(`🔄 Setting semester ${id} as current (Đang diễn ra)`);
                 
@@ -164,7 +224,9 @@ export const semesterService = {
                 currentResult.rows[0].trangthanhocky === 'Đang diễn ra' && 
                 semester.status !== 'Đang diễn ra') {
                 throw new Error('Không thể thay đổi trạng thái của học kỳ đang diễn ra');
-            }            // Build UPDATE query dynamically based on provided fields
+            }
+            
+            // Build UPDATE query dynamically based on provided fields
             const updateFields: string[] = [];
             const values: any[] = [id];
             let paramIndex = 2;
@@ -225,7 +287,9 @@ export const semesterService = {
             throw error;
         } finally {
             client.release();
-        }    },deleteSemester: async (id: string): Promise<void> => {
+        }    },
+
+    deleteSemester: async (id: string): Promise<void> => {
         try {
             // Check if there are any PHIEUDANGKY for this semester
             const registrationCheck = await db.query(
@@ -270,11 +334,29 @@ export const semesterService = {
             console.log(`Successfully deleted semester ${id} and all related records`);
         } catch (error) {
             console.error('Error in deleteSemester:', error);
-            if (error instanceof Error && 
-                (error.message === 'Không thể xóa học kỳ đã có phiếu đăng ký' || 
-                 error.message === 'Semester not found')) {
-                throw error;
+            
+            // Xử lý các lỗi cụ thể
+            if (error instanceof Error) {
+                if (error.message === 'Không thể xóa học kỳ đã có phiếu đăng ký' || 
+                    error.message === 'Semester not found') {
+                    throw error;
+                }
+                
+                // Xử lý lỗi foreign key constraint
+                if (error.message.includes('academic_settings_current_semester_fkey') || 
+                    error.message.includes('is still referenced from table "academic_settings"')) {
+                    throw new Error('Không thể xóa học kỳ này do đang là học kỳ hiện tại');
+                }
             }
+            
+            // Nếu là lỗi PostgreSQL với code 23503 (foreign key violation)
+            if (error && typeof error === 'object' && 'code' in error && error.code === '23503') {
+                const pgError = error as any;
+                if (pgError.detail && pgError.detail.includes('academic_settings')) {
+                    throw new Error('Không thể xóa học kỳ này do đang là học kỳ hiện tại');
+                }
+            }
+            
             throw new Error('Failed to delete semester');
         }
     },
@@ -344,8 +426,76 @@ export const semesterService = {
     updateSemesterStatus: async (semesterId: string, newStatus: string): Promise<ISemester | null> => {
         try {
             const { DatabaseService } = await import('../database/databaseService');
-            
-            // If setting to "Đang diễn ra", handle the business logic
+
+            // Lấy thông tin học kỳ đang thao tác
+            const semesterInfo = await db.query(`
+                SELECT MaHocKy, NamHoc, HocKyThu, TrangThaiHocKy, ThoiGianBatDau
+                FROM HOCKYNAMHOC
+                WHERE MaHocKy = $1
+            `, [semesterId]);
+
+            if (semesterInfo.rows.length === 0) {
+                throw new Error('Không tìm thấy học kỳ');
+            }
+
+            const semester = semesterInfo.rows[0];
+            const currentDate = new Date();
+            const semesterStartDate = new Date(semester.thoigianbatdau);
+
+            console.log('🔍 Debug constraint check:');
+            console.log('  - Semester ID:', semesterId);
+            console.log('  - New Status:', newStatus);
+            console.log('  - Current Date:', currentDate.toISOString());
+            console.log('  - Semester Start Date:', semesterStartDate.toISOString());
+            console.log('  - Is Future Semester:', semesterStartDate > currentDate);
+
+            // Nếu đang set trạng thái "Đang diễn ra"
+            if (newStatus === 'Đang diễn ra') {
+                // Lấy thông tin học kỳ hiện tại từ ACADEMIC_SETTINGS
+                const currentSemesterSetting = await db.query(`
+                    SELECT current_semester FROM ACADEMIC_SETTINGS WHERE id = 1
+                `);
+                
+                if (currentSemesterSetting.rows.length === 0) {
+                    throw new Error('Không tìm thấy cấu hình học kỳ hiện tại');
+                }
+                
+                const currentSemesterId = currentSemesterSetting.rows[0].current_semester;
+                
+                // Lấy thông tin học kỳ hiện tại
+                const currentSemesterInfo = await db.query(`
+                    SELECT MaHocKy, NamHoc, HocKyThu
+                    FROM HOCKYNAMHOC
+                    WHERE MaHocKy = $1
+                `, [currentSemesterId]);
+                
+                if (currentSemesterInfo.rows.length === 0) {
+                    throw new Error('Không tìm thấy học kỳ hiện tại');
+                }
+                
+                const currentSemester = currentSemesterInfo.rows[0];
+                
+                console.log('🔍 Debug constraint check:');
+                console.log('  - Target Semester ID:', semesterId);
+                console.log('  - Current Semester ID:', currentSemesterId);
+                console.log('  - Current Semester Year:', currentSemester.namhoc, 'Term:', currentSemester.hockythu);
+                console.log('  - Target Semester Year:', semester.namhoc, 'Term:', semester.hockythu);
+                
+                // Kiểm tra xem học kỳ đang thao tác có phải sau học kỳ hiện tại không
+                const isAfterCurrent = (semester.namhoc > currentSemester.namhoc) || 
+                                     (semester.namhoc === currentSemester.namhoc && semester.hockythu > currentSemester.hockythu);
+                
+                console.log('  - Is After Current Semester:', isAfterCurrent);
+                
+                if (!isAfterCurrent) {
+                    console.log('❌ Constraint violated: Semester is not after current semester');
+                    throw new Error('Chỉ được phép set trạng thái "Đang diễn ra" cho các học kỳ sau học kỳ hiện tại');
+                }
+
+                console.log('✅ Constraint passed: Semester is after current semester, will auto-close current semester');
+            }
+
+            // Thực hiện logic cũ
             if (newStatus === 'Đang diễn ra') {
                 // Use transaction to ensure atomicity
                 const queries = [
@@ -360,9 +510,7 @@ export const semesterService = {
                         params: [newStatus, semesterId]
                     }
                 ];
-                
                 await DatabaseService.transaction(queries);
-                
                 // 3. Update ACADEMIC_SETTINGS to point to new current semester
                 await DatabaseService.updateCurrentSemester(semesterId);
             } else {
@@ -372,12 +520,12 @@ export const semesterService = {
                     [newStatus, semesterId]
                 );
             }
-
             // Return updated semester
             return await semesterService.getSemesterById(semesterId);
         } catch (error) {
             console.error('Error updating semester status:', error);
-            throw new Error('Failed to update semester status');
+            const errMsg = error instanceof Error ? error.message : 'Failed to update semester status';
+            throw new Error(errMsg);
         }
     }
 };
