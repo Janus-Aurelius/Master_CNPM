@@ -368,10 +368,15 @@ export default function TermMgmAcademic({ user, onLogout }: AcademicPageProps) {
                 console.log('Error message:', err.message);
                 
                 const errorMessage = err.response?.data?.message || err.message || 'Không thể xóa học kỳ';
+                const errorCode = err.response?.data?.code || err.code;
                 console.log('Final error message:', errorMessage);
                 
                 // Xử lý các lỗi cụ thể
-                if (errorMessage.includes('Không thể xóa học kỳ này do đang là học kỳ hiện tại')) {
+                if (
+                    errorMessage.includes('Không thể xóa học kỳ này do đang là học kỳ hiện tại') ||
+                    errorCode === '23503' ||
+                    errorMessage.includes('Failed to delete semester')
+                ) {
                     setSnackbar({
                         open: true,
                         message: '❌ Không thể xóa học kỳ này do đang là học kỳ hiện tại',

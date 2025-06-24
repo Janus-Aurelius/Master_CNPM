@@ -291,6 +291,9 @@ export const semesterService = {
 
     deleteSemester: async (id: string): Promise<void> => {
         try {
+            // Xóa dữ liệu học phí theo học kỳ trước khi xóa học kỳ
+            await db.query('DELETE FROM HOCPHI_THEOHK WHERE MaHocKy = $1', [id]);
+            
             // Check if there are any PHIEUDANGKY for this semester
             const registrationCheck = await db.query(
                 `SELECT COUNT(*) as count FROM PHIEUDANGKY WHERE MaHocKy = $1`,
