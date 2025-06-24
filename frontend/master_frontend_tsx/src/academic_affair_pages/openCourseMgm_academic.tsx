@@ -7,7 +7,7 @@ import {
     Select, MenuItem, FormControl, InputLabel, IconButton,
     Dialog, DialogTitle, DialogContent, DialogActions,
     Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
-    Divider, Grid, InputAdornment, Chip, Alert,
+    Divider, Grid, InputAdornment, Alert,
     Snackbar
 } from "@mui/material";
 import AddIcon from '@mui/icons-material/Add';
@@ -113,27 +113,7 @@ export default function OpenCourseMgmAcademic({ user, onLogout }: OpenCourseMgmA
     console.log('Filtered courses:', filteredCourses.length);
     console.log('Sample course:', courses[0]);
     console.log('Selected semester:', selectedSemester);
-    console.log('Selected academic year:', selectedAcademicYear);// Group courses by course type (Lý thuyết, Thực hành)
-    const groupCoursesByType = (courses: OpenCourse[]) => {
-        console.log('Grouping courses:', courses);
-        const theory = courses.filter(course => 
-            course.courseTypeName?.toLowerCase().includes('lý thuyết') ||
-            course.courseTypeName?.toLowerCase().includes('ly thuyet') ||
-            course.courseTypeName === 'LT'
-        );
-        
-        const practice = courses.filter(course => 
-            course.courseTypeName?.toLowerCase().includes('thực hành') ||
-            course.courseTypeName?.toLowerCase().includes('thuc hanh') ||
-            course.courseTypeName === 'TH'
-        );
-
-        console.log('Theory courses:', theory);
-        console.log('Practice courses:', practice);
-        return { theory, practice };
-    };
-
-    const { theory, practice } = groupCoursesByType(filteredCourses);    // Get unique semesters and academic years for filter dropdowns
+    console.log('Selected academic year:', selectedAcademicYear);    // No need to group courses by type anymore - display all in one table// Get unique semesters and academic years for filter dropdowns
     const semesters = Array.from(new Set(courses.map(course => course.semesterNumber).filter(Boolean)))
         .sort((a, b) => (a as number) - (b as number));
     const academicYears = Array.from(new Set(courses.map(course => course.academicYear).filter(Boolean)))
@@ -265,9 +245,7 @@ export default function OpenCourseMgmAcademic({ user, onLogout }: OpenCourseMgmA
             const errorMessage = err?.response?.data?.message || 'Không thể lưu môn học';
             setSnackbar({ open: true, message: errorMessage, severity: 'error' });
         }
-    };
-
-    // Form validation function
+    };    // Form validation function
     const isFormValid = () => {
         if (!formData.semesterId || !formData.courseId) return false;
         if (formData.minStudents < 1 || formData.maxStudents < formData.minStudents) return false;
@@ -275,191 +253,185 @@ export default function OpenCourseMgmAcademic({ user, onLogout }: OpenCourseMgmA
             formData.endPeriod < 1 || formData.endPeriod > 10) return false;
         if (formData.startPeriod >= formData.endPeriod) return false;
         return true;
-    };
-
-    const getStatusColor = (status?: string) => {
-        return status === 'Mở' ? 
-            { bgcolor: '#e8f5e9', color: '#2e7d32' } : 
-            { bgcolor: '#ffebee', color: '#c62828' };
     };const formatTimeSlot = (dayOfWeek: number, startPeriod: number, endPeriod: number) => {
         const dayName = dayOfWeekNames[dayOfWeek - 2] || `Thứ ${dayOfWeek}`;
         return `${dayName}, tiết ${startPeriod}-${endPeriod}`;
-    };
-
-    const renderCourseTable = (courses: OpenCourse[], title: string) => {
+    };    const renderCourseTable = (courses: OpenCourse[]) => {
         if (courses.length === 0) {
             return (
-                <Box sx={{ mb: 4 }}>
-                    <Typography variant="h6" sx={{ mb: 2, color: '#1a237e', fontWeight: 600 }}>
-                        {title}
-                    </Typography>
-                    <Paper sx={{ p: 3, textAlign: 'center', color: '#666' }}>
-                        Không có môn học nào
-                    </Paper>
-                </Box>
+                <Paper sx={{ p: 3, textAlign: 'center', color: '#666' }}>
+                    Không có môn học nào
+                </Paper>
             );
-        }
-
-        return (
-            <Box sx={{ mb: 4 }}>
-                <Typography variant="h6" sx={{ mb: 2, color: '#1a237e', fontWeight: 600 }}>
-                    {title} ({courses.length} môn)
-                </Typography>
-                <TableContainer component={Paper} sx={{ 
-                    mb: 3, 
-                    borderRadius: '12px', 
-                    boxShadow: '0 4px 10px rgba(0, 0, 0, 0.1)',
-                    maxHeight: '600px',
-                    overflow: 'auto'
-                }}>
-                    <Table stickyHeader>
-                        <TableHead>
-                            <TableRow>                                <TableCell sx={{ 
-                                    fontWeight: 'bold', 
-                                    color: '#FFFFFF', 
-                                    fontSize: '16px', 
-                                    fontFamily: '"Varela Round", sans-serif', 
-                                    backgroundColor: '#6ebab6',
-                                    minWidth: '100px'
-                                }}>
-                                    Mã môn
-                                </TableCell>
+        }        return (
+            <TableContainer component={Paper} sx={{ 
+                mb: 3, 
+                borderRadius: '12px', 
+                boxShadow: '0 4px 10px rgba(0, 0, 0, 0.1)',
+                maxHeight: '600px',
+                overflow: 'auto'
+            }}>
+                <Table stickyHeader size="small" sx={{ tableLayout: 'fixed' }}>
+                    <TableHead>
+                        <TableRow>                            <TableCell sx={{ 
+                                fontWeight: 'bold', 
+                                color: '#FFFFFF', 
+                                fontSize: '14px', 
+                                fontFamily: '"Varela Round", sans-serif', 
+                                backgroundColor: '#6ebab6',
+                                width: '8%',
+                                maxWidth: '80px'
+                            }}>
+                                Mã môn
+                            </TableCell>
+                            <TableCell sx={{ 
+                                fontWeight: 'bold', 
+                                color: '#FFFFFF', 
+                                fontSize: '14px', 
+                                fontFamily: '"Varela Round", sans-serif', 
+                                backgroundColor: '#6ebab6',
+                                width: '25%',
+                                maxWidth: '180px'
+                            }}>
+                                Tên môn học
+                            </TableCell>
+                            <TableCell sx={{ 
+                                fontWeight: 'bold', 
+                                color: '#FFFFFF', 
+                                fontSize: '14px', 
+                                fontFamily: '"Varela Round", sans-serif', 
+                                backgroundColor: '#6ebab6',
+                                width: '10%',
+                                maxWidth: '80px'
+                            }}>
+                                Loại môn
+                            </TableCell>
+                            <TableCell sx={{ 
+                                fontWeight: 'bold', 
+                                color: '#FFFFFF', 
+                                fontSize: '14px', 
+                                fontFamily: '"Varela Round", sans-serif', 
+                                backgroundColor: '#6ebab6',
+                                width: '8%',
+                                maxWidth: '70px'
+                            }}>
+                                Năm học
+                            </TableCell>
+                            <TableCell sx={{ 
+                                fontWeight: 'bold', 
+                                color: '#FFFFFF', 
+                                fontSize: '14px', 
+                                fontFamily: '"Varela Round", sans-serif', 
+                                backgroundColor: '#6ebab6',
+                                width: '8%',
+                                maxWidth: '70px'
+                            }}>
+                                Học kỳ
+                            </TableCell>
+                            <TableCell sx={{ 
+                                fontWeight: 'bold', 
+                                color: '#FFFFFF', 
+                                fontSize: '14px', 
+                                fontFamily: '"Varela Round", sans-serif', 
+                                backgroundColor: '#6ebab6',
+                                width: '6%',
+                                maxWidth: '60px'
+                            }}>
+                                Tín chỉ
+                            </TableCell>
+                            <TableCell sx={{ 
+                                fontWeight: 'bold', 
+                                color: '#FFFFFF', 
+                                fontSize: '14px', 
+                                fontFamily: '"Varela Round", sans-serif', 
+                                backgroundColor: '#6ebab6',
+                                width: '15%',
+                                maxWidth: '120px'
+                            }}>
+                                Thời gian
+                            </TableCell>
+                            <TableCell sx={{ 
+                                fontWeight: 'bold', 
+                                color: '#FFFFFF', 
+                                fontSize: '14px', 
+                                fontFamily: '"Varela Round", sans-serif', 
+                                backgroundColor: '#6ebab6',
+                                width: '12%',
+                                maxWidth: '100px'
+                            }}>
+                                Sỉ số
+                            </TableCell>
+                            <TableCell sx={{ 
+                                fontWeight: 'bold', 
+                                color: '#FFFFFF', 
+                                fontSize: '14px', 
+                                fontFamily: '"Varela Round", sans-serif', 
+                                backgroundColor: '#6ebab6',
+                                textAlign: 'center',
+                                width: '8%',
+                                maxWidth: '80px'
+                            }}>
+                                Thao tác
+                            </TableCell>
+                        </TableRow>
+                    </TableHead>
+                    <TableBody>                        {courses.map((course, index) => (
+                            <TableRow key={`${course.semesterId}-${course.courseId}-${index}`} hover>
+                                <TableCell sx={{ fontWeight: 500, fontSize: '13px', padding: '8px' }}>{course.courseId}</TableCell>
                                 <TableCell sx={{ 
-                                    fontWeight: 'bold', 
-                                    color: '#FFFFFF', 
-                                    fontSize: '16px', 
-                                    fontFamily: '"Varela Round", sans-serif', 
-                                    backgroundColor: '#6ebab6',
-                                    minWidth: '200px'
+                                    fontWeight: 500, 
+                                    fontSize: '13px', 
+                                    padding: '8px',
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                    whiteSpace: 'nowrap',
+                                    maxWidth: '180px'
                                 }}>
-                                    Tên môn học
+                                    {course.courseName}
                                 </TableCell>
-                                <TableCell sx={{ 
-                                    fontWeight: 'bold', 
-                                    color: '#FFFFFF', 
-                                    fontSize: '16px', 
-                                    fontFamily: '"Varela Round", sans-serif', 
-                                    backgroundColor: '#6ebab6',
-                                    minWidth: '80px'
-                                }}>
-                                    Năm học
+                                <TableCell sx={{ fontWeight: 500, fontSize: '13px', padding: '8px' }}>{course.courseTypeName}</TableCell>
+                                <TableCell sx={{ fontWeight: 500, fontSize: '13px', padding: '8px' }}>{course.academicYear || 'N/A'}</TableCell>
+                                <TableCell sx={{ fontWeight: 500, fontSize: '13px', padding: '8px' }}>
+                                    {course.semesterNumber ? `HK${course.semesterNumber}` : 'N/A'}
                                 </TableCell>
-                                <TableCell sx={{ 
-                                    fontWeight: 'bold', 
-                                    color: '#FFFFFF', 
-                                    fontSize: '16px', 
-                                    fontFamily: '"Varela Round", sans-serif', 
-                                    backgroundColor: '#6ebab6',
-                                    minWidth: '80px'
-                                }}>
-                                    Học kỳ
+                                <TableCell sx={{ fontSize: '13px', padding: '8px' }}>
+                                    {course.totalHours && course.hoursPerCredit ? 
+                                        Math.ceil(course.totalHours / course.hoursPerCredit) : 'N/A'
+                                    }
                                 </TableCell>
-                                <TableCell sx={{ 
-                                    fontWeight: 'bold', 
-                                    color: '#FFFFFF', 
-                                    fontSize: '16px', 
-                                    fontFamily: '"Varela Round", sans-serif', 
-                                    backgroundColor: '#6ebab6',
-                                    minWidth: '80px'
-                                }}>
-                                    Tín chỉ
+                                <TableCell sx={{ fontSize: '12px', padding: '8px' }}>
+                                    {formatTimeSlot(course.dayOfWeek, course.startPeriod, course.endPeriod)}
                                 </TableCell>
-                                <TableCell sx={{ 
-                                    fontWeight: 'bold', 
-                                    color: '#FFFFFF', 
-                                    fontSize: '16px', 
-                                    fontFamily: '"Varela Round", sans-serif', 
-                                    backgroundColor: '#6ebab6',
-                                    minWidth: '150px'
-                                }}>
-                                    Thời gian
+                                <TableCell sx={{ padding: '8px' }}>
+                                    <Typography variant="body2" sx={{ fontSize: '12px' }}>
+                                        <strong>{course.currentStudents}</strong>/{course.maxStudents}
+                                    </Typography>
+                                    <Typography variant="caption" color="textSecondary" sx={{ fontSize: '10px' }}>
+                                        (Min: {course.minStudents})
+                                    </Typography>
                                 </TableCell>
-                                <TableCell sx={{ 
-                                    fontWeight: 'bold', 
-                                    color: '#FFFFFF', 
-                                    fontSize: '16px', 
-                                    fontFamily: '"Varela Round", sans-serif', 
-                                    backgroundColor: '#6ebab6',
-                                    minWidth: '120px'
-                                }}>
-                                    Sỉ số
-                                </TableCell>                                <TableCell sx={{ 
-                                    fontWeight: 'bold', 
-                                    color: '#FFFFFF', 
-                                    fontSize: '16px', 
-                                    fontFamily: '"Varela Round", sans-serif', 
-                                    backgroundColor: '#6ebab6',
-                                    minWidth: '100px'
-                                }}>
-                                    Trạng thái
-                                </TableCell>
-                                <TableCell sx={{ 
-                                    fontWeight: 'bold', 
-                                    color: '#FFFFFF', 
-                                    fontSize: '16px', 
-                                    fontFamily: '"Varela Round", sans-serif', 
-                                    backgroundColor: '#6ebab6',
-                                    textAlign: 'center',
-                                    minWidth: '120px'
-                                }}>
-                                    Thao tác
+                                <TableCell align="center" sx={{ padding: '8px' }}>
+                                    <IconButton
+                                        size="small"
+                                        onClick={() => handleOpenEditDialog(course)}
+                                        sx={{ mr: 0.5, padding: '4px' }}
+                                    >
+                                        <EditIcon fontSize="small" />
+                                    </IconButton>
+                                    <IconButton
+                                        size="small"
+                                        color="error"
+                                        onClick={() => handleDeleteCourse(course.semesterId, course.courseId)}
+                                        sx={{ padding: '4px' }}
+                                    >
+                                        <DeleteIcon fontSize="small" />
+                                    </IconButton>
                                 </TableCell>
                             </TableRow>
-                        </TableHead>                        <TableBody>
-                            {courses.map((course, index) => (                                <TableRow key={`${course.semesterId}-${course.courseId}-${index}`} hover>
-                                    <TableCell sx={{ fontWeight: 500 }}>{course.courseId}</TableCell>
-                                    <TableCell sx={{ fontWeight: 500 }}>{course.courseName}</TableCell>
-                                    <TableCell sx={{ fontWeight: 500 }}>{course.academicYear || 'N/A'}</TableCell>
-                                    <TableCell sx={{ fontWeight: 500 }}>
-                                        {course.semesterNumber ? `Học kỳ ${course.semesterNumber}` : 'N/A'}
-                                    </TableCell>
-                                    <TableCell>
-                                        {course.totalHours && course.hoursPerCredit ? 
-                                            Math.ceil(course.totalHours / course.hoursPerCredit) : 'N/A'
-                                        }
-                                    </TableCell>
-                                    <TableCell>
-                                        {formatTimeSlot(course.dayOfWeek, course.startPeriod, course.endPeriod)}
-                                    </TableCell>
-                                    <TableCell>
-                                        <Typography variant="body2">
-                                            <strong>{course.currentStudents}</strong>/{course.maxStudents}
-                                        </Typography>
-                                        <Typography variant="caption" color="textSecondary">
-                                            (Tối thiểu: {course.minStudents})
-                                        </Typography>
-                                    </TableCell>                                    <TableCell>
-                                        <Chip
-                                            label={course.status || 'N/A'}
-                                            size="small"
-                                            sx={{
-                                                ...getStatusColor(course.status),
-                                                fontWeight: 500
-                                            }}
-                                        />
-                                    </TableCell>
-                                    <TableCell align="center">
-                                        <IconButton
-                                            size="small"
-                                            onClick={() => handleOpenEditDialog(course)}
-                                            sx={{ mr: 1 }}
-                                        >
-                                            <EditIcon fontSize="small" />
-                                        </IconButton>
-                                        <IconButton
-                                            size="small"
-                                            color="error"
-                                            onClick={() => handleDeleteCourse(course.semesterId, course.courseId)}
-                                        >
-                                            <DeleteIcon fontSize="small" />
-                                        </IconButton>
-                                    </TableCell>
-                                </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
-                </TableContainer>
-            </Box>
+                        ))}
+                    </TableBody>
+                </Table>
+            </TableContainer>
         );
     };
 
@@ -535,93 +507,103 @@ export default function OpenCourseMgmAcademic({ user, onLogout }: OpenCourseMgmA
                             {error}
                         </Alert>
                     )}                    {/* Search and Filter Controls */}
-                    <Grid container spacing={2} sx={{ mb: 3 }}>
-                        <Grid item xs={12} md={4}>
-                            <TextField
-                                fullWidth
-                                placeholder="Tìm kiếm theo tên hoặc mã môn học..."
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                InputProps={{
-                                    startAdornment: (
-                                        <InputAdornment position="start">
-                                            <SearchIcon />
-                                        </InputAdornment>
-                                    ),
-                                }}
-                                sx={{
-                                    '& .MuiOutlinedInput-root': {
-                                        borderRadius: '12px'
-                                    }
-                                }}
-                            />
-                        </Grid>                        <Grid item xs={12} md={3}>
-                            <FormControl fullWidth>
-                                <InputLabel>Năm học</InputLabel>
-                                <Select
-                                    value={selectedAcademicYear}
-                                    label="Năm học"
-                                    onChange={(e) => setSelectedAcademicYear(e.target.value)}
-                                    sx={{
-                                        borderRadius: '12px'
+                    <Box sx={{ mb: 3 }}>
+                        <Grid container spacing={2} alignItems="center">
+                            <Grid item xs={12} md={4}>
+                                <TextField
+                                    fullWidth
+                                    placeholder="Tìm kiếm theo tên hoặc mã môn học..."
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    size="small"
+                                    InputProps={{
+                                        startAdornment: (
+                                            <InputAdornment position="start">
+                                                <SearchIcon />
+                                            </InputAdornment>
+                                        ),
                                     }}
-                                >
-                                    <MenuItem value="all">Tất cả năm học</MenuItem>
-                                    {academicYears.map(year => (
-                                        <MenuItem key={year} value={year}>
-                                            {year}
-                                        </MenuItem>
-                                    ))}
-                                </Select>
-                            </FormControl>
-                        </Grid>
-                        <Grid item xs={12} md={2}>
-                            <FormControl fullWidth>
-                                <InputLabel>Học kỳ</InputLabel>
-                                <Select
-                                    value={selectedSemester}
-                                    label="Học kỳ"
-                                    onChange={(e) => setSelectedSemester(e.target.value)}
                                     sx={{
-                                        borderRadius: '12px'
+                                        '& .MuiOutlinedInput-root': {
+                                            borderRadius: '12px',
+                                            height: '40px'
+                                        }
                                     }}
-                                >
-                                    <MenuItem value="all">Tất cả học kỳ</MenuItem>
-                                    {semesters.map(semester => (
-                                        <MenuItem key={semester} value={semester}>
-                                            Học kỳ {semester}
-                                        </MenuItem>
-                                    ))}
-                                </Select>
-                            </FormControl>                        </Grid>
-                    </Grid>
-                    
-                    {/* Add Course Button */}
-                    <Grid container spacing={2} sx={{ mt: 2 }}>
-                        <Grid item xs={12} md={3}>                            <Button
-                                fullWidth
-                                variant="contained"
-                                startIcon={<AddIcon />}
-                                onClick={handleOpenAddDialog}
-                                sx={{
-                                    height: '56px',
-                                    borderRadius: '12px',
-                                    backgroundColor: '#6ebab6',
-                                    '&:hover': {
-                                        backgroundColor: '#5ca9a5'
-                                    }
-                                }}
-                            >
-                                Thêm mới
-                            </Button>
+                                />
+                            </Grid>
+                            
+                            <Grid item xs={12} md={2}>
+                                <FormControl fullWidth size="small">
+                                    <InputLabel>Năm học</InputLabel>
+                                    <Select
+                                        value={selectedAcademicYear}
+                                        label="Năm học"
+                                        onChange={(e) => setSelectedAcademicYear(e.target.value)}
+                                        sx={{
+                                            borderRadius: '12px',
+                                            height: '40px'
+                                        }}
+                                    >
+                                        <MenuItem value="all">Tất cả năm học</MenuItem>
+                                        {academicYears.map(year => (
+                                            <MenuItem key={year} value={year}>
+                                                {year}
+                                            </MenuItem>
+                                        ))}
+                                    </Select>
+                                </FormControl>
+                            </Grid>
+                            
+                            <Grid item xs={12} md={2}>
+                                <FormControl fullWidth size="small">
+                                    <InputLabel>Học kỳ</InputLabel>
+                                    <Select
+                                        value={selectedSemester}
+                                        label="Học kỳ"
+                                        onChange={(e) => setSelectedSemester(e.target.value)}
+                                        sx={{
+                                            borderRadius: '12px',
+                                            height: '40px'
+                                        }}
+                                    >
+                                        <MenuItem value="all">Tất cả học kỳ</MenuItem>
+                                        {semesters.map(semester => (
+                                            <MenuItem key={semester} value={semester}>
+                                                Học kỳ {semester}
+                                            </MenuItem>
+                                        ))}
+                                    </Select>
+                                </FormControl>
+                            </Grid>
+                            
+                            <Grid item xs={12} md={4}>
+                                <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+                                    <Button
+                                        variant="contained"
+                                        startIcon={<AddIcon />}
+                                        onClick={handleOpenAddDialog}
+                                        sx={{
+                                            height: '40px',
+                                            borderRadius: '12px',
+                                            backgroundColor: '#6ebab6',
+                                            '&:hover': {
+                                                backgroundColor: '#5ca9a5'
+                                            },
+                                            minWidth: '140px'
+                                        }}
+                                    >
+                                        Thêm mới
+                                    </Button>
+                                </Box>
+                            </Grid>
                         </Grid>
-                    </Grid>
+                    </Box><Divider sx={{ mb: 3 }} />
 
-                    <Divider sx={{ mb: 3 }} />
-
-                    {/* Course Tables */}
-                    {renderCourseTable(theory, "Môn Lý thuyết")}
-                    {renderCourseTable(practice, "Môn Thực hành")}
+                    {/* Course Table */}
+                    <Typography variant="h6" sx={{ mb: 2, color: '#1a237e', fontWeight: 600 }}>
+                        Danh sách môn học ({filteredCourses.length} môn)
+                    </Typography>
+                    {renderCourseTable(filteredCourses)}
 
                     {/* Delete Confirmation Dialog */}
                     <Dialog

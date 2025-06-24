@@ -86,8 +86,8 @@ const CourseMgmAcademic: React.FC<AcademicPageProps> = ({ user, onLogout }) => {
 
     const filteredSubjects = useMemo(() => {
         return subjects.filter(subject => {
-            const matchesMaMonHoc = subject.maMonHoc.toLowerCase().includes(searchMaMonHoc.toLowerCase());
-            const matchesTenMonHoc = subject.tenMonHoc.toLowerCase().includes(searchTenMonHoc.toLowerCase());
+            const matchesMaMonHoc = (subject.maMonHoc ?? "").toLowerCase().includes(searchMaMonHoc.toLowerCase());
+            const matchesTenMonHoc = (subject.tenMonHoc ?? "").toLowerCase().includes(searchTenMonHoc.toLowerCase());
             const matchesMaLoaiMon = maLoaiMonFilter === 'all' || subject.maLoaiMon === maLoaiMonFilter;
             const matchesSoTiet = soTietFilter === 'all' || subject.soTiet === Number(soTietFilter);
             const matchesCredits = creditsFilter === 'all' || parseInt((subject.credits || 0).toString(), 10) === Number(creditsFilter);
@@ -109,7 +109,7 @@ const CourseMgmAcademic: React.FC<AcademicPageProps> = ({ user, onLogout }) => {
         setIsEditing(edit);
         if (edit && subject) {
             setCurrentSubject(subject);
-            setOldMaMonHoc(subject.maMonHoc);
+            setOldMaMonHoc(subject.maMonHoc ?? null);
         } else {
             setCurrentSubject({
                 maMonHoc: '',
@@ -537,7 +537,7 @@ const CourseMgmAcademic: React.FC<AcademicPageProps> = ({ user, onLogout }) => {
                                             <TableCell sx={{ fontWeight: 500 }}>{subject.tenMonHoc}</TableCell>
                                             <TableCell>{subject.maLoaiMon}</TableCell>
                                             <TableCell>{subject.soTiet}</TableCell>
-                                            <TableCell>{parseInt(subject.credits.toString(), 10)}</TableCell><TableCell align="center">
+                                            <TableCell>{parseInt((subject.credits ?? 0).toString(), 10)}</TableCell><TableCell align="center">
                                                 <IconButton
                                                     size="small"
                                                     onClick={() => handleOpenDialog(true, subject)}
@@ -547,7 +547,7 @@ const CourseMgmAcademic: React.FC<AcademicPageProps> = ({ user, onLogout }) => {
                                                 </IconButton>
                                                 <IconButton
                                                     size="small"
-                                                    onClick={() => handleDeleteSubject(subject.maMonHoc)}
+                                                    onClick={() => handleDeleteSubject(subject.maMonHoc ?? '')}
                                                     sx={{ color: '#d32f2f' }}
                                                 >
                                                     <DeleteIcon fontSize="small" />
