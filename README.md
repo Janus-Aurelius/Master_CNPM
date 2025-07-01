@@ -1,6 +1,6 @@
-# 🏫 University Management System
+# 🎓 Course Registration and Tuition Fee Management System
 
-**A comprehensive university management system built with React TypeScript and Node.js**
+**A comprehensive course registration and tuition fee management system built with React TypeScript and Node.js**
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 [![React](https://img.shields.io/badge/React-18.2.0-61DAFB)](https://reactjs.org/)
@@ -11,9 +11,9 @@
 
 ## 📋 Table of Contents
 
-- [Overview](#overview)
+- [Introduction](#introduction)
 - [Features](#features)
-- [Tech Stack](#tech-stack)
+- [Technology Stack](#technology-stack)
 - [Getting Started](#getting-started)
 - [Project Structure](#project-structure)
 - [API Documentation](#api-documentation)
@@ -21,57 +21,78 @@
 - [Contributing](#contributing)
 - [License](#license)
 - [Contact](#contact)
-- [Acknowledgements](#acknowledgements)
 
 ---
 
-## 📌 Overview
+## 📌 Introduction
 
-This project is a comprehensive university management system developed for **VNUHCM – University of Information Technology (UIT)** as part of the **SE104** course. The system provides a modern web interface for managing academic affairs, student information, financial operations, and administrative tasks.
+**Project Title: COURSE REGISTRATION AND TUITION FEE MANAGEMENT SYSTEM FOR STUDENTS**
 
-The system supports multiple user roles including students, academic staff, financial department, and administrators, each with tailored dashboards and functionalities.
+This is a comprehensive course registration and tuition fee management system developed for the **University of Information Technology - VNU-HCM (UIT)** as part of the **SE104 - Introduction to Software Engineering** course.
+
+The system provides a modern web interface to manage:
+- **Course Registration** for students by semester
+- **Tuition Fee Collection** and related financial management
+- **Course Management** and academic information
+- **Financial Reporting** and analytics
+
+The system supports multiple user roles including students, academic affairs staff, financial department staff, and system administrators.
 
 ---
 
 ## ✨ Features
 
-### 🎓 Academic Management
-- **Course Management**: Create, update, and manage courses and subjects
-- **Program Management**: Academic program scheduling and curriculum management
-- **Open Course Management**: Semester-based course offerings with enrollment limits
-- **Student Registration**: Course registration and enrollment management
-- **Grade Management**: Student performance tracking and GPA calculation
+### 📚 Course Registration Management
+- **Course Offering**: Create and manage courses offered each semester
+- **Course Registration**: Students register for courses according to schedule
+- **Class Management**: Track enrollment and student lists for each class
+- **Timetable Management**: Schedule classes and manage academic calendar
+- **Prerequisites**: Check registration requirements and course prerequisites
 
-### 💰 Financial Management
-- **Tuition Management**: Semester-based tuition calculation and tracking
-- **Payment Processing**: Multiple payment methods and transaction history
-- **Financial Reporting**: Revenue tracking and payment analytics
-- **Fee Configuration**: Dynamic pricing for different course types
-- **Discount Management**: Priority group discounts and scholarships
+### 💰 Tuition Fee Management
+- **Fee Calculation**: Automatically calculate tuition based on registered credits
+- **Payment Processing**: Handle tuition payment transactions
+- **Debt Tracking**: Monitor student payment status and outstanding balances
+- **Financial Reporting**: Generate revenue reports and payment statistics
+- **Discount Policies**: Apply scholarship and financial aid policies
 
-### 👥 Student Portal
-- **Dashboard**: Comprehensive overview with course schedule and payments
-- **Course Enrollment**: Browse and register for available courses
-- **Tuition Payment**: View outstanding balances and make payments
-- **Academic History**: Track completed courses and academic progress
-- **Timetable Management**: Personal schedule and class information
+### 👨‍🎓 Student Portal
+- **Dashboard**: Overview of academic and financial information
+- **Course Registration**: Browse and register for available courses
+- **Payment Interface**: View and pay tuition fees
+- **Academic History**: Track academic progress and grades
+- **Personal Schedule**: Individual class timetable and course information
 
-### 🔧 Administrative Features
-- **User Management**: Role-based access control and user administration
-- **System Configuration**: Maintenance mode and security settings
-- **Audit Logging**: Track system activities and changes
-- **Dashboard Analytics**: Real-time statistics and reporting
+### 🏫 Academic Affairs Management
+- **Course Management**: Create and update course information
+- **Program Management**: Manage academic programs and curricula
+- **Class Scheduling**: Create semester classes with enrollment limits
+- **Student Management**: Track student information and academic progress
+- **Academic Reports**: Generate registration and academic statistics
+
+### 💼 Financial Department Management  
+- **Tuition Management**: Set tuition rates by course type
+- **Payment Processing**: Manage tuition collection transactions
+- **Revenue Reports**: Generate income statistics by semester and academic year
+- **Debt Management**: Track students with outstanding payments
+- **Pricing Policy**: Configure fee structures and discount policies
+
+### 🔧 System Administration
+- **User Management**: Role-based access control and account management
+- **System Configuration**: Setup system parameters and maintenance
+- **Activity Logs**: Monitor system operations and user activities
+- **System Analytics**: Generate comprehensive system usage reports
 
 ---
 
-## 🛠 Tech Stack
+## 🛠 Technology Stack
 
 ### Frontend
 - **React 18** with TypeScript
 - **Material-UI (MUI)** for component library
 - **React Router v6** for navigation
 - **Axios** for API communication
-- **Vite** for build tooling
+- **Vite** for build tools
 
 ### Backend
 - **Node.js** with Express.js
@@ -80,11 +101,11 @@ The system supports multiple user roles including students, academic staff, fina
 - **PostgreSQL** database
 - **Business Layer Architecture** for complex logic
 
-### Key Architecture Patterns
-- **MVC Pattern**: Controllers, Services, and Business Logic separation
+### Design Patterns
+- **MVC Pattern**: Separation of Controllers, Services, and Business Logic
 - **Repository Pattern**: Database abstraction layer
 - **Service Layer**: Business logic encapsulation
-- **Role-based Access Control**: Multi-tier user permissions
+- **Role-based Access Control**: Multi-level authorization
 
 ---
 
@@ -172,7 +193,7 @@ The system supports multiple user roles including students, academic staff, fina
 ## 🗂 Project Structure
 
 ```
-university-management-system/
+course-registration-system/
 ├── frontend/
 │   └── master_frontend_tsx/           # React TypeScript frontend
 │       ├── src/
@@ -234,7 +255,7 @@ university-management-system/
 
 ### 🔐 Login Interface
 ![Login Page](image/login_page.png)
-*Secure authentication portal with role-based access*
+*Secure authentication portal with role-based access control*
 
 ### 🎓 Academic Affairs Dashboard
 ![Academic Page](image/academic_page.png)
@@ -254,21 +275,21 @@ university-management-system/
 
 ---
 
-## 🎯 Key Features Highlight
+## 🎯 Key Highlights
 
-- **Multi-role Dashboard**: Customized interfaces for different user types
-- **Real-time Data**: Live updates for registrations and payments
-- **Semester Management**: Academic calendar and enrollment periods
-- **Payment Integration**: Comprehensive tuition and fee management
+- **Multi-Role Dashboard**: Customized interfaces for different user types
+- **Real-time Data**: Live updates for registration and payment information
+- **Academic Calendar**: Semester management and registration schedules
+- **Payment Integration**: Comprehensive tuition and fee management system
 - **Responsive Design**: Mobile-friendly interface
-- **Security**: JWT-based authentication with role permissions
-- **Audit Trail**: Complete activity logging and tracking
+- **Security**: JWT authentication with role-based authorization
+- **Audit Trail**: Complete logging of activities and changes
 
 ---
 
 ## 🤝 Contributing
 
-We welcome contributions! To contribute:
+We welcome all contributions! To contribute:
 
 1. Fork the repository
 2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
@@ -286,17 +307,18 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 
 ## 📬 Contact
 
-- **Course**: SE104 – Software Engineering Introduction
-- **University**: VNUHCM – University of Information Technology (UIT)
+- **Course**: SE104 – Introduction to Software Engineering
+- **University**: University of Information Technology - VNU-HCM (UIT)  
+- **Project Title**: Course Registration and Tuition Fee Management System for Students
 - **Email**: 23521672@gm.uit.edu.vn
-- **Project Repository**: [GitHub Repository](https://github.com/Janus-Aurelius/Master_CNPM.git)
+- **Repository**: [GitHub Repository](https://github.com/Janus-Aurelius/Master_CNPM.git)
 
 ---
 
-## 🙏 Acknowledgements
+## 🙏 Acknowledgments
 
-- **UIT Faculty**: For guidance and project requirements
+- **UIT Faculty**: Guidance and project requirements
 - **SE104 Course**: Software Engineering principles and methodologies
-- **Development Team**: For collaborative effort and dedication
-- **Open Source Libraries**: React, Material-UI, Express.js, and other dependencies
-- **University of Information Technology**: For providing the learning environment
+- **Development Team**: Collaborative efforts and dedication
+- **Open Source Libraries**: React, Material-UI, Express.js and other dependencies
+- **University of Information Technology**: Providing the learning environment
