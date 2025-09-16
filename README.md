@@ -310,7 +310,8 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 - **Course**: SE104 – Introduction to Software Engineering
 - **University**: University of Information Technology - VNU-HCM (UIT)  
 - **Project Title**: Course Registration and Tuition Fee Management System for Students
-- **Email**: 23521672@gm.uit.edu.vn
+- **Email**: 23521672@gm.uit.edu.vn, 23521665@gm.uit.edu.vn
+
 - **Repository**: [GitHub Repository](https://github.com/Janus-Aurelius/Master_CNPM.git)
 
 ---
